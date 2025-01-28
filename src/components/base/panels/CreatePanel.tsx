@@ -2,7 +2,13 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+} from '@/components/ui/sheet';
 import ProjectForm from '@/components/base/forms/ProjectForm';
 // import RequirementForm from '@/components/base/forms/RequirementForm';
 
@@ -37,7 +43,8 @@ export function CreatePanel({
                     <SheetHeader>
                         <SheetTitle>
                             Create New{' '}
-                            {showTabs.charAt(0).toUpperCase() + showTabs.slice(1)}
+                            {showTabs.charAt(0).toUpperCase() +
+                                showTabs.slice(1)}
                         </SheetTitle>
                         <SheetDescription>
                             Fill in the details below
@@ -74,9 +81,7 @@ export function CreatePanel({
                     <Tabs
                         value={activeTab}
                         onValueChange={(value: string) =>
-                            setActiveTab(
-                                value as 'project' | 'requirement',
-                            )
+                            setActiveTab(value as 'project' | 'requirement')
                         }
                     >
                         <TabsList className="grid grid-cols-2 w-full">

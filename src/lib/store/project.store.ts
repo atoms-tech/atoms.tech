@@ -10,6 +10,8 @@ interface ProjectState {
 export const useProjectStore = create<ProjectState>((set) => ({
     selectedProjectId: null,
     selectedProjectName: null,
-    selectProject: (id: string, name: string) => set({ selectedProjectId: id, selectedProjectName: name }),
-    clearSelectedProject: () => set({ selectedProjectId: null, selectedProjectName: null }),
-})); 
+    selectProject: (id: string, name: string) =>
+        set({ selectedProjectId: id, selectedProjectName: name }),
+    clearSelectedProject: () =>
+        set({ selectedProjectId: null, selectedProjectName: null }),
+}));

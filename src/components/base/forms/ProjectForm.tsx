@@ -74,7 +74,10 @@ export default function ProjectForm({ onSuccess }: ProjectFormProps) {
                 status: data.status,
                 description: data.description || null,
                 visibility: data.visibility,
-                organization_id: userProfile.current_organization_id || userProfile.personal_organization_id || '',
+                organization_id:
+                    userProfile.current_organization_id ||
+                    userProfile.personal_organization_id ||
+                    '',
                 owned_by: userProfile.id,
                 metadata: {
                     source: 'web_app',
@@ -107,8 +110,7 @@ export default function ProjectForm({ onSuccess }: ProjectFormProps) {
             // }
 
             // console.log('Project created successfully', project.data);
-            
-            
+
             toast({
                 variant: 'default',
                 title: 'Success',

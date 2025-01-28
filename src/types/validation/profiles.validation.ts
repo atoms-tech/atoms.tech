@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { Profile, UserStatus, Json } from "@/types";
+import { z } from 'zod';
+import { Profile, UserStatus, Json } from '@/types';
 
 export const ProfileSchema = z.object({
     id: z.string(),
@@ -16,6 +16,6 @@ export const ProfileSchema = z.object({
     login_count: z.number().nullable(),
     personal_organization_id: z.string().nullable(),
     preferences: z.any().nullable() as z.ZodType<Json>,
-    status: z.enum(["active", "inactive"]).nullable() as z.ZodType<UserStatus>,
+    status: z.enum(['active', 'inactive']).nullable() as z.ZodType<UserStatus>,
     updated_at: z.string().nullable(),
 }) satisfies z.ZodType<Profile>;

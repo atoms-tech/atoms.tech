@@ -1,53 +1,53 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
-import { supabase } from '@/lib/supabase/supabaseBrowser'
-import { queryKeys } from '@/lib/constants/queryKeys'
-import { Organization } from '@/types/base/organizations.types'
-import { Profile } from '@/types/base/profiles.types'
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { queryKeys } from '@/lib/constants/queryKeys';
+import { Organization } from '@/types/base/organizations.types';
+import { Profile } from '@/types/base/profiles.types';
 
 export function usePrefetch() {
-  const queryClient = useQueryClient()
+    const queryClient = useQueryClient();
 
-  const prefetchOrganization = useCallback(
-    async (orgId: string) => {
-      await queryClient.prefetchQuery({
-        queryKey: queryKeys.organizations.detail(orgId),
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('organizations')
-            .select('*')
-            .eq('id', orgId)
-            .single()
+    const prefetchOrganization = useCallback(
+        async (orgId: string) => {
+            await queryClient.prefetchQuery({
+                queryKey: queryKeys.organizations.detail(orgId),
+                queryFn: async () => {
+                    const { data, error } = await supabase
+                        .from('organizations')
+                        .select('*')
+                        .eq('id', orgId)
+                        .single();
 
-          if (error) throw error
-          return data as Organization
+                    if (error) throw error;
+                    return data as Organization;
+                },
+            });
         },
-      })
-    },
-    [queryClient]
-  )
+        [queryClient],
+    );
 
-  const prefetchProfile = useCallback(
-    async (userId: string) => {
-      await queryClient.prefetchQuery({
-        queryKey: queryKeys.profiles.detail(userId),
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single()
+    const prefetchProfile = useCallback(
+        async (userId: string) => {
+            await queryClient.prefetchQuery({
+                queryKey: queryKeys.profiles.detail(userId),
+                queryFn: async () => {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', userId)
+                        .single();
 
-          if (error) throw error
-          return data as Profile
+                    if (error) throw error;
+                    return data as Profile;
+                },
+            });
         },
-      })
-    },
-    [queryClient]
-  )
+        [queryClient],
+    );
 
-  return {
-    prefetchOrganization,
-    prefetchProfile,
-  }
-} 
+    return {
+        prefetchOrganization,
+        prefetchProfile,
+    };
+}

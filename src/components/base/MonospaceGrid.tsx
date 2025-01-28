@@ -34,17 +34,20 @@ export function MonospaceGrid<T extends SupportedDataTypes>({
 }: MonospaceGridProps<T>) {
     const [selectedItem, setSelectedItem] = React.useState<T | null>(null);
 
-    const handleItemClick = React.useCallback((item: T) => {
-        if (onRowClick) {
-            onRowClick(item);
-        }
-        if (renderDetails) {
-            setSelectedItem(item);
-        }
-        if (handleGoToPage && !renderDetails) {
-            handleGoToPage(item);
-        }
-    }, [onRowClick, renderDetails, handleGoToPage]);
+    const handleItemClick = React.useCallback(
+        (item: T) => {
+            if (onRowClick) {
+                onRowClick(item);
+            }
+            if (renderDetails) {
+                setSelectedItem(item);
+            }
+            if (handleGoToPage && !renderDetails) {
+                handleGoToPage(item);
+            }
+        },
+        [onRowClick, renderDetails, handleGoToPage],
+    );
 
     return (
         <LayoutGroup>
@@ -79,7 +82,9 @@ export function MonospaceGrid<T extends SupportedDataTypes>({
                                                             key={colIndex}
                                                             className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded truncate max-w-[200px]"
                                                         >
-                                                            {column.accessor(item)}
+                                                            {column.accessor(
+                                                                item,
+                                                            )}
                                                         </span>
                                                     ))}
                                             </div>

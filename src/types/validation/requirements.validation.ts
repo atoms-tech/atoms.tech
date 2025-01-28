@@ -1,12 +1,12 @@
-import { z } from "zod";
-import { 
-    Requirement, 
-    RequirementStatus, 
-    RequirementLevel, 
-    RequirementPriority, 
-    RequirementFormat, 
+import { z } from 'zod';
+import {
+    Requirement,
+    RequirementStatus,
+    RequirementLevel,
+    RequirementPriority,
+    RequirementFormat,
     Json,
-} from "@/types";
+} from '@/types';
 
 export const RequirementSchema = z.object({
     id: z.string(),
@@ -20,15 +20,32 @@ export const RequirementSchema = z.object({
     document_id: z.string(),
     enchanced_requirement: z.string().nullable(),
     external_id: z.string().nullable(),
-    format: z.enum(["incose", "ears", "other"]) as z.ZodType<RequirementFormat>,
+    format: z.enum(['incose', 'ears', 'other']) as z.ZodType<RequirementFormat>,
     is_deleted: z.boolean().nullable(),
-    level: z.enum(["component", "system", "subsystem"]) as z.ZodType<RequirementLevel>,
+    level: z.enum([
+        'component',
+        'system',
+        'subsystem',
+    ]) as z.ZodType<RequirementLevel>,
     name: z.string(),
     original_requirement: z.string().nullable(),
-    priority: z.enum(["low", "medium", "high"]) as z.ZodType<RequirementPriority>,
-    status: z.enum(["active", "archived", "draft", "deleted", "pending", "in_progress", "approved", "rejected"]) as z.ZodType<RequirementStatus>,
+    priority: z.enum([
+        'low',
+        'medium',
+        'high',
+    ]) as z.ZodType<RequirementPriority>,
+    status: z.enum([
+        'active',
+        'archived',
+        'draft',
+        'deleted',
+        'pending',
+        'in_progress',
+        'approved',
+        'rejected',
+    ]) as z.ZodType<RequirementStatus>,
     tags: z.array(z.string()).nullable(),
     updated_at: z.string().nullable(),
     updated_by: z.string().nullable(),
     version: z.number(),
-  }) satisfies z.ZodType<Requirement>;
+}) satisfies z.ZodType<Requirement>;

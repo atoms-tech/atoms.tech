@@ -3,107 +3,107 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    
-    /* Electric blue accent colors */
-    --primary: 217 91% 60%;      /* Bright electric blue */
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 216 34% 17%;
-    
-    --muted: 214 32% 91%;
-    --muted-foreground: 215 16% 47%;
-    
-    --accent: 217 91% 60%;       /* Matching primary blue */
-    --accent-foreground: 0 0% 100%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    :root {
+        --background: 0 0% 100%;
+        --foreground: 240 10% 3.9%;
 
-    /* Neutral colors */
-    --border: 216 34% 17%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;         /* Electric blue ring */
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
 
-    /* Chart colors - Blue monotone */
-    --chart-1: 217 91% 60%;      /* Primary electric blue */
-    --chart-2: 213 94% 68%;      /* Lighter blue */
-    --chart-3: 224 76% 48%;      /* Darker blue */
-    --chart-4: 213 97% 87%;      /* Very light blue */
-    --chart-5: 217 91% 60%;      /* Match primary */
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
 
-    --radius: 0.5rem;
-  }
+        /* Electric blue accent colors */
+        --primary: 217 91% 60%; /* Bright electric blue */
+        --primary-foreground: 0 0% 100%;
 
-  .dark {
-    --background: 240 10% 3.9%;    /* Deep black */
-    --foreground: 0 0% 100%;       /* Pure white */
-    
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 100%;
-    
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 100%;
-    
-    /* Dark mode electric blue accents */
-    --primary: 217 91% 60%;      /* Bright electric blue */
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 217 19% 27%;
-    --secondary-foreground: 210 40% 98%;
-    
-    --muted: 217 19% 27%;
-    --muted-foreground: 215 20% 65%;
-    
-    --accent: 213 94% 68%;       /* Brighter blue accent */
-    --accent-foreground: 216 34% 17%;
-    
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+        --secondary: 214 32% 91%;
+        --secondary-foreground: 216 34% 17%;
 
-    /* Dark mode neutral colors */
-    --border: 217 19% 27%;
-    --input: 217 19% 27%;
-    --ring: 217 91% 60%;       /* Electric blue ring */
+        --muted: 214 32% 91%;
+        --muted-foreground: 215 16% 47%;
 
-    /* Dark mode chart colors */
-    --chart-1: 217 91% 60%;    /* Electric blue */
-    --chart-2: 213 94% 68%;    /* Lighter blue */
-    --chart-3: 224 76% 48%;    /* Darker blue */
-    --chart-4: 215 20% 65%;    /* Muted blue */
-    --chart-5: 213 97% 87%;    /* Very light blue */
-  }
+        --accent: 217 91% 60%; /* Matching primary blue */
+        --accent-foreground: 0 0% 100%;
+
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 210 40% 98%;
+
+        /* Neutral colors */
+        --border: 216 34% 17%;
+        --input: 214 32% 91%;
+        --ring: 217 91% 60%; /* Electric blue ring */
+
+        /* Chart colors - Blue monotone */
+        --chart-1: 217 91% 60%; /* Primary electric blue */
+        --chart-2: 213 94% 68%; /* Lighter blue */
+        --chart-3: 224 76% 48%; /* Darker blue */
+        --chart-4: 213 97% 87%; /* Very light blue */
+        --chart-5: 217 91% 60%; /* Match primary */
+
+        --radius: 0.5rem;
+    }
+
+    .dark {
+        --background: 240 10% 3.9%; /* Deep black */
+        --foreground: 0 0% 100%; /* Pure white */
+
+        --card: 240 10% 3.9%;
+        --card-foreground: 0 0% 100%;
+
+        --popover: 240 10% 3.9%;
+        --popover-foreground: 0 0% 100%;
+
+        /* Dark mode electric blue accents */
+        --primary: 217 91% 60%; /* Bright electric blue */
+        --primary-foreground: 0 0% 100%;
+
+        --secondary: 217 19% 27%;
+        --secondary-foreground: 210 40% 98%;
+
+        --muted: 217 19% 27%;
+        --muted-foreground: 215 20% 65%;
+
+        --accent: 213 94% 68%; /* Brighter blue accent */
+        --accent-foreground: 216 34% 17%;
+
+        --destructive: 0 63% 31%;
+        --destructive-foreground: 210 40% 98%;
+
+        /* Dark mode neutral colors */
+        --border: 217 19% 27%;
+        --input: 217 19% 27%;
+        --ring: 217 91% 60%; /* Electric blue ring */
+
+        /* Dark mode chart colors */
+        --chart-1: 217 91% 60%; /* Electric blue */
+        --chart-2: 213 94% 68%; /* Lighter blue */
+        --chart-3: 224 76% 48%; /* Darker blue */
+        --chart-4: 215 20% 65%; /* Muted blue */
+        --chart-5: 213 97% 87%; /* Very light blue */
+    }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground antialiased;
-  }
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground antialiased;
+    }
 }
 
 /* Custom utility classes */
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  
-  .glow {
-    text-shadow: 0 0 10px hsl(var(--primary));
-  }
-  
-  .glow-sm {
-    text-shadow: 0 0 5px hsl(var(--primary));
-  }
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .glow {
+        text-shadow: 0 0 10px hsl(var(--primary));
+    }
+
+    .glow-sm {
+        text-shadow: 0 0 5px hsl(var(--primary));
+    }
 }

@@ -3,9 +3,9 @@ import {
     OrganizationType,
     PricingPlanInterval,
     UserRoleType,
-    UserStatus
-} from "./enums.types";
-import { Json } from "./database.types";
+    UserStatus,
+} from './enums.types';
+import { Json } from './database.types';
 
 export type Organization = {
     id: string;
@@ -33,16 +33,16 @@ export type Organization = {
 };
 
 export type OrganizationMembers = {
-    created_at: string | null
-    deleted_at: string | null
-    deleted_by: string | null
-    id: string
-    is_deleted: boolean | null
-    last_active_at: string | null
-    organization_id: string
-    permissions: Json | null
-    role: UserRoleType
-    status: UserStatus | null
-    updated_at: string | null
-    user_id: string
-}
+    created_at: string | null;
+    deleted_at: string | null;
+    deleted_by: string | null;
+    id: string;
+    is_deleted: boolean | null;
+    last_active_at: string | null;
+    organization_id: string;
+    permissions: Json | null;
+    role: UserRoleType;
+    status: UserStatus | null;
+    updated_at: string | null;
+    user_id: string;
+};

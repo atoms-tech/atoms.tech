@@ -1,22 +1,22 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { ErrorCard } from '@/components/ui/error-card'
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { ErrorCard } from '@/components/ui/error-card';
 
 export default function SignupError({
     error,
     reset,
 }: {
-    error: Error & { digest?: string }
-    reset: () => void
+    error: Error & { digest?: string };
+    reset: () => void;
 }) {
-    const router = useRouter()
+    const router = useRouter();
 
     useEffect(() => {
         // Log error to your error reporting service
-        console.error(error)
-    }, [error])
+        console.error(error);
+    }, [error]);
 
     return (
         <ErrorCard
@@ -24,12 +24,12 @@ export default function SignupError({
             message={error.message}
             retryButton={{
                 onClick: () => reset(),
-                text: 'Try Again'
+                text: 'Try Again',
             }}
             redirectButton={{
                 onClick: () => router.push('/login'),
-                text: 'Login Instead'
+                text: 'Login Instead',
             }}
         />
-    )
+    );
 }

@@ -21,7 +21,7 @@ export default function RegisterPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const message = searchParams.get('message');
-    
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -55,14 +55,16 @@ export default function RegisterPage() {
             formData.append('name', name);
             formData.append('email', email);
             formData.append('password', password);
-            
+
             const result = await signup(formData);
-            
+
             if (result?.error) {
                 setError(result.error);
             } else if (result?.message) {
                 // Handle success message (email confirmation required)
-                router.push(`/signup?message=${encodeURIComponent(result.message)}`);
+                router.push(
+                    `/signup?message=${encodeURIComponent(result.message)}`,
+                );
             }
         } catch (err) {
             console.error(err);

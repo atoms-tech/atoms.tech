@@ -7,7 +7,6 @@ export default async function ProtectedLayout({
 }: {
     children: React.ReactNode;
 }) {
-
     return (
         <SidebarProvider>
             <DashboardSidebar />

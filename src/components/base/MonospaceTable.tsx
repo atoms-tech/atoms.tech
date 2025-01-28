@@ -87,24 +87,30 @@ export function MonospaceTable<T extends SupportedDataTypes>({
         });
     }, [data, sortKey, sortOrder, columns, isLoading]);
 
-    const toggleSort = React.useCallback((index: number) => {
-        if (!columns[index].isSortable) return;
-        if (index === sortKey) {
-            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortKey(index);
-            setSortOrder('asc');
-        }
-    }, [columns, sortKey, sortOrder]);
+    const toggleSort = React.useCallback(
+        (index: number) => {
+            if (!columns[index].isSortable) return;
+            if (index === sortKey) {
+                setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+                setSortKey(index);
+                setSortOrder('asc');
+            }
+        },
+        [columns, sortKey, sortOrder],
+    );
 
-    const handleRowClick = React.useCallback((item: T) => {
-        if (onRowClick) {
-            onRowClick(item);
-        }
-        if (renderDetails) {
-            setSelectedItem(item);
-        }
-    }, [onRowClick, renderDetails]);
+    const handleRowClick = React.useCallback(
+        (item: T) => {
+            if (onRowClick) {
+                onRowClick(item);
+            }
+            if (renderDetails) {
+                setSelectedItem(item);
+            }
+        },
+        [onRowClick, renderDetails],
+    );
 
     if (isLoading) {
         return (
@@ -163,7 +169,9 @@ export function MonospaceTable<T extends SupportedDataTypes>({
                                         >
                                             <Button
                                                 variant="ghost"
-                                                onClick={() => toggleSort(index)}
+                                                onClick={() =>
+                                                    toggleSort(index)
+                                                }
                                                 className={`h-8 text-left font-medium ${column.isSortable ? 'hover:bg-accent hover:text-accent-foreground cursor-pointer' : 'cursor-default'}`}
                                                 disabled={!column.isSortable}
                                             >

@@ -1,13 +1,13 @@
-import { z } from "zod";
-import { 
-    Project, 
-    ProjectStatus, 
-    Visibility, 
-    Json, 
-    Block, 
-    DocumentPropertySchema, 
+import { z } from 'zod';
+import {
+    Project,
+    ProjectStatus,
+    Visibility,
+    Json,
+    Block,
+    DocumentPropertySchema,
     BlockPropertySchema,
-} from "@/types";
+} from '@/types';
 
 export const ProjectSchema = z.object({
     id: z.string(),
@@ -24,12 +24,22 @@ export const ProjectSchema = z.object({
     settings: z.any().nullable() as z.ZodType<Json>,
     slug: z.string(),
     star_count: z.number().nullable(),
-    status: z.enum(["active", "archived", "draft", "deleted"]) as z.ZodType<ProjectStatus>,
+    status: z.enum([
+        'active',
+        'archived',
+        'draft',
+        'deleted',
+    ]) as z.ZodType<ProjectStatus>,
     tags: z.array(z.string()).nullable(),
     updated_at: z.string().nullable(),
     updated_by: z.string(),
     version: z.number().nullable(),
-    visibility: z.enum(["private", "team", "organization", "public"]) as z.ZodType<Visibility>,
+    visibility: z.enum([
+        'private',
+        'team',
+        'organization',
+        'public',
+    ]) as z.ZodType<Visibility>,
 }) satisfies z.ZodType<Project>;
 
 export const DocumentPropertyZodSchema = z.object({

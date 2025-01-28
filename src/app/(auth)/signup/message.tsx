@@ -1,7 +1,13 @@
-'use client'
+'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+} from '@/components/ui/card';
 import { MailCheck } from 'lucide-react';
 
 export default function ConfirmEmailMessage() {
@@ -26,7 +32,8 @@ export default function ConfirmEmailMessage() {
                 </CardHeader>
                 <CardContent>
                     <p className="text-center text-gray-600 dark:text-gray-300 mt-2">
-                        {message || 'Please check your email and click the confirmation link to complete your registration.'}
+                        {message ||
+                            'Please check your email and click the confirmation link to complete your registration.'}
                     </p>
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
                         If you don't see the email, check your spam folder.

@@ -3,43 +3,47 @@
 ## Core Organization Context
 
 ### 1. Organization Context Definition
+
 ```typescript
 // contexts/organization/types.ts
 export interface OrganizationState {
-  organization: Organization | null;
-  permissions: OrgPermissions | null;
-  members: OrgMember[];
-  settings: OrgSettings;
-  status: 'loading' | 'active' | 'error';
-  error: Error | null;
+    organization: Organization | null;
+    permissions: OrgPermissions | null;
+    members: OrgMember[];
+    settings: OrgSettings;
+    status: 'loading' | 'active' | 'error';
+    error: Error | null;
 }
 
 export interface OrgContextValue extends OrganizationState {
-  // Actions
-  updateOrganization: (updates: Partial<Organization>) => Promise<void>;
-  updateSettings: (updates: Partial<OrgSettings>) => Promise<void>;
-  inviteMember: (email: string, role: OrgRole) => Promise<void>;
-  removeMember: (userId: string) => Promise<void>;
-  // Selectors
-  canAccess: (permission: OrgPermission) => boolean;
-  getMemberRole: (userId: string) => OrgRole | null;
-  // Utils
-  refresh: () => Promise<void>;
+    // Actions
+    updateOrganization: (updates: Partial<Organization>) => Promise<void>;
+    updateSettings: (updates: Partial<OrgSettings>) => Promise<void>;
+    inviteMember: (email: string, role: OrgRole) => Promise<void>;
+    removeMember: (userId: string) => Promise<void>;
+    // Selectors
+    canAccess: (permission: OrgPermission) => boolean;
+    getMemberRole: (userId: string) => OrgRole | null;
+    // Utils
+    refresh: () => Promise<void>;
 }
 
 // contexts/organization/context.tsx
 export const OrganizationContext = createContext<OrgContextValue>(null!);
 
 export function useOrganization() {
-  const context = useContext(OrganizationContext);
-  if (!context) {
-    throw new Error('useOrganization must be used within OrganizationProvider');
-  }
-  return context;
+    const context = useContext(OrganizationContext);
+    if (!context) {
+        throw new Error(
+            'useOrganization must be used within OrganizationProvider',
+        );
+    }
+    return context;
 }
 ```
 
 ### 2. Organization Provider Implementation
+
 ```typescript
 // contexts/organization/provider.tsx
 'use client';
@@ -73,7 +77,7 @@ export function OrganizationProvider({
         .select('*')
         .eq('slug', orgSlug)
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -90,7 +94,7 @@ export function OrganizationProvider({
         .eq('organization_slug', orgSlug)
         .eq('user_id', user?.id)
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -103,9 +107,9 @@ export function OrganizationProvider({
       .from('organizations')
       .update(updates)
       .eq('id', organization?.id);
-    
+
     if (error) throw error;
-    
+
     // Invalidate queries
     queryClient.invalidateQueries(['org', orgSlug]);
   };
@@ -115,9 +119,9 @@ export function OrganizationProvider({
       .from('organizations')
       .update({ settings: { ...organization?.settings, ...updates } })
       .eq('id', organization?.id);
-    
+
     if (error) throw error;
-    
+
     queryClient.invalidateQueries(['org', orgSlug]);
   };
 
@@ -166,184 +170,205 @@ export function OrganizationProvider({
 ## Feature-Specific Providers
 
 ### 1. Organization Members Provider
+
 ```typescript
 // contexts/organization/members-provider.tsx
 'use client';
 
 export function OrgMembersProvider({
-  children
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  const { organization } = useOrganization();
-  const queryClient = useQueryClient();
+    const { organization } = useOrganization();
+    const queryClient = useQueryClient();
 
-  // Fetch members
-  const { data: members } = useQuery({
-    queryKey: ['org', organization?.slug, 'members'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select(`
+    // Fetch members
+    const { data: members } = useQuery({
+        queryKey: ['org', organization?.slug, 'members'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('organization_members')
+                .select(
+                    `
           user_id,
           role,
           permissions,
           profiles (id, full_name, avatar_url)
-        `)
-        .eq('organization_id', organization?.id);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organization?.id
-  });
+        `,
+                )
+                .eq('organization_id', organization?.id);
 
-  // Member management
-  const inviteMember = async (email: string, role: string) => {
-    const { error } = await supabase
-      .from('organization_invites')
-      .insert({
-        organization_id: organization?.id,
-        email,
-        role
-      });
-    
-    if (error) throw error;
-  };
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!organization?.id,
+    });
 
-  const removeMember = async (userId: string) => {
-    const { error } = await supabase
-      .from('organization_members')
-      .delete()
-      .eq('organization_id', organization?.id)
-      .eq('user_id', userId);
-    
-    if (error) throw error;
-  };
+    // Member management
+    const inviteMember = async (email: string, role: string) => {
+        const { error } = await supabase.from('organization_invites').insert({
+            organization_id: organization?.id,
+            email,
+            role,
+        });
 
-  // Real-time updates
-  useEffect(() => {
-    if (!organization?.id) return;
-
-    const channel = supabase
-      .channel(`org-members-${organization.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'organization_members',
-        filter: `organization_id=eq.${organization.id}`
-      }, (payload) => {
-        queryClient.invalidateQueries(['org', organization.slug, 'members']);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+        if (error) throw error;
     };
-  }, [organization?.id]);
 
-  return children;
+    const removeMember = async (userId: string) => {
+        const { error } = await supabase
+            .from('organization_members')
+            .delete()
+            .eq('organization_id', organization?.id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    };
+
+    // Real-time updates
+    useEffect(() => {
+        if (!organization?.id) return;
+
+        const channel = supabase
+            .channel(`org-members-${organization.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'organization_members',
+                    filter: `organization_id=eq.${organization.id}`,
+                },
+                (payload) => {
+                    queryClient.invalidateQueries([
+                        'org',
+                        organization.slug,
+                        'members',
+                    ]);
+                },
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [organization?.id]);
+
+    return children;
 }
 ```
 
 ### 2. Organization Activity Provider
+
 ```typescript
 // contexts/organization/activity-provider.tsx
 'use client';
 
 export function OrgActivityProvider({
-  children
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
-  const { organization } = useOrganization();
-  const queryClient = useQueryClient();
+    const { organization } = useOrganization();
+    const queryClient = useQueryClient();
 
-  // Fetch activity
-  const { data: activity } = useQuery({
-    queryKey: ['org', organization?.slug, 'activity'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .eq('organization_id', organization?.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!organization?.id
-  });
+    // Fetch activity
+    const { data: activity } = useQuery({
+        queryKey: ['org', organization?.slug, 'activity'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('audit_logs')
+                .select('*')
+                .eq('organization_id', organization?.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
 
-  // Real-time updates
-  useEffect(() => {
-    if (!organization?.id) return;
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!organization?.id,
+    });
 
-    const channel = supabase
-      .channel(`org-activity-${organization.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'audit_logs',
-        filter: `organization_id=eq.${organization.id}`
-      }, (payload) => {
-        queryClient.invalidateQueries(['org', organization.slug, 'activity']);
-      })
-      .subscribe();
+    // Real-time updates
+    useEffect(() => {
+        if (!organization?.id) return;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [organization?.id]);
+        const channel = supabase
+            .channel(`org-activity-${organization.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'audit_logs',
+                    filter: `organization_id=eq.${organization.id}`,
+                },
+                (payload) => {
+                    queryClient.invalidateQueries([
+                        'org',
+                        organization.slug,
+                        'activity',
+                    ]);
+                },
+            )
+            .subscribe();
 
-  return children;
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [organization?.id]);
+
+    return children;
 }
 ```
 
 ## Organization Hooks
 
 ### 1. Permission Hooks
+
 ```typescript
 // hooks/useOrgPermissions.ts
 export function useOrgPermissions() {
-  const { permissions, canAccess } = useOrganization();
+    const { permissions, canAccess } = useOrganization();
 
-  return {
-    permissions,
-    canAccess,
-    isAdmin: canAccess('admin'),
-    isOwner: canAccess('owner'),
-    isMember: canAccess('member'),
-  };
+    return {
+        permissions,
+        canAccess,
+        isAdmin: canAccess('admin'),
+        isOwner: canAccess('owner'),
+        isMember: canAccess('member'),
+    };
 }
 ```
 
 ### 2. Organization Settings Hooks
+
 ```typescript
 // hooks/useOrgSettings.ts
 export function useOrgSettings() {
-  const { organization, updateSettings } = useOrganization();
+    const { organization, updateSettings } = useOrganization();
 
-  const setSetting = async <T>(key: string, value: T) => {
-    await updateSettings({ [key]: value });
-  };
+    const setSetting = async <T>(key: string, value: T) => {
+        await updateSettings({ [key]: value });
+    };
 
-  const getSetting = <T>(key: string, defaultValue: T): T => {
-    return organization?.settings?.[key] ?? defaultValue;
-  };
+    const getSetting = <T>(key: string, defaultValue: T): T => {
+        return organization?.settings?.[key] ?? defaultValue;
+    };
 
-  return {
-    settings: organization?.settings ?? {},
-    setSetting,
-    getSetting,
-  };
+    return {
+        settings: organization?.settings ?? {},
+        setSetting,
+        getSetting,
+    };
 }
 ```
 
 ## Integration with App Router
 
 ### 1. Organization Layout
+
 ```typescript
 // app/org/[orgSlug]/layout.tsx
 import { Suspense } from 'react';
@@ -361,7 +386,7 @@ export default async function OrganizationLayout({
 
   return (
     <Suspense fallback={<OrgLoadingSkeleton />}>
-      <OrganizationProvider 
+      <OrganizationProvider
         orgSlug={params.orgSlug}
         initialData={initialData}
       >
@@ -378,55 +403,59 @@ export default async function OrganizationLayout({
 ```
 
 ### 2. Initial Data Loading
+
 ```typescript
 // lib/organization.ts
 export async function fetchInitialOrgData(slug: string) {
-  const supabase = createServerSupabaseClient();
-  
-  const [org, permissions] = await Promise.all([
-    supabase
-      .from('organizations')
-      .select('*')
-      .eq('slug', slug)
-      .single()
-      .then(({ data }) => data),
-    
-    supabase
-      .from('organization_members')
-      .select('role, permissions')
-      .eq('organization_slug', slug)
-      .eq('user_id', user?.id)
-      .single()
-      .then(({ data }) => data)
-  ]);
+    const supabase = createServerSupabaseClient();
 
-  return {
-    organization: org,
-    permissions,
-    status: 'active' as const,
-    error: null
-  };
+    const [org, permissions] = await Promise.all([
+        supabase
+            .from('organizations')
+            .select('*')
+            .eq('slug', slug)
+            .single()
+            .then(({ data }) => data),
+
+        supabase
+            .from('organization_members')
+            .select('role, permissions')
+            .eq('organization_slug', slug)
+            .eq('user_id', user?.id)
+            .single()
+            .then(({ data }) => data),
+    ]);
+
+    return {
+        organization: org,
+        permissions,
+        status: 'active' as const,
+        error: null,
+    };
 }
 ```
 
 ## Best Practices
 
 1. **Data Management**
-   - Server-side initial data loading
-   - Client-side real-time updates
-   - Optimistic updates for better UX
+
+    - Server-side initial data loading
+    - Client-side real-time updates
+    - Optimistic updates for better UX
 
 2. **Performance**
-   - Selective re-renders with context splitting
-   - Efficient real-time subscriptions
-   - Query invalidation strategies
+
+    - Selective re-renders with context splitting
+    - Efficient real-time subscriptions
+    - Query invalidation strategies
 
 3. **Error Handling**
-   - Graceful error states
-   - Fallback UI components
-   - Error boundaries integration
+
+    - Graceful error states
+    - Fallback UI components
+    - Error boundaries integration
 
 4. **Type Safety**
-   - Strong typing for context values
-   - Runtime validation with Zod
-   - Complete type coverage
+    - Strong typing for context values
+    - Runtime validation with Zod
+    - Complete type coverage

@@ -13,7 +13,7 @@ export default async function ProtectedLayout({
             <SidebarProvider>
                 <HomeSidebar />
                 <div className="relative flex-1 p-16">
-                {children}
+                    {children}
                     <VerticalToolbar />
                 </div>
             </SidebarProvider>

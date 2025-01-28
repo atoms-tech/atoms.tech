@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase/supabaseBrowser'
-import { queryKeys } from '@/lib/constants/queryKeys'
-import { Document, Block } from '@/types/base/documents.types'
-import { QueryFilters } from '@/types/base/filters.types'
-import { buildQuery } from '@/lib/utils/queryFactory'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { queryKeys } from '@/lib/constants/queryKeys';
+import { Document, Block } from '@/types/base/documents.types';
+import { QueryFilters } from '@/types/base/filters.types';
+import { buildQuery } from '@/lib/utils/queryFactory';
 
 export function useDocument(documentId: string) {
     return useQuery({
@@ -13,58 +13,61 @@ export function useDocument(documentId: string) {
                 .from('documents')
                 .select('*')
                 .eq('id', documentId)
-                .single()
+                .single();
 
-            if (error) throw error
-            return data as Document
+            if (error) throw error;
+            return data as Document;
         },
         enabled: !!documentId,
-    })
+    });
 }
 
 export function useDocuments(queryFilters?: QueryFilters) {
     return useQuery({
         queryKey: queryKeys.documents.list(queryFilters || {}),
         queryFn: async () => {
-            const { data } = await buildQuery(
-                'documents',
-                queryFilters
-            )
-            return data
+            const { data } = await buildQuery('documents', queryFilters);
+            return data;
         },
-    })
+    });
 }
 
 export function useUpdateDocument(documentId: string) {
-    const queryClient = useQueryClient()
+    const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (document: Document) => {
-            const { data, error } = await supabase.from('documents').update(document).eq('id', documentId).single()
-            if (error) throw error
-            return data
+            const { data, error } = await supabase
+                .from('documents')
+                .update(document)
+                .eq('id', documentId)
+                .single();
+            if (error) throw error;
+            return data;
         },
-    })
+    });
 }
 
-export function useDocumentBlocks(documentId: string, queryFilters?: Omit<QueryFilters, 'filters'>) {
+export function useDocumentBlocks(
+    documentId: string,
+    queryFilters?: Omit<QueryFilters, 'filters'>,
+) {
     return useQuery({
         queryKey: queryKeys.blocks.byDocument(documentId),
         queryFn: async () => {
-            const { data } = await buildQuery(
-                'blocks',
-                {
-                    ...queryFilters,
-                    filters: [
-                        { field: 'document_id', operator: 'eq', value: documentId }
-                    ],
-                    sort: queryFilters?.sort || [{ field: 'position', direction: 'asc' }]
-                }
-            )
-            return data
+            const { data } = await buildQuery('blocks', {
+                ...queryFilters,
+                filters: [
+                    { field: 'document_id', operator: 'eq', value: documentId },
+                ],
+                sort: queryFilters?.sort || [
+                    { field: 'position', direction: 'asc' },
+                ],
+            });
+            return data;
         },
         enabled: !!documentId,
-    })
+    });
 }
 
 export function useBlock(blockId: string) {
@@ -75,11 +78,11 @@ export function useBlock(blockId: string) {
                 .from('blocks')
                 .select('*')
                 .eq('id', blockId)
-                .single()
+                .single();
 
-            if (error) throw error
-            return data as Block
+            if (error) throw error;
+            return data as Block;
         },
         enabled: !!blockId,
-    })
-} 
+    });
+}

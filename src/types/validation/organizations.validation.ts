@@ -1,16 +1,24 @@
-import { z } from "zod";
-import { 
-    Organization, 
-    PricingPlanInterval, 
-    BillingPlan, 
-    OrganizationType, 
+import { z } from 'zod';
+import {
+    Organization,
+    PricingPlanInterval,
+    BillingPlan,
+    OrganizationType,
     Json,
-} from "@/types";
+} from '@/types';
 
 export const OrganizationSchema = z.object({
     id: z.string(),
-    billing_cycle: z.enum(["none", "month", "year"]) as z.ZodType<PricingPlanInterval>,
-    billing_plan: z.enum(["free", "pro", "enterprise"]) as z.ZodType<BillingPlan>,
+    billing_cycle: z.enum([
+        'none',
+        'month',
+        'year',
+    ]) as z.ZodType<PricingPlanInterval>,
+    billing_plan: z.enum([
+        'free',
+        'pro',
+        'enterprise',
+    ]) as z.ZodType<BillingPlan>,
     created_at: z.string().nullable(),
     created_by: z.string(),
     deleted_at: z.string().nullable(),
@@ -25,10 +33,9 @@ export const OrganizationSchema = z.object({
     name: z.string(),
     settings: z.any().nullable() as z.ZodType<Json>,
     slug: z.string(),
-    status: z.enum(["active", "inactive"]).nullable(),
+    status: z.enum(['active', 'inactive']).nullable(),
     storage_used: z.number().nullable(),
-    type: z.enum(["personal", "team"]) as z.ZodType<OrganizationType>,
+    type: z.enum(['personal', 'team']) as z.ZodType<OrganizationType>,
     updated_at: z.string().nullable(),
     updated_by: z.string(),
 }) satisfies z.ZodType<Organization>;
-

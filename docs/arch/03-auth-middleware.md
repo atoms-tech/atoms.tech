@@ -3,6 +3,7 @@
 ## Supabase Authentication Setup
 
 ### 1. Auth Provider Implementation
+
 ```typescript
 // providers/supabase-auth.tsx
 'use client';
@@ -23,10 +24,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>(null!);
 
-export function AuthProvider({ 
+export function AuthProvider({
   children,
   initialSession,
-}: { 
+}: {
   children: React.ReactNode;
   initialSession: Session | null;
 }) {
@@ -118,6 +119,7 @@ export const useAuth = () => {
 ```
 
 ### 2. Server-Side Auth Utils
+
 ```typescript
 // lib/auth/server.ts
 import { cookies } from 'next/headers';
@@ -127,57 +129,60 @@ import { NextRequest } from 'next/server';
 import { Database } from '@/types/supabase';
 
 export async function getSession() {
-  const cookieStore = cookies();
-  
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
-    }
-  );
+    const cookieStore = cookies();
 
-  const { data: { session } } = await supabase.auth.getSession();
-  return session;
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                    cookieStore.set({ name, value, ...options });
+                },
+                remove(name: string, options: CookieOptions) {
+                    cookieStore.set({ name, value: '', ...options });
+                },
+            },
+        },
+    );
+
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
+    return session;
 }
 
 export async function getUser() {
-  const session = await getSession();
-  return session?.user ?? null;
+    const session = await getSession();
+    return session?.user ?? null;
 }
 
 export async function getUserProfile() {
-  const user = await getUser();
-  if (!user) return null;
+    const user = await getUser();
+    if (!user) return null;
 
-  const supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY!
-  );
+    const supabase = createClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_KEY!,
+    );
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-  return profile;
+    return profile;
 }
 ```
 
 ## Middleware Implementation
 
 ### 1. Root Middleware
+
 ```typescript
 // middleware.ts
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
@@ -186,78 +191,82 @@ import type { NextRequest } from 'next/server';
 import { Database } from '@/types/supabase';
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient<Database>({ req, res });
-  
-  // Refresh session if expired
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    const res = NextResponse.next();
+    const supabase = createMiddlewareClient<Database>({ req, res });
 
-  // Authentication check
-  const isAuthRoute = req.nextUrl.pathname.startsWith('/auth');
-  const isApiRoute = req.nextUrl.pathname.startsWith('/api');
-  const isOrgRoute = req.nextUrl.pathname.startsWith('/org');
+    // Refresh session if expired
+    const {
+        data: { session },
+    } = await supabase.auth.getSession();
 
-  // Handle authentication routes
-  if (isAuthRoute) {
-    if (session) {
-      // Redirect to dashboard if already authenticated
-      return NextResponse.redirect(new URL('/org', req.url));
-    }
-    return res;
-  }
+    // Authentication check
+    const isAuthRoute = req.nextUrl.pathname.startsWith('/auth');
+    const isApiRoute = req.nextUrl.pathname.startsWith('/api');
+    const isOrgRoute = req.nextUrl.pathname.startsWith('/org');
 
-  // Protected routes
-  if (isOrgRoute || isApiRoute) {
-    if (!session) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL('/auth/login', req.url));
-    }
-
-    // For organization routes, verify organization access
-    if (isOrgRoute) {
-      const orgSlug = req.nextUrl.pathname.split('/')[2];
-      if (orgSlug) {
-        try {
-          // Verify organization membership
-          const { data: membership } = await supabase
-            .from('organization_members')
-            .select('role')
-            .eq('organization_slug', orgSlug)
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (!membership) {
-            return NextResponse.redirect(new URL('/403', req.url));
-          }
-        } catch (error) {
-          console.error('Error verifying organization access:', error);
-          return NextResponse.redirect(new URL('/500', req.url));
+    // Handle authentication routes
+    if (isAuthRoute) {
+        if (session) {
+            // Redirect to dashboard if already authenticated
+            return NextResponse.redirect(new URL('/org', req.url));
         }
-      }
+        return res;
     }
-  }
 
-  return res;
+    // Protected routes
+    if (isOrgRoute || isApiRoute) {
+        if (!session) {
+            // Redirect to login if not authenticated
+            return NextResponse.redirect(new URL('/auth/login', req.url));
+        }
+
+        // For organization routes, verify organization access
+        if (isOrgRoute) {
+            const orgSlug = req.nextUrl.pathname.split('/')[2];
+            if (orgSlug) {
+                try {
+                    // Verify organization membership
+                    const { data: membership } = await supabase
+                        .from('organization_members')
+                        .select('role')
+                        .eq('organization_slug', orgSlug)
+                        .eq('user_id', session.user.id)
+                        .single();
+
+                    if (!membership) {
+                        return NextResponse.redirect(new URL('/403', req.url));
+                    }
+                } catch (error) {
+                    console.error(
+                        'Error verifying organization access:',
+                        error,
+                    );
+                    return NextResponse.redirect(new URL('/500', req.url));
+                }
+            }
+        }
+    }
+
+    return res;
 }
 
 // Specify which routes should be processed by the middleware
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
-  ],
+    matcher: [
+        /*
+         * Match all request paths except:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public folder
+         */
+        '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    ],
 };
 ```
 
 ### 2. Organization Middleware
+
 ```typescript
 // middleware/organization.ts
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
@@ -265,55 +274,56 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function withOrganization(
-  req: NextRequest,
-  handler: (context: { 
-    org: Organization; 
-    membership: OrganizationMember;
-  }) => Promise<NextResponse>
+    req: NextRequest,
+    handler: (context: {
+        org: Organization;
+        membership: OrganizationMember;
+    }) => Promise<NextResponse>,
 ) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
+    const res = NextResponse.next();
+    const supabase = createMiddlewareClient({ req, res });
 
-  try {
-    // Get organization from URL
-    const orgSlug = req.nextUrl.pathname.split('/')[2];
-    if (!orgSlug) {
-      return NextResponse.redirect(new URL('/404', req.url));
+    try {
+        // Get organization from URL
+        const orgSlug = req.nextUrl.pathname.split('/')[2];
+        if (!orgSlug) {
+            return NextResponse.redirect(new URL('/404', req.url));
+        }
+
+        // Get organization data
+        const { data: org } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('slug', orgSlug)
+            .single();
+
+        if (!org) {
+            return NextResponse.redirect(new URL('/404', req.url));
+        }
+
+        // Get user's membership
+        const { data: membership } = await supabase
+            .from('organization_members')
+            .select('*')
+            .eq('organization_id', org.id)
+            .eq('user_id', session.user.id)
+            .single();
+
+        if (!membership) {
+            return NextResponse.redirect(new URL('/403', req.url));
+        }
+
+        // Call handler with context
+        return handler({ org, membership });
+    } catch (error) {
+        console.error('Organization middleware error:', error);
+        return NextResponse.redirect(new URL('/500', req.url));
     }
-
-    // Get organization data
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('slug', orgSlug)
-      .single();
-
-    if (!org) {
-      return NextResponse.redirect(new URL('/404', req.url));
-    }
-
-    // Get user's membership
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('*')
-      .eq('organization_id', org.id)
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (!membership) {
-      return NextResponse.redirect(new URL('/403', req.url));
-    }
-
-    // Call handler with context
-    return handler({ org, membership });
-  } catch (error) {
-    console.error('Organization middleware error:', error);
-    return NextResponse.redirect(new URL('/500', req.url));
-  }
 }
 ```
 
 ### 3. Permission Middleware
+
 ```typescript
 // middleware/permissions.ts
 import { NextResponse } from 'next/server';
@@ -322,59 +332,62 @@ import type { NextRequest } from 'next/server';
 export type Permission = 'read' | 'write' | 'admin';
 
 export const withPermissions = (permissions: Permission[]) => {
-  return async (
-    req: NextRequest,
-    handler: (context: { permissions: Permission[] }) => Promise<NextResponse>
-  ) => {
-    const res = NextResponse.next();
-    const supabase = createMiddlewareClient({ req, res });
+    return async (
+        req: NextRequest,
+        handler: (context: {
+            permissions: Permission[];
+        }) => Promise<NextResponse>,
+    ) => {
+        const res = NextResponse.next();
+        const supabase = createMiddlewareClient({ req, res });
 
-    try {
-      // Get user's role in the organization
-      const orgSlug = req.nextUrl.pathname.split('/')[2];
-      const { data: membership } = await supabase
-        .from('organization_members')
-        .select('role')
-        .eq('organization_slug', orgSlug)
-        .eq('user_id', session.user.id)
-        .single();
+        try {
+            // Get user's role in the organization
+            const orgSlug = req.nextUrl.pathname.split('/')[2];
+            const { data: membership } = await supabase
+                .from('organization_members')
+                .select('role')
+                .eq('organization_slug', orgSlug)
+                .eq('user_id', session.user.id)
+                .single();
 
-      if (!membership) {
-        return NextResponse.redirect(new URL('/403', req.url));
-      }
+            if (!membership) {
+                return NextResponse.redirect(new URL('/403', req.url));
+            }
 
-      // Check if user has required permissions
-      const hasPermission = permissions.every(permission =>
-        hasPermissionForRole(membership.role, permission)
-      );
+            // Check if user has required permissions
+            const hasPermission = permissions.every((permission) =>
+                hasPermissionForRole(membership.role, permission),
+            );
 
-      if (!hasPermission) {
-        return NextResponse.redirect(new URL('/403', req.url));
-      }
+            if (!hasPermission) {
+                return NextResponse.redirect(new URL('/403', req.url));
+            }
 
-      return handler({ permissions });
-    } catch (error) {
-      console.error('Permission middleware error:', error);
-      return NextResponse.redirect(new URL('/500', req.url));
-    }
-  };
+            return handler({ permissions });
+        } catch (error) {
+            console.error('Permission middleware error:', error);
+            return NextResponse.redirect(new URL('/500', req.url));
+        }
+    };
 };
 
 function hasPermissionForRole(role: string, permission: Permission): boolean {
-  const rolePermissions: Record<string, Permission[]> = {
-    owner: ['read', 'write', 'admin'],
-    admin: ['read', 'write', 'admin'],
-    member: ['read', 'write'],
-    viewer: ['read'],
-  };
+    const rolePermissions: Record<string, Permission[]> = {
+        owner: ['read', 'write', 'admin'],
+        admin: ['read', 'write', 'admin'],
+        member: ['read', 'write'],
+        viewer: ['read'],
+    };
 
-  return rolePermissions[role]?.includes(permission) ?? false;
+    return rolePermissions[role]?.includes(permission) ?? false;
 }
 ```
 
 ## Authentication Flows
 
 ### 1. Sign In Flow
+
 ```typescript
 // app/auth/login/page.tsx
 'use client';
@@ -402,6 +415,7 @@ export default function LoginPage() {
 ```
 
 ### 2. Auth Callback Handler
+
 ```typescript
 // app/auth/callback/route.ts
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -409,38 +423,43 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
+    const requestUrl = new URL(request.url);
+    const code = requestUrl.searchParams.get('code');
 
-  if (code) {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    await supabase.auth.exchangeCodeForSession(code);
-  }
+    if (code) {
+        const cookieStore = cookies();
+        const supabase = createRouteHandlerClient({
+            cookies: () => cookieStore,
+        });
+        await supabase.auth.exchangeCodeForSession(code);
+    }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(requestUrl.origin);
+    // URL to redirect to after sign in process completes
+    return NextResponse.redirect(requestUrl.origin);
 }
 ```
 
 ## Security Best Practices
 
 1. **Session Management**
-   - Server-side session validation
-   - Automatic token refresh
-   - Secure cookie handling
+
+    - Server-side session validation
+    - Automatic token refresh
+    - Secure cookie handling
 
 2. **Permission Management**
-   - Role-based access control
-   - Granular permissions
-   - Resource-level access control
+
+    - Role-based access control
+    - Granular permissions
+    - Resource-level access control
 
 3. **Error Handling**
-   - Secure error messages
-   - Proper error logging
-   - Graceful fallbacks
+
+    - Secure error messages
+    - Proper error logging
+    - Graceful fallbacks
 
 4. **API Security**
-   - Request validation
-   - Rate limiting
-   - CORS configuration
+    - Request validation
+    - Rate limiting
+    - CORS configuration

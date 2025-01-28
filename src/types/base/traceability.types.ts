@@ -6,7 +6,7 @@ import {
     RequirementStatus,
     TraceLinkType,
     UserRoleType,
-} from "./enums.types";
+} from './enums.types';
 
 export type TraceLink = {
     created_at: string | null;

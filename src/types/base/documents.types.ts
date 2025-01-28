@@ -1,4 +1,4 @@
-import { Json } from "./database.types";
+import { Json } from './database.types';
 
 export type Document = {
     id: string;

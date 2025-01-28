@@ -1,5 +1,5 @@
-import { UserStatus } from "./enums.types";
-import { Json } from "./database.types";
+import { UserStatus } from './enums.types';
+import { Json } from './database.types';
 
 export type Profile = {
     id: string;

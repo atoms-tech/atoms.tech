@@ -3,37 +3,41 @@
 ## System Architecture
 
 ### Tech Stack
+
 - **Frontend**: Next.js 14+ (App Router)
 - **Database**: Supabase (PostgreSQL)
-- **State Management**: 
-  - Zustand for global state
-  - React Query for server state
-  - React Context for organization scope
+- **State Management**:
+    - Zustand for global state
+    - React Query for server state
+    - React Context for organization scope
 - **Type Safety**: TypeScript with Zod validation
 - **Authentication**: Supabase Auth
 
 ### Core Design Principles
 
 1. **Organization-Centric Architecture**
-   - All operations happen within organization context
-   - Hierarchical data access patterns
-   - Role-based permission system
+
+    - All operations happen within organization context
+    - Hierarchical data access patterns
+    - Role-based permission system
 
 2. **Performance-First Development**
-   - Server Components by default
-   - Client Components for interactivity
-   - Edge-ready API routes
-   - Optimized data fetching
+
+    - Server Components by default
+    - Client Components for interactivity
+    - Edge-ready API routes
+    - Optimized data fetching
 
 3. **Type Safety and Validation**
-   - End-to-end type safety
-   - Runtime validation with Zod
-   - Database type generation
+
+    - End-to-end type safety
+    - Runtime validation with Zod
+    - Database type generation
 
 4. **Real-time Capabilities**
-   - Supabase real-time subscriptions
-   - Optimistic updates
-   - Conflict resolution
+    - Supabase real-time subscriptions
+    - Optimistic updates
+    - Conflict resolution
 
 ## Application Structure
 
@@ -57,49 +61,54 @@
 ## Key Features
 
 1. **Organization Management**
-   - Organization CRUD
-   - Member management
-   - Role-based permissions
-   - Activity tracking
+
+    - Organization CRUD
+    - Member management
+    - Role-based permissions
+    - Activity tracking
 
 2. **Document Management**
-   - Document CRUD
-   - Block-based content
-   - Real-time collaboration
-   - Version history
+
+    - Document CRUD
+    - Block-based content
+    - Real-time collaboration
+    - Version history
 
 3. **Requirements Management**
-   - Requirement tracking
-   - Status management
-   - AI analysis
-   - Export capabilities
+    - Requirement tracking
+    - Status management
+    - AI analysis
+    - Export capabilities
 
 ## Development Workflow
 
 1. **Local Development**
-   ```bash
-   # Initial setup
-   npm install
-   npm run dev
-   ```
+
+    ```bash
+    # Initial setup
+    npm install
+    npm run dev
+    ```
 
 2. **Type Safety**
-   ```bash
-   # Generate types from Supabase
-   npm run types:generate
-   
-   # Type check
-   npm run type-check
-   ```
+
+    ```bash
+    # Generate types from Supabase
+    npm run types:generate
+
+    # Type check
+    npm run type-check
+    ```
 
 3. **Testing**
-   ```bash
-   # Run tests
-   npm run test
-   
-   # Run E2E tests
-   npm run test:e2e
-   ```
+
+    ```bash
+    # Run tests
+    npm run test
+
+    # Run E2E tests
+    npm run test:e2e
+    ```
 
 ## Next Steps
 

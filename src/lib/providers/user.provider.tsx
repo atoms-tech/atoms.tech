@@ -11,17 +11,19 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export function UserProvider({ 
-    children, 
+export function UserProvider({
+    children,
     initialUser,
-    initialProfile
-}: { 
+    initialProfile,
+}: {
     children: ReactNode;
     initialUser: User;
     initialProfile: Profile;
 }) {
     return (
-        <UserContext.Provider value={{ user: initialUser, profile: initialProfile }}>
+        <UserContext.Provider
+            value={{ user: initialUser, profile: initialProfile }}
+        >
             {children}
         </UserContext.Provider>
     );

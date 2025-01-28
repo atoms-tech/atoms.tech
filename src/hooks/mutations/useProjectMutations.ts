@@ -4,7 +4,19 @@ import { queryKeys } from '@/lib/constants/queryKeys';
 import { Project } from '@/types/base/projects.types';
 import { ProjectSchema } from '@/types/validation/projects.validation';
 
-export type CreateProjectInput = Omit<Project, 'id' | 'created_at' | 'updated_at' | 'deleted_at' | 'deleted_by' | 'is_deleted' | 'star_count' | 'version' | 'settings' | 'tags'>;
+export type CreateProjectInput = Omit<
+    Project,
+    | 'id'
+    | 'created_at'
+    | 'updated_at'
+    | 'deleted_at'
+    | 'deleted_by'
+    | 'is_deleted'
+    | 'star_count'
+    | 'version'
+    | 'settings'
+    | 'tags'
+>;
 
 export function useCreateProject() {
     const queryClient = useQueryClient();
@@ -33,10 +45,10 @@ export function useCreateProject() {
             if (projectError) {
                 console.error('Failed to create project', projectError);
                 throw projectError;
-            };
+            }
             if (!project) {
                 throw new Error('Failed to create project');
-            };
+            }
 
             // // Add the creator as a project owner
             // const { data: member, error: memberError } = await supabase
@@ -62,12 +74,16 @@ export function useCreateProject() {
         },
         onSuccess: (data) => {
             // Invalidate relevant queries
-            queryClient.invalidateQueries({ queryKey: queryKeys.projects.list({}) });
-            queryClient.invalidateQueries({ 
-                queryKey: queryKeys.projects.byOrganization(data.organization_id) 
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.list({}),
             });
-            queryClient.invalidateQueries({ 
-                queryKey: queryKeys.projects.byUser(data.owned_by) 
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.byOrganization(
+                    data.organization_id,
+                ),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.byUser(data.owned_by),
             });
         },
     });

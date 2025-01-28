@@ -34,7 +34,7 @@
 //     mutationFn: async ({ blockId, content }: { blockId: string, content: Block['content'] }) => {
 //       const { data, error } = await supabase
 //         .from('blocks')
-//         .update({ 
+//         .update({
 //           content,
 //           updated_at: new Date().toISOString()
 //         })
@@ -84,9 +84,9 @@
 //     blocks,
 //     selectedBlockId,
 //     actions: {
-//       updateBlock: (blockId: string, content: Block['content']) => 
+//       updateBlock: (blockId: string, content: Block['content']) =>
 //         updateBlockMutation.mutate({ blockId, content }),
-//       addBlock: (block: Omit<Block, 'id'>) => 
+//       addBlock: (block: Omit<Block, 'id'>) =>
 //         addBlockMutation.mutate(block),
 //       deleteBlock,
 //       moveBlock,

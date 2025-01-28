@@ -1,9 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase/supabaseBrowser'
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 // import { supabase } from '@/lib/supabase/supabaseClient'
-import { queryKeys } from '@/lib/constants/queryKeys'
-import { Organization, OrganizationMembers } from '@/types/base/organizations.types'
-import { OrganizationSchema } from '@/types/validation/organizations.validation'
+import { queryKeys } from '@/lib/constants/queryKeys';
+import {
+    Organization,
+    OrganizationMembers,
+} from '@/types/base/organizations.types';
+import { OrganizationSchema } from '@/types/validation/organizations.validation';
 
 export function useOrganization(orgId: string) {
     return useQuery({
@@ -14,16 +17,16 @@ export function useOrganization(orgId: string) {
                 .select('*')
                 .eq('id', orgId)
                 .eq('is_deleted', false)
-                .single()
+                .single();
 
-            if (error){
+            if (error) {
                 console.error('Error fetching organization:', error);
                 throw error;
             }
-            return OrganizationSchema.parse(data)
+            return OrganizationSchema.parse(data);
         },
         enabled: !!orgId,
-    })
+    });
 }
 
 export function useOrganizations(organizationIds?: string[]) {
@@ -34,14 +37,14 @@ export function useOrganizations(organizationIds?: string[]) {
                 .from('organizations')
                 .select('*')
                 .in('id', organizationIds || [])
-                .eq('is_deleted', false)
+                .eq('is_deleted', false);
 
-            const { data, error } = await query
-            if (error) throw error
-            return data.map(org => OrganizationSchema.parse(org))
+            const { data, error } = await query;
+            if (error) throw error;
+            return data.map((org) => OrganizationSchema.parse(org));
         },
         enabled: !!organizationIds,
-    })
+    });
 }
 
 export function useOrganizationsWithFilters(filters?: Record<string, any>) {
@@ -51,21 +54,21 @@ export function useOrganizationsWithFilters(filters?: Record<string, any>) {
             let query = supabase
                 .from('organizations')
                 .select('*')
-                .eq('is_deleted', false)
+                .eq('is_deleted', false);
             if (filters) {
                 Object.entries(filters).forEach(([key, value]) => {
                     if (value !== undefined) {
-                        query = query.eq(key, value)
+                        query = query.eq(key, value);
                     }
-                })
+                });
             }
 
-            const { data, error } = await query
+            const { data, error } = await query;
 
-            if (error) throw error
-            return data.map(org => OrganizationSchema.parse(org))
+            if (error) throw error;
+            return data.map((org) => OrganizationSchema.parse(org));
         },
-    })
+    });
 }
 
 export function useOrganizationsByMembership(userId: string) {
@@ -73,12 +76,13 @@ export function useOrganizationsByMembership(userId: string) {
         queryKey: queryKeys.organizations.byUser(userId),
         queryFn: async () => {
             // Fetch the organization IDs the user is part of
-            const { data: memberships, error: membershipsError } = await supabase
-                .from('organization_members')
-                .select('organization_id')
-                .eq('user_id', userId)
-                .eq('status', 'active')
-                .eq('is_deleted', false);
+            const { data: memberships, error: membershipsError } =
+                await supabase
+                    .from('organization_members')
+                    .select('organization_id')
+                    .eq('user_id', userId)
+                    .eq('status', 'active')
+                    .eq('is_deleted', false);
 
             if (membershipsError) {
                 console.error('Error fetching memberships:', membershipsError);
@@ -90,16 +94,19 @@ export function useOrganizationsByMembership(userId: string) {
                 return []; // Return an empty array if no memberships are found
             }
 
-            const organizationIds = memberships.map((member) => member.organization_id) as string[];
+            const organizationIds = memberships.map(
+                (member) => member.organization_id,
+            ) as string[];
 
-            const { data: organizations, error: organizationsError } = await supabase
-                .from('organizations')
-                .select('*')
-                .in('id', organizationIds)
-                .eq('is_deleted', false)
+            const { data: organizations, error: organizationsError } =
+                await supabase
+                    .from('organizations')
+                    .select('*')
+                    .in('id', organizationIds)
+                    .eq('is_deleted', false);
 
-            if (organizationsError) throw organizationsError
-            return organizations.map(org => OrganizationSchema.parse(org))
+            if (organizationsError) throw organizationsError;
+            return organizations.map((org) => OrganizationSchema.parse(org));
         },
         enabled: !!userId, // Only run the query if userId is provided
     });

@@ -1,5 +1,5 @@
-import { ProjectStatus, Visibility } from "./enums.types";
-import { Json } from "./database.types";
+import { ProjectStatus, Visibility } from './enums.types';
+import { Json } from './database.types';
 
 export type Project = {
     id: string;

@@ -7,30 +7,30 @@ import { AuthError } from '@supabase/supabase-js';
 import { useState } from 'react';
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60, // 1 minute
-            gcTime: 1000 * 60 * 5, // 5 minutes
-            retry: (failureCount, error) => {
-              if (error instanceof AuthError) return false;
-              return failureCount < 3;
-            },
-            refetchOnWindowFocus: false,
-          },
-          mutations: {
-            retry: false,
-          },
-        },
-      })
-  );
+    const [queryClient] = useState(
+        () =>
+            new QueryClient({
+                defaultOptions: {
+                    queries: {
+                        staleTime: 1000 * 60, // 1 minute
+                        gcTime: 1000 * 60 * 5, // 5 minutes
+                        retry: (failureCount, error) => {
+                            if (error instanceof AuthError) return false;
+                            return failureCount < 3;
+                        },
+                        refetchOnWindowFocus: false,
+                    },
+                    mutations: {
+                        retry: false,
+                    },
+                },
+            }),
+    );
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
-    </QueryClientProvider>
-  );
+    return (
+        <QueryClientProvider client={queryClient}>
+            {children}
+            {process.env.NODE_ENV === 'development' && <ReactQueryDevtools />}
+        </QueryClientProvider>
+    );
 }

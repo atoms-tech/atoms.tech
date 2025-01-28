@@ -26,7 +26,7 @@ export const getAuthUser = async () => {
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
     return data;
-}
+};
 
 // ========================================================================
 // Get User Profile using userId
@@ -51,9 +51,11 @@ export const getUserOrganizations = async (userId: string) => {
     const supabase = await getSupabaseClient();
     const { data, error } = await supabase
         .from('organization_members')
-        .select(`
+        .select(
+            `
             organizations!inner(*)
-        `) // Join the organizations table (inner join)
+        `,
+        ) // Join the organizations table (inner join)
         .eq('user_id', userId)
         .eq('status', 'active')
         .eq('is_deleted', false);
@@ -72,7 +74,7 @@ export const getUserOrganizations = async (userId: string) => {
     const organizations = data.map((member) => member.organizations);
     // Parse and return the organizations
     return organizations.map((org) => OrganizationSchema.parse(org));
-}
+};
 
 // ========================================================================
 // Get User Projects by searching project_members and returning
@@ -82,9 +84,11 @@ export const getUserProjects = async (userId: string, orgId: string) => {
     const supabase = await getSupabaseClient();
     const { data, error } = await supabase
         .from('project_members')
-        .select(`
+        .select(
+            `
             projects!inner(*)
-        `)
+        `,
+        )
         .eq('org_id', orgId)
         .eq('user_id', userId)
         .eq('status', 'active')
@@ -105,7 +109,7 @@ export const getUserProjects = async (userId: string, orgId: string) => {
     const projects = data.map((member) => member.projects);
     // Parse and return the projects
     return projects.map((project) => ProjectSchema.parse(project));
-}
+};
 
 export const getProjectDocuments = async (projectId: string) => {
     const supabase = await getSupabaseClient();
@@ -117,13 +121,14 @@ export const getProjectDocuments = async (projectId: string) => {
 
     if (error) throw error;
     return data.map((doc) => DocumentSchema.parse(doc));
-}
+};
 
 export const getDocumentData = async (documentId: string) => {
     const supabase = await getSupabaseClient();
     const { data, error } = await supabase
-    .from('documents')
-    .select(`
+        .from('documents')
+        .select(
+            `
       id,
       name,
       description,
@@ -147,22 +152,17 @@ export const getDocumentData = async (documentId: string) => {
           position
         )
       )
-    `)
-    .eq('id', documentId)
-    .single();
+    `,
+        )
+        .eq('id', documentId)
+        .single();
 
-  if (error) throw error;
-  return data;
-}
+    if (error) throw error;
+    return data;
+};
 
-export const getBlockItems = async (blockId: string) => {
+export const getBlockItems = async (blockId: string) => {};
 
-}
+export const getOrganizationMembers = async (organizationId: string) => {};
 
-export const getOrganizationMembers = async (organizationId: string) => {
-
-}
-
-export const getProjectMembers = async (projectId: string) => {
-
-}
+export const getProjectMembers = async (projectId: string) => {};
