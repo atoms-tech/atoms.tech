@@ -4,46 +4,50 @@ import DashboardView, {
     Column,
     SupportedDataTypes,
 } from '@/components/base/DashboardView';
-import { Organization, Project } from '@/types';
-import { useProjectsByMembershipForOrg } from '@/hooks/queries/useProject';
-import { useRouter } from 'next/navigation';
+import { Project } from '@/types';
+import { useRouter, useParams } from 'next/navigation';
 import { useContextStore } from '@/lib/store/context.store';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ProjectSchema } from '@/types/validation/projects.validation';
 import { useUser } from '@/lib/providers/user.provider';
 
-export default function OrgDashboard({
-    orgId,
-    userId,
-}: {
-    orgId: string;
-    userId: string;
-}) {
+export default function OrgDashboard() {
+    // Navigation hooks
     const router = useRouter();
+    const params = useParams<{ orgSlug: string }>();
+
+    // User context hooks
     const { profile } = useUser();
-    // const { data: projects, isLoading } = useProjectsByMembershipForOrg(currentOrgId as string, currentUserId as string);
+    const { setCurrentProjectId } = useContextStore();
+
+    // Local state
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { setCurrentProjectId } = useContextStore();
+
+    // Fetch projects for current user in organization
     useEffect(() => {
         const projects = async () => {
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('project_id')
-                .eq('org_id', profile?.current_organization_id)
-                .eq('user_id', profile?.id)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            const projectIds = data.map((member) => member.project_id);
-            console.log('Project IDs', projectIds);
-            const { data: projectData, error: projectError } = await supabase
+            const { data: projectMemberData, error: memberError } =
+                await supabase
+                    .from('project_members')
+                    .select('project_id')
+                    .eq('user_id', profile?.id)
+                    .eq('org_id', profile?.current_organization_id)
+                    .eq('status', 'active');
+
+            if (memberError) throw memberError;
+
+            const projectIds = projectMemberData.map((pm) => pm.project_id);
+
+            const { data: projectData, error } = await supabase
                 .from('projects')
                 .select('*')
-                .in('id', projectIds)
-                .eq('is_deleted', false);
-            if (projectError) throw projectError;
+                .eq('is_deleted', false)
+                .in('id', projectIds);
+
+            if (error) throw error;
+
             const parsedProjects = projectData.map((project) =>
                 ProjectSchema.parse(project),
             );
@@ -67,7 +71,7 @@ export default function OrgDashboard({
 
     const handleRowClick = (item: SupportedDataTypes) => {
         setCurrentProjectId((item as Project).id);
-        router.push(`/${(item as Project).slug}`);
+        router.push(`/${params.orgSlug}/${(item as Project).slug}`);
     };
 
     return (
