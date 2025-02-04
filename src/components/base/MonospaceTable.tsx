@@ -74,18 +74,14 @@ export function MonospaceTable<T extends SupportedDataTypes>({
     const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
     const [selectedItem, setSelectedItem] = React.useState<T | null>(null);
 
-    const sortedData = React.useMemo(() => {
-        if (isLoading) return [];
-
-        return [...data].sort((a, b) => {
-            if (!columns[sortKey].isSortable) return 0;
-            const aValue = columns[sortKey].accessor(a);
-            const bValue = columns[sortKey].accessor(b);
-            if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-            if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }, [data, sortKey, sortOrder, columns, isLoading]);
+    const sortedData = [...data].sort((a, b) => {
+        if (!columns[sortKey].isSortable) return 0;
+        const aValue = columns[sortKey].accessor(a);
+        const bValue = columns[sortKey].accessor(b);
+        if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     const toggleSort = React.useCallback(
         (index: number) => {
@@ -226,4 +222,4 @@ export function MonospaceTable<T extends SupportedDataTypes>({
     );
 }
 
-export default React.memo(MonospaceTable);
+export default MonospaceTable;

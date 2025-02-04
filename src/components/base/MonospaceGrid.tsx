@@ -100,4 +100,4 @@ export function MonospaceGrid<T extends SupportedDataTypes>({
     );
 }
 
-export default React.memo(MonospaceGrid);
+export default MonospaceGrid;

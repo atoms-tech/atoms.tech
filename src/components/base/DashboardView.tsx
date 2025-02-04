@@ -41,14 +41,10 @@ function DashboardView<T extends SupportedDataTypes>({
 }: DashboardViewProps<T>) {
     const { viewMode: appViewMode } = useSettingsStore();
 
-    const asciiColumns = React.useMemo(
-        () =>
-            columns.map((col) => ({
-                ...col,
-                width: col.width || 20,
-            })),
-        [columns],
-    );
+    const asciiColumns = columns.map((col) => ({
+        ...col,
+        width: col.width || 20,
+    }));
 
     if (isLoading) {
         return appViewMode === 'compact' ? (
@@ -92,4 +88,4 @@ function DashboardView<T extends SupportedDataTypes>({
     );
 }
 
-export default React.memo(DashboardView);
+export default DashboardView;

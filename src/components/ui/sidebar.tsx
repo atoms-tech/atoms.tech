@@ -117,26 +117,15 @@ const SidebarProvider = React.forwardRef<
         // This makes it easier to style the sidebar with Tailwind classes.
         const state = open ? 'expanded' : 'collapsed';
 
-        const contextValue = React.useMemo<SidebarContext>(
-            () => ({
-                state,
-                open,
-                setOpen,
-                isMobile,
-                openMobile,
-                setOpenMobile,
-                toggleSidebar,
-            }),
-            [
-                state,
-                open,
-                setOpen,
-                isMobile,
-                openMobile,
-                setOpenMobile,
-                toggleSidebar,
-            ],
-        );
+        const contextValue: SidebarContext = {
+            state,
+            open,
+            setOpen,
+            isMobile,
+            openMobile,
+            setOpenMobile,
+            toggleSidebar,
+        };
 
         return (
             <SidebarContext.Provider value={contextValue}>
@@ -676,9 +665,7 @@ const SidebarMenuSkeleton = React.forwardRef<
     }
 >(({ className, showIcon = false, ...props }, ref) => {
     // Random width between 50 to 90%.
-    const width = React.useMemo(() => {
-        return `${Math.floor(Math.random() * 40) + 50}%`;
-    }, []);
+    const width = `${Math.floor(Math.random() * 40) + 50}%`;
 
     return (
         <div
