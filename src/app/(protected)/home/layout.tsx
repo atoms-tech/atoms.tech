@@ -1,22 +1,10 @@
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { HomeSidebar } from './components/HomeSidebar.client';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
 import { OrganizationProvider } from '@/lib/providers/organization.provider';
+import React from 'react';
 
-export default async function ProtectedLayout({
+export default async function HomeLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    return (
-        <OrganizationProvider>
-            <SidebarProvider>
-                <HomeSidebar />
-                <div className="relative flex-1 p-16">
-                    {children}
-                    <VerticalToolbar />
-                </div>
-            </SidebarProvider>
-        </OrganizationProvider>
-    );
+    return <OrganizationProvider>{children}</OrganizationProvider>;
 }

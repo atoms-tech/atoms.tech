@@ -1,26 +1,30 @@
-'use client';
-import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import DashboardView, {
     Column,
     SupportedDataTypes,
 } from '@/components/base/DashboardView';
 import { Badge } from '@/components/ui/badge';
-import { useRouter, useParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementSchema } from '@/types/validation';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
-export default function ProjectPage() {
+type ProjectDashboardProps = {
+    projectSlug: string;
+};
+
+export default function ProjectDashboard({
+    projectSlug,
+}: ProjectDashboardProps) {
     const router = useRouter();
-    const params = useParams<{ orgSlug: string; projectSlug: string }>();
 
     const { data: project, isLoading: projectLoading } = useQuery({
-        queryKey: ['project', params.projectSlug],
+        queryKey: ['project', projectSlug],
         queryFn: async () => {
             const { data: project } = await supabase
                 .from('projects')
                 .select('*')
-                .eq('slug', params.projectSlug)
+                .eq('slug', projectSlug)
                 .single();
 
             if (!project) {
@@ -48,13 +52,13 @@ export default function ProjectPage() {
     });
 
     const { data: requirements, isLoading: requirementsLoading } = useQuery({
-        queryKey: ['requirements', params.projectSlug],
+        queryKey: ['requirements', projectSlug],
         queryFn: async () => {
             // First get the project ID from the slug
             const { data: project } = await supabase
                 .from('projects')
                 .select('id')
-                .eq('slug', params.projectSlug)
+                .eq('slug', projectSlug)
                 .single();
 
             console.log('Project', project);
@@ -93,11 +97,9 @@ export default function ProjectPage() {
                 return [];
             }
 
-            const parsedRequirements = requirements.map((requirement) =>
+            return requirements.map((requirement) =>
                 RequirementSchema.parse(requirement),
             );
-
-            return parsedRequirements;
         },
     });
 
@@ -149,9 +151,7 @@ export default function ProjectPage() {
     ];
 
     const handleRowClick = (item: SupportedDataTypes) => {
-        router.push(
-            `/${params.orgSlug}/${params.projectSlug}/requirements/${item.id}`,
-        );
+        router.push(`/req/${item.id}`);
     };
 
     const isLoading = projectLoading || documentsLoading || requirementsLoading;
@@ -187,11 +187,7 @@ export default function ProjectPage() {
                     <h2 className="text-xl font-semibold">Documents</h2>
                     <Button
                         variant="outline"
-                        onClick={() =>
-                            router.push(
-                                `/${params.orgSlug}/${params.projectSlug}/documents/new`,
-                            )
-                        }
+                        onClick={() => router.push(`/doc/new`)}
                     >
                         Add Document
                     </Button>
@@ -201,11 +197,7 @@ export default function ProjectPage() {
                         <div
                             key={doc.id}
                             className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
-                            onClick={() =>
-                                router.push(
-                                    `/${params.orgSlug}/${params.projectSlug}/documents/${doc.id}`,
-                                )
-                            }
+                            onClick={() => router.push(`/doc/${doc.id}`)}
                         >
                             <h3 className="font-medium truncate">{doc.name}</h3>
                             {doc.description && (

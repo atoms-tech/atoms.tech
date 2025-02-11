@@ -18,7 +18,6 @@ import {
     ListTodo,
     Users,
 } from 'lucide-react';
-import { useMemo } from 'react';
 
 // Mock document data
 const documentInfo = {
@@ -37,36 +36,32 @@ export default function TestPage() {
     const { blocks } = useDocumentStore();
 
     // Aggregate all requirements from all table blocks
-    const allRequirements = useMemo(() => {
-        return blocks
-            .filter((block) => block.type === 'table')
-            .flatMap((block) => {
-                const content = block.content as {
-                    requirements: Requirement[];
-                };
-                return content?.requirements || [];
-            });
-    }, [blocks]);
+    const allRequirements = blocks
+        .filter((block) => block.type === 'table')
+        .flatMap((block) => {
+            const content = block.content as {
+                requirements: Requirement[];
+            };
+            return content?.requirements || [];
+        });
 
     // Calculate some statistics
-    const stats = useMemo(() => {
-        const totalReqs = allRequirements.length;
-        const completedReqs = allRequirements.filter(
-            (req) => req.status === 'active',
-        ).length;
-        const highPriority = allRequirements.filter(
-            (req) => req.priority === 'high',
-        ).length;
+    const totalReqs = allRequirements.length;
+    const completedReqs = allRequirements.filter(
+        (req) => req.status === 'active',
+    ).length;
+    const highPriority = allRequirements.filter(
+        (req) => req.priority === 'high',
+    ).length;
 
-        return {
-            total: totalReqs,
-            completed: completedReqs,
-            completion: totalReqs
-                ? Math.round((completedReqs / totalReqs) * 100)
-                : 0,
-            highPriority,
-        };
-    }, [allRequirements]);
+    const stats = {
+        total: totalReqs,
+        completed: completedReqs,
+        completion: totalReqs
+            ? Math.round((completedReqs / totalReqs) * 100)
+            : 0,
+        highPriority,
+    };
 
     // Columns for the requirements list view
     const requirementColumns: Column<Requirement>[] = [

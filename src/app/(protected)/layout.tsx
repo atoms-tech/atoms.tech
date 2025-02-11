@@ -1,5 +1,9 @@
-import { UserProvider } from '@/lib/providers/user.provider';
+import Sidebar from '@/components/base/Sidebar';
+import VerticalToolbar from '@/components/custom/VerticalToolbar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { getAuthUser, getUserProfile } from '@/lib/db';
+import { UserProvider } from '@/lib/providers/user.provider';
+import React from 'react';
 
 export default async function ProtectedLayout({
     children,
@@ -11,7 +15,13 @@ export default async function ProtectedLayout({
 
     return (
         <UserProvider initialUser={user.user} initialProfile={profile}>
-            {children}
+            <SidebarProvider>
+                <Sidebar />
+                <div className="relative flex-1 p-16">
+                    {children}
+                    <VerticalToolbar />
+                </div>
+            </SidebarProvider>
         </UserProvider>
     );
 }

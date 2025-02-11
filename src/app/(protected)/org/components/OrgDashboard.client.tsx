@@ -1,21 +1,18 @@
-'use client';
-
 import DashboardView, {
     Column,
     SupportedDataTypes,
 } from '@/components/base/DashboardView';
-import { Project } from '@/types';
-import { useRouter, useParams } from 'next/navigation';
-import { useContextStore } from '@/lib/store/context.store';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { ProjectSchema } from '@/types/validation/projects.validation';
 import { useUser } from '@/lib/providers/user.provider';
+import { useContextStore } from '@/lib/store/context.store';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Project } from '@/types';
+import { ProjectSchema } from '@/types/validation/projects.validation';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function OrgDashboard() {
     // Navigation hooks
     const router = useRouter();
-    const params = useParams<{ orgSlug: string }>();
 
     // User context hooks
     const { profile } = useUser();
@@ -71,7 +68,7 @@ export default function OrgDashboard() {
 
     const handleRowClick = (item: SupportedDataTypes) => {
         setCurrentProjectId((item as Project).id);
-        router.push(`/${params.orgSlug}/${(item as Project).slug}`);
+        router.push(`/project/${(item as Project).slug}`);
     };
 
     return (

@@ -4,13 +4,14 @@ import DashboardView, {
     Column,
     SupportedDataTypes,
 } from '@/components/base/DashboardView';
-import { Organization } from '@/types';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
-import { useRouter } from 'next/navigation';
-import { useContextStore } from '@/lib/store/context.store';
 import RenderCounter from '@/components/RerenderCount';
-import { useUser } from '@/lib/providers/user.provider';
+import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useOrganization } from '@/lib/providers/organization.provider';
+import { useUser } from '@/lib/providers/user.provider';
+import { useContextStore } from '@/lib/store/context.store';
+import { Organization } from '@/types';
+import { useRouter } from 'next/navigation';
+
 export default function HomeDashboard() {
     const { user } = useUser();
     const router = useRouter();
@@ -44,7 +45,7 @@ export default function HomeDashboard() {
     const handleRowClick = (item: SupportedDataTypes) => {
         setCurrentUserId(user?.id || '');
         setOrganization(item as Organization);
-        router.push(`/${(item as Organization).slug}`);
+        router.push(`/org/${(item as Organization).slug}`);
     };
 
     return (

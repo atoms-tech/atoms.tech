@@ -1,16 +1,7 @@
 'use client';
 
-import { Home, Plus, Settings, User, LucideIcon } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-// import { useAuth } from "@/hooks/useAuth";
-// import History from "./History";
-import { useState } from 'react';
-// import { CreatePanel } from "@/components/private";
-import { User as SupabaseUser } from '@supabase/supabase-js';
-import { Profile } from '@/types';
-import { useRouter } from 'next/navigation';
-import { useUser } from '@/lib/providers/user.provider';
+import { CreatePanel } from '@/components/base/panels/CreatePanel';
+import { Button } from '@/components/ui/button';
 
 import {
     DropdownMenu,
@@ -20,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import {
-    Sidebar,
+    SidebarContainer as SidebarContainer,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
@@ -30,6 +21,12 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useUser } from '@/lib/providers/user.provider';
+import { Home, LucideIcon, Plus, Settings, User } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface MenuItem {
     title: string;
@@ -56,10 +53,15 @@ const items: MenuItem[] = [
     },
 ];
 
-export function HomeSidebar() {
-    const { user, profile } = useUser();
+export default function Sidebar() {
     const router = useRouter();
+    const pathname = usePathname();
     const [isLoading, setIsLoading] = useState(false);
+    const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+    const [isSidebarHidden, setIsSidebarHidden] = useState(false);
+    const { user, profile } = useUser();
+
+    const isOrgPage = pathname.startsWith('/org');
 
     const handleSignOut = async () => {
         try {
@@ -80,8 +82,27 @@ export function HomeSidebar() {
         }
     };
 
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 768) {
+                const firstFocusableElement = document.querySelector(
+                    '.main-content button, .main-content [href], .main-content input',
+                );
+                if (firstFocusableElement) {
+                    (firstFocusableElement as HTMLElement).focus();
+                }
+                setIsSidebarHidden(true);
+            } else {
+                setIsSidebarHidden(false);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     return (
-        <Sidebar>
+        <SidebarContainer inert={isSidebarHidden}>
             <SidebarContent className="px-3 py-2">
                 <SidebarGroup>
                     <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-6">
@@ -110,6 +131,29 @@ export function HomeSidebar() {
                                     </SidebarMenuItem>
                                 </Link>
                             ))}
+                            {isOrgPage && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full relative z-20"
+                                            onClick={() =>
+                                                setIsCreatePanelOpen(true)
+                                            }
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            <span>Create New</span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
+                            {isOrgPage && (
+                                <CreatePanel
+                                    isOpen={isCreatePanelOpen}
+                                    onClose={() => setIsCreatePanelOpen(false)}
+                                    showTabs="show"
+                                />
+                            )}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -153,6 +197,6 @@ export function HomeSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarFooter>
-        </Sidebar>
+        </SidebarContainer>
     );
 }
