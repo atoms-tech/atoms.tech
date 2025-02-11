@@ -1,9 +1,9 @@
 // app/auth/login/error.tsx
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { ErrorCard } from '@/components/ui/error-card';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function LoginError({
     error,

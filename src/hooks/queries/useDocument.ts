@@ -1,9 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { Document, Block } from '@/types/base/documents.types';
-import { QueryFilters } from '@/types/base/filters.types';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { buildQuery } from '@/lib/utils/queryFactory';
+import { Block, Document } from '@/types/base/documents.types';
+import { QueryFilters } from '@/types/base/filters.types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export function useDocument(documentId: string) {
     return useQuery({

@@ -1,14 +1,14 @@
 'use client';
 
-import { Table, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSettingsStore } from '@/lib/store/settings.store';
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useSettingsStore } from '@/lib/store/settings.store';
+import { LayoutGrid, Table } from 'lucide-react';
 
 export function ViewModeToggle() {
     const { viewMode, setViewMode } = useSettingsStore();

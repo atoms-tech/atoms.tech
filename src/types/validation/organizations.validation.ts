@@ -1,11 +1,11 @@
-import { z } from 'zod';
 import {
-    Organization,
-    PricingPlanInterval,
     BillingPlan,
-    OrganizationType,
     Json,
+    Organization,
+    OrganizationType,
+    PricingPlanInterval,
 } from '@/types';
+import { z } from 'zod';
 
 export const OrganizationSchema = z.object({
     id: z.string(),

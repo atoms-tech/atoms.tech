@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
 import { useSettingsStore } from '@/lib/store/settings.store';
+import type { Organization, Project, Requirement } from '@/types';
+import React from 'react';
 import { MonospaceGrid } from './MonospaceGrid';
 import { MonospaceTable } from './MonospaceTable';
-import type { Project, Requirement, Organization } from '@/types';
 
 export type SupportedDataTypes = Project | Requirement | Organization;
 

@@ -1,18 +1,18 @@
-import { z } from 'zod';
 import {
     Assignment,
     AssignmentRole,
-    EntityType,
-    RequirementStatus,
-    Json,
-    UserRoleType,
-    UserRole,
-    Notification,
     AuditLog,
     BillingCache,
+    EntityType,
+    Json,
+    Notification,
+    RequirementStatus,
     TraceLink,
     TraceLinkType,
+    UserRole,
+    UserRoleType,
 } from '@/types';
+import { z } from 'zod';
 
 export const TraceLinkSchema = z.object({
     id: z.string(),

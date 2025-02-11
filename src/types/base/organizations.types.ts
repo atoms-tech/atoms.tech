@@ -1,3 +1,4 @@
+import { Json } from './database.types';
 import {
     BillingPlan,
     OrganizationType,
@@ -5,7 +6,6 @@ import {
     UserRoleType,
     UserStatus,
 } from './enums.types';
-import { Json } from './database.types';
 
 export type Organization = {
     id: string;

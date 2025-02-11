@@ -1,22 +1,22 @@
 // app/(auth)/login/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { login } from '../auth/actions';
-import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
     Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
     CardHeader,
     CardTitle,
-    CardDescription,
-    CardContent,
-    CardFooter,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { AlertCircle, Github, Mail } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { AlertCircle, Github, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { login } from '../auth/actions';
 
 export default function LoginPage() {
     const router = useRouter();

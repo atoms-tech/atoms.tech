@@ -1,9 +1,9 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization } from '@/types/base/organizations.types';
 import { Profile } from '@/types/base/profiles.types';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 export function usePrefetch() {
     const queryClient = useQueryClient();

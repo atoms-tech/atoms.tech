@@ -1,12 +1,12 @@
-import { z } from 'zod';
 import {
+    Json,
     Requirement,
-    RequirementStatus,
+    RequirementFormat,
     RequirementLevel,
     RequirementPriority,
-    RequirementFormat,
-    Json,
+    RequirementStatus,
 } from '@/types';
+import { z } from 'zod';
 
 export const RequirementSchema = z.object({
     id: z.string(),

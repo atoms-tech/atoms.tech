@@ -1,9 +1,7 @@
 'use client';
 
-import * as React from 'react';
-import { CaretSortIcon } from '@radix-ui/react-icons';
-import { motion, LayoutGroup } from 'framer-motion';
-import { Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Table,
     TableBody,
@@ -12,11 +10,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { transitionConfig } from '@/lib/utils/animations';
 import { cn } from '@/lib/utils';
+import { transitionConfig } from '@/lib/utils/animations';
 import { Organization, Project, Requirement } from '@/types';
+import { CaretSortIcon } from '@radix-ui/react-icons';
+import { LayoutGroup, motion } from 'framer-motion';
+import { Filter } from 'lucide-react';
+import React from 'react';
 
 export type SupportedDataTypes = Organization | Project | Requirement;
 

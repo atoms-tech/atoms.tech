@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
-import { useRouter, usePathname } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { ChevronLeft } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import React from 'react';
 
 const VerticalToolbar = () => {
     const router = useRouter();

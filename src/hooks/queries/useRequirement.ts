@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { Requirement } from '@/types/base/requirements.types';
-import { QueryFilters } from '@/types/base/filters.types';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { buildQuery } from '@/lib/utils/queryFactory';
+import { QueryFilters } from '@/types/base/filters.types';
+import { Requirement } from '@/types/base/requirements.types';
+import { useQuery } from '@tanstack/react-query';
 
 export function useRequirement(requirementId: string) {
     return useQuery({

@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
-import { FileText } from 'lucide-react';
-import { motion, LayoutGroup } from 'framer-motion';
 import { transitionConfig } from '@/lib/utils/animations';
 import { Organization, Project, Requirement } from '@/types';
+import { LayoutGroup, motion } from 'framer-motion';
+import { FileText } from 'lucide-react';
+import React from 'react';
 
 type SupportedDataTypes = Organization | Project | Requirement;
 

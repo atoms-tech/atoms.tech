@@ -1,5 +1,5 @@
+import { Json, Profile, UserStatus } from '@/types';
 import { z } from 'zod';
-import { Profile, UserStatus, Json } from '@/types';
 
 export const ProfileSchema = z.object({
     id: z.string(),

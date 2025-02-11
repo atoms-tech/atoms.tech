@@ -1,10 +1,10 @@
+import { Json } from './database.types';
 import {
     RequirementFormat,
+    RequirementLevel,
     RequirementPriority,
     RequirementStatus,
-    RequirementLevel,
 } from './enums.types';
-import { Json } from './database.types';
 
 export type Requirement = {
     id: string;

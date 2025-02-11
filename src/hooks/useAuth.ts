@@ -1,7 +1,7 @@
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Profile } from '@/types';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export function useAuth() {
     const [isLoading, setIsLoading] = useState(true);

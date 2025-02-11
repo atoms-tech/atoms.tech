@@ -1,14 +1,14 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import {
     Card,
+    CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
-    CardDescription,
-    CardContent,
 } from '@/components/ui/card';
 import { MailCheck } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function ConfirmEmailMessage() {
     const searchParams = useSearchParams();

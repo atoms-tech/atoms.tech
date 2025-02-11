@@ -1,13 +1,13 @@
-import { z } from 'zod';
 import {
+    Block,
+    BlockPropertySchema,
+    DocumentPropertySchema,
+    Json,
     Project,
     ProjectStatus,
     Visibility,
-    Json,
-    Block,
-    DocumentPropertySchema,
-    BlockPropertySchema,
 } from '@/types';
+import { z } from 'zod';
 
 export const ProjectSchema = z.object({
     id: z.string(),

@@ -1,9 +1,9 @@
 // contexts/query.provider.client.tsx
 'use client';
 
+import { AuthError } from '@supabase/supabase-js';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { AuthError } from '@supabase/supabase-js';
 import { useState } from 'react';
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {

@@ -1,11 +1,11 @@
-import { CalendarIcon, Tags } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import type { Project, Requirement } from '@/types';
-import { TableManager, RequirementPanel } from '@/components/private';
-import { useRouter } from 'next/navigation';
-import { useRequirements } from '@/hooks/db/useRequirements';
 import type { Column } from '@/components/private';
+import { RequirementPanel, TableManager } from '@/components/private';
+import { Badge } from '@/components/ui/badge';
+import { useRequirements } from '@/hooks/db/useRequirements';
 import { useRequirementStore } from '@/lib/store/requirementStore';
+import type { Project, Requirement } from '@/types';
+import { CalendarIcon, Tags } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface ProjectPanelProps {
     project: Project;

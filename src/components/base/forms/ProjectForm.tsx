@@ -1,12 +1,6 @@
 'use client';
 
-import * as React from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
     Form,
     FormControl,
@@ -15,6 +9,7 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
     Select,
     SelectContent,
@@ -22,12 +17,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { useProjectStore } from '@/lib/store/project.store';
-import { ProjectStatus, Visibility } from '@/types/base/enums.types';
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useProjectStore } from '@/lib/store/project.store';
+import { ProjectStatus, Visibility } from '@/types/base/enums.types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 
 const projectFormSchema = z.object({
     name: z.string().min(1, 'Project name is required'),

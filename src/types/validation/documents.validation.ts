@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { Document } from '@/types';
+import { z } from 'zod';
 
 export const DocumentSchema = z.object({
     id: z.string(),

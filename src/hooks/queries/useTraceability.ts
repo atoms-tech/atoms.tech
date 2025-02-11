@@ -1,15 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import {
-    TraceLink,
-    Assignment,
-    AuditLog,
-    Notification,
-} from '@/types/base/traceability.types';
-import { EntityType } from '@/types/base/enums.types';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { QueryFilters } from '@/types/base/filters.types';
 import { buildQuery } from '@/lib/utils/queryFactory';
+import { EntityType } from '@/types/base/enums.types';
+import { QueryFilters } from '@/types/base/filters.types';
+import { useQuery } from '@tanstack/react-query';
 
 export function useTraceLinks(
     sourceId: string,
