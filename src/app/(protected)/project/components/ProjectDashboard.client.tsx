@@ -59,8 +59,6 @@ export default function ProjectDashboard({
                 .eq('slug', projectSlug)
                 .single();
 
-            console.log('Project', project);
-
             if (!project) {
                 throw new Error('Project not found');
             }
@@ -70,8 +68,6 @@ export default function ProjectDashboard({
                 .from('documents')
                 .select('id')
                 .eq('project_id', project.id);
-
-            console.log('Documents', docIds);
 
             // If no documents found, return empty array
             if (!docIds?.length) {
@@ -88,8 +84,6 @@ export default function ProjectDashboard({
                 )
                 .order('updated_at', { ascending: false })
                 .limit(5);
-
-            console.log('Requirements', requirements);
 
             if (!requirements?.length) {
                 return [];

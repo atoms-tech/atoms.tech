@@ -13,9 +13,7 @@ export interface Column<T> {
     isSortable?: boolean;
 }
 
-export interface DashboardViewProps<
-    T
-> {
+export interface DashboardViewProps<T> {
     data: T[];
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
@@ -50,7 +48,7 @@ function DashboardView<T>({
             <div className="animate-pulse">Loading...</div>
         );
     }
-    console.log(data);
+
     if (data.length === 0) {
         return (
             <div className="text-center text-gray-500 dark:text-dark-text-secondary py-8">
