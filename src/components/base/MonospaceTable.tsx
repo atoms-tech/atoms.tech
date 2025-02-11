@@ -69,7 +69,7 @@ export function MonospaceTable<T>({
 }: MonospaceTableProps<T>) {
     const [sortKey, setSortKey] = React.useState<number>(0);
     const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
-    const [selectedItem, setSelectedItem] = React.useState<T | null>(null);
+    const [, setSelectedItem] = React.useState<T | null>(null);
 
     const sortedData = [...data].sort((a, b) => {
         if (!columns[sortKey].isSortable) return 0;

@@ -27,7 +27,7 @@ export default function ConfirmEmailMessage() {
                         Check your email
                     </CardTitle>
                     <CardDescription className="text-center text-gray-500 dark:text-gray-400">
-                        We've sent you a confirmation link
+                        We&apos;ve sent you a confirmation link
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -36,7 +36,7 @@ export default function ConfirmEmailMessage() {
                             'Please check your email and click the confirmation link to complete your registration.'}
                     </p>
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-                        If you don't see the email, check your spam folder.
+                        If you don&apos;t see the email, check your spam folder.
                     </p>
                 </CardContent>
             </Card>

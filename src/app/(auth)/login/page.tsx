@@ -15,7 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { AlertCircle, Github, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { login } from '../auth/actions';
 
 export default function LoginPage() {
@@ -23,7 +23,7 @@ export default function LoginPage() {
     const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, _] = useState(searchParams.get('error') || '');
+    const [error] = useState(searchParams.get('error') || '');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

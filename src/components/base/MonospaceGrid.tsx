@@ -29,7 +29,7 @@ export function MonospaceGrid<T>({
     gridItemRender,
     renderDetails,
 }: MonospaceGridProps<T>) {
-    const [selectedItem, setSelectedItem] = React.useState<T | null>(null);
+    const [, setSelectedItem] = React.useState<T | null>(null);
 
     const handleItemClick = React.useCallback(
         (item: T) => {

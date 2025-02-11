@@ -61,7 +61,7 @@ export async function signup(formData: FormData) {
 
         revalidatePath('/', 'layout');
         redirect('/home');
-    } catch (error) {
+    } catch {
         return {
             error: 'An unexpected error occurred',
         };
