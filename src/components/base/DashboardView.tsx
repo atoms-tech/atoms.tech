@@ -1,14 +1,11 @@
 'use client';
 
 import { useSettingsStore } from '@/lib/store/settings.store';
-import type { Organization, Project, Requirement } from '@/types';
 import React from 'react';
 import { MonospaceGrid } from './MonospaceGrid';
 import { MonospaceTable } from './MonospaceTable';
 
-export type SupportedDataTypes = Project | Requirement | Organization;
-
-export interface Column<T extends SupportedDataTypes = SupportedDataTypes> {
+export interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
@@ -17,7 +14,7 @@ export interface Column<T extends SupportedDataTypes = SupportedDataTypes> {
 }
 
 export interface DashboardViewProps<
-    T extends SupportedDataTypes = SupportedDataTypes,
+    T
 > {
     data: T[];
     columns: Column<T>[];
@@ -29,7 +26,7 @@ export interface DashboardViewProps<
     renderDetails?: (item: T) => React.ReactNode;
 }
 
-function DashboardView<T extends SupportedDataTypes>({
+function DashboardView<T>({
     data,
     columns,
     onRowClick,

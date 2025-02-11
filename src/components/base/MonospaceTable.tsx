@@ -12,15 +12,12 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { transitionConfig } from '@/lib/utils/animations';
-import { Organization, Project, Requirement } from '@/types';
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { LayoutGroup, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
 import React from 'react';
 
-export type SupportedDataTypes = Organization | Project | Requirement;
-
-interface Column<T extends SupportedDataTypes> {
+interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
@@ -28,7 +25,7 @@ interface Column<T extends SupportedDataTypes> {
     isSortable?: boolean;
 }
 
-interface MonospaceTableProps<T extends SupportedDataTypes> {
+interface MonospaceTableProps<T> {
     data: T[];
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
@@ -60,7 +57,7 @@ const getStatusColor = (status: string) => {
     }
 };
 
-export function MonospaceTable<T extends SupportedDataTypes>({
+export function MonospaceTable<T>({
     data,
     columns,
     onRowClick,

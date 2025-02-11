@@ -1,21 +1,18 @@
 'use client';
 
 import { transitionConfig } from '@/lib/utils/animations';
-import { Organization, Project, Requirement } from '@/types';
 import { LayoutGroup, motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import React from 'react';
 
-type SupportedDataTypes = Organization | Project | Requirement;
-
-interface Column<T extends SupportedDataTypes = SupportedDataTypes> {
+interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
     renderCell?: (item: T) => React.ReactNode;
 }
 
-interface MonospaceGridProps<T extends SupportedDataTypes> {
+interface MonospaceGridProps<T> {
     data: T[];
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
@@ -24,7 +21,7 @@ interface MonospaceGridProps<T extends SupportedDataTypes> {
     renderDetails?: (item: T) => React.ReactNode;
 }
 
-export function MonospaceGrid<T extends SupportedDataTypes>({
+export function MonospaceGrid<T>({
     data,
     columns,
     onRowClick,

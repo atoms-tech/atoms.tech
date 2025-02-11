@@ -1,9 +1,6 @@
 'use client';
 
-import DashboardView, {
-    Column,
-    SupportedDataTypes,
-} from '@/components/base/DashboardView';
+import DashboardView, { Column } from '@/components/base/DashboardView';
 import RenderCounter from '@/components/RerenderCount';
 import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useOrganization } from '@/lib/providers/organization.provider';
@@ -15,37 +12,36 @@ import { useRouter } from 'next/navigation';
 export default function HomeDashboard() {
     const { user } = useUser();
     const router = useRouter();
-    const { setCurrentUserId, setCurrentOrgId } = useContextStore();
+    const { setCurrentUserId } = useContextStore();
     const { setOrganization } = useOrganization();
     const { data: organizations, isLoading } = useOrganizationsByMembership(
         user?.id || '',
     );
 
-    const columns: Column[] = [
+    const columns: Column<Organization>[] = [
         {
             header: 'Name',
-            accessor: (item: SupportedDataTypes) => (item as Organization).name,
+            accessor: (item: Organization) => item.name,
         },
         {
             header: 'Type',
-            accessor: (item: SupportedDataTypes) => (item as Organization).type,
+            accessor: (item: Organization) => item.type,
         },
         {
             header: 'Status',
-            accessor: (item: SupportedDataTypes) =>
-                (item as Organization).status || 'N/A',
+            accessor: (item: Organization) => item.status || 'N/A',
         },
         {
             header: 'Members',
-            accessor: (item: SupportedDataTypes) =>
-                (item as Organization).member_count?.toString() || '0',
+            accessor: (item: Organization) =>
+                item.member_count?.toString() || '0',
         },
     ];
 
-    const handleRowClick = (item: SupportedDataTypes) => {
+    const handleRowClick = (item: Organization) => {
         setCurrentUserId(user?.id || '');
-        setOrganization(item as Organization);
-        router.push(`/org/${(item as Organization).slug}`);
+        setOrganization(item);
+        router.push(`/org/${item.slug}`);
     };
 
     return (

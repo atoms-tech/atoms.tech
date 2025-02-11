@@ -1,10 +1,8 @@
-import DashboardView, {
-    Column,
-    SupportedDataTypes,
-} from '@/components/base/DashboardView';
+import DashboardView, { Column } from '@/components/base/DashboardView';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Requirement } from '@/types';
 import { RequirementSchema } from '@/types/validation';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -103,15 +101,15 @@ export default function ProjectDashboard({
         },
     });
 
-    const columns: Column[] = [
+    const columns: Column<Requirement>[] = [
         {
             header: 'Name',
-            accessor: (item: any) => item.name,
+            accessor: (item: Requirement) => item.name,
         },
         {
             header: 'Priority',
-            accessor: (item: any) => item.priority,
-            renderCell: (item: any) => (
+            accessor: (item: Requirement) => item.priority,
+            renderCell: (item: Requirement) => (
                 <Badge
                     variant="outline"
                     className={
@@ -128,8 +126,8 @@ export default function ProjectDashboard({
         },
         {
             header: 'Status',
-            accessor: (item: any) => item.status,
-            renderCell: (item: any) => (
+            accessor: (item: Requirement) => item.status,
+            renderCell: (item: Requirement) => (
                 <Badge
                     variant="outline"
                     className={
@@ -146,11 +144,11 @@ export default function ProjectDashboard({
         },
         {
             header: 'Format',
-            accessor: (item: any) => item.format,
+            accessor: (item: Requirement) => item.format,
         },
     ];
 
-    const handleRowClick = (item: SupportedDataTypes) => {
+    const handleRowClick = (item: Requirement) => {
         router.push(`/req/${item.id}`);
     };
 
