@@ -1,7 +1,6 @@
 import { signOut } from '@/app/(auth)/auth/actions';
-import { NextRequest } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
     await signOut();
     return new Response(null, { status: 200 });
 }

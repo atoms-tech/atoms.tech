@@ -108,3 +108,34 @@
         text-shadow: 0 0 5px hsl(var(--primary));
     }
 }
+
+/* Card flip animation styles */
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Add a subtle hover effect */
+.card-flip-container:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Add a hint that the card is clickable */
+.card-flip-container::after {
+    content: '↻';
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.card-flip-container:hover::after {
+    opacity: 0.5;
+}

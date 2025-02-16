@@ -2,8 +2,9 @@
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { OrganizationSchema } from '@/types/validation/organizations.validation';
+import { getUserOrganizations } from '@/lib/db/client';
 import { useQuery } from '@tanstack/react-query';
-
+import { QueryFilters } from '@/types/base/filters.types';
 export function useOrganization(orgId: string) {
     return useQuery({
         queryKey: queryKeys.organizations.detail(orgId),
@@ -25,25 +26,7 @@ export function useOrganization(orgId: string) {
     });
 }
 
-export function useOrganizations(organizationIds?: string[]) {
-    return useQuery({
-        queryKey: queryKeys.organizations.list(organizationIds || {}),
-        queryFn: async () => {
-            const query = supabase
-                .from('organizations')
-                .select('*')
-                .in('id', organizationIds || [])
-                .eq('is_deleted', false);
-
-            const { data, error } = await query;
-            if (error) throw error;
-            return data.map((org) => OrganizationSchema.parse(org));
-        },
-        enabled: !!organizationIds,
-    });
-}
-
-export function useOrganizationsWithFilters(filters?: Record<string, any>) {
+export function useOrganizationsWithFilters(filters?: QueryFilters) {
     return useQuery({
         queryKey: queryKeys.organizations.list(filters || {}),
         queryFn: async () => {
@@ -105,5 +88,14 @@ export function useOrganizationsByMembership(userId: string) {
             return organizations.map((org) => OrganizationSchema.parse(org));
         },
         enabled: !!userId, // Only run the query if userId is provided
+    });
+}
+
+export function useOrgByUser(userId: string) {
+    return useQuery({
+        queryKey: queryKeys.organizations.all,
+        queryFn: async () => {
+            return await getUserOrganizations(userId);
+        },
     });
 }

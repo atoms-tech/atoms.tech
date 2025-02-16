@@ -17,10 +17,15 @@ export function useAuth() {
                 .eq('id', userId)
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                alert('Error fetching user profile. Please try again.');
+                throw error;
+            }
             setUserProfile(profile);
         } catch (error) {
             console.error('Error fetching user profile:', error);
+            alert('An unexpected error occurred. Please try again.');
         }
     };
 
@@ -37,6 +42,9 @@ export function useAuth() {
             } catch (error) {
                 setIsAuthenticated(false);
                 setUserProfile(null);
+                console.error('Error fetching user profile:', error);
+                alert('An unexpected error occurred. Please try again.');
+                throw error;
             } finally {
                 setIsLoading(false);
             }
@@ -60,7 +68,7 @@ export function useAuth() {
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [router]);
 
     const signOut = async () => {
         try {

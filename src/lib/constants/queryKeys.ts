@@ -1,16 +1,21 @@
+// Define a more specific type for filters
+import { QueryFilters } from '@/types/base/filters.types';
+
 export const queryKeys = {
     documents: {
         all: ['documents'] as const,
         lists: () => [...queryKeys.documents.all, 'list'] as const,
-        list: (filters: Record<string, any>) =>
+        list: (filters: QueryFilters) =>
             [...queryKeys.documents.lists(), { filters }] as const,
         details: () => [...queryKeys.documents.all, 'detail'] as const,
         detail: (id: string) => [...queryKeys.documents.details(), id] as const,
+        byProject: (projectId: string) =>
+            [...queryKeys.documents.all, 'project', projectId] as const,
     },
     blocks: {
         all: ['blocks'] as const,
         lists: () => [...queryKeys.blocks.all, 'list'] as const,
-        list: (filters: Record<string, any>) =>
+        list: (filters: QueryFilters) =>
             [...queryKeys.blocks.lists(), { filters }] as const,
         details: () => [...queryKeys.blocks.all, 'detail'] as const,
         detail: (id: string) => [...queryKeys.blocks.details(), id] as const,
@@ -20,7 +25,7 @@ export const queryKeys = {
     requirements: {
         all: ['requirements'] as const,
         lists: () => [...queryKeys.requirements.all, 'list'] as const,
-        list: (filters: Record<string, any>) =>
+        list: (filters: QueryFilters) =>
             [...queryKeys.requirements.lists(), { filters }] as const,
         details: () => [...queryKeys.requirements.all, 'detail'] as const,
         detail: (id: string) =>
@@ -36,7 +41,7 @@ export const queryKeys = {
     projects: {
         all: ['projects'] as const,
         lists: () => [...queryKeys.projects.all, 'list'] as const,
-        list: (filters: Record<string, any>) =>
+        list: (filters: QueryFilters) =>
             [...queryKeys.projects.lists(), { filters }] as const,
         details: () => [...queryKeys.projects.all, 'detail'] as const,
         detail: (id: string) => [...queryKeys.projects.details(), id] as const,
@@ -52,7 +57,7 @@ export const queryKeys = {
     organizations: {
         all: ['organizations'] as const,
         lists: () => [...queryKeys.organizations.all, 'list'] as const,
-        list: (filters: Record<string, any>) =>
+        list: (filters: QueryFilters) =>
             [...queryKeys.organizations.lists(), { filters }] as const,
         details: () => [...queryKeys.organizations.all, 'detail'] as const,
         detail: (id: string) =>

@@ -15,7 +15,7 @@ export type FilterOperator =
 export type Filter = {
     field: string;
     operator: FilterOperator;
-    value: any;
+    value: string | number | boolean;
 };
 
 export type SortDirection = 'asc' | 'desc';

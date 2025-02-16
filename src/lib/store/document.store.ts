@@ -15,6 +15,7 @@ interface DocumentState {
     updateBlock: (blockId: string, content: Block['content']) => void;
     deleteBlock: (blockId: string) => void;
     moveBlock: (blockId: string, newPosition: number) => void;
+    reorderBlocks: (blocks: Block[]) => void;
     setSelectedBlock: (blockId: string | null) => void;
 }
 
@@ -68,6 +69,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
         // Update positions for all blocks
         const updatedBlocks = newBlocks.map((block, index) => ({
+            ...block,
+            position: index,
+            updated_at: new Date().toISOString(),
+        }));
+
+        set({ blocks: updatedBlocks });
+    },
+
+    reorderBlocks: (blocks) => {
+        // Update positions for all blocks
+        const updatedBlocks = blocks.map((block, index) => ({
             ...block,
             position: index,
             updated_at: new Date().toISOString(),

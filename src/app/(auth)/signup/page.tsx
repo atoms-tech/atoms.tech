@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/input';
 import { AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { signup } from '../auth/actions';
 import ConfirmEmailMessage from './message';
 
-export default function RegisterPage() {
+// Create a separate client component for the signup form
+function SignupForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const message = searchParams.get('message');
@@ -177,5 +178,14 @@ export default function RegisterPage() {
                 </CardFooter>
             </Card>
         </div>
+    );
+}
+
+// Main page component with Suspense boundary
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignupForm />
+        </Suspense>
     );
 }

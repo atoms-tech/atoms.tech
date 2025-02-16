@@ -1,9 +1,23 @@
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { buildQuery } from '@/lib/utils/queryFactory';
+import { buildQuery, QueryFilters as GenericQueryFilters } from '@/lib/utils/queryFactory';
 import { Block, Document } from '@/types/base/documents.types';
 import { QueryFilters } from '@/types/base/filters.types';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { getDocumentBlocksAndRequirements, getProjectDocuments } from '@/lib/db/client';
+
+
+export function useProjectDocuments(projectId: string) {
+    return useQuery({
+        queryKey: queryKeys.documents.byProject(projectId),
+        queryFn: async () => {
+            const data = await getProjectDocuments(projectId);
+            if (!data) throw new Error('No documents found');
+            return data;
+        },
+        enabled: !!projectId,
+    });
+}
 
 export function useDocument(documentId: string) {
     return useQuery({
@@ -13,6 +27,7 @@ export function useDocument(documentId: string) {
                 .from('documents')
                 .select('*')
                 .eq('id', documentId)
+                .eq('is_deleted', false)
                 .single();
 
             if (error) throw error;
@@ -22,9 +37,9 @@ export function useDocument(documentId: string) {
     });
 }
 
-export function useDocuments(queryFilters?: QueryFilters) {
+export function useDocuments(queryFilters?: GenericQueryFilters<'documents'>) {
     return useQuery({
-        queryKey: queryKeys.documents.list(queryFilters || {}),
+        queryKey: queryKeys.documents.list(queryFilters as QueryFilters || {}),
         queryFn: async () => {
             const { data } = await buildQuery('documents', queryFilters);
             return data;
@@ -33,8 +48,6 @@ export function useDocuments(queryFilters?: QueryFilters) {
 }
 
 export function useUpdateDocument(documentId: string) {
-    const queryClient = useQueryClient();
-
     return useMutation({
         mutationFn: async (document: Document) => {
             const { data, error } = await supabase
@@ -48,26 +61,11 @@ export function useUpdateDocument(documentId: string) {
     });
 }
 
-export function useDocumentBlocks(
-    documentId: string,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
-) {
+export function useDocumentBlocksAndRequirements(documentId: string) {
     return useQuery({
         queryKey: queryKeys.blocks.byDocument(documentId),
-        queryFn: async () => {
-            const { data } = await buildQuery('blocks', {
-                ...queryFilters,
-                filters: [
-                    { field: 'document_id', operator: 'eq', value: documentId },
-                ],
-                sort: queryFilters?.sort || [
-                    { field: 'position', direction: 'asc' },
-                ],
-            });
-            return data;
-        },
-        enabled: !!documentId,
-    });
+        queryFn: () => getDocumentBlocksAndRequirements(documentId),
+      });    
 }
 
 export function useBlock(blockId: string) {

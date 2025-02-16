@@ -1,10 +1,41 @@
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
-import { Filter, QueryFilters, Sort } from '@/types/base/filters.types';
+import { Sort } from '@/types/base/filters.types';
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 
 type TableName = keyof Database['public']['Tables'];
 type Row<T extends TableName> = Database['public']['Tables'][T]['Row'];
+
+type FilterValue = string | number | boolean | null | Array<string | number | boolean | null>;
+
+// Type for query operations that can be performed
+type QueryOperations<T extends TableName> = {
+    eq: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    neq: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    gt: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    gte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    lt: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    lte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    like: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    ilike: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    in: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    contains: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    overlaps: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+};
+
+export interface Filter<T extends TableName> {
+    field: keyof Row<T> & string;
+    operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in' | 'contains' | 'overlaps' | 'range';
+    value: FilterValue;
+}
+
+export interface QueryFilters<T extends TableName> {
+    filters?: Filter<T>[];
+    sort?: Sort[];
+    page?: number;
+    pageSize?: number;
+}
+
 type QueryBuilder<T extends TableName> = PostgrestFilterBuilder<
     Database['public'],
     Row<T>,
@@ -15,35 +46,39 @@ type QueryBuilder<T extends TableName> = PostgrestFilterBuilder<
 
 export function applyFilter<T extends TableName>(
     query: QueryBuilder<T>,
-    filter: Filter,
+    filter: Filter<T>,
 ): QueryBuilder<T> {
     const { field, operator, value } = filter;
 
+    // Cast to our known operations type instead of any
+    const typedQuery = query as unknown as QueryOperations<T>;
+
     switch (operator) {
         case 'eq':
-            return query.eq(field, value);
+            return typedQuery.eq(field, value);
         case 'neq':
-            return query.neq(field, value);
+            return typedQuery.neq(field, value);
         case 'gt':
-            return query.gt(field, value);
+            return typedQuery.gt(field, value);
         case 'gte':
-            return query.gte(field, value);
+            return typedQuery.gte(field, value);
         case 'lt':
-            return query.lt(field, value);
+            return typedQuery.lt(field, value);
         case 'lte':
-            return query.lte(field, value);
+            return typedQuery.lte(field, value);
         case 'like':
-            return query.like(field, value);
+            return typedQuery.like(field, value);
         case 'ilike':
-            return query.ilike(field, value);
+            return typedQuery.ilike(field, value);
         case 'in':
-            return query.in(field, value);
+            return typedQuery.in(field, value);
         case 'contains':
-            return query.contains(field, value);
+            return typedQuery.contains(field, value);
         case 'overlaps':
-            return query.overlaps(field, value);
+            return typedQuery.overlaps(field, value);
         case 'range':
-            return query.gte(field, value[0]).lte(field, value[1]);
+            const [start, end] = value as [string | number, string | number];
+            return typedQuery.gte(field, start).lte(field, end);
         default:
             return query;
     }
@@ -71,7 +106,7 @@ export function applyPagination<T extends TableName>(
 
 export async function buildQuery<T extends TableName>(
     table: T,
-    queryFilters?: QueryFilters,
+    queryFilters?: QueryFilters<T>,
     select: string = '*',
 ) {
     let query = supabase.from(table).select(select) as QueryBuilder<T>;

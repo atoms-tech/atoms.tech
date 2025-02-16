@@ -82,9 +82,6 @@ export function useCreateProject() {
                     data.organization_id,
                 ),
             });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.projects.byUser(data.owned_by),
-            });
         },
     });
 }

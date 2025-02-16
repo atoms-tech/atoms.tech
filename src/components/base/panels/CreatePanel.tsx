@@ -10,21 +10,23 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import React from 'react';
+import DocumentForm from '../forms/DocumentForm';
 
 // import RequirementForm from '@/components/base/forms/RequirementForm';
 
 export interface CreatePanelProps {
     isOpen: boolean;
     onClose: () => void;
-    initialTab?: 'project' | 'requirement';
+    initialTab?: 'project' | 'requirement' | 'document';
     projectId?: string; // For creating requirements under a project
-    showTabs?: 'show' | 'project' | 'requirement';
+    showTabs?: 'show' | 'project' | 'requirement' | 'document';
 }
 
 export function CreatePanel({
     isOpen,
     onClose,
     initialTab = 'project',
+    projectId,
     showTabs = 'show',
 }: CreatePanelProps) {
     const [activeTab, setActiveTab] = React.useState(initialTab);
@@ -61,6 +63,12 @@ export function CreatePanel({
                             // />
                             <div>Requirement Form: Work in Progress</div>
                         )}
+                        {showTabs === 'document' && (
+                            <DocumentForm
+                                projectId={projectId || ''}
+                                onSuccess={handleClose}
+                            />
+                        )}
                     </div>
                 </SheetContent>
             </Sheet>
@@ -81,13 +89,16 @@ export function CreatePanel({
                     <Tabs
                         value={activeTab}
                         onValueChange={(value: string) =>
-                            setActiveTab(value as 'project' | 'requirement')
+                            setActiveTab(value as 'project' | 'requirement' | 'document')
                         }
                     >
                         <TabsList className="grid grid-cols-2 w-full">
                             <TabsTrigger value="project">Project</TabsTrigger>
                             <TabsTrigger value="requirement">
                                 Requirement
+                            </TabsTrigger>
+                            <TabsTrigger value="document">
+                                Document
                             </TabsTrigger>
                         </TabsList>
 
