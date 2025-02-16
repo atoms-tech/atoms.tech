@@ -1,11 +1,16 @@
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { buildQuery, QueryFilters as GenericQueryFilters } from '@/lib/utils/queryFactory';
+import {
+    buildQuery,
+    QueryFilters as GenericQueryFilters,
+} from '@/lib/utils/queryFactory';
 import { Block, Document } from '@/types/base/documents.types';
 import { QueryFilters } from '@/types/base/filters.types';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getDocumentBlocksAndRequirements, getProjectDocuments } from '@/lib/db/client';
-
+import {
+    getDocumentBlocksAndRequirements,
+    getProjectDocuments,
+} from '@/lib/db/client';
 
 export function useProjectDocuments(projectId: string) {
     return useQuery({
@@ -39,7 +44,9 @@ export function useDocument(documentId: string) {
 
 export function useDocuments(queryFilters?: GenericQueryFilters<'documents'>) {
     return useQuery({
-        queryKey: queryKeys.documents.list(queryFilters as QueryFilters || {}),
+        queryKey: queryKeys.documents.list(
+            (queryFilters as QueryFilters) || {},
+        ),
         queryFn: async () => {
             const { data } = await buildQuery('documents', queryFilters);
             return data;
@@ -65,7 +72,7 @@ export function useDocumentBlocksAndRequirements(documentId: string) {
     return useQuery({
         queryKey: queryKeys.blocks.byDocument(documentId),
         queryFn: () => getDocumentBlocksAndRequirements(documentId),
-      });    
+    });
 }
 
 export function useBlock(blockId: string) {

@@ -89,7 +89,9 @@ export function CreatePanel({
                     <Tabs
                         value={activeTab}
                         onValueChange={(value: string) =>
-                            setActiveTab(value as 'project' | 'requirement' | 'document')
+                            setActiveTab(
+                                value as 'project' | 'requirement' | 'document',
+                            )
                         }
                     >
                         <TabsList className="grid grid-cols-2 w-full">
@@ -97,9 +99,7 @@ export function CreatePanel({
                             <TabsTrigger value="requirement">
                                 Requirement
                             </TabsTrigger>
-                            <TabsTrigger value="document">
-                                Document
-                            </TabsTrigger>
+                            <TabsTrigger value="document">Document</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="project" className="mt-6">

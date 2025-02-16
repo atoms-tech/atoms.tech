@@ -1,6 +1,9 @@
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { buildQuery, QueryFilters as GenericQueryFilters } from '@/lib/utils/queryFactory';
+import {
+    buildQuery,
+    QueryFilters as GenericQueryFilters,
+} from '@/lib/utils/queryFactory';
 import { QueryFilters } from '@/types/base/filters.types';
 import { Requirement } from '@/types/base/requirements.types';
 import { useQuery } from '@tanstack/react-query';
@@ -22,9 +25,13 @@ export function useRequirement(requirementId: string) {
     });
 }
 
-export function useRequirements(queryFilters?: GenericQueryFilters<'requirements'>) {
+export function useRequirements(
+    queryFilters?: GenericQueryFilters<'requirements'>,
+) {
     return useQuery({
-        queryKey: queryKeys.requirements.list(queryFilters as QueryFilters || {}),
+        queryKey: queryKeys.requirements.list(
+            (queryFilters as QueryFilters) || {},
+        ),
         queryFn: async () => {
             const { data } = await buildQuery('requirements', queryFilters);
             return data;

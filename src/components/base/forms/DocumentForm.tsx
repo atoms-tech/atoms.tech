@@ -38,10 +38,14 @@ interface DocumentFormProps {
     onSuccess: () => void;
 }
 
-export default function DocumentForm({ projectId, onSuccess }: DocumentFormProps) {
+export default function DocumentForm({
+    projectId,
+    onSuccess,
+}: DocumentFormProps) {
     const { userProfile } = useAuth();
     const { toast } = useToast();
-    const { mutateAsync: createDocument, isPending: isCreatingDocument } = useCreateDocument();
+    const { mutateAsync: createDocument, isPending: isCreatingDocument } =
+        useCreateDocument();
 
     const form = useForm<DocumentFormValues>({
         resolver: zodResolver(documentFormSchema),

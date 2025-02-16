@@ -1,10 +1,17 @@
 // [orgSlug]/[projectSlug]/layout.tsx
-import { queryKeys } from "@/lib/constants/queryKeys";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { getProjectByIdServer, getProjectDocumentsServer } from "@/lib/db/server";
-import { ProjectProvider } from "@/lib/providers/project.provider";
+import { queryKeys } from '@/lib/constants/queryKeys';
+import {
+    dehydrate,
+    HydrationBoundary,
+    QueryClient,
+} from '@tanstack/react-query';
+import {
+    getProjectByIdServer,
+    getProjectDocumentsServer,
+} from '@/lib/db/server';
+import { ProjectProvider } from '@/lib/providers/project.provider';
 import { notFound } from 'next/navigation';
-import { Project } from "@/types";
+import { Project } from '@/types';
 
 interface ProjectLayoutProps {
     children: React.ReactNode;
@@ -26,7 +33,7 @@ export default async function ProjectLayout({
 
     const queryClient = new QueryClient();
     let project: Project | null = null;
-    
+
     try {
         project = await getProjectByIdServer(projectId);
         if (!project) {

@@ -8,14 +8,12 @@ interface ProjectContextType {
     setProject: (project: Project | null) => void;
 }
 
-const ProjectContext = createContext<ProjectContextType | undefined>(
-    undefined,
-);
+const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 export const ProjectProvider = ({
     children,
     initialProject,
-}: {    
+}: {
     children: React.ReactNode;
     initialProject: Project | null;
 }) => {
@@ -30,9 +28,7 @@ export const ProjectProvider = ({
 export const useProject = () => {
     const context = useContext(ProjectContext);
     if (!context) {
-        throw new Error(
-            'useProject must be used within a ProjectProvider',
-        );
+        throw new Error('useProject must be used within a ProjectProvider');
     }
     return context;
 };

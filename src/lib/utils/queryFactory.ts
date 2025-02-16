@@ -6,7 +6,12 @@ import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 type TableName = keyof Database['public']['Tables'];
 type Row<T extends TableName> = Database['public']['Tables'][T]['Row'];
 
-type FilterValue = string | number | boolean | null | Array<string | number | boolean | null>;
+type FilterValue =
+    | string
+    | number
+    | boolean
+    | null
+    | Array<string | number | boolean | null>;
 
 // Type for query operations that can be performed
 type QueryOperations<T extends TableName> = {
@@ -16,16 +21,40 @@ type QueryOperations<T extends TableName> = {
     gte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
     lt: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
     lte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    like: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    ilike: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    like: (
+        column: keyof Row<T> & string,
+        value: FilterValue,
+    ) => QueryBuilder<T>;
+    ilike: (
+        column: keyof Row<T> & string,
+        value: FilterValue,
+    ) => QueryBuilder<T>;
     in: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    contains: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    overlaps: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    contains: (
+        column: keyof Row<T> & string,
+        value: FilterValue,
+    ) => QueryBuilder<T>;
+    overlaps: (
+        column: keyof Row<T> & string,
+        value: FilterValue,
+    ) => QueryBuilder<T>;
 };
 
 export interface Filter<T extends TableName> {
     field: keyof Row<T> & string;
-    operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in' | 'contains' | 'overlaps' | 'range';
+    operator:
+        | 'eq'
+        | 'neq'
+        | 'gt'
+        | 'gte'
+        | 'lt'
+        | 'lte'
+        | 'like'
+        | 'ilike'
+        | 'in'
+        | 'contains'
+        | 'overlaps'
+        | 'range';
     value: FilterValue;
 }
 

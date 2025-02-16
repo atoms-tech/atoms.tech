@@ -18,7 +18,7 @@ export function useCreateBlock() {
     return useMutation({
         mutationFn: async (input: CreateBlockInput) => {
             console.log('Creating block', input);
-            
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
                 .insert({
@@ -48,9 +48,12 @@ export function useCreateBlock() {
 
 export function useUpdateBlock() {
     return useMutation({
-        mutationFn: async ({ id, ...input }: Partial<Block> & { id: string }) => {
+        mutationFn: async ({
+            id,
+            ...input
+        }: Partial<Block> & { id: string }) => {
             console.log('Updating block', id, input);
-            
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
                 .update({
@@ -77,9 +80,15 @@ export function useUpdateBlock() {
 
 export function useDeleteBlock() {
     return useMutation({
-        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
+        mutationFn: async ({
+            id,
+            deletedBy,
+        }: {
+            id: string;
+            deletedBy: string;
+        }) => {
             console.log('Deleting block', id);
-            
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
                 .update({

@@ -37,4 +37,4 @@ export async function useEntitySlugs(params: {
     }
 
     return slugs;
-} 
+}

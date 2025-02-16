@@ -18,14 +18,15 @@ const fetchBlocks = async (documentId: string) => {
         throw error;
     }
 
-    return blocks.map(block => BlockSchema.parse(block));
+    return blocks.map((block) => BlockSchema.parse(block));
 };
 
 export function useBlockSubscription(documentId: string) {
-    const { addBlock, updateBlock, deleteBlock, setBlocks } = useDocumentStore();
+    const { addBlock, updateBlock, deleteBlock, setBlocks } =
+        useDocumentStore();
     const [blocks, setLocalBlocks] = useState<Block[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Initial fetch and subscription setup
     useEffect(() => {
         let channel: RealtimeChannel;
@@ -45,12 +46,18 @@ export function useBlockSubscription(documentId: string) {
                         },
                         async (payload) => {
                             const newBlock = BlockSchema.parse(payload.new);
-                            setLocalBlocks(prev => {
-                                const exists = prev.some(b => b.id === newBlock.id);
-                                return exists ? prev : [...prev, newBlock].sort((a, b) => a.position - b.position);
+                            setLocalBlocks((prev) => {
+                                const exists = prev.some(
+                                    (b) => b.id === newBlock.id,
+                                );
+                                return exists
+                                    ? prev
+                                    : [...prev, newBlock].sort(
+                                          (a, b) => a.position - b.position,
+                                      );
                             });
                             addBlock(newBlock);
-                        }
+                        },
                     )
                     .on(
                         'postgres_changes',
@@ -64,14 +71,26 @@ export function useBlockSubscription(documentId: string) {
                             const updatedBlock = BlockSchema.parse(payload.new);
                             // Handle soft deletes
                             if (updatedBlock.is_deleted) {
-                                setLocalBlocks(prev => prev.filter(b => b.id !== updatedBlock.id));
+                                setLocalBlocks((prev) =>
+                                    prev.filter(
+                                        (b) => b.id !== updatedBlock.id,
+                                    ),
+                                );
                                 deleteBlock(updatedBlock.id);
                                 return;
                             }
                             // Update local state
-                            setLocalBlocks(prev => prev.map(b => b.id === updatedBlock.id ? updatedBlock : b).sort((a, b) => a.position - b.position));
+                            setLocalBlocks((prev) =>
+                                prev
+                                    .map((b) =>
+                                        b.id === updatedBlock.id
+                                            ? updatedBlock
+                                            : b,
+                                    )
+                                    .sort((a, b) => a.position - b.position),
+                            );
                             updateBlock(updatedBlock.id, updatedBlock.content);
-                        }
+                        },
                     )
                     .on(
                         'postgres_changes',
@@ -83,9 +102,11 @@ export function useBlockSubscription(documentId: string) {
                         },
                         async (payload) => {
                             const deletedBlockId = payload.old.id;
-                            setLocalBlocks(prev => prev.filter(b => b.id !== deletedBlockId));
+                            setLocalBlocks((prev) =>
+                                prev.filter((b) => b.id !== deletedBlockId),
+                            );
                             deleteBlock(deletedBlockId);
-                        }
+                        },
                     );
 
                 await channel.subscribe();
@@ -111,4 +132,4 @@ export function useBlockSubscription(documentId: string) {
     }, [documentId, addBlock, updateBlock, deleteBlock, setBlocks]);
 
     return { blocks, isLoading, setLocalBlocks };
-} 
+}

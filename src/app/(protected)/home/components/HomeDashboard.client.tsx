@@ -9,7 +9,6 @@ import { useContextStore } from '@/lib/store/context.store';
 import { Organization } from '@/types';
 import { useRouter } from 'next/navigation';
 
-
 export default function HomeDashboard() {
     const { user } = useUser();
     const router = useRouter();

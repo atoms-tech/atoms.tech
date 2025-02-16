@@ -109,91 +109,98 @@ const customStyles = `
   }
 `;
 
-export const TextBlock: React.FC<BlockProps> = ({ block, onUpdate, isSelected, onSelect, isEditMode }) => {
-  const content = block.content as { text?: string; format?: string };
+export const TextBlock: React.FC<BlockProps> = ({
+    block,
+    onUpdate,
+    isSelected,
+    onSelect,
+    isEditMode,
+}) => {
+    const content = block.content as { text?: string; format?: string };
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-      }),
-      Heading.configure({
-        levels: [1, 2, 3, 4, 5]
-      }),
-      BulletList.configure({
-        HTMLAttributes: {
-          class: 'bullet-list'
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                heading: false,
+                bulletList: false,
+                orderedList: false,
+                listItem: false,
+            }),
+            Heading.configure({
+                levels: [1, 2, 3, 4, 5],
+            }),
+            BulletList.configure({
+                HTMLAttributes: {
+                    class: 'bullet-list',
+                },
+            }),
+            OrderedList.configure({
+                HTMLAttributes: {
+                    class: 'ordered-list',
+                },
+            }),
+            ListItem,
+            Underline,
+            TextAlign.configure({
+                types: ['heading', 'paragraph'],
+            }),
+            Link.configure({
+                openOnClick: false,
+            }),
+            Image.configure({
+                inline: true,
+                allowBase64: true,
+            }),
+        ],
+        content: content?.text || '',
+        editable: isEditMode,
+        immediatelyRender: false,
+        onBlur: ({ editor }) => {
+            const html = editor.getHTML();
+            if (html !== content?.text) {
+                onUpdate({ text: html, format: 'html' } as Json);
+            }
+        },
+        onFocus: onSelect,
+    });
+
+    // Update editor content when block content changes externally
+    React.useEffect(() => {
+        if (editor && content?.text && editor.getHTML() !== content.text) {
+            editor.commands.setContent(content.text);
         }
-      }),
-      OrderedList.configure({
-        HTMLAttributes: {
-          class: 'ordered-list'
+    }, [content?.text, editor]);
+
+    // Update editor's editable state when isEditMode changes
+    React.useEffect(() => {
+        if (editor) {
+            editor.setEditable(isEditMode || false);
+            if (!isEditMode) {
+                // Clear any text selection when exiting edit mode
+                window.getSelection()?.removeAllRanges();
+            }
         }
-      }),
-      ListItem,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Link.configure({
-        openOnClick: false,
-      }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
-      }),
-    ],
-    content: content?.text || '',
-    editable: isEditMode,
-    immediatelyRender: false,
-    onBlur: ({ editor }) => {
-      const html = editor.getHTML();
-      if (html !== content?.text) {
-        onUpdate({ text: html, format: 'html' } as Json);
-      }
-    },
-    onFocus: onSelect,
-  });
+    }, [isEditMode, editor]);
 
-  // Update editor content when block content changes externally
-  React.useEffect(() => {
-    if (editor && content?.text && editor.getHTML() !== content.text) {
-      editor.commands.setContent(content.text);
-    }
-  }, [content?.text, editor]);
-
-  // Update editor's editable state when isEditMode changes
-  React.useEffect(() => {
-    if (editor) {
-      editor.setEditable(isEditMode || false);
-      if (!isEditMode) {
-        // Clear any text selection when exiting edit mode
-        window.getSelection()?.removeAllRanges();
-      }
-    }
-  }, [isEditMode, editor]);
-
-  return (
-    <div className="relative">
-      <style>{customStyles}</style>
-      {isSelected && isEditMode && (
-        <Toolbar editor={editor} className="sticky top-0 z-10" />
-      )}
-      <EditorContent
-        editor={editor}
-        className={cn(
-          "min-h-[2em]",
-          "prose prose-sm max-w-none",
-          "focus:outline-none",
-          "bg-transparent",
-          !editor?.getText() && "before:text-gray-400 before:content-[attr(data-placeholder)]",
-          !isEditMode && "pointer-events-none"
-        )}
-        data-placeholder="Enter Text"
-      />
-    </div>
-  );
-}; 
+    return (
+        <div className="relative">
+            <style>{customStyles}</style>
+            {isSelected && isEditMode && (
+                <Toolbar editor={editor} className="sticky top-0 z-10" />
+            )}
+            <EditorContent
+                editor={editor}
+                className={cn(
+                    'min-h-[2em]',
+                    'prose prose-sm max-w-none',
+                    'focus:outline-none',
+                    'bg-transparent',
+                    !editor?.getText() &&
+                        'before:text-gray-400 before:content-[attr(data-placeholder)]',
+                    !isEditMode && 'pointer-events-none',
+                )}
+                data-placeholder="Enter Text"
+            />
+        </div>
+    );
+};

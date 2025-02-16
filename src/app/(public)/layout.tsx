@@ -5,10 +5,5 @@ export default function PublicLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return (
-        <div>
-            {/* <PublicHeader /> */}
-            {children}
-        </div>
-    );
+    return <div>{children}</div>;
 }

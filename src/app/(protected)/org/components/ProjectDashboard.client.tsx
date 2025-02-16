@@ -2,9 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import DashboardView, {
-    Column,
-} from '@/components/base/DashboardView';
+import DashboardView, { Column } from '@/components/base/DashboardView';
 import { Badge } from '@/components/ui/badge';
 import { Requirement } from '@/types/base/requirements.types';
 import { useRouter, useParams } from 'next/navigation';
@@ -15,18 +13,18 @@ import { useState } from 'react';
 import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Document } from '@/types/base/documents.types';
 
-
 export default function ProjectPage() {
     const router = useRouter();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-    const [showCreateDocumentPanel, setShowCreateDocumentPanel] = useState(false);
-    const { data: documents, isLoading: documentsLoading } = useProjectDocuments(project?.id || '');
+    const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
+        useState(false);
+    const { data: documents, isLoading: documentsLoading } =
+        useProjectDocuments(project?.id || '');
 
     const { data: requirements, isLoading: requirementsLoading } = useQuery({
         queryKey: ['requirements', project?.id],
         queryFn: async () => {
-
             // Get all documents belonging to the project
             const { data: docIds } = await supabase
                 .from('documents')
@@ -157,9 +155,7 @@ export default function ProjectPage() {
                     <h2 className="text-xl font-semibold">Documents</h2>
                     <Button
                         variant="outline"
-                        onClick={() =>
-                            setShowCreateDocumentPanel(true)
-                        }
+                        onClick={() => setShowCreateDocumentPanel(true)}
                     >
                         Add Document
                     </Button>

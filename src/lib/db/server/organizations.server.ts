@@ -50,4 +50,4 @@ export const getOrganizationMembersServer = async (organizationId: string) => {
 
     if (error) throw error;
     return data;
-}; 
+};

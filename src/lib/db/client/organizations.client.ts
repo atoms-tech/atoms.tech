@@ -37,4 +37,4 @@ export const getOrganizationMembers = async (organizationId: string) => {
 
     if (error) throw error;
     return data;
-}; 
+};

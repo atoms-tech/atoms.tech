@@ -14,25 +14,25 @@
         --popover-foreground: 240 10% 3.9%;
 
         /* Electric blue accent colors */
-        --primary: 217 91% 60%; /* Bright electric blue */
+        --primary: 270 91% 60%; /* Bright electric blue */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 214 32% 91%;
-        --secondary-foreground: 216 34% 17%;
+        --secondary: 270 32% 91%;
+        --secondary-foreground: 270 34% 17%;
 
-        --muted: 214 32% 91%;
-        --muted-foreground: 215 16% 47%;
+        --muted: 270 32% 91%;
+        --muted-foreground: 270 16% 47%;
 
-        --accent: 217 91% 60%; /* Matching primary blue */
+        --accent: 270 91% 60%; /* Matching primary blue */
         --accent-foreground: 0 0% 100%;
 
         --destructive: 0 84% 60%;
         --destructive-foreground: 210 40% 98%;
 
         /* Neutral colors */
-        --border: 216 34% 17%;
-        --input: 214 32% 91%;
-        --ring: 217 91% 60%; /* Electric blue ring */
+        --border: 270 34% 17%;
+        --input: 270 32% 91%;
+        --ring: 270 91% 60%; /* Electric blue ring */
 
         /* Chart colors - Blue monotone */
         --chart-1: 217 91% 60%; /* Primary electric blue */
@@ -41,7 +41,10 @@
         --chart-4: 213 97% 87%; /* Very light blue */
         --chart-5: 217 91% 60%; /* Match primary */
 
-        --radius: 0.5rem;
+        --radius: 0rem;
+
+        --grid-size: 40px;
+        --grid-color: rgba(255, 255, 255, 0.05);
     }
 
     .dark {
@@ -55,32 +58,32 @@
         --popover-foreground: 0 0% 100%;
 
         /* Dark mode electric blue accents */
-        --primary: 217 91% 60%; /* Bright electric blue */
+        --primary: 270 91% 60%; /* Bright electric blue */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 217 19% 27%;
-        --secondary-foreground: 210 40% 98%;
+        --secondary: 270 19% 27%;
+        --secondary-foreground: 266 40% 98%;
 
-        --muted: 217 19% 27%;
+        --muted: 270 19% 27%;
         --muted-foreground: 215 20% 65%;
 
-        --accent: 213 94% 68%; /* Brighter blue accent */
+        --accent: 270 94% 68%; /* Brighter blue accent */
         --accent-foreground: 216 34% 17%;
 
         --destructive: 0 63% 31%;
         --destructive-foreground: 210 40% 98%;
 
         /* Dark mode neutral colors */
-        --border: 217 19% 27%;
-        --input: 217 19% 27%;
-        --ring: 217 91% 60%; /* Electric blue ring */
+        --border: 270 0% 27%;
+        --input: 270 0% 27%;
+        --ring: 270 91% 60%; /* Electric blue ring */
 
         /* Dark mode chart colors */
-        --chart-1: 217 91% 60%; /* Electric blue */
-        --chart-2: 213 94% 68%; /* Lighter blue */
-        --chart-3: 224 76% 48%; /* Darker blue */
-        --chart-4: 215 20% 65%; /* Muted blue */
-        --chart-5: 213 97% 87%; /* Very light blue */
+        --chart-1: 270 91% 60%; /* Electric blue */
+        --chart-2: 267 94% 68%; /* Lighter blue */
+        --chart-3: 265 76% 48%; /* Darker blue */
+        --chart-4: 263% 65%; /* Muted blue */
+        --chart-5: 261 97% 87%; /* Very light blue */
     }
 }
 
@@ -138,4 +141,108 @@
 
 .card-flip-container:hover::after {
     opacity: 0.5;
+}
+
+.grid-background {
+    background-image:
+        linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+    background-size: var(--grid-size) var(--grid-size);
+}
+
+@media (min-width: 768px) {
+    :root {
+        --grid-size: 40px;
+    }
+}
+
+@media (min-width: 1024px) {
+    :root {
+        --grid-size: 60px;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+.section-divider {
+    @apply relative;
+}
+
+.section-divider::before,
+.section-divider::after {
+    content: '';
+    @apply absolute left-0 w-full h-1 bg-white;
+}
+
+.section-divider::before {
+    @apply top-0;
+}
+
+.section-divider::after {
+    @apply bottom-0;
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-white text-black hover:bg-gray-200 transition-colors uppercase tracking-wider font-bold text-lg px-12 py-6;
+    }
+    .btn-secondary {
+        @apply border-2 border-white text-white bg-black  transition-colors uppercase tracking-wider font-bold text-lg px-12 py-6;
+    }
+    .section-padding {
+        @apply py-32;
+    }
+    .atoms-logo {
+        @apply text-4xl md:text-5xl font-black text-white uppercase;
+    }
+}
+
+@layer utilities {
+    .text-stroke {
+        -webkit-text-stroke: 1px white;
+        color: transparent;
+    }
+    .text-stroke-black {
+        -webkit-text-stroke: 1px black;
+        color: transparent;
+    }
+}
+
+.abstract-background {
+    pointer-events: none;
+}
+
+.abstract-background svg {
+    animation:
+        fadeIn 2s ease-out forwards,
+        rotate 120s linear infinite;
+}
+
+.abstract-background svg > * {
+    transition: all 0.5s ease-in-out;
+}
+
+.abstract-background svg > *:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
 }

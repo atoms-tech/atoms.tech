@@ -15,12 +15,12 @@ export default function ConfirmEmailMessage() {
     const message = searchParams.get('message');
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-12">
-            <Card className="w-full max-w-md bg-white dark:bg-gray-800 shadow-sm dark:shadow-lg border-gray-200 dark:border-gray-700">
+        <div className="min-h-screen flex items-center justify-center bg-[url('/../../../geoLandscape.jpg')] bg-cover bg-center px-4 py-12">
+            <Card className="w-full max-w-md bg-background shadow-sm dark:shadow-lg border-gray-200 dark:border-gray-700">
                 <CardHeader className="space-y-1">
                     <div className="flex justify-center mb-4">
-                        <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
-                            <MailCheck className="h-8 w-8 text-green-600 dark:text-green-400" />
+                        <div className="p-3 bg-primary dark:bg-primary/20 rounded-full">
+                            <MailCheck className="h-8 w-8 text-primary " />
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">

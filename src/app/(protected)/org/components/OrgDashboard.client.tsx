@@ -1,8 +1,6 @@
 'use client';
 
-import DashboardView, {
-    Column,
-} from '@/components/base/DashboardView';
+import DashboardView, { Column } from '@/components/base/DashboardView';
 import { Project } from '@/types';
 import { useRouter, useParams } from 'next/navigation';
 import { useContextStore } from '@/lib/store/context.store';
@@ -17,7 +15,10 @@ export default function OrgDashboard() {
     // User context hooks
     const { profile } = useUser();
     const { setCurrentProjectId } = useContextStore();
-    const { data, isLoading: projectsLoading } = useUserProjects(profile?.id || '', profile?.current_organization_id || '');
+    const { data, isLoading: projectsLoading } = useUserProjects(
+        profile?.id || '',
+        profile?.current_organization_id || '',
+    );
 
     const columns: Column<Project>[] = [
         {

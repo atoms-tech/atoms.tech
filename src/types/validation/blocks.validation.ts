@@ -15,4 +15,4 @@ export const BlockSchema = z.object({
     updated_at: z.string().nullable(),
     updated_by: z.string().nullable(),
     version: z.number(),
-}) satisfies z.ZodType<Block>; 
+}) satisfies z.ZodType<Block>;

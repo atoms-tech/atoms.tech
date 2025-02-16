@@ -24,7 +24,7 @@ class GlobalErrorBoundary extends React.Component<Props, State> {
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         // Log the error to an error reporting service
-        console.error("Error caught in GlobalErrorBoundary:", error, errorInfo);
+        console.error('Error caught in GlobalErrorBoundary:', error, errorInfo);
         // You can also send the error to an external service here
     }
 
@@ -38,13 +38,16 @@ class GlobalErrorBoundary extends React.Component<Props, State> {
             return (
                 <div className="error-boundary">
                     <h1>Something went wrong.</h1>
-                    <p>{this.state.error?.message || "An unexpected error occurred."}</p>
+                    <p>
+                        {this.state.error?.message ||
+                            'An unexpected error occurred.'}
+                    </p>
                     <button onClick={this.handleRetry}>Try Again</button>
                 </div>
             );
         }
 
-        return this.props.children; 
+        return this.props.children;
     }
 }
 

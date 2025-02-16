@@ -1,6 +1,13 @@
-import { getDocumentBlocksAndRequirementsServer, getDocumentDataServer } from "@/lib/db/server";
-import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/constants/queryKeys";
+import {
+    getDocumentBlocksAndRequirementsServer,
+    getDocumentDataServer,
+} from '@/lib/db/server';
+import {
+    dehydrate,
+    HydrationBoundary,
+    QueryClient,
+} from '@tanstack/react-query';
+import { queryKeys } from '@/lib/constants/queryKeys';
 
 interface DocumentLayoutProps {
     children: React.ReactNode;
@@ -27,5 +34,9 @@ export default async function DocumentLayout({
             return await getDocumentDataServer(documentId);
         },
     });
-    return <HydrationBoundary state={dehydrate(queryClient)}>{children}</HydrationBoundary>;
+    return (
+        <HydrationBoundary state={dehydrate(queryClient)}>
+            {children}
+        </HydrationBoundary>
+    );
 }

@@ -1,5 +1,5 @@
-import DocDashboard from "../../../../components/DocDashboard.client";
+import DocDashboard from '../../../../components/DocDashboard.client';
 
 export default function DocumentPage() {
-  return <DocDashboard />;
+    return <DocDashboard />;
 }

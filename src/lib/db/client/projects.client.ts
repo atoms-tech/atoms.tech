@@ -13,13 +13,12 @@ export const getProjectBySlug = async (slug: string) => {
 };
 
 export const getUserProjects = async (userId: string, orgId: string) => {
-    const { data: projectMemberData, error: memberError } =
-        await supabase
-            .from('project_members')
-            .select('project_id')
-            .eq('user_id', userId)
-            .eq('org_id', orgId)
-            .eq('status', 'active');
+    const { data: projectMemberData, error: memberError } = await supabase
+        .from('project_members')
+        .select('project_id')
+        .eq('user_id', userId)
+        .eq('org_id', orgId)
+        .eq('status', 'active');
 
     if (memberError) throw memberError;
 
@@ -49,4 +48,4 @@ export const getProjectMembers = async (projectId: string) => {
 
     if (error) throw error;
     return data;
-}; 
+};

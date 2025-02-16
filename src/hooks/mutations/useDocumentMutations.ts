@@ -1,4 +1,8 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    QueryClient,
+    useMutation,
+    useQueryClient,
+} from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { Document } from '@/types';
@@ -17,11 +21,11 @@ export type CreateDocumentInput = Omit<
 
 export function useCreateDocument() {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: async (input: CreateDocumentInput) => {
             console.log('Creating document', input);
-            
+
             const { data: document, error: documentError } = await supabase
                 .from('documents')
                 .insert({
@@ -55,11 +59,14 @@ export function useCreateDocument() {
 
 export function useUpdateDocument() {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: async ({ id, ...input }: Partial<Document> & { id: string }) => {
+        mutationFn: async ({
+            id,
+            ...input
+        }: Partial<Document> & { id: string }) => {
             console.log('Updating document', id, input);
-            
+
             const { data: document, error: documentError } = await supabase
                 .from('documents')
                 .update({
@@ -89,11 +96,17 @@ export function useUpdateDocument() {
 
 export function useDeleteDocument() {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
+        mutationFn: async ({
+            id,
+            deletedBy,
+        }: {
+            id: string;
+            deletedBy: string;
+        }) => {
             console.log('Deleting document', id);
-            
+
             const { data: document, error: documentError } = await supabase
                 .from('documents')
                 .update({
@@ -122,8 +135,10 @@ export function useDeleteDocument() {
     });
 }
 
-
-const invalidateDocumentQueries = (queryClient: QueryClient, data: Document) => {
+const invalidateDocumentQueries = (
+    queryClient: QueryClient,
+    data: Document,
+) => {
     queryClient.invalidateQueries({
         queryKey: queryKeys.documents.list({}),
     });

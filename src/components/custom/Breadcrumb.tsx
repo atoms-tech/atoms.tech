@@ -15,26 +15,35 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
     const router = useRouter();
     const pathname = usePathname();
     const pathSegments = pathname.split('/').filter(Boolean);
-    
+
     // Get entity names from React Query cache
-    const { orgName, projectName, documentName } = useBreadcrumbData(pathSegments);
+    const { orgName, projectName, documentName } =
+        useBreadcrumbData(pathSegments);
 
     const getBreadcrumbs = () => {
         if (pathSegments.length >= 3) {
             const section = pathSegments[3];
-            
+
             if (pathSegments.length >= 4) {
                 if (section === 'documents' && documentName) {
-                    return [projectName || 'Project', 'Documents', documentName];
+                    return [
+                        projectName || 'Project',
+                        'Documents',
+                        documentName,
+                    ];
                 } else if (section === 'requirements') {
-                    return [projectName || 'Project', 'Requirements', pathSegments[4]];
+                    return [
+                        projectName || 'Project',
+                        'Requirements',
+                        pathSegments[4],
+                    ];
                 }
             }
-            
+
             return ['Project', projectName || 'Loading...'];
         }
-        
-        return pathSegments.map(segment => {
+
+        return pathSegments.map((segment) => {
             if (segment === pathSegments[1]) return orgName || 'Organization';
             return segment.charAt(0).toUpperCase() + segment.slice(1);
         });
@@ -43,7 +52,12 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
     const breadcrumbs = getBreadcrumbs();
 
     return (
-        <div className={cn("flex items-center h-6 gap-1 px-2 bg-muted/50 rounded font-mono text-[10px] text-muted-foreground", className)}>
+        <div
+            className={cn(
+                'flex items-center h-6 gap-1 px-2 bg-muted/50 rounded font-mono text-[10px] text-muted-foreground',
+                className,
+            )}
+        >
             <Button
                 variant="ghost"
                 size="icon"
@@ -64,4 +78,4 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
     );
 };
 
-export default Breadcrumb; 
+export default Breadcrumb;

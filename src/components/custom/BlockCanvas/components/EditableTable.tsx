@@ -30,7 +30,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import { transitionConfig } from '@/lib/utils/animations';
 import { cn } from '@/lib/utils';
 import {
@@ -38,7 +38,7 @@ import {
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 
 export type EditableColumnType = 'text' | 'select' | 'number' | 'date';
 
@@ -81,7 +81,9 @@ export interface EditableColumn<T> {
     };
 }
 
-export interface EditableTableProps<T extends Record<string, CellValue> & { id: string }> {
+export interface EditableTableProps<
+    T extends Record<string, CellValue> & { id: string },
+> {
     data: T[];
     columns: EditableColumn<T>[];
     onSave?: (item: T, isNew: boolean) => Promise<void>;
@@ -99,13 +101,17 @@ interface TableSideMenuProps {
     onNewRow: () => void;
 }
 
-const TableSideMenu = ({ showFilter, filterComponent, onNewRow }: TableSideMenuProps) => {
+const TableSideMenu = ({
+    showFilter,
+    filterComponent,
+    onNewRow,
+}: TableSideMenuProps) => {
     return (
         <motion.div
             initial={{ opacity: 0, x: 0 }}
             animate={{ opacity: 1, x: -42 }}
             exit={{ opacity: 0, x: 0 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             className="absolute left-0 top-0 h-full flex items-center"
         >
             <TooltipProvider delayDuration={0}>
@@ -114,9 +120,9 @@ const TableSideMenu = ({ showFilter, filterComponent, onNewRow }: TableSideMenuP
                         <>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="sm" 
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
                                         className="h-8 w-8 p-0 rounded-none hover:bg-accent"
                                     >
                                         <Filter className="h-3.5 w-3.5" />
@@ -127,9 +133,7 @@ const TableSideMenu = ({ showFilter, filterComponent, onNewRow }: TableSideMenuP
                                 </TooltipContent>
                             </Tooltip>
                             {filterComponent && (
-                                <div className="p-2">
-                                    {filterComponent}
-                                </div>
+                                <div className="p-2">{filterComponent}</div>
                             )}
                         </>
                     )}
@@ -154,7 +158,9 @@ const TableSideMenu = ({ showFilter, filterComponent, onNewRow }: TableSideMenuP
     );
 };
 
-export function EditableTable<T extends Record<string, CellValue> & { id: string }>({
+export function EditableTable<
+    T extends Record<string, CellValue> & { id: string },
+>({
     data,
     columns,
     onSave,
@@ -167,19 +173,26 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
 }: EditableTableProps<T>) {
     const [sortKey, setSortKey] = React.useState<keyof T | null>(null);
     const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
-    const [hoveredCell, setHoveredCell] = React.useState<{ row: number; col: number } | null>(null);
+    const [hoveredCell, setHoveredCell] = React.useState<{
+        row: number;
+        col: number;
+    } | null>(null);
     const [editingData, setEditingData] = React.useState<Record<string, T>>({});
     const [isAddingNew, setIsAddingNew] = React.useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
     const [itemToDelete, setItemToDelete] = React.useState<T | null>(null);
-    const [editingTimeouts, setEditingTimeouts] = React.useState<Record<string, NodeJS.Timeout>>({});
+    const [editingTimeouts, setEditingTimeouts] = React.useState<
+        Record<string, NodeJS.Timeout>
+    >({});
     const previousDataRef = React.useRef<T[]>([]);
     const [isHoveringTable, setIsHoveringTable] = React.useState(false);
 
     // Clear all editing timeouts on unmount
     React.useEffect(() => {
         return () => {
-            Object.values(editingTimeouts).forEach(timeout => clearTimeout(timeout));
+            Object.values(editingTimeouts).forEach((timeout) =>
+                clearTimeout(timeout),
+            );
         };
     }, [editingTimeouts]);
 
@@ -188,7 +201,7 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
             if (!sortKey) return 0;
             const aValue = a[sortKey];
             const bValue = b[sortKey];
-            
+
             // Handle null/undefined values
             if (aValue == null && bValue == null) return 0;
             if (aValue == null) return sortOrder === 'asc' ? -1 : 1;
@@ -196,7 +209,7 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
 
             // Handle Date objects
             if (aValue instanceof Date && bValue instanceof Date) {
-                return sortOrder === 'asc' 
+                return sortOrder === 'asc'
                     ? aValue.getTime() - bValue.getTime()
                     : bValue.getTime() - aValue.getTime();
             }
@@ -221,17 +234,22 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
         previousDataRef.current = data;
 
         if (isEditMode && data.length > 0) {
-            const initialEditData = data.reduce((acc, item) => {
-                if (item.id) {
-                    acc[item.id as string] = { ...item };
-                }
-                return acc;
-            }, {} as Record<string, T>);
+            const initialEditData = data.reduce(
+                (acc, item) => {
+                    if (item.id) {
+                        acc[item.id as string] = { ...item };
+                    }
+                    return acc;
+                },
+                {} as Record<string, T>,
+            );
             setEditingData(initialEditData);
         } else if (!isEditMode) {
             setEditingData({});
             setIsAddingNew(false);
-            Object.values(editingTimeouts).forEach(timeout => clearTimeout(timeout));
+            Object.values(editingTimeouts).forEach((timeout) =>
+                clearTimeout(timeout),
+            );
             setEditingTimeouts({});
         }
     }, [isEditMode, data, editingData, editingTimeouts]);
@@ -253,14 +271,18 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
         }
     };
 
-    const handleCellChange = (itemId: string, accessor: keyof T, value: CellValue) => {
+    const handleCellChange = (
+        itemId: string,
+        accessor: keyof T,
+        value: CellValue,
+    ) => {
         // Update local state immediately
-        setEditingData(prev => ({
+        setEditingData((prev) => ({
             ...prev,
             [itemId]: {
                 ...prev[itemId],
-                [accessor]: value
-            }
+                [accessor]: value,
+            },
         }));
 
         // Don't auto-save if this is a new row
@@ -276,21 +298,21 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
             try {
                 const editedItem = {
                     ...editingData[itemId],
-                    [accessor]: value
+                    [accessor]: value,
                 };
-                
+
                 const savedItem = await onSave?.(editedItem, false);
-                
+
                 // Update editing data with saved values
                 if (savedItem) {
-                    setEditingData(prev => ({
+                    setEditingData((prev) => ({
                         ...prev,
-                        [itemId]: savedItem
+                        [itemId]: savedItem,
                     }));
                 }
-                
+
                 // Clear the timeout from state after successful save
-                setEditingTimeouts(prev => {
+                setEditingTimeouts((prev) => {
                     const { [itemId]: _removedTimeout, ...rest } = prev;
                     return rest;
                 });
@@ -300,9 +322,9 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
         }, 500); // 500ms debounce
 
         // Store the new timeout
-        setEditingTimeouts(prev => ({
+        setEditingTimeouts((prev) => ({
             ...prev,
-            [itemId]: timeoutId
+            [itemId]: timeoutId,
         }));
     };
 
@@ -310,7 +332,8 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
         const newItem = columns.reduce((acc, col) => {
             switch (col.type) {
                 case 'select':
-                    acc[col.accessor as keyof T] = (col.options?.[0] ?? '') as T[keyof T];
+                    acc[col.accessor as keyof T] = (col.options?.[0] ??
+                        '') as T[keyof T];
                     break;
                 case 'text':
                     acc[col.accessor as keyof T] = '' as T[keyof T];
@@ -319,18 +342,20 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                     acc[col.accessor as keyof T] = '0' as T[keyof T];
                     break;
                 case 'date':
-                    acc[col.accessor as keyof T] = new Date().toISOString().split('T')[0] as T[keyof T];
+                    acc[col.accessor as keyof T] = new Date()
+                        .toISOString()
+                        .split('T')[0] as T[keyof T];
                     break;
                 default:
                     acc[col.accessor as keyof T] = '' as T[keyof T];
             }
             return acc;
         }, {} as T);
-        
+
         newItem.id = 'new';
-        setEditingData(prev => ({
+        setEditingData((prev) => ({
             ...prev,
-            new: newItem
+            new: newItem,
         }));
         setIsAddingNew(true);
     };
@@ -343,10 +368,10 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
             // Remove the temporary id before saving
             const { id: _tempId, ...itemWithoutId } = newItem;
             await onSave?.(itemWithoutId as T, true);
-            
+
             // Clear editing state after successful save
             setIsAddingNew(false);
-            setEditingData(prev => {
+            setEditingData((prev) => {
                 const { new: _newItem, ...rest } = prev;
                 return rest;
             });
@@ -357,16 +382,24 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
 
     const handleCancelNewRow = () => {
         setIsAddingNew(false);
-        setEditingData(prev => {
+        setEditingData((prev) => {
             const { new: _newItem, ...rest } = prev;
             return rest;
         });
     };
 
-    const renderCell = (item: T, column: EditableColumn<T>, rowIndex: number, colIndex: number) => {
+    const renderCell = (
+        item: T,
+        column: EditableColumn<T>,
+        rowIndex: number,
+        colIndex: number,
+    ) => {
         const isEditing = isEditMode || item.id === 'new';
-        const value = isEditing ? editingData[item.id as string]?.[column.accessor] : item[column.accessor];
-        const isHovered = hoveredCell?.row === rowIndex && hoveredCell?.col === colIndex;
+        const value = isEditing
+            ? editingData[item.id as string]?.[column.accessor]
+            : item[column.accessor];
+        const isHovered =
+            hoveredCell?.row === rowIndex && hoveredCell?.col === colIndex;
 
         if (isEditing) {
             switch (column.type) {
@@ -374,7 +407,13 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                     return (
                         <Select
                             value={String(value ?? '')}
-                            onValueChange={(newValue) => handleCellChange(item.id as string, column.accessor, newValue)}
+                            onValueChange={(newValue) =>
+                                handleCellChange(
+                                    item.id as string,
+                                    column.accessor,
+                                    newValue,
+                                )
+                            }
                         >
                             <SelectTrigger>
                                 <SelectValue />
@@ -393,7 +432,13 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                         <Input
                             type="number"
                             value={String(value ?? '')}
-                            onChange={(e) => handleCellChange(item.id as string, column.accessor, parseFloat(e.target.value))}
+                            onChange={(e) =>
+                                handleCellChange(
+                                    item.id as string,
+                                    column.accessor,
+                                    parseFloat(e.target.value),
+                                )
+                            }
                             data-editing="true"
                         />
                     );
@@ -402,7 +447,13 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                         <Input
                             type="date"
                             value={String(value ?? '')}
-                            onChange={(e) => handleCellChange(item.id as string, column.accessor, new Date(e.target.value))}
+                            onChange={(e) =>
+                                handleCellChange(
+                                    item.id as string,
+                                    column.accessor,
+                                    new Date(e.target.value),
+                                )
+                            }
                             data-editing="true"
                         />
                     );
@@ -410,7 +461,13 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                     return (
                         <Input
                             value={String(value ?? '')}
-                            onChange={(e) => handleCellChange(item.id as string, column.accessor, e.target.value)}
+                            onChange={(e) =>
+                                handleCellChange(
+                                    item.id as string,
+                                    column.accessor,
+                                    e.target.value,
+                                )
+                            }
                             data-editing="true"
                         />
                     );
@@ -421,10 +478,12 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
             <div
                 className={cn(
                     'py-0.5 px-1 rounded transition-colors',
-                    isHovered && 'bg-accent/50'
+                    isHovered && 'bg-accent/50',
                 )}
             >
-                {value instanceof Date ? value.toLocaleDateString() : String(value ?? '')}
+                {value instanceof Date
+                    ? value.toLocaleDateString()
+                    : String(value ?? '')}
             </div>
         );
     };
@@ -444,12 +503,20 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
 
     return (
         <LayoutGroup>
-            <motion.div className="relative" layout transition={transitionConfig}>
+            <motion.div
+                className="relative"
+                layout
+                transition={transitionConfig}
+            >
                 <div className="relative">
-                    <div 
+                    <div
                         className="relative overflow-visible font-mono group"
-                        onMouseEnter={() => !isEditMode && setIsHoveringTable(true)}
-                        onMouseLeave={() => !isEditMode && setIsHoveringTable(false)}
+                        onMouseEnter={() =>
+                            !isEditMode && setIsHoveringTable(true)
+                        }
+                        onMouseLeave={() =>
+                            !isEditMode && setIsHoveringTable(false)
+                        }
                     >
                         {/* Slide-out Controls */}
                         <AnimatePresence>
@@ -475,26 +542,45 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                                                 <TableHead
                                                     key={column.header}
                                                     style={{
-                                                        width: column.width ? `${column.width}px` : undefined,
+                                                        width: column.width
+                                                            ? `${column.width}px`
+                                                            : undefined,
                                                     }}
                                                 >
                                                     <Button
                                                         variant="ghost"
                                                         onClick={() => {
-                                                            if (column.isSortable) {
-                                                                if (sortKey === column.accessor) {
-                                                                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                                                            if (
+                                                                column.isSortable
+                                                            ) {
+                                                                if (
+                                                                    sortKey ===
+                                                                    column.accessor
+                                                                ) {
+                                                                    setSortOrder(
+                                                                        sortOrder ===
+                                                                            'asc'
+                                                                            ? 'desc'
+                                                                            : 'asc',
+                                                                    );
                                                                 } else {
-                                                                    setSortKey(column.accessor);
-                                                                    setSortOrder('asc');
+                                                                    setSortKey(
+                                                                        column.accessor,
+                                                                    );
+                                                                    setSortOrder(
+                                                                        'asc',
+                                                                    );
                                                                 }
                                                             }
                                                         }}
                                                         className={cn(
                                                             'h-8 text-left font-medium',
-                                                            column.isSortable && 'hover:bg-accent hover:text-accent-foreground cursor-pointer'
+                                                            column.isSortable &&
+                                                                'hover:bg-accent hover:text-accent-foreground cursor-pointer',
                                                         )}
-                                                        disabled={!column.isSortable}
+                                                        disabled={
+                                                            !column.isSortable
+                                                        }
                                                     >
                                                         {column.header}
                                                         {column.isSortable && (
@@ -503,7 +589,13 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                                                     </Button>
                                                 </TableHead>
                                             ))}
-                                            {isEditMode && <TableHead style={{ width: '100px' }}>Actions</TableHead>}
+                                            {isEditMode && (
+                                                <TableHead
+                                                    style={{ width: '100px' }}
+                                                >
+                                                    Actions
+                                                </TableHead>
+                                            )}
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -512,22 +604,42 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                                                 key={item.id}
                                                 className="font-mono hover:bg-accent/5"
                                             >
-                                                {columns.map((column, colIndex) => (
-                                                    <TableCell
-                                                        key={`${String(item.id)}-${String(column.accessor)}`}
-                                                        onMouseEnter={() => setHoveredCell({ row: rowIndex, col: colIndex })}
-                                                        onMouseLeave={() => setHoveredCell(null)}
-                                                    >
-                                                        {renderCell(item, column, rowIndex, colIndex)}
-                                                    </TableCell>
-                                                ))}
+                                                {columns.map(
+                                                    (column, colIndex) => (
+                                                        <TableCell
+                                                            key={`${String(item.id)}-${String(column.accessor)}`}
+                                                            onMouseEnter={() =>
+                                                                setHoveredCell({
+                                                                    row: rowIndex,
+                                                                    col: colIndex,
+                                                                })
+                                                            }
+                                                            onMouseLeave={() =>
+                                                                setHoveredCell(
+                                                                    null,
+                                                                )
+                                                            }
+                                                        >
+                                                            {renderCell(
+                                                                item,
+                                                                column,
+                                                                rowIndex,
+                                                                colIndex,
+                                                            )}
+                                                        </TableCell>
+                                                    ),
+                                                )}
                                                 {isEditMode && (
                                                     <TableCell>
                                                         <div className="flex gap-2">
                                                             <Button
                                                                 size="sm"
                                                                 variant="ghost"
-                                                                onClick={() => handleDeleteClick(item)}
+                                                                onClick={() =>
+                                                                    handleDeleteClick(
+                                                                        item,
+                                                                    )
+                                                                }
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
@@ -539,26 +651,41 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                                         {/* New row being added */}
                                         {isAddingNew && (
                                             <TableRow className="font-mono">
-                                                {columns.map((column, colIndex) => (
-                                                    <TableCell
-                                                        key={`new-${String(column.accessor)}`}
-                                                    >
-                                                        {renderCell({ ...editingData['new'] } as T, column, -1, colIndex)}
-                                                    </TableCell>
-                                                ))}
+                                                {columns.map(
+                                                    (column, colIndex) => (
+                                                        <TableCell
+                                                            key={`new-${String(column.accessor)}`}
+                                                        >
+                                                            {renderCell(
+                                                                {
+                                                                    ...editingData[
+                                                                        'new'
+                                                                    ],
+                                                                } as T,
+                                                                column,
+                                                                -1,
+                                                                colIndex,
+                                                            )}
+                                                        </TableCell>
+                                                    ),
+                                                )}
                                                 <TableCell>
                                                     <div className="flex gap-2">
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
-                                                            onClick={handleSaveNewRow}
+                                                            onClick={
+                                                                handleSaveNewRow
+                                                            }
                                                         >
                                                             <Check className="h-4 w-4" />
                                                         </Button>
                                                         <Button
                                                             size="sm"
                                                             variant="ghost"
-                                                            onClick={handleCancelNewRow}
+                                                            onClick={
+                                                                handleCancelNewRow
+                                                            }
                                                         >
                                                             <X className="h-4 w-4" />
                                                         </Button>
@@ -568,31 +695,35 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                                         )}
                                         {/* Mock row for adding new items */}
                                         {!isAddingNew && (
-                                            <TableRow 
+                                            <TableRow
                                                 className={cn(
-                                                    "font-mono cursor-pointer group/mock-row",
-                                                    "hover:bg-accent/5"
+                                                    'font-mono cursor-pointer group/mock-row',
+                                                    'hover:bg-accent/5',
                                                 )}
                                                 onClick={handleMockRowClick}
                                             >
-                                                {columns.map((column, colIndex) => (
-                                                    <TableCell
-                                                        key={`mock-${String(column.accessor)}`}
-                                                        className={cn(
-                                                            "text-muted-foreground/50 group-hover/mock-row:text-muted-foreground",
-                                                            colIndex === 0 && "font-medium"
-                                                        )}
-                                                    >
-                                                        {colIndex === 0 ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <Plus className="h-4 w-4" />
-                                                                New Row
-                                                            </div>
-                                                        ) : (
-                                                            "..."
-                                                        )}
-                                                    </TableCell>
-                                                ))}
+                                                {columns.map(
+                                                    (column, colIndex) => (
+                                                        <TableCell
+                                                            key={`mock-${String(column.accessor)}`}
+                                                            className={cn(
+                                                                'text-muted-foreground/50 group-hover/mock-row:text-muted-foreground',
+                                                                colIndex ===
+                                                                    0 &&
+                                                                    'font-medium',
+                                                            )}
+                                                        >
+                                                            {colIndex === 0 ? (
+                                                                <div className="flex items-center gap-2">
+                                                                    <Plus className="h-4 w-4" />
+                                                                    New Row
+                                                                </div>
+                                                            ) : (
+                                                                '...'
+                                                            )}
+                                                        </TableCell>
+                                                    ),
+                                                )}
                                                 {isEditMode && <TableCell />}
                                             </TableRow>
                                         )}
@@ -604,20 +735,26 @@ export function EditableTable<T extends Record<string, CellValue> & { id: string
                 </div>
             </motion.div>
 
-            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <AlertDialog
+                open={deleteConfirmOpen}
+                onOpenChange={setDeleteConfirmOpen}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this requirement.
+                            This action cannot be undone. This will permanently
+                            delete this requirement.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+                        <AlertDialogAction onClick={handleDeleteConfirm}>
+                            Delete
+                        </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
         </LayoutGroup>
     );
-} 
+}
