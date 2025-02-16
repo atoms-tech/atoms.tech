@@ -99,12 +99,14 @@ interface TableSideMenuProps {
     showFilter?: boolean;
     filterComponent?: React.ReactNode;
     onNewRow: () => void;
+    onEnterEditMode: () => void;
 }
 
 const TableSideMenu = ({
     showFilter,
     filterComponent,
     onNewRow,
+    onEnterEditMode,
 }: TableSideMenuProps) => {
     return (
         <motion.div
@@ -140,7 +142,10 @@ const TableSideMenu = ({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button
-                                onClick={onNewRow}
+                                onClick={() => {
+                                    onEnterEditMode();
+                                    onNewRow();
+                                }}
                                 variant="ghost"
                                 size="sm"
                                 className="h-8 w-8 p-0 rounded-none hover:bg-accent"
@@ -186,6 +191,11 @@ export function EditableTable<
     >({});
     const previousDataRef = React.useRef<T[]>([]);
     const [isHoveringTable, setIsHoveringTable] = React.useState(false);
+    const [localIsEditMode, setLocalIsEditMode] = React.useState(isEditMode);
+
+    React.useEffect(() => {
+        setLocalIsEditMode(isEditMode);
+    }, [isEditMode]);
 
     // Clear all editing timeouts on unmount
     React.useEffect(() => {
@@ -226,14 +236,14 @@ export function EditableTable<
         // Skip if data hasn't changed and we're not toggling edit mode
         if (
             JSON.stringify(data) === JSON.stringify(previousDataRef.current) &&
-            Object.keys(editingData).length > 0 === isEditMode
+            Object.keys(editingData).length > 0 === localIsEditMode
         ) {
             return;
         }
 
         previousDataRef.current = data;
 
-        if (isEditMode && data.length > 0) {
+        if (localIsEditMode && data.length > 0) {
             const initialEditData = data.reduce(
                 (acc, item) => {
                     if (item.id) {
@@ -244,7 +254,7 @@ export function EditableTable<
                 {} as Record<string, T>,
             );
             setEditingData(initialEditData);
-        } else if (!isEditMode) {
+        } else if (!localIsEditMode) {
             setEditingData({});
             setIsAddingNew(false);
             Object.values(editingTimeouts).forEach((timeout) =>
@@ -252,7 +262,7 @@ export function EditableTable<
             );
             setEditingTimeouts({});
         }
-    }, [isEditMode, data, editingData, editingTimeouts]);
+    }, [localIsEditMode, data, editingData, editingTimeouts]);
 
     const handleDeleteClick = (item: T) => {
         setItemToDelete(item);
@@ -394,7 +404,7 @@ export function EditableTable<
         rowIndex: number,
         colIndex: number,
     ) => {
-        const isEditing = isEditMode || item.id === 'new';
+        const isEditing = localIsEditMode || item.id === 'new';
         const value = isEditing
             ? editingData[item.id as string]?.[column.accessor]
             : item[column.accessor];
@@ -512,19 +522,20 @@ export function EditableTable<
                     <div
                         className="relative overflow-visible font-mono group"
                         onMouseEnter={() =>
-                            !isEditMode && setIsHoveringTable(true)
+                            !localIsEditMode && setIsHoveringTable(true)
                         }
                         onMouseLeave={() =>
-                            !isEditMode && setIsHoveringTable(false)
+                            !localIsEditMode && setIsHoveringTable(false)
                         }
                     >
                         {/* Slide-out Controls */}
                         <AnimatePresence>
-                            {isHoveringTable && !isEditMode && (
+                            {isHoveringTable && !localIsEditMode && (
                                 <TableSideMenu
                                     showFilter={showFilter}
                                     filterComponent={filterComponent}
                                     onNewRow={handleMockRowClick}
+                                    onEnterEditMode={() => setLocalIsEditMode(true)}
                                 />
                             )}
                         </AnimatePresence>
@@ -589,7 +600,7 @@ export function EditableTable<
                                                     </Button>
                                                 </TableHead>
                                             ))}
-                                            {isEditMode && (
+                                            {localIsEditMode && (
                                                 <TableHead
                                                     style={{ width: '100px' }}
                                                 >
@@ -629,7 +640,7 @@ export function EditableTable<
                                                         </TableCell>
                                                     ),
                                                 )}
-                                                {isEditMode && (
+                                                {localIsEditMode && (
                                                     <TableCell>
                                                         <div className="flex gap-2">
                                                             <Button
@@ -724,7 +735,7 @@ export function EditableTable<
                                                         </TableCell>
                                                     ),
                                                 )}
-                                                {isEditMode && <TableCell />}
+                                                {localIsEditMode && <TableCell />}
                                             </TableRow>
                                         )}
                                     </TableBody>
