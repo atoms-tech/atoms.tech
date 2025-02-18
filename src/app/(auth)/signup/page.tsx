@@ -76,8 +76,11 @@ function SignupForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[url('/../../../geoLandscape.jpg')] bg-cover bg-center bg-black px-4 py-12">
-            <Card className="w-full max-w-md bg-background shadow-sm dark:shadow-lg">
+        <div className="min-h-screen flex items-center justify-center bg-[url('/../../../nodesbackground.jpg')] bg-cover bg-center bg-black px-4 py-12 relative">
+            {/* Background overlay */}
+            <div className="pointer-events-none absolute inset-0 bg-black opacity-80" />
+            {/* Card container */}
+            <Card className="w-full max-w-md bg-background shadow-sm dark:shadow-lg relative z-10">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
                         Create your account
