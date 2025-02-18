@@ -112,7 +112,7 @@ export default function ProjectPage() {
 
     const handleRowClick = (item: Requirement) => {
         router.push(
-            `/${params.orgId}/${params.projectId}/requirements/${item.id}`,
+            `/org/${params.orgId}/${params.projectId}/requirements/${item.id}`,
         );
     };
 
