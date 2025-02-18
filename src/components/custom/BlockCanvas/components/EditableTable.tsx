@@ -535,7 +535,9 @@ export function EditableTable<
                                     showFilter={showFilter}
                                     filterComponent={filterComponent}
                                     onNewRow={handleMockRowClick}
-                                    onEnterEditMode={() => setLocalIsEditMode(true)}
+                                    onEnterEditMode={() =>
+                                        setLocalIsEditMode(true)
+                                    }
                                 />
                             )}
                         </AnimatePresence>
@@ -735,7 +737,9 @@ export function EditableTable<
                                                         </TableCell>
                                                     ),
                                                 )}
-                                                {localIsEditMode && <TableCell />}
+                                                {localIsEditMode && (
+                                                    <TableCell />
+                                                )}
                                             </TableRow>
                                         )}
                                     </TableBody>
