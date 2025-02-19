@@ -10,6 +10,7 @@ import { ChevronLeft } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 
+
 const VerticalToolbar = () => {
     const router = useRouter();
     const pathname = usePathname();
