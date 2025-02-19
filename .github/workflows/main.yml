@@ -8,6 +8,12 @@ on:
         branches:
             - main
 
+env:
+    NEXT_PUBLIC_GUMLOOP_API_KEY: foo
+    NEXT_PUBLIC_GUMLOOP_API_URL: foo
+    NEXT_PUBLIC_GUMLOOP_USER_ID: foo
+    NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID: foo
+
 jobs:
     build:
         runs-on: ubuntu-latest
