@@ -2,6 +2,7 @@
 
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
+import { LayoutViewToggle } from '../toggles/LayoutViewToggle';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,9 @@ const VerticalToolbar = () => {
             </div>
             <div className="h-10 w-10 flex items-center justify-center">
                 <ViewModeToggle />
+            </div>
+            <div className="h-10 w-10 flex items-center justify-center">
+                <LayoutViewToggle />
             </div>
         </div>
     );

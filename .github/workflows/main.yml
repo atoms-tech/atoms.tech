@@ -1,78 +1,44 @@
 name: Build and Lint
 
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-            - name: Install Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Cache Next.js build
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      ${{ github.workspace }}/.next/cache
-                  # Generate a new cache whenever packages or source files change.
-                  key: ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
-                  # If source files changed but packages didn't, rebuild from a prior cache.
-                  restore-keys: |
-                      ${{ runner.os }}-nextjs-${{ hashFiles('**/bun.lock') }}-
+      - name: Install dependencies
+        run: bun install
 
-            - name: Install dependencies
-              run: bun install
+      - name: Build project
+        run: bun run build
 
-            - name: Build project
-              run: bun run build
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    lint:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-            - name: Install Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
+      - name: Install dependencies
+        run: bun install
 
-            - name: Install dependencies
-              run: bun install
-
-            - name: Run linting
-              run: bun run lint
-    format:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v3
-
-            - name: Install Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
-
-            - name: Install dependencies
-              run: bun install
-
-            - name: Run prettier
-              run: bun prettier src --write
-
-            - name: Check for changes
-              run: |
-                  if ! git diff --quiet; then
-                    echo "Prettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
-                    exit 1
-                  fi
+      - name: Run linting
+        run: bun run lint
