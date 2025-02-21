@@ -1,5 +1,9 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import { ExternalLink, MoreVertical, X } from 'lucide-react';
+import React from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -9,9 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { detailsVariants } from '@/lib/utils/animations';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ExternalLink, MoreVertical, X } from 'lucide-react';
-import React from 'react';
 
 const EDIT_OPTIONS = [{ label: 'Delete', value: 'delete' }] as const;
 

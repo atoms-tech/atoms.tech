@@ -1,9 +1,10 @@
 'use client';
 
-import { transitionConfig } from '@/lib/utils/animations';
 import { LayoutGroup, motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
 import React from 'react';
+
+import { transitionConfig } from '@/lib/utils/animations';
 
 interface Column<T> {
     header: string;

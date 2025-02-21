@@ -1,6 +1,6 @@
-// RenderCounter.tsx
-'use client'; // Mark as client component
+'use client';
 
+// Mark as client component
 import { useEffect, useRef, useState } from 'react';
 
 export default function RenderCounter() {

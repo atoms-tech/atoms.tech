@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import {
-    gumloopService,
-    StartPipelineParams,
     GetPipelineRunParams,
+    StartPipelineParams,
+    gumloopService,
 } from '@/lib/services/gumloop';
+
 // import { rateLimit } from '@/lib/middleware/rateLimit';
 
 type ActionType = 'startPipeline' | 'getPipelineStatus';

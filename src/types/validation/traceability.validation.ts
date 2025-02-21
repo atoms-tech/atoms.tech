@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     Assignment,
     AssignmentRole,
@@ -12,7 +14,6 @@ import {
     UserRole,
     UserRoleType,
 } from '@/types';
-import { z } from 'zod';
 
 export const TraceLinkSchema = z.object({
     id: z.string(),

@@ -1,7 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
+
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Profile } from '@/types/base/profiles.types';
-import { useQuery } from '@tanstack/react-query';
 
 export function useProfile(userId: string) {
     return useQuery({

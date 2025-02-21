@@ -1,7 +1,8 @@
+import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
+
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 import { Sort } from '@/types/base/filters.types';
-import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 
 type TableName = keyof Database['public']['Tables'];
 type Row<T extends TableName> = Database['public']['Tables'][T]['Row'];

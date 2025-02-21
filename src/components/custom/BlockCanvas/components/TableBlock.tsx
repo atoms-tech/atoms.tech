@@ -1,25 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BlockProps } from '../types';
-import { Requirement } from '@/types/base/requirements.types';
+import { v4 as uuidv4 } from 'uuid';
+
+import { SidePanel } from '@/components/base/panels/SidePanel';
 import {
-    RequirementFormat,
-    RequirementLevel,
-    RequirementPriority,
-    RequirementStatus,
-} from '@/types/base/enums.types';
+    type EditableColumn,
+    EditableTable,
+} from '@/components/custom/BlockCanvas/components/EditableTable';
 import {
     useCreateRequirement,
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
 import { useAuth } from '@/hooks/useAuth';
 import {
-    EditableTable,
-    type EditableColumn,
-} from '@/components/custom/BlockCanvas/components/EditableTable';
-import { SidePanel } from '@/components/base/panels/SidePanel';
-import { v4 as uuidv4 } from 'uuid';
+    RequirementFormat,
+    RequirementLevel,
+    RequirementPriority,
+    RequirementStatus,
+} from '@/types/base/enums.types';
+import { Requirement } from '@/types/base/requirements.types';
+
+import { BlockProps } from '../types';
 
 // Type for the simplified requirement data that will be displayed in the table
 type DisplayRequirement = {

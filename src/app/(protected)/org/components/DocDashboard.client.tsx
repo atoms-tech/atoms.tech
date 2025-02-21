@@ -1,23 +1,24 @@
 'use client';
 
-import { BlockCanvas } from '@/components/custom/BlockCanvas';
-import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import {
+    Activity,
+    BarChart3,
+    CalendarDays,
+    FileText,
+    GitBranch,
+    ListTodo,
+} from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+
+import { BlockCanvas } from '@/components/custom/BlockCanvas';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getDocumentData } from '@/lib/db/client';
 import { useDocumentStore } from '@/lib/store/document.store';
-import { useState } from 'react';
-import {
-    CalendarDays,
-    GitBranch,
-    FileText,
-    Activity,
-    BarChart3,
-    ListTodo,
-} from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { motion } from 'framer-motion';
 import { RequirementPriority, RequirementStatus } from '@/types';
 
 type BlockContent = {

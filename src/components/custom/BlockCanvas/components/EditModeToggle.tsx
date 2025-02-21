@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Edit2, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Check, Edit2 } from 'lucide-react';
+import React from 'react';
+
+import { Button } from '@/components/ui/button';
 
 interface EditModeToggleProps {
     isEditMode: boolean;

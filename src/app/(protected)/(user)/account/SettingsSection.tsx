@@ -1,7 +1,7 @@
-import { useState, Children } from 'react';
-import { ReactNode } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Children, useState } from 'react';
+import { ReactNode } from 'react';
 
 interface SettingsSectionProps {
     title: string;

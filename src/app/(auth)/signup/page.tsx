@@ -1,5 +1,10 @@
 'use client';
 
+import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -10,10 +15,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { AlertCircle } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+
 import { signup } from '../auth/actions';
 import ConfirmEmailMessage from './message';
 

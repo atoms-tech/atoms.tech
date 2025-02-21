@@ -1,15 +1,16 @@
 'use server';
 
-import Sidebar from '@/components/base/Sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
 import {
     HydrationBoundary,
-    dehydrate,
     QueryClient,
+    dehydrate,
 } from '@tanstack/react-query';
-import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
+
+import Sidebar from '@/components/base/Sidebar';
+import VerticalToolbar from '@/components/custom/VerticalToolbar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
 
 export default async function ProtectedLayout({
     children,

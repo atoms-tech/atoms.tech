@@ -1,7 +1,9 @@
 'use client';
 
-import { useSettingsStore } from '@/lib/store/settings.store';
 import React from 'react';
+
+import { useSettingsStore } from '@/lib/store/settings.store';
+
 import { MonospaceGrid } from './MonospaceGrid';
 import { MonospaceTable } from './MonospaceTable';
 

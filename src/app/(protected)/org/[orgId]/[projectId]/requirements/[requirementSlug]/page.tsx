@@ -1,22 +1,23 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card } from '@/components/ui/card';
-import { useRequirement } from '@/hooks/queries/useRequirement';
-import { useGumloop } from '@/hooks/useGumloop';
 import {
+    Brain,
     Check,
+    CircleAlert,
+    FileSpreadsheet,
     Scale,
     Target,
     Upload,
     Wand,
-    Brain,
-    CircleAlert,
-    FileSpreadsheet,
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useRequirement } from '@/hooks/queries/useRequirement';
+import { useGumloop } from '@/hooks/useGumloop';
 
 export default function RequirementPage() {
     const { requirementSlug } = useParams<{

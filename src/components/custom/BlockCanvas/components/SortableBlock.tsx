@@ -1,13 +1,15 @@
 'use client';
 
-import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { BlockProps } from '../types';
-import { TextBlock } from './TextBlock';
-import { TableBlock } from './TableBlock';
-import { BlockActions } from './BlockActions';
+import React from 'react';
+
 import { cn } from '@/lib/utils';
+
+import { BlockProps } from '../types';
+import { BlockActions } from './BlockActions';
+import { TableBlock } from './TableBlock';
+import { TextBlock } from './TextBlock';
 
 export const SortableBlock: React.FC<BlockProps> = ({
     block,

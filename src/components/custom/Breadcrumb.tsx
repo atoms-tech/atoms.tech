@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import React from 'react';
+
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { useBreadcrumbData } from '@/hooks/useBreadcrumbData';
+import { cn } from '@/lib/utils';
 
 interface BreadcrumbProps {
     className?: string;

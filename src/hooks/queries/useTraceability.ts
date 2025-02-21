@@ -1,8 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
+
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { buildQuery } from '@/lib/utils/queryFactory';
 import { EntityType } from '@/types/base/enums.types';
 import { QueryFilters } from '@/types/base/filters.types';
-import { useQuery } from '@tanstack/react-query';
 
 export function useTraceLinks(
     sourceId: string,

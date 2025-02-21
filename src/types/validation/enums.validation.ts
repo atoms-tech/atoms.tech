@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     AssignmentRole,
     EntityType,
@@ -13,7 +15,6 @@ import {
     RequirementStatus,
     UserRoleType,
 } from '@/types/base/enums.types';
-import { z } from 'zod';
 
 export const AssignmentRoleSchema = z.enum([
     'assignee',

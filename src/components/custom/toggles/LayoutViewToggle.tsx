@@ -1,6 +1,7 @@
 'use client';
 
 import { Maximize2, Minimize2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { useSettingsStore } from '@/lib/store/settings.store';
 

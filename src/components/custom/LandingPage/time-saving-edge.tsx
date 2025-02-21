@@ -1,4 +1,4 @@
-import { Clock, AlertTriangle, ShieldCheck, Share2 } from 'lucide-react';
+import { AlertTriangle, Clock, Share2, ShieldCheck } from 'lucide-react';
 
 const benefits = [
     {

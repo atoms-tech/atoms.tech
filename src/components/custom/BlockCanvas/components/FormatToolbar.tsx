@@ -1,26 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import { Editor } from '@tiptap/react';
 import {
-    Bold,
-    Italic,
-    Underline,
-    List,
-    ListOrdered,
+    AlignCenter,
+    AlignLeft,
+    AlignRight,
     ArrowRight,
+    Bold,
+    Code,
     Heading1,
     Heading2,
     Heading3,
     Heading4,
     Heading5,
-    AlignLeft,
-    AlignCenter,
-    AlignRight,
-    Code,
-    Link as LinkIcon,
     Image as ImageIcon,
+    Italic,
+    Link as LinkIcon,
+    List,
+    ListOrdered,
+    Underline,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Editor } from '@tiptap/react';
 
 interface ToolbarProps {
     className?: string;

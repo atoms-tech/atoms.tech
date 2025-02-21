@@ -1,8 +1,9 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
 import { ProjectSchema } from '@/types/validation/projects.validation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export type CreateProjectInput = Omit<
     Project,

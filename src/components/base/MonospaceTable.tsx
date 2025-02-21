@@ -1,5 +1,10 @@
 'use client';
 
+import { CaretSortIcon } from '@radix-ui/react-icons';
+import { LayoutGroup, motion } from 'framer-motion';
+import { Filter } from 'lucide-react';
+import React from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,10 +17,6 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { transitionConfig } from '@/lib/utils/animations';
-import { CaretSortIcon } from '@radix-ui/react-icons';
-import { LayoutGroup, motion } from 'framer-motion';
-import { Filter } from 'lucide-react';
-import React from 'react';
 
 interface Column<T> {
     header: string;

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { DocumentSchema } from '@/types/validation/documents.validation';
 import { Document } from '@/types/base/documents.types';
+import { DocumentSchema } from '@/types/validation/documents.validation';
+
 export const getProjectDocumentsServer = async (projectId: string) => {
     const supabase = await createClient();
     const { data, error } = await supabase

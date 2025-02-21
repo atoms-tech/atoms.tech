@@ -1,9 +1,11 @@
 'use client';
 
-import { useUser } from '@/lib/providers/user.provider';
-import Image from 'next/image';
 import { Pencil, User } from 'lucide-react';
+import Image from 'next/image';
+
 import { Card } from '@/components/ui/card';
+import { useUser } from '@/lib/providers/user.provider';
+
 import SettingsSection from './SettingsSection';
 
 export default function AccountPage() {

@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { useCallback, useEffect, useState } from 'react';
+
+import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types/base/documents.types';
 import { Requirement } from '@/types/base/requirements.types';
 import { BlockSchema } from '@/types/validation/blocks.validation';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
-import { useDocumentStore } from '@/lib/store/document.store';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 type BlockWithRequirements = Block & { requirements: Requirement[] };
 

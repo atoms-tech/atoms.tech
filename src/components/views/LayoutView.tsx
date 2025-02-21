@@ -1,8 +1,9 @@
 'use client';
 
-import { useSettingsStore } from '@/lib/store/settings.store';
 import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
+
+import { useSettingsStore } from '@/lib/store/settings.store';
 
 interface LayoutViewProps {
     children: ReactNode;

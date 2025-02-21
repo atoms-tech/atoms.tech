@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { Block, Json } from '@/types';
 
 export const BlockSchema = z.object({

@@ -1,13 +1,15 @@
+import { useQueryClient } from '@tanstack/react-query';
+
 import {
     useCreateBlock,
-    useUpdateBlock,
     useDeleteBlock,
+    useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
-import { Json } from '@/types/base/database.types';
-import { UseBlockActionsProps, BlockWithRequirements } from '../types';
-import { useDocumentStore } from '@/lib/store/document.store';
-import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { useDocumentStore } from '@/lib/store/document.store';
+import { Json } from '@/types/base/database.types';
+
+import { BlockWithRequirements, UseBlockActionsProps } from '../types';
 
 export const useBlockActions = ({
     documentId,

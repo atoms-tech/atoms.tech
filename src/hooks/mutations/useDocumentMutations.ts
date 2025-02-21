@@ -3,8 +3,9 @@ import {
     useMutation,
     useQueryClient,
 } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types';
 import { DocumentSchema } from '@/types/validation/documents.validation';
 

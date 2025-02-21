@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+
 import { Block, Document } from '../../types/base/documents.types';
 
 interface DocumentState {

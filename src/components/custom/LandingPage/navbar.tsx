@@ -1,12 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { redirect } from 'next/navigation';
-import Image from 'next/image';
-import { GridBackground } from './grid-background';
-import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+
+import { GridBackground } from './grid-background';
 
 export function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -1,33 +1,35 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useDocumentStore } from '@/lib/store/document.store';
-import { Button } from '@/components/ui/button';
-import { Table, Type } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
-import { BlockCanvasProps, BlockWithRequirements } from './types';
-import { useBlockActions } from './hooks/useBlockActions';
 import {
     DndContext,
-    closestCenter,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
     KeyboardSensor,
     PointerSensor,
+    closestCenter,
+    defaultDropAnimation,
     useSensor,
     useSensors,
-    DragEndEvent,
-    DragStartEvent,
-    DragOverlay,
-    defaultDropAnimation,
 } from '@dnd-kit/core';
 import {
-    arrayMove,
     SortableContext,
+    arrayMove,
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { Table, Type } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
+import { useAuth } from '@/hooks/useAuth';
+import { useDocumentStore } from '@/lib/store/document.store';
+
 import { EditModeToggle } from './components/EditModeToggle';
 import { SortableBlock } from './components/SortableBlock';
+import { useBlockActions } from './hooks/useBlockActions';
+import { BlockCanvasProps, BlockWithRequirements } from './types';
 
 const dropAnimationConfig = {
     ...defaultDropAnimation,

@@ -1,17 +1,21 @@
 'use client';
 
+import { Home, LucideIcon, Plus, Settings, User } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
 import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Button } from '@/components/ui/button';
-
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
 import {
-    SidebarContainer as SidebarContainer,
+    SidebarContainer,
     SidebarContent,
     SidebarFooter,
     SidebarGroup,
@@ -22,11 +26,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useUser } from '@/lib/providers/user.provider';
-import { Home, LucideIcon, Plus, Settings, User } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 interface MenuItem {
     title: string;

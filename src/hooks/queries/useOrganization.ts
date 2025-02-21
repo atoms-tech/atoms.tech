@@ -1,10 +1,12 @@
 // import { supabase } from '@/lib/supabase/supabaseClient'
-import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { OrganizationSchema } from '@/types/validation/organizations.validation';
-import { getUserOrganizations } from '@/lib/db/client';
 import { useQuery } from '@tanstack/react-query';
+
+import { queryKeys } from '@/lib/constants/queryKeys';
+import { getUserOrganizations } from '@/lib/db/client';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { QueryFilters } from '@/types/base/filters.types';
+import { OrganizationSchema } from '@/types/validation/organizations.validation';
+
 export function useOrganization(orgId: string) {
     return useQuery({
         queryKey: queryKeys.organizations.detail(orgId),

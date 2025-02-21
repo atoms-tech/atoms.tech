@@ -1,4 +1,4 @@
-import { FileText, Brain, FileCheck, GitMerge, Zap } from 'lucide-react';
+import { Brain, FileCheck, FileText, GitMerge, Zap } from 'lucide-react';
 
 const features = [
     {

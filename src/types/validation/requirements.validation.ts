@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     Json,
     Requirement,
@@ -6,7 +8,6 @@ import {
     RequirementPriority,
     RequirementStatus,
 } from '@/types';
-import { z } from 'zod';
 
 export const RequirementSchema = z.object({
     id: z.string(),

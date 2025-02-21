@@ -1,15 +1,16 @@
 'use client';
-import { Navbar } from '@/components/custom/LandingPage/navbar';
-import { Hero } from '@/components/custom/LandingPage/hero';
-import { Features } from '@/components/custom/LandingPage/features';
-import { HowItWorks } from '@/components/custom/LandingPage/how-it-works';
-import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
-import { Industries } from '@/components/custom/LandingPage/industries';
-import { Testimonials } from '@/components/custom/LandingPage/testimonials';
-import { CTA } from '@/components/custom/LandingPage/cta';
+
 import { Contact } from '@/components/custom/LandingPage/contact';
+import { CTA } from '@/components/custom/LandingPage/cta';
+import { Features } from '@/components/custom/LandingPage/features';
 import { Footer } from '@/components/custom/LandingPage/footer';
 import { GridBackground } from '@/components/custom/LandingPage/grid-background';
+import { Hero } from '@/components/custom/LandingPage/hero';
+import { HowItWorks } from '@/components/custom/LandingPage/how-it-works';
+import { Industries } from '@/components/custom/LandingPage/industries';
+import { Navbar } from '@/components/custom/LandingPage/navbar';
+import { Testimonials } from '@/components/custom/LandingPage/testimonials';
+import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
 
 export default function Home() {
     return (

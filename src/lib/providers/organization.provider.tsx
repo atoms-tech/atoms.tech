@@ -1,7 +1,8 @@
 'use client';
 
-import { Organization } from '@/types/base/organizations.types';
 import { createContext, useContext, useState } from 'react';
+
+import { Organization } from '@/types/base/organizations.types';
 
 interface OrganizationContextType {
     organization: Organization | null;

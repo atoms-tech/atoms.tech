@@ -1,4 +1,4 @@
-import { Car, Activity, Rocket, Cpu, Shield, Zap } from 'lucide-react';
+import { Activity, Car, Cpu, Rocket, Shield, Zap } from 'lucide-react';
 
 const industries = [
     {

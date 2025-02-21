@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
     Block,
     BlockPropertySchema,
@@ -7,7 +9,6 @@ import {
     ProjectStatus,
     Visibility,
 } from '@/types';
-import { z } from 'zod';
 
 export const ProjectSchema = z.object({
     id: z.string(),

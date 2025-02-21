@@ -1,12 +1,12 @@
-// [orgSlug]/layout.tsx
-import Sidebar from '@/components/base/Sidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
 import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { QueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/constants/queryKeys';
-import { getUserProjectsServer, getAuthUserServer } from '@/lib/db/server';
 import { notFound } from 'next/navigation';
+
+import Sidebar from '@/components/base/Sidebar';
+import VerticalToolbar from '@/components/custom/VerticalToolbar';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { queryKeys } from '@/lib/constants/queryKeys';
+import { getAuthUserServer, getUserProjectsServer } from '@/lib/db/server';
 
 interface OrgLayoutProps {
     children: React.ReactNode;

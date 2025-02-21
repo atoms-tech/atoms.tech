@@ -1,16 +1,16 @@
-// [orgSlug]/[projectSlug]/layout.tsx
-import { queryKeys } from '@/lib/constants/queryKeys';
 import {
-    dehydrate,
     HydrationBoundary,
     QueryClient,
+    dehydrate,
 } from '@tanstack/react-query';
+import { notFound } from 'next/navigation';
+
+import { queryKeys } from '@/lib/constants/queryKeys';
 import {
     getProjectByIdServer,
     getProjectDocumentsServer,
 } from '@/lib/db/server';
 import { ProjectProvider } from '@/lib/providers/project.provider';
-import { notFound } from 'next/navigation';
 import { Project } from '@/types';
 
 interface ProjectLayoutProps {

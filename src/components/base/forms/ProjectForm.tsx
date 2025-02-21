@@ -1,5 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
 import { Button } from '@/components/ui/button';
 import {
     Form,
@@ -23,10 +28,6 @@ import { useCreateProject } from '@/hooks/mutations/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectStore } from '@/lib/store/project.store';
 import { ProjectStatus, Visibility } from '@/types/base/enums.types';
-import { zodResolver } from '@hookform/resolvers/zod';
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 
 const projectFormSchema = z.object({
     name: z.string().min(1, 'Project name is required'),

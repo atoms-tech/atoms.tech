@@ -1,17 +1,18 @@
 'use client';
 
+import { Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { useOrgsByUser } from '@/hooks/queries/useOrganization';
-import { useUser } from '@/lib/providers/user.provider';
 import { useOrganization } from '@/lib/providers/organization.provider';
+import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
 import { Organization } from '@/types';
-import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Filter } from 'lucide-react';
 
 export default function HomeDashboard() {
     const { user, profile } = useUser();

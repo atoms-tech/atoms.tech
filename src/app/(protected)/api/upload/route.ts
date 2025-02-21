@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { gumloopService } from '@/lib/services/gumloop';
+
 // import { rateLimit } from '@/lib/middleware/rateLimit';
 
 // Apply rate limiting middleware

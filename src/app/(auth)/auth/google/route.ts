@@ -1,5 +1,6 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
 import { redirect } from 'next/navigation';
+
+import { createClient } from '@/lib/supabase/supabaseServer';
 
 export async function GET(request: Request) {
     const requestUrl = new URL(request.url);

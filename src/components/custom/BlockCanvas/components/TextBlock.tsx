@@ -1,20 +1,22 @@
 'use client';
 
-import React from 'react';
-import { BlockProps } from '../types';
-import { Json } from '@/types/base/database.types';
-import { cn } from '@/lib/utils';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import { Toolbar } from './FormatToolbar';
 import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
 import Heading from '@tiptap/extension-heading';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
+import ListItem from '@tiptap/extension-list-item';
+import OrderedList from '@tiptap/extension-ordered-list';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import { EditorContent, useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import React from 'react';
+
+import { cn } from '@/lib/utils';
+import { Json } from '@/types/base/database.types';
+
+import { BlockProps } from '../types';
+import { Toolbar } from './FormatToolbar';
 
 const customStyles = `
   .ProseMirror {

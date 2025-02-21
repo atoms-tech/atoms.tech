@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+
+import Breadcrumb from '@/components/custom/Breadcrumb';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
-import Breadcrumb from '@/components/custom/Breadcrumb';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
 const VerticalToolbar = () => {

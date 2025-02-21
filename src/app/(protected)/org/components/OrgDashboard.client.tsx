@@ -1,11 +1,12 @@
 'use client';
 
+import { useParams, useRouter } from 'next/navigation';
+
 import DashboardView, { Column } from '@/components/base/DashboardView';
-import { Project } from '@/types';
-import { useRouter, useParams } from 'next/navigation';
-import { useContextStore } from '@/lib/store/context.store';
-import { useUser } from '@/lib/providers/user.provider';
 import { useUserProjects } from '@/hooks/queries/useProject';
+import { useUser } from '@/lib/providers/user.provider';
+import { useContextStore } from '@/lib/store/context.store';
+import { Project } from '@/types';
 
 export default function OrgDashboard() {
     // Navigation hooks

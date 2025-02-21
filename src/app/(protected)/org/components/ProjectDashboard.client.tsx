@@ -1,17 +1,19 @@
 'use client';
-import { Button } from '@/components/ui/button';
+
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+
 import DashboardView, { Column } from '@/components/base/DashboardView';
+import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Badge } from '@/components/ui/badge';
-import { Requirement } from '@/types/base/requirements.types';
-import { useRouter, useParams } from 'next/navigation';
-import { RequirementSchema } from '@/types/validation';
+import { Button } from '@/components/ui/button';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
 import { useProject } from '@/lib/providers/project.provider';
-import { useState } from 'react';
-import { CreatePanel } from '@/components/base/panels/CreatePanel';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
+import { Requirement } from '@/types/base/requirements.types';
+import { RequirementSchema } from '@/types/validation';
 
 export default function ProjectPage() {
     const router = useRouter();

@@ -1,4 +1,3 @@
-// stores/settings.store.ts
 import { create } from 'zustand';
 
 type SettingsStore = {

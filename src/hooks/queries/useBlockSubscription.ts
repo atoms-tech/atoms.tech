@@ -1,9 +1,10 @@
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
+
+import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types';
 import { BlockSchema } from '@/types/validation/blocks.validation';
-import { useDocumentStore } from '@/lib/store/document.store';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
 const fetchBlocks = async (documentId: string) => {
     const { data: blocks, error } = await supabase

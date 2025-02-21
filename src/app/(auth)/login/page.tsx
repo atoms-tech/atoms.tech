@@ -1,5 +1,9 @@
-// app/(auth)/login/page.tsx
 'use client';
+
+import { AlertCircle, Github, Mail } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { Suspense, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -12,11 +16,14 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, Github, Mail } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import React, { Suspense, useState } from 'react';
+
 import { login } from '../auth/actions';
+
+// app/(auth)/login/page.tsx
+
+// app/(auth)/login/page.tsx
+
+// app/(auth)/login/page.tsx
 
 // Create a separate client component for the login form
 function LoginForm() {

@@ -1,8 +1,9 @@
-import { Block } from '@/types/base/documents.types';
-import { Requirement } from '@/types/base/requirements.types';
-import { Json } from '@/types/base/database.types';
-import { Profile } from '@/types/base/profiles.types';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+
+import { Json } from '@/types/base/database.types';
+import { Block } from '@/types/base/documents.types';
+import { Profile } from '@/types/base/profiles.types';
+import { Requirement } from '@/types/base/requirements.types';
 
 export interface BlockContent {
     position?: number;

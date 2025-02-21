@@ -1,5 +1,9 @@
 'use client';
 
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -7,9 +11,6 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
 
 export function ThemeToggle() {
     const [mounted, setMounted] = useState(false);

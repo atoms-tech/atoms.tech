@@ -1,7 +1,8 @@
 'use client';
 
-import { Project } from '@/types/base/projects.types';
 import { createContext, useContext, useState } from 'react';
+
+import { Project } from '@/types/base/projects.types';
 
 interface ProjectContextType {
     project: Project | null;

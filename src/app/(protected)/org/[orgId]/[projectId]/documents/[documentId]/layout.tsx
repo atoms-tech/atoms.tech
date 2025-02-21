@@ -1,13 +1,14 @@
 import {
+    HydrationBoundary,
+    QueryClient,
+    dehydrate,
+} from '@tanstack/react-query';
+
+import { queryKeys } from '@/lib/constants/queryKeys';
+import {
     getDocumentBlocksAndRequirementsServer,
     getDocumentDataServer,
 } from '@/lib/db/server';
-import {
-    dehydrate,
-    HydrationBoundary,
-    QueryClient,
-} from '@tanstack/react-query';
-import { queryKeys } from '@/lib/constants/queryKeys';
 
 interface DocumentLayoutProps {
     children: React.ReactNode;

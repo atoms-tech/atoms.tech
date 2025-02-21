@@ -1,26 +1,10 @@
 'use client';
 
-import * as React from 'react';
 import { CaretSortIcon } from '@radix-ui/react-icons';
-import { motion, LayoutGroup, AnimatePresence } from 'framer-motion';
-import { Filter, Plus, Check, X, Trash2 } from 'lucide-react';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { Check, Filter, Plus, Trash2, X } from 'lucide-react';
+import * as React from 'react';
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,14 +15,31 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { transitionConfig } from '@/lib/utils/animations';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+import { transitionConfig } from '@/lib/utils/animations';
 
 export type EditableColumnType = 'text' | 'select' | 'number' | 'date';
 

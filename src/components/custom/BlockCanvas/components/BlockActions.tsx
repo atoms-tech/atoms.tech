@@ -1,9 +1,8 @@
 'use client';
 
+import { GripVertical, Plus } from 'lucide-react';
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, GripVertical } from 'lucide-react';
-import { BlockActionsProps } from '../types';
+
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,6 +13,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+
+import { BlockActionsProps } from '../types';
 
 export const BlockActions: React.FC<BlockActionsProps> = ({
     onDelete,
