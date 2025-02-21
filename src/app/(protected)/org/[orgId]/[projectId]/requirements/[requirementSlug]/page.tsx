@@ -140,10 +140,10 @@ export default function RequirementPage() {
     }, [isUploading, convertPipelineRunId]);
 
     const [isReasoning, setIsReasoning] = useState(false);
+    const [isAnalysing, setIsAnalysing] = useState(false);
     const [analysisPipelineRunId, setAnalysisPipelineRunId] =
         useState<string>('');
-    const { data: analysisResponse, isLoading: isAnalysisLoading } =
-        getPipelineRun(analysisPipelineRunId);
+    const { data: analysisResponse } = getPipelineRun(analysisPipelineRunId);
     const [analysisResultLink, setAnalysisResultLink] = useState<string>('');
 
     const handleAnalyze = async () => {
@@ -162,6 +162,7 @@ export default function RequirementPage() {
         console.log('Starting analysis pipeline...');
         setMissingReqError('');
         setMissingFilesError('');
+        setIsAnalysing(true);
         try {
             const { run_id } = await startPipeline({
                 pipelineType: isReasoning
@@ -207,6 +208,7 @@ export default function RequirementPage() {
                 return;
         }
         setAnalysisPipelineRunId('');
+        setIsAnalysing(false);
     }, [analysisResponse]);
 
     if (isReqLoading) {
@@ -254,9 +256,13 @@ export default function RequirementPage() {
                                 <Button
                                     className="gap-2"
                                     onClick={handleAnalyze}
-                                    disabled={isAnalysisLoading}
+                                    disabled={isAnalysing}
                                 >
-                                    <Wand className="h-4 w-4" />
+                                    {isAnalysing ? (
+                                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                                    ) : (
+                                        <Wand className="h-4 w-4" />
+                                    )}
                                     Analyze with AI
                                 </Button>
                             </div>
