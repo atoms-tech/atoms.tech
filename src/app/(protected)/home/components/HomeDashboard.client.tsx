@@ -33,14 +33,16 @@ export default function HomeDashboard() {
         router.push(`/org/${item.id}`);
     };
 
-    const filteredOrganizations = organizations?.filter(org =>
-        org.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredOrganizations = organizations?.filter((org) =>
+        org.name.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     return (
         <div className="container mx-auto p-6">
             <div className="mb-4">
-                <h2 className="text-xl font-medium">Welcome back, {profile?.full_name}</h2>
+                <h2 className="text-xl font-medium">
+                    Welcome back, {profile?.full_name}
+                </h2>
             </div>
             <div className="mb-4 flex w-full sm:w-1/5 space-x-2">
                 <Input
@@ -55,8 +57,12 @@ export default function HomeDashboard() {
                 </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-start">
-                {filteredOrganizations?.map(org => (
-                    <Card key={org.id} className="p-5 hover:bg-gray-200 border border-gray-300" onClick={() => handleRowClick(org)}>
+                {filteredOrganizations?.map((org) => (
+                    <Card
+                        key={org.id}
+                        className="p-5 hover:bg-gray-200 border border-gray-300"
+                        onClick={() => handleRowClick(org)}
+                    >
                         <h3 className="text-sm font-semibold">{org.name}</h3>
                         <p className="pb-3 text-xs text-gray-400">{org.slug}</p>
                         <Badge
@@ -65,13 +71,12 @@ export default function HomeDashboard() {
                                 org.status === 'active'
                                     ? 'border-green-500 text-green-500'
                                     : org.status === 'inactive'
-                                    ? 'border-gray-500 text-gray-500'
-                                    : 'border-yellow-500 text-yellow-500'
+                                      ? 'border-gray-500 text-gray-500'
+                                      : 'border-yellow-500 text-yellow-500'
                             }
                         >
                             {org.status}
                         </Badge>
-                        
                     </Card>
                 ))}
             </div>
