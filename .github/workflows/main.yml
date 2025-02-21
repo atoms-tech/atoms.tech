@@ -44,7 +44,7 @@ jobs:
               run: bun install
 
             - name: Build project
-              run: bun run build
+              run: bun run build --no-lint
 
     lint:
         runs-on: ubuntu-latest
