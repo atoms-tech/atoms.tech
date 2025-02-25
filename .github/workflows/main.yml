@@ -82,6 +82,7 @@ jobs:
             - name: Check for changes
               run: |
                   if ! git diff --quiet; then
+                    git diff --name-only
                     echo "Prettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
                     exit 1
                   fi
