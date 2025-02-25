@@ -12,12 +12,22 @@ import {
 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { FoldingCard } from '@/components/ui/folding-card';
 import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useGumloop } from '@/hooks/useGumloop';
+
+interface AnalysisData {
+    earsReq: string;
+    incoseReq: string;
+    incoseFeedback: string;
+    generalFeedback: string;
+    relevantRegulations: string;
+}
 
 export default function RequirementPage() {
     const { requirementSlug } = useParams<{
@@ -145,9 +155,11 @@ export default function RequirementPage() {
         useState<string>('');
     const { data: analysisResponse } = getPipelineRun(analysisPipelineRunId);
     const [analysisResultLink, setAnalysisResultLink] = useState<string>('');
+    const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
     const handleAnalyze = async () => {
         setAnalysisResultLink('');
+        setAnalysisData(null);
 
         // check if the requirement is empty
         if (!reqText) {
@@ -198,6 +210,30 @@ export default function RequirementPage() {
                 }
 
                 setAnalysisResultLink(analysisResultLink);
+
+                let analysisJSON = analysisResponse.outputs?.analysisJson;
+
+                if (!analysisJSON) {
+                    console.error('No analysis JSON found in response');
+                    break;
+                }
+
+                if (Array.isArray(analysisJSON)) {
+                    if (analysisJSON.length > 1) {
+                        console.error(
+                            'Multiple analysis JSONs found in response',
+                        );
+                        break;
+                    }
+                    analysisJSON = analysisJSON[0];
+                }
+
+                try {
+                    const parsedData = JSON.parse(analysisJSON);
+                    setAnalysisData(parsedData);
+                } catch (error) {
+                    console.error('Failed to parse analysis JSON:', error);
+                }
                 break;
             }
             case 'FAILED': {
@@ -334,73 +370,75 @@ export default function RequirementPage() {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">AI Analysis</h2>
 
-                    {/* Quality Score */}
+                    {/* General Feedback */}
                     <Card className="p-6">
                         <div className="flex items-start gap-4">
                             <div className="rounded-full bg-primary/10 p-3">
-                                <Target className="h-6 w-6 text-primary" />
+                                <Brain className="h-6 w-6 text-primary" />
                             </div>
                             <div>
                                 <h3 className="font-semibold mb-1">
-                                    Quality Score
+                                    General Feedback
                                 </h3>
-                                <p className="text-muted-foreground text-sm">
-                                    Analysis of requirement clarity,
-                                    completeness, and testability.
-                                </p>
-                                <div className="mt-2 font-mono">
-                                    Score: 85/100
-                                </div>
+                                {analysisData ? (
+                                    <div className="text-muted-foreground text-sm">
+                                        <ReactMarkdown>
+                                            {analysisData.generalFeedback}
+                                        </ReactMarkdown>
+                                    </div>
+                                ) : (
+                                    <p className="text-muted-foreground text-sm">
+                                        Upload files and analyze the requirement
+                                        to get AI feedback
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </Card>
 
-                    {/* Improvements */}
-                    <Card className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-full bg-primary/10 p-3">
-                                <Check className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-1">
-                                    Suggested Improvements
-                                </h3>
-                                <p className="text-muted-foreground text-sm">
-                                    Recommendations to enhance requirement
-                                    quality.
-                                </p>
-                                <ul className="mt-2 space-y-2 text-sm">
-                                    <li>
-                                        • Add measurable acceptance criteria
-                                    </li>
-                                    <li>• Clarify performance expectations</li>
-                                    <li>• Remove ambiguous terms</li>
-                                </ul>
-                            </div>
+                    {/* EARS Analysis */}
+                    <FoldingCard
+                        icon={<Target />}
+                        title="EARS Analysis"
+                        disabled={!analysisData}
+                    >
+                        <div className="text-muted-foreground text-sm">
+                            <ReactMarkdown>
+                                {analysisData?.earsReq}
+                            </ReactMarkdown>
                         </div>
-                    </Card>
+                    </FoldingCard>
 
-                    {/* Compliance */}
-                    <Card className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-full bg-primary/10 p-3">
-                                <Scale className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-1">
-                                    Standard Compliance
-                                </h3>
-                                <p className="text-muted-foreground text-sm">
-                                    Alignment with industry standards and best
-                                    practices.
-                                </p>
-                                <div className="mt-2 space-y-1 text-sm">
-                                    <div>ISO/IEC 29148: Partial</div>
-                                    <div>INCOSE Guide: Compliant</div>
-                                </div>
-                            </div>
+                    {/* INCOSE Analysis */}
+                    <FoldingCard
+                        icon={<Check />}
+                        title="INCOSE Analysis"
+                        disabled={!analysisData}
+                    >
+                        <div className="text-muted-foreground text-sm">
+                            <ReactMarkdown>
+                                {analysisData?.incoseReq}
+                            </ReactMarkdown>
                         </div>
-                    </Card>
+                        <div className="text-muted-foreground text-sm mt-2">
+                            <ReactMarkdown>
+                                {analysisData?.incoseFeedback}
+                            </ReactMarkdown>
+                        </div>
+                    </FoldingCard>
+
+                    {/* Regulations */}
+                    <FoldingCard
+                        icon={<Scale />}
+                        title="Relevant Regulations"
+                        disabled={!analysisData}
+                    >
+                        <div className="text-muted-foreground text-sm">
+                            <ReactMarkdown>
+                                {analysisData?.relevantRegulations}
+                            </ReactMarkdown>
+                        </div>
+                    </FoldingCard>
                 </div>
             </div>
         </div>
