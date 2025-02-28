@@ -2,6 +2,22 @@
 import { QueryFilters } from '@/types/base/filters.types';
 
 export const queryKeys = {
+    externalDocuments: {
+        all: ['externalDocuments'] as const,
+        lists: () => [...queryKeys.externalDocuments.all, 'list'] as const,
+        list: (filters: QueryFilters) =>
+            [...queryKeys.externalDocuments.lists(), { filters }] as const,
+        details: () => [...queryKeys.externalDocuments.all, 'detail'] as const,
+        detail: (id: string) =>
+            [...queryKeys.externalDocuments.details(), id] as const,
+        byOrg: (orgId: string) =>
+            [
+                ...queryKeys.externalDocuments.all,
+                'organization_id',
+                orgId,
+            ] as const,
+    },
+
     documents: {
         all: ['documents'] as const,
         lists: () => [...queryKeys.documents.all, 'list'] as const,

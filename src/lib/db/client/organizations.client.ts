@@ -2,6 +2,11 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { OrganizationSchema } from '@/types/validation/organizations.validation';
 
 export const getUserOrganizations = async (userId: string) => {
+    if (!userId) {
+        console.log('No userId provided to getUserOrganizations');
+        return [];
+    }
+
     const { data, error } = await supabase
         .from('organization_members')
         .select(
@@ -23,8 +28,13 @@ export const getUserOrganizations = async (userId: string) => {
         return [];
     }
 
-    const organizations = data.map((member) => member.organizations);
-    return organizations.map((org) => OrganizationSchema.parse(org));
+    try {
+        const organizations = data.map((member) => member.organizations);
+        return organizations.map((org) => OrganizationSchema.parse(org));
+    } catch (error) {
+        console.error('Error parsing organizations:', error);
+        return [];
+    }
 };
 
 export const getOrganizationMembers = async (organizationId: string) => {

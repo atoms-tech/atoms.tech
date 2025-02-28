@@ -8,6 +8,8 @@ import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 
+import { LayoutViewToggle } from './toggles/LayoutViewToggle';
+
 const VerticalToolbar = () => {
     const { state } = useSidebar();
     const [isMobile, setIsMobile] = useState(false);
@@ -75,6 +77,9 @@ const VerticalToolbar = () => {
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <ViewModeToggle />
+                </div>
+                <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
+                    <LayoutViewToggle />
                 </div>
             </div>
 

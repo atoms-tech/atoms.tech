@@ -36,7 +36,11 @@ export const OrganizationSchema = z.object({
     slug: z.string(),
     status: z.enum(['active', 'inactive']).nullable(),
     storage_used: z.number().nullable(),
-    type: z.enum(['personal', 'team']) as z.ZodType<OrganizationType>,
+    type: z.enum([
+        'personal',
+        'team',
+        'enterprise',
+    ]) as z.ZodType<OrganizationType>,
     updated_at: z.string().nullable(),
     updated_by: z.string(),
 }) satisfies z.ZodType<Organization>;
