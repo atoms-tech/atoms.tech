@@ -31,7 +31,6 @@ interface PipelineInput {
 }
 
 export type StartPipelineParams = {
-    organizationId: string;
     pipelineType: PipelineType;
     requirement?: string;
     fileNames?: string[] | string;
@@ -44,14 +43,23 @@ export type GetPipelineRunParams = {
     runId: string;
 };
 
-interface PipelineResponse {
+interface StartPipelineResponse {
     run_id: string;
 }
 
-interface PipelineRunResponse {
+export enum PipelineRunState {
+    RUNNING = 'RUNNING',
+    DONE = 'DONE',
+    TERMINATING = 'TERMINATING',
+    FAILED = 'FAILED',
+    TERMINATED = 'TERMINATED',
+}
+
+interface PipelineRunStatusResponse {
     run_id: string;
-    state: string;
+    state: PipelineRunState;
     outputs?: Record<string, string>;
+    credit_cost: number;
 }
 
 export class GumloopService {
@@ -155,7 +163,7 @@ export class GumloopService {
         systemName,
         objective,
         customPipelineInputs,
-    }: StartPipelineParams): Promise<PipelineResponse> {
+    }: StartPipelineParams): Promise<StartPipelineResponse> {
         let pipeline_id;
         switch (pipelineType) {
             case 'file-processing':
@@ -265,14 +273,14 @@ export class GumloopService {
 
     async getPipelineRun({
         runId,
-    }: GetPipelineRunParams): Promise<PipelineRunResponse> {
+    }: GetPipelineRunParams): Promise<PipelineRunStatusResponse> {
         console.log('Getting pipeline run status:', {
             runId,
             userId: USER_ID,
         });
 
         try {
-            console.log('Making API request to get pipeline run');
+            // console.log('Making API request to get pipeline run');
             const response = await fetch(
                 `${GUMLOOP_API_URL}/get_pl_run?run_id=${runId}&user_id=${USER_ID}`,
                 {
@@ -296,8 +304,8 @@ export class GumloopService {
                 );
             }
 
-            const result = await response.json();
-            console.log('Pipeline run status retrieved:', result);
+            const result = (await response.json()) as PipelineRunStatusResponse;
+            // console.log('Pipeline run status retrieved:', result);
             return result;
         } catch (error) {
             console.error('Get pipeline run process failed:', error);

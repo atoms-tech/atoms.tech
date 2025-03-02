@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
     GetPipelineRunParams,
+    PipelineRunState,
     StartPipelineParams,
     gumloopService,
 } from '@/lib/services/gumloop';
@@ -43,41 +44,6 @@ export async function POST(request: NextRequest) {
                 const pipelineResponse =
                     await gumloopService.startPipeline(body);
 
-                // increment the API usage counter
-                const supabase = await createClient();
-
-                // select one
-                const { data, error } = await supabase
-                    .from('billing_cache')
-                    .select('*')
-                    .eq('organization_id', body.organizationId);
-
-                if (error) throw error;
-
-                const billingRecord = BillingCacheSchema.parse(data[0]);
-
-                // @ts-expect-error The property exists
-                billingRecord.current_period_usage.api_calls += 1;
-                if (!billingRecord.current_period_usage) {
-                    throw new Error('No billing record found');
-                }
-
-                // Update the record in database
-                const { data: updateData, error: updateError } = await supabase
-                    .from('billing_cache')
-                    .update({
-                        current_period_usage: {
-                            // @ts-expect-error The property exists
-                            ...billingRecord.current_period_usage,
-                        },
-                    })
-                    .eq('organization_id', body.organizationId)
-                    .select();
-
-                if (updateError) throw updateError;
-
-                console.log('updateData', updateData);
-
                 return NextResponse.json(pipelineResponse);
             }
 
@@ -117,7 +83,58 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        const organizationId =
+            request.nextUrl.searchParams.get('organizationId');
+        if (!organizationId) {
+            return NextResponse.json(
+                { error: 'Organization ID is required' },
+                { status: 400 },
+            );
+        }
+
         const status = await gumloopService.getPipelineRun({ runId });
+
+        console.log('Pipeline status:', status.state);
+
+        if (status.state == PipelineRunState.DONE) {
+            console.log(
+                `Adding ${status.credit_cost} cost to the billing cache`,
+            );
+
+            // increment the API usage counter
+            const supabase = await createClient();
+            const { data, error } = await supabase
+                .from('billing_cache')
+                .select('*')
+                .eq('organization_id', organizationId);
+
+            if (error) throw error;
+
+            const billingRecord = BillingCacheSchema.parse(data[0]);
+
+            // @ts-expect-error The property exists
+            billingRecord.current_period_usage.api_calls += status.credit_cost;
+            if (!billingRecord.current_period_usage) {
+                throw new Error('No billing record found');
+            }
+
+            // Update the record in database
+            const { data: updateData, error: updateError } = await supabase
+                .from('billing_cache')
+                .update({
+                    current_period_usage: {
+                        // @ts-expect-error The property exists
+                        ...billingRecord.current_period_usage,
+                    },
+                })
+                .eq('organization_id', organizationId)
+                .select();
+
+            if (updateError) throw updateError;
+
+            console.log('updateData', updateData);
+        }
+
         return NextResponse.json(status);
     } catch (error) {
         console.error('API error:', error);

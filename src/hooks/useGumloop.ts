@@ -89,9 +89,15 @@ export function useGumloop(options: GumloopOptions = {}) {
     });
 
     const getPipelineRun = useCallback(
-        async (runId: string): Promise<PipelineRunResponse> => {
+        async (
+            runId: string,
+            organizationId: string,
+        ): Promise<PipelineRunResponse> => {
             console.log('Fetching pipeline run status for runId:', runId);
-            const response = await fetch(`/api/ai?runId=${runId}`, {
+            const url = new URL('/api/ai', window.location.href);
+            url.searchParams.set('runId', runId);
+            url.searchParams.set('organizationId', organizationId);
+            const response = await fetch(url.href, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -110,10 +116,10 @@ export function useGumloop(options: GumloopOptions = {}) {
         [],
     );
 
-    const usePipelineRun = (runId?: string) => {
+    const usePipelineRun = (runId: string, organizationId: string) => {
         return useQuery<PipelineRunResponse, Error>({
             queryKey: ['pipelineRun', runId],
-            queryFn: () => getPipelineRun(runId!),
+            queryFn: () => getPipelineRun(runId, organizationId),
             enabled: !!runId && !options.skipCache,
             refetchInterval: (query) => {
                 const state = query.state.data?.state;

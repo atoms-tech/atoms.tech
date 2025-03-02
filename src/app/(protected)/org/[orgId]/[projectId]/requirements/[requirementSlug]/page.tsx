@@ -66,7 +66,10 @@ export default function RequirementPage() {
     const { startPipeline, getPipelineRun, uploadFiles } = useGumloop();
     const [convertPipelineRunId, setConvertPipelineRunId] =
         useState<string>('');
-    const { data: convertResponse } = getPipelineRun(convertPipelineRunId);
+    const { data: convertResponse } = getPipelineRun(
+        convertPipelineRunId,
+        organizationId,
+    );
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
@@ -86,7 +89,6 @@ export default function RequirementPage() {
             const { run_id } = await startPipeline({
                 fileNames: uploadedFileNames,
                 pipelineType: 'file-processing',
-                organizationId,
             });
             setConvertPipelineRunId(run_id);
         } catch (error) {
@@ -154,7 +156,10 @@ export default function RequirementPage() {
     const [isAnalysing, setIsAnalysing] = useState(false);
     const [analysisPipelineRunId, setAnalysisPipelineRunId] =
         useState<string>('');
-    const { data: analysisResponse } = getPipelineRun(analysisPipelineRunId);
+    const { data: analysisResponse } = getPipelineRun(
+        analysisPipelineRunId,
+        organizationId,
+    );
     const [analysisResultLink, setAnalysisResultLink] = useState<string>('');
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
@@ -185,7 +190,6 @@ export default function RequirementPage() {
                 requirement: reqText,
                 systemName: 'Backup Camera',
                 fileNames: Object.keys(uploadedFiles),
-                organizationId,
             });
             setAnalysisPipelineRunId(run_id);
         } catch (error) {
