@@ -10,7 +10,7 @@ import {
     Upload,
     Wand,
 } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
@@ -30,6 +30,7 @@ interface AnalysisData {
 }
 
 export default function RequirementPage() {
+    const organizationId = usePathname().split('/')[2];
     const { requirementSlug } = useParams<{
         requirementSlug: string;
     }>();
@@ -82,10 +83,10 @@ export default function RequirementPage() {
             const uploadedFileNames = await uploadFiles(files);
             console.log('Files uploaded successfully:', uploadedFileNames);
 
-            // Start pipeline for file processing
             const { run_id } = await startPipeline({
                 fileNames: uploadedFileNames,
                 pipelineType: 'file-processing',
+                organizationId,
             });
             setConvertPipelineRunId(run_id);
         } catch (error) {
@@ -175,6 +176,7 @@ export default function RequirementPage() {
         setMissingReqError('');
         setMissingFilesError('');
         setIsAnalysing(true);
+
         try {
             const { run_id } = await startPipeline({
                 pipelineType: isReasoning
@@ -183,6 +185,7 @@ export default function RequirementPage() {
                 requirement: reqText,
                 systemName: 'Backup Camera',
                 fileNames: Object.keys(uploadedFiles),
+                organizationId,
             });
             setAnalysisPipelineRunId(run_id);
         } catch (error) {

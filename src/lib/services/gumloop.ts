@@ -31,6 +31,7 @@ interface PipelineInput {
 }
 
 export type StartPipelineParams = {
+    organizationId: string;
     pipelineType: PipelineType;
     requirement?: string;
     fileNames?: string[] | string;
