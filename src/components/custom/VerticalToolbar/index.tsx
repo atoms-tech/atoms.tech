@@ -4,13 +4,12 @@ import { ChevronLeft } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import React from 'react';
 
+import { LayoutViewToggle } from '@/components/custom/toggles/LayoutViewToggle';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
-
-import { LayoutViewToggle } from '../toggles/LayoutViewToggle';
 
 const VerticalToolbar = () => {
     const router = useRouter();

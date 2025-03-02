@@ -12,10 +12,10 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import React from 'react';
 
+import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import { cn } from '@/lib/utils';
 import { Json } from '@/types/base/database.types';
 
-import { BlockProps } from '../types';
 import { Toolbar } from './FormatToolbar';
 
 const customStyles = `

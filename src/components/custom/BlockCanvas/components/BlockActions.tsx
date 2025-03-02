@@ -3,6 +3,7 @@
 import { GripVertical, Plus } from 'lucide-react';
 import React, { useState } from 'react';
 
+import { BlockActionsProps } from '@/components/custom/BlockCanvas/types';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,8 +15,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-
-import { BlockActionsProps } from '../types';
 
 export const BlockActions: React.FC<BlockActionsProps> = ({
     onDelete,

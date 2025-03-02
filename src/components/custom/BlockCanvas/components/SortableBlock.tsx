@@ -4,9 +4,9 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import React from 'react';
 
+import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import { cn } from '@/lib/utils';
 
-import { BlockProps } from '../types';
 import { BlockActions } from './BlockActions';
 import { TableBlock } from './TableBlock';
 import { TextBlock } from './TextBlock';

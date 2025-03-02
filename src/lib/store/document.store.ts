@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { Block, Document } from '../../types/base/documents.types';
+import { Block, Document } from '@/types/base/documents.types';
 
 interface DocumentState {
     currentDocument: Document | null;

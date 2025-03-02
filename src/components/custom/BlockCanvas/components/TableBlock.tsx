@@ -8,6 +8,7 @@ import {
     type EditableColumn,
     EditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
+import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import {
     useCreateRequirement,
     useUpdateRequirement,
@@ -20,8 +21,6 @@ import {
     RequirementStatus,
 } from '@/types/base/enums.types';
 import { Requirement } from '@/types/base/requirements.types';
-
-import { BlockProps } from '../types';
 
 // Type for the simplified requirement data that will be displayed in the table
 type DisplayRequirement = {

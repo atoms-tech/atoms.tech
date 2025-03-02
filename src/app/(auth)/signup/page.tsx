@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 
+import { signup } from '@/app/(auth)/auth/actions';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,7 +17,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
-import { signup } from '../auth/actions';
 import ConfirmEmailMessage from './message';
 
 // Create a separate client component for the signup form
