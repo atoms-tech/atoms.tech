@@ -6,6 +6,7 @@ interface DocumentState {
     currentDocument: Document | null;
     blocks: Block[];
     selectedBlockId: string | null;
+    isEditMode: boolean;
 
     // Document actions
     setCurrentDocument: (document: Document | null) => void;
@@ -18,12 +19,14 @@ interface DocumentState {
     moveBlock: (blockId: string, newPosition: number) => void;
     reorderBlocks: (blocks: Block[]) => void;
     setSelectedBlock: (blockId: string | null) => void;
+    setIsEditMode: (isEditMode: boolean) => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
     currentDocument: null,
     blocks: [],
     selectedBlockId: null,
+    isEditMode: false,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),
@@ -90,4 +93,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     },
 
     setSelectedBlock: (blockId) => set({ selectedBlockId: blockId }),
+
+    setIsEditMode: (isEditMode) => set({ isEditMode }),
 }));

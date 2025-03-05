@@ -47,6 +47,7 @@ export const NotificationTypeSchema = z.enum([
 export const OrganizationTypeSchema = z.enum([
     'personal',
     'team',
+    'enterprise',
 ]) as z.ZodType<OrganizationType>;
 export const PricingPlanIntervalSchema = z.enum([
     'month',

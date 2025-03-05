@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 
 import {
+    BlockPropertySchema,
     BlockWithRequirements,
     UseBlockActionsProps,
 } from '@/components/custom/BlockCanvas/types';
@@ -9,6 +10,8 @@ import {
     useDeleteBlock,
     useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
+import { useCreateBlockPropertySchema } from '@/hooks/queries/usePropertySchemas';
+import { useDocumentPropertySchemas } from '@/hooks/queries/usePropertySchemas';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useDocumentStore } from '@/lib/store/document.store';
 import { Json } from '@/types/base/database.types';
@@ -22,11 +25,19 @@ export const useBlockActions = ({
     const createBlockMutation = useCreateBlock();
     const updateBlockMutation = useUpdateBlock();
     const deleteBlockMutation = useDeleteBlock();
+    const createBlockPropertySchemaMutation = useCreateBlockPropertySchema();
+    const { data: documentPropertySchemas } =
+        useDocumentPropertySchemas(documentId);
     const { addBlock } = useDocumentStore();
     const queryClient = useQueryClient();
 
     const handleAddBlock = async (type: 'text' | 'table', content: Json) => {
-        if (!userProfile?.id) return;
+        console.log('🏗️ handleAddBlock called', { type, content });
+
+        if (!userProfile?.id) {
+            console.log('⚠️ Cannot add block - missing user profile');
+            return;
+        }
 
         const newBlock = {
             type,
@@ -38,8 +49,11 @@ export const useBlockActions = ({
         };
 
         try {
+            console.log('🚀 Creating new block', newBlock);
             const createdBlock =
                 await createBlockMutation.mutateAsync(newBlock);
+            console.log('✅ Block created successfully', createdBlock);
+
             // Update both document store and local state immediately
             addBlock(createdBlock);
             setLocalBlocks((prev) =>
@@ -47,8 +61,100 @@ export const useBlockActions = ({
                     (a, b) => a.position - b.position,
                 ),
             );
+            console.log('🔄 Local state updated with new block');
+
+            // If it's a table block, create property schemas based on document property schemas
+            if (type === 'table') {
+                console.log('📊 Creating property schemas for table block', {
+                    blockId: createdBlock.id,
+                    docSchemasCount: documentPropertySchemas?.length,
+                });
+
+                if (!documentPropertySchemas?.length) {
+                    console.warn(
+                        '⚠️ No document property schemas found to mirror for table block',
+                    );
+                    return createdBlock;
+                }
+
+                try {
+                    const createdSchemas = await Promise.all(
+                        documentPropertySchemas.map(async (docSchema) => {
+                            console.log(
+                                '📝 Creating block schema from doc schema',
+                                {
+                                    schemaName: docSchema.name,
+                                    dataType: docSchema.data_type,
+                                },
+                            );
+
+                            const blockSchema: Partial<BlockPropertySchema> = {
+                                block_id: createdBlock.id,
+                                name: docSchema.name,
+                                data_type: docSchema.data_type,
+                                created_by: userProfile.id,
+                                updated_by: userProfile.id,
+                            };
+
+                            try {
+                                console.log(
+                                    '🚀 Sending create block property schema mutation',
+                                    blockSchema,
+                                );
+                                const createdSchema =
+                                    await createBlockPropertySchemaMutation.mutateAsync(
+                                        blockSchema,
+                                    );
+                                console.log(
+                                    '✅ Block property schema created successfully',
+                                    createdSchema,
+                                );
+                                return createdSchema;
+                            } catch (err) {
+                                console.error(
+                                    '❌ Failed to create individual block property schema:',
+                                    err,
+                                );
+                                console.error(
+                                    'Error details:',
+                                    JSON.stringify(err),
+                                );
+                                throw err;
+                            }
+                        }),
+                    );
+
+                    console.log(
+                        '✅ All block property schemas created successfully',
+                        {
+                            count: createdSchemas.length,
+                        },
+                    );
+
+                    // Invalidate block property schemas query to trigger a refetch
+                    console.log('🔄 Invalidating block property schemas query');
+                    queryClient.invalidateQueries({
+                        queryKey: queryKeys.blockPropertySchemas.byBlock(
+                            createdBlock.id,
+                        ),
+                    });
+                } catch (schemaError) {
+                    console.error(
+                        '❌ Failed to create block property schemas:',
+                        schemaError,
+                    );
+                    console.error(
+                        'Error details:',
+                        JSON.stringify(schemaError),
+                    );
+                }
+            }
+
+            return createdBlock;
         } catch (error) {
-            console.error('Failed to create block:', error);
+            console.error('❌ Failed to create block:', error);
+            console.error('Error details:', JSON.stringify(error));
+            throw error;
         }
     };
 

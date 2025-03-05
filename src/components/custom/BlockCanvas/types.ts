@@ -11,6 +11,7 @@ export interface BlockContent {
     format?: string;
     image?: string;
     requirements?: Requirement[];
+    property_schemas?: BlockPropertySchema[];
 }
 
 export interface BlockCanvasProps {
@@ -46,4 +47,43 @@ export interface UseBlockActionsProps {
     setLocalBlocks: React.Dispatch<
         React.SetStateAction<BlockWithRequirements[]>
     >;
+}
+
+export interface PropertySchema {
+    id: string;
+    name: string;
+    data_type: string;
+    created_at?: string | null;
+    updated_at?: string | null;
+    created_by?: string | null;
+    updated_by?: string | null;
+    version?: number;
+    is_deleted?: boolean;
+    deleted_at?: string | null;
+    deleted_by?: string | null;
+}
+
+export interface DocumentPropertySchema extends PropertySchema {
+    document_id: string;
+}
+
+export interface BlockPropertySchema extends PropertySchema {
+    block_id: string;
+}
+
+export interface PropertyKeyValue {
+    id: string;
+    block_id: string;
+    requirement_id: string;
+    property_name: string;
+    property_value: string;
+    position: number;
+    created_at?: string | null;
+    updated_at?: string | null;
+    created_by?: string | null;
+    updated_by?: string | null;
+    version?: number;
+    is_deleted?: boolean | null;
+    deleted_at?: string | null;
+    deleted_by?: string | null;
 }

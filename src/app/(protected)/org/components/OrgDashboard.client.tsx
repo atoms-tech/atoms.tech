@@ -1,50 +1,70 @@
 'use client';
 
 import { File } from 'lucide-react';
+import { Building, FileBox, FolderArchive, ListTodo } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-import DashboardView, { Column } from '@/components/base/DashboardView';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+// Import the organization hook and the OrgMembers component
+import { useOrganization } from '@/hooks/queries/useOrganization';
 import { useUserProjects } from '@/hooks/queries/useProject';
+import { useOrganization as useOrgProvider } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { Project } from '@/types';
+import { Organization, Project } from '@/types';
+
+import OrgMembers from './OrgMembers.client';
 
 export default function OrgDashboard() {
     // Navigation hooks
     const router = useRouter();
     const params = useParams<{ orgId: string }>();
+    const [activeTab, setActiveTab] = useState('projects');
 
     // User context hooks
     const { profile } = useUser();
     const { setCurrentProjectId } = useContextStore();
+
+    // Validate orgId before using it
+    const orgId = params?.orgId && params.orgId !== 'user' ? params.orgId : '';
+
+    // Fetch organization data
+    const { data: organization, isLoading: orgLoading } =
+        useOrganization(orgId);
+    const { setOrganization } = useOrgProvider();
+
+    // Use useEffect to set the organization when it changes
+    useEffect(() => {
+        if (organization) {
+            setOrganization(organization as Organization);
+        }
+    }, [organization, setOrganization]);
+
+    // Fetch projects data
     const { data: projects, isLoading: projectsLoading } = useUserProjects(
         profile?.id || '',
-        profile?.current_organization_id || '',
+        orgId,
     );
 
     const { data: documents, isLoading: documentsLoading } =
         useExternalDocumentsByOrg(params?.orgId || '');
     const { theme } = useTheme();
 
-    const columns: Column<Project>[] = [
-        {
-            header: 'Name',
-            accessor: (item: Project) => item.name,
-        },
-        {
-            header: 'Status',
-            accessor: (item: Project) => item.status || 'N/A',
-        },
-    ];
-
-    const handleRowClick = (item: Project) => {
-        setCurrentProjectId(item.id);
-        router.push(`/org/${params?.orgId}/${item.id}`);
+    const handleProjectClick = (project: Project) => {
+        setCurrentProjectId(project.id);
+        router.push(`/org/${orgId}/${project.id}`);
     };
 
     const handleExternalDocsClick = () => {
@@ -73,15 +93,317 @@ export default function OrgDashboard() {
     };
 
     return (
-        <div className="container p-6">
-            <h1 className="text-xl font-medium">Projects</h1>
-            <DashboardView
-                data={projects || []}
-                columns={columns}
-                isLoading={projectsLoading}
-                emptyMessage="No projects found."
-                onRowClick={handleRowClick}
-            />
+        <div className="container mx-auto p-6 space-y-6">
+            {/* Organization Header */}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        {organization?.name || 'Organization Dashboard'}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        {organization?.description ||
+                            'Manage your organization resources'}
+                    </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                    {organization?.type && (
+                        <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                            {organization.type.charAt(0).toUpperCase() +
+                                organization.type.slice(1)}
+                        </span>
+                    )}
+                </div>
+            </div>
+
+            {/* Main Dashboard Tabs */}
+            <Tabs
+                defaultValue="projects"
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+            >
+                <TabsList className="grid grid-cols-5 w-full">
+                    <TabsTrigger
+                        value="overview"
+                        className="flex items-center gap-2"
+                    >
+                        <Building className="h-4 w-4" />
+                        <span>Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="projects"
+                        className="flex items-center gap-2"
+                    >
+                        <FolderArchive className="h-4 w-4" />
+                        <span>Projects</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="documents"
+                        className="flex items-center gap-2"
+                    >
+                        <FileBox className="h-4 w-4" />
+                        <span>Documents</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="collections"
+                        className="flex items-center gap-2"
+                    >
+                        <FileBox className="h-4 w-4" />
+                        <span>Collections</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="tasks"
+                        className="flex items-center gap-2"
+                    >
+                        <ListTodo className="h-4 w-4" />
+                        <span>Tasks</span>
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Organization Overview Tab */}
+                <TabsContent value="overview" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Organization Details</CardTitle>
+                                <CardDescription>
+                                    Basic information about your organization
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {orgLoading ? (
+                                    <div className="animate-pulse space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Name:
+                                            </span>
+                                            <span className="font-medium">
+                                                {organization?.name}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Type:
+                                            </span>
+                                            <span className="font-medium">
+                                                {organization?.type}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Members:
+                                            </span>
+                                            <span className="font-medium">
+                                                {organization?.member_count ||
+                                                    0}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Plan:
+                                            </span>
+                                            <span className="font-medium">
+                                                {organization?.billing_plan}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Storage Usage</CardTitle>
+                                <CardDescription>
+                                    Current storage utilization
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {orgLoading ? (
+                                    <div className="animate-pulse space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                            <div
+                                                className="bg-primary h-2.5 rounded-full"
+                                                style={{
+                                                    width: `${Math.min(((organization?.storage_used || 0) / 1000) * 100, 100)}%`,
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span>
+                                                {organization?.storage_used ||
+                                                    0}{' '}
+                                                MB used
+                                            </span>
+                                            <span>1000 MB total</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Replace the static members card with the OrgMembers component */}
+                        <OrgMembers />
+                    </div>
+                </TabsContent>
+
+                {/* Projects Tab */}
+                <TabsContent value="projects" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold">Projects</h2>
+                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Create Project
+                        </button>
+                    </div>
+
+                    {projectsLoading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[1, 2, 3].map((i) => (
+                                <Card key={i} className="animate-pulse">
+                                    <CardHeader>
+                                        <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : projects && projects.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {projects.map((project) => (
+                                <Card
+                                    key={project.id}
+                                    className="cursor-pointer hover:shadow-md transition-shadow"
+                                    onClick={() => handleProjectClick(project)}
+                                >
+                                    <CardHeader>
+                                        <CardTitle>{project.name}</CardTitle>
+                                        <CardDescription>
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                    project.status === 'active'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : project.status ===
+                                                            'archived'
+                                                          ? 'bg-gray-100 text-gray-800'
+                                                          : 'bg-yellow-100 text-yellow-800'
+                                                }`}
+                                            >
+                                                {project.status}
+                                            </span>
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">
+                                            {project.description ||
+                                                'No description provided'}
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 border rounded-lg">
+                            <FolderArchive className="h-12 w-12 mx-auto text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-medium">
+                                No projects found
+                            </h3>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Get started by creating your first project
+                            </p>
+                            <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                                Create Project
+                            </button>
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Documents Tab */}
+                <TabsContent value="documents" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold">
+                            Organization Documents
+                        </h2>
+                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Upload Document
+                        </button>
+                    </div>
+
+                    <div className="text-center py-12 border rounded-lg">
+                        <FileBox className="h-12 w-12 mx-auto text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-medium">
+                            No documents found
+                        </h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Upload documents to share with your organization
+                        </p>
+                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Upload Document
+                        </button>
+                    </div>
+                </TabsContent>
+
+                {/* Collections Tab */}
+                <TabsContent value="collections" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold">
+                            File Collections
+                        </h2>
+                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Create Collection
+                        </button>
+                    </div>
+
+                    <div className="text-center py-12 border rounded-lg">
+                        <FolderArchive className="h-12 w-12 mx-auto text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-medium">
+                            No collections found
+                        </h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Create collections to organize your files
+                        </p>
+                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Create Collection
+                        </button>
+                    </div>
+                </TabsContent>
+
+                {/* Tasks Tab */}
+                <TabsContent value="tasks" className="space-y-6">
+                    <div className="flex justify-between items-center">
+                        <h2 className="text-xl font-semibold">User Tasks</h2>
+                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Create Task
+                        </button>
+                    </div>
+
+                    <div className="text-center py-12 border rounded-lg">
+                        <ListTodo className="h-12 w-12 mx-auto text-muted-foreground" />
+                        <h3 className="mt-4 text-lg font-medium">
+                            No tasks found
+                        </h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Create tasks to track your work
+                        </p>
+                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            Create Task
+                        </button>
+                    </div>
+                </TabsContent>
+            </Tabs>
             <div className="project-documents mt-8">
                 <h2 className="text-xl font-medium mb-4">
                     Document Collection

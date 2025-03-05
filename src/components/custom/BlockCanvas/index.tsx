@@ -21,15 +21,16 @@ import {
 import { Table, Type } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 
+import { SortableBlock } from '@/components/custom/BlockCanvas/components/SortableBlock';
+import { useBlockActions } from '@/components/custom/BlockCanvas/hooks/useBlockActions';
+import {
+    BlockCanvasProps,
+    BlockWithRequirements,
+} from '@/components/custom/BlockCanvas/types';
 import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { useDocumentStore } from '@/lib/store/document.store';
-
-import { EditModeToggle } from './components/EditModeToggle';
-import { SortableBlock } from './components/SortableBlock';
-import { useBlockActions } from './hooks/useBlockActions';
-import { BlockCanvasProps, BlockWithRequirements } from './types';
 
 const dropAnimationConfig = {
     ...defaultDropAnimation,
@@ -39,9 +40,8 @@ const dropAnimationConfig = {
 export function BlockCanvas({ documentId }: BlockCanvasProps) {
     const { blocks, isLoading, setLocalBlocks } =
         useDocumentRealtime(documentId);
-    const { reorderBlocks } = useDocumentStore();
+    const { reorderBlocks, isEditMode, setIsEditMode } = useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-    const [isEditMode, setIsEditMode] = useState(false);
     const [activeId, setActiveId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const {
@@ -87,7 +87,13 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                 />
             );
         },
-        [selectedBlockId, isEditMode, handleUpdateBlock, handleDeleteBlock],
+        [
+            selectedBlockId,
+            isEditMode,
+            handleUpdateBlock,
+            handleDeleteBlock,
+            setIsEditMode,
+        ],
     );
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -121,15 +127,6 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
 
             // Trigger server update
             handleReorder(newBlocks);
-        }
-    };
-
-    const toggleEditMode = () => {
-        const newEditMode = !isEditMode;
-        setIsEditMode(newEditMode);
-        // Clear block selection when exiting edit mode
-        if (!newEditMode) {
-            setSelectedBlockId(null);
         }
     };
 
@@ -209,8 +206,6 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                     </Button>
                 </div>
             )}
-
-            <EditModeToggle isEditMode={isEditMode} onToggle={toggleEditMode} />
         </div>
     );
 }

@@ -1,11 +1,20 @@
 'use client';
 
+import { Lock, Unlock } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 import Breadcrumb from '@/components/custom/Breadcrumb';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
 
 import { LayoutViewToggle } from './toggles/LayoutViewToggle';
@@ -14,6 +23,13 @@ const VerticalToolbar = () => {
     const { state } = useSidebar();
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
+    const pathname = usePathname();
+
+    // Check if we're on a document page
+    const isDocumentPage = pathname?.includes('/documents/');
+
+    // Get edit mode state from document store
+    const { isEditMode, setIsEditMode } = useDocumentStore();
 
     useEffect(() => {
         const handleResize = () => {
@@ -41,6 +57,10 @@ const VerticalToolbar = () => {
         };
     }, []);
 
+    const toggleEditMode = () => {
+        setIsEditMode(!isEditMode);
+    };
+
     if (isMobile || isTablet) {
         // Mobile and tablet layout - horizontal toolbar at the top
         return (
@@ -52,6 +72,18 @@ const VerticalToolbar = () => {
                     <Breadcrumb className={cn('ml-0', isTablet && 'ml-2')} />
                 </div>
                 <div className="flex items-center gap-2">
+                    {isDocumentPage && (
+                        <button
+                            onClick={toggleEditMode}
+                            className="p-2 rounded-md hover:bg-muted"
+                        >
+                            {isEditMode ? (
+                                <Unlock className="h-5 w-5" />
+                            ) : (
+                                <Lock className="h-5 w-5" />
+                            )}
+                        </button>
+                    )}
                     <ThemeToggle />
                     <ViewModeToggle />
                 </div>
@@ -78,6 +110,36 @@ const VerticalToolbar = () => {
                 <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <ViewModeToggle />
                 </div>
+
+                {/* Edit Mode Toggle - Only show on document pages */}
+                {isDocumentPage && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div
+                                    className={cn(
+                                        'w-10 h-10 flex items-center justify-center backdrop-blur-sm rounded-md transition-colors cursor-pointer',
+                                        isEditMode
+                                            ? 'bg-destructive/80 hover:bg-destructive/90 text-destructive-foreground'
+                                            : 'bg-background/80 hover:bg-background/90',
+                                    )}
+                                    onClick={toggleEditMode}
+                                >
+                                    {isEditMode ? (
+                                        <Unlock className="h-5 w-5" />
+                                    ) : (
+                                        <Lock className="h-5 w-5" />
+                                    )}
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                                {isEditMode
+                                    ? 'Exit Edit Mode'
+                                    : 'Enter Edit Mode'}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
                 <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <LayoutViewToggle />
                 </div>

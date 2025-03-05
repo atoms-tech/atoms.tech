@@ -1,13 +1,10 @@
-import {
-    QueryClient,
-    useMutation,
-    useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { v4 as uuidv4 } from 'uuid';
 
+import { DocumentPropertySchema } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { Document } from '@/types';
-import { DocumentSchema } from '@/types/validation/documents.validation';
+import { Document } from '@/types/base/documents.types';
 
 export type CreateDocumentInput = Omit<
     Document,
@@ -24,36 +21,27 @@ export function useCreateDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: CreateDocumentInput) => {
-            console.log('Creating document', input);
-
-            const { data: document, error: documentError } = await supabase
+        mutationFn: async (document: Partial<Document>) => {
+            const { data, error } = await supabase
                 .from('documents')
                 .insert({
-                    name: input.name,
-                    slug: input.slug,
-                    description: input.description,
-                    project_id: input.project_id,
-                    tags: input.tags,
-                    created_by: input.created_by,
-                    updated_by: input.updated_by,
+                    ...document,
+                    id: document.id || uuidv4(),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    is_deleted: false,
+                    version: 1,
                 })
                 .select()
                 .single();
 
-            if (documentError) {
-                console.error('Failed to create document', documentError);
-                throw documentError;
-            }
-
-            if (!document) {
-                throw new Error('Failed to create document');
-            }
-
-            return DocumentSchema.parse(document);
+            if (error) throw error;
+            return data as Document;
         },
         onSuccess: (data) => {
-            invalidateDocumentQueries(queryClient, data);
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.byProject(data.project_id),
+            });
         },
     });
 }
@@ -62,35 +50,25 @@ export function useUpdateDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            id,
-            ...input
-        }: Partial<Document> & { id: string }) => {
-            console.log('Updating document', id, input);
-
-            const { data: document, error: documentError } = await supabase
+        mutationFn: async (document: Partial<Document>) => {
+            const { data, error } = await supabase
                 .from('documents')
                 .update({
-                    ...input,
+                    ...document,
                     updated_at: new Date().toISOString(),
+                    version: (document.version || 1) + 1,
                 })
-                .eq('id', id)
+                .eq('id', document.id)
                 .select()
                 .single();
 
-            if (documentError) {
-                console.error('Failed to update document', documentError);
-                throw documentError;
-            }
-
-            if (!document) {
-                throw new Error('Failed to update document');
-            }
-
-            return DocumentSchema.parse(document);
+            if (error) throw error;
+            return data as Document;
         },
         onSuccess: (data) => {
-            invalidateDocumentQueries(queryClient, data);
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.detail(data.id),
+            });
         },
     });
 }
@@ -106,9 +84,7 @@ export function useDeleteDocument() {
             id: string;
             deletedBy: string;
         }) => {
-            console.log('Deleting document', id);
-
-            const { data: document, error: documentError } = await supabase
+            const { data, error } = await supabase
                 .from('documents')
                 .update({
                     is_deleted: true,
@@ -119,34 +95,105 @@ export function useDeleteDocument() {
                 .select()
                 .single();
 
-            if (documentError) {
-                console.error('Failed to delete document', documentError);
-                throw documentError;
-            }
-
-            if (!document) {
-                throw new Error('Failed to delete document');
-            }
-
-            return DocumentSchema.parse(document);
+            if (error) throw error;
+            return data as Document;
         },
         onSuccess: (data) => {
-            invalidateDocumentQueries(queryClient, data);
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.byProject(data.project_id),
+            });
         },
     });
 }
 
-const invalidateDocumentQueries = (
-    queryClient: QueryClient,
-    data: Document,
-) => {
-    queryClient.invalidateQueries({
-        queryKey: queryKeys.documents.list({}),
+export function useCreateDocumentPropertySchema() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (schema: Partial<DocumentPropertySchema>) => {
+            const { data, error } = await supabase
+                .from('document_property_schemas')
+                .insert({
+                    ...schema,
+                    id: schema.id || uuidv4(),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    is_deleted: false,
+                    version: 1,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as DocumentPropertySchema;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documentPropertySchemas.byDocument(
+                    data.document_id,
+                ),
+            });
+        },
     });
-    queryClient.invalidateQueries({
-        queryKey: queryKeys.documents.detail(data.id),
+}
+
+export function useCreateDocumentWithDefaultSchemas() {
+    const createDocumentMutation = useCreateDocument();
+    const createDocumentPropertySchemaMutation =
+        useCreateDocumentPropertySchema();
+
+    return useMutation({
+        mutationFn: async (document: Partial<Document>) => {
+            const createdDocument =
+                await createDocumentMutation.mutateAsync(document);
+
+            const defaultSchemas: Partial<DocumentPropertySchema>[] = [
+                {
+                    document_id: createdDocument.id,
+                    name: 'ReqID',
+                    data_type: 'string',
+                    created_by: document.created_by,
+                    updated_by: document.updated_by,
+                },
+                {
+                    document_id: createdDocument.id,
+                    name: 'Name',
+                    data_type: 'string',
+                    created_by: document.created_by,
+                    updated_by: document.updated_by,
+                },
+                {
+                    document_id: createdDocument.id,
+                    name: 'Description',
+                    data_type: 'string',
+                    created_by: document.created_by,
+                    updated_by: document.updated_by,
+                },
+                {
+                    document_id: createdDocument.id,
+                    name: 'Status',
+                    data_type: 'string',
+                    created_by: document.created_by,
+                    updated_by: document.updated_by,
+                },
+                {
+                    document_id: createdDocument.id,
+                    name: 'Priority',
+                    data_type: 'string',
+                    created_by: document.created_by,
+                    updated_by: document.updated_by,
+                },
+            ];
+
+            await Promise.all(
+                defaultSchemas.map(async (schema) => {
+                    return await createDocumentPropertySchemaMutation.mutateAsync(
+                        schema,
+                    );
+                }),
+            );
+
+            return createdDocument;
+        },
     });
-    queryClient.invalidateQueries({
-        queryKey: queryKeys.documents.byProject(data.project_id),
-    });
-};
+}

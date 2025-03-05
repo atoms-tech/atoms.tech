@@ -51,14 +51,12 @@ export const SortableBlock: React.FC<BlockProps> = ({
             {...attributes}
             className={cn(
                 'relative group bg-background',
-                'hover:bg-accent/5 rounded-lg',
+                'rounded-lg',
                 'border border-transparent',
                 'transition-all duration-200 ease-out',
-                isSelected && 'bg-accent/10',
                 isDragging && [
                     'shadow-lg shadow-accent/10',
                     'scale-[1.01]',
-                    'bg-accent/5',
                     'cursor-grabbing',
                     'border-accent/20',
                     'backdrop-blur-[2px]',
