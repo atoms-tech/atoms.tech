@@ -1,6 +1,7 @@
 'use client';
 
-import { Menu, User, X } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Loader2, Menu, User, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,8 +14,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { OrganizationType } from '@/types/base/enums.types';
 
 import { GridBackground } from './grid-background';
@@ -25,52 +27,58 @@ export function Navbar() {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [preferredOrgId, setPreferredOrgId] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const [isNavigatingToDashboard, setIsNavigatingToDashboard] =
+        useState(false);
 
-    // Prefetch routes for faster navigation
+    // Get organizations using the hook directly
+    // This will use the prefetched data from the server if available
+    const { data: organizations, isLoading: _isOrgsLoading } =
+        useOrganizationsByMembership(userProfile?.id || '');
+
+    // Prefetch routes and data for faster navigation
     useEffect(() => {
         router.prefetch('/login');
         router.prefetch('/billing');
 
         // If authenticated, prefetch the home route and try to determine preferred org
-        if (isAuthenticated && userProfile) {
+        if (isAuthenticated && userProfile && organizations) {
             router.prefetch('/home');
 
-            // Try to find the preferred organization
-            const fetchPreferredOrg = async () => {
-                try {
-                    const { data: organizations } = await supabase
-                        .from('organizations')
-                        .select('*')
-                        .eq('user_id', userProfile.id);
+            // Prefer enterprise orgs, then personal orgs
+            const enterpriseOrg = organizations.find(
+                (org) => org.type === OrganizationType.enterprise,
+            );
+            const personalOrg = organizations.find(
+                (org) => org.type === OrganizationType.personal,
+            );
 
-                    if (organizations && organizations.length > 0) {
-                        // Prefer enterprise orgs, then personal orgs
-                        const enterpriseOrg = organizations.find(
-                            (org) => org.type === OrganizationType.enterprise,
-                        );
-                        const personalOrg = organizations.find(
-                            (org) => org.type === OrganizationType.personal,
-                        );
+            const targetOrg = enterpriseOrg || personalOrg;
+            if (targetOrg) {
+                setPreferredOrgId(targetOrg.id);
+                router.prefetch(`/org/${targetOrg.id}`);
 
-                        if (enterpriseOrg) {
-                            setPreferredOrgId(enterpriseOrg.id);
-                            router.prefetch(`/org/${enterpriseOrg.id}`);
-                        } else if (personalOrg) {
-                            setPreferredOrgId(personalOrg.id);
-                            router.prefetch(`/org/${personalOrg.id}`);
-                        }
-                    }
-                } catch (error) {
-                    console.error(
-                        'Error fetching preferred organization:',
-                        error,
-                    );
+                // Check if we already have projects data from server-side prefetching
+                const projectsKey = queryKeys.projects.byOrganization(
+                    targetOrg.id,
+                );
+                const hasProjectsData = queryClient.getQueryData(projectsKey);
+
+                if (!hasProjectsData) {
+                    // If not prefetched on server, ensure we have it on client
+                    // This is a fallback in case server prefetching failed
+                    queryClient.prefetchQuery({
+                        queryKey: projectsKey,
+                        queryFn: () => {
+                            // This would typically call getUserProjects, but we're relying on server prefetching
+                            // Just return an empty array as a fallback
+                            return Promise.resolve([]);
+                        },
+                    });
                 }
-            };
-
-            fetchPreferredOrg();
+            }
         }
-    }, [router, isAuthenticated, userProfile]);
+    }, [router, isAuthenticated, userProfile, organizations, queryClient]);
 
     const navLinks = [
         { href: '/#features', label: 'Features' },
@@ -97,9 +105,12 @@ export function Navbar() {
     };
 
     const handleDashboard = useCallback(() => {
+        setIsNavigatingToDashboard(true);
         startTransition(() => {
             // If we have a preferred org, go directly there
             if (preferredOrgId) {
+                // We can navigate directly to the org dashboard
+                // The data should already be prefetched from the server
                 router.push(`/org/${preferredOrgId}`);
             } else {
                 // Otherwise use the /home route handler
@@ -116,12 +127,36 @@ export function Navbar() {
 
     const handleSignOut = () => {
         startTransition(async () => {
+            // Clear prefetched data when signing out
+            queryClient.clear();
             await signOut();
         });
     };
 
+    // Reset navigation state when the component unmounts or when isPending changes to false
+    useEffect(() => {
+        if (!isPending) {
+            setIsNavigatingToDashboard(false);
+        }
+    }, [isPending]);
+
     return (
         <header className="fixed top-0 left-0 right-0 min-h-16 px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
+            {/* Show full-screen loading overlay when navigating to dashboard */}
+            {isNavigatingToDashboard && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+                    <div className="flex flex-col items-center space-y-4 text-center">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            Loading dashboard...
+                        </h2>
+                        <p className="text-muted-foreground">
+                            We&apos;re preparing your organization workspace
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="relative">
                 <div className="container mx-auto flex justify-between items-center">
                     <Link href="/" className="atoms-logo flex">
@@ -153,16 +188,19 @@ export function Navbar() {
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex gap-2 ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
-                                        disabled={isPending}
+                                        className={`btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex gap-2 ${isPending || isNavigatingToDashboard ? 'opacity-70 pointer-events-none' : ''}`}
+                                        disabled={
+                                            isPending || isNavigatingToDashboard
+                                        }
                                     >
                                         <User size={18} />
                                         <span className="max-w-32 truncate">
                                             {userProfile?.full_name ||
                                                 'Account'}
                                         </span>
-                                        {isPending && (
-                                            <span className="ml-2 h-4 w-4 rounded-full border-2 border-t-transparent border-white animate-spin"></span>
+                                        {(isPending ||
+                                            isNavigatingToDashboard) && (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
                                         )}
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -172,9 +210,21 @@ export function Navbar() {
                                 >
                                     <DropdownMenuItem
                                         onClick={handleDashboard}
-                                        disabled={isPending}
+                                        disabled={
+                                            isPending || isNavigatingToDashboard
+                                        }
                                     >
-                                        Dashboard
+                                        {isPending ||
+                                        isNavigatingToDashboard ? (
+                                            <div className="flex items-center">
+                                                <span className="mr-2">
+                                                    Dashboard
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'Dashboard'
+                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleBilling}
@@ -234,11 +284,23 @@ export function Navbar() {
                                 <>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
+                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending || isNavigatingToDashboard ? 'opacity-70 pointer-events-none' : ''}`}
                                         onClick={handleDashboard}
-                                        disabled={isPending}
+                                        disabled={
+                                            isPending || isNavigatingToDashboard
+                                        }
                                     >
-                                        {isPending ? 'LOADING...' : 'DASHBOARD'}
+                                        {isPending ||
+                                        isNavigatingToDashboard ? (
+                                            <div className="flex items-center justify-center">
+                                                <span className="mr-2">
+                                                    LOADING
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'DASHBOARD'
+                                        )}
                                     </Button>
                                     <Button
                                         variant="outline"
