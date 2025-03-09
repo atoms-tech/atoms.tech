@@ -4,7 +4,6 @@ import {
     Brain,
     Check,
     CircleAlert,
-    FileSpreadsheet,
     Scale,
     Target,
     Upload,
@@ -22,11 +21,17 @@ import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useGumloop } from '@/hooks/useGumloop';
 
 interface AnalysisData {
-    earsReq: string;
-    incoseReq: string;
+    reqId: string;
+    originalRequirement: string;
+    earsRequirement: string;
+    earsPattern: string;
+    earsTemplate: string;
+    incoseFormat: string;
     incoseFeedback: string;
-    generalFeedback: string;
-    relevantRegulations: string;
+    complianceFeedback: string;
+    enhancedReqEars: string;
+    enhancedReqIncose: string;
+    enhancedGeneralFeedback: string;
 }
 
 export default function RequirementPage() {
@@ -160,11 +165,9 @@ export default function RequirementPage() {
         analysisPipelineRunId,
         organizationId,
     );
-    const [analysisResultLink, setAnalysisResultLink] = useState<string>('');
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
     const handleAnalyze = async () => {
-        setAnalysisResultLink('');
         setAnalysisData(null);
 
         // check if the requirement is empty
@@ -201,22 +204,6 @@ export default function RequirementPage() {
         switch (analysisResponse?.state) {
             case 'DONE': {
                 console.log('Analysis response:', analysisResponse);
-                const analysisResultLink =
-                    analysisResponse.outputs?.googleSheetLink;
-
-                if (!analysisResultLink) {
-                    console.error('No analysis result link found in response');
-                    break;
-                }
-
-                if (Array.isArray(analysisResultLink)) {
-                    console.error(
-                        'Multiple analysis result links found in response',
-                    );
-                    break;
-                }
-
-                setAnalysisResultLink(analysisResultLink);
 
                 let analysisJSON = analysisResponse.outputs?.analysisJson;
 
@@ -236,8 +223,29 @@ export default function RequirementPage() {
                 }
 
                 try {
+                    // if ```json``` is present in the string, remove it
+                    analysisJSON = analysisJSON.replace('```json\n', '');
+                    analysisJSON = analysisJSON.replace('```', '');
+
                     const parsedData = JSON.parse(analysisJSON);
-                    setAnalysisData(parsedData);
+                    setAnalysisData({
+                        reqId: parsedData['REQ ID'],
+                        originalRequirement: parsedData['Original Requirement'],
+                        earsRequirement:
+                            parsedData['EARS Generated Requirement'],
+                        earsPattern: parsedData['EARS Pattern'],
+                        earsTemplate: parsedData['EARS_SYNTAX_TEMPLATE'],
+                        incoseFormat: parsedData['INCOSE_FORMAT'],
+                        incoseFeedback:
+                            parsedData['INCOSE_REQUIREMENT_FEEDBACK'],
+                        complianceFeedback: parsedData['COMPLIANCE_FEEDBACK'],
+                        enhancedReqEars:
+                            parsedData['ENHANCED_REQUIREMENT_EARS'],
+                        enhancedReqIncose:
+                            parsedData['ENHANCED_REQUIREMENT_INCOSE'],
+                        enhancedGeneralFeedback:
+                            parsedData['ENHANCED_GENERAL_FEEDBACK'],
+                    });
                 } catch (error) {
                     console.error('Failed to parse analysis JSON:', error);
                 }
@@ -317,18 +325,6 @@ export default function RequirementPage() {
                                     </span>
                                 </div>
                             )}
-                            {analysisResultLink && (
-                                <div className="flex items-center gap-2 text-green-500 bg-green-50 p-2 rounded">
-                                    <FileSpreadsheet className="h-4 w-4" />
-                                    <a
-                                        href={analysisResultLink}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        View Analysis Results
-                                    </a>
-                                </div>
-                            )}
                             <input
                                 type="file"
                                 ref={fileInputRef}
@@ -377,7 +373,7 @@ export default function RequirementPage() {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">AI Analysis</h2>
 
-                    {/* General Feedback */}
+                    {/* Original Requirement */}
                     <Card className="p-6">
                         <div className="flex items-start gap-4">
                             <div className="rounded-full bg-primary/10 p-3">
@@ -385,13 +381,17 @@ export default function RequirementPage() {
                             </div>
                             <div>
                                 <h3 className="font-semibold mb-1">
-                                    General Feedback
+                                    Original Requirement
                                 </h3>
                                 {analysisData ? (
                                     <div className="text-muted-foreground text-sm">
-                                        <ReactMarkdown>
-                                            {analysisData.generalFeedback}
-                                        </ReactMarkdown>
+                                        <p>
+                                            <strong>ID:</strong>{' '}
+                                            {analysisData.reqId}
+                                        </p>
+                                        <p>
+                                            {analysisData.originalRequirement}
+                                        </p>
                                     </div>
                                 ) : (
                                     <p className="text-muted-foreground text-sm">
@@ -403,46 +403,93 @@ export default function RequirementPage() {
                         </div>
                     </Card>
 
-                    {/* EARS Analysis */}
+                    {/* EARS */}
                     <FoldingCard
                         icon={<Target />}
-                        title="EARS Analysis"
+                        title="EARS"
                         disabled={!analysisData}
+                        defaultOpen={false}
                     >
                         <div className="text-muted-foreground text-sm">
-                            <ReactMarkdown>
-                                {analysisData?.earsReq}
-                            </ReactMarkdown>
+                            <p>
+                                <strong>Requirement:</strong>{' '}
+                                {analysisData?.earsRequirement}
+                            </p>
+                            <p>
+                                <strong>Pattern:</strong>{' '}
+                                {analysisData?.earsPattern}
+                            </p>
+                            <p>
+                                <strong>Template:</strong>{' '}
+                                {analysisData?.earsTemplate}
+                            </p>
                         </div>
                     </FoldingCard>
 
-                    {/* INCOSE Analysis */}
+                    {/* INCOSE */}
                     <FoldingCard
                         icon={<Check />}
-                        title="INCOSE Analysis"
+                        title="INCOSE"
                         disabled={!analysisData}
+                        defaultOpen={false}
                     >
                         <div className="text-muted-foreground text-sm">
+                            <p>
+                                <strong>Format:</strong>
+                            </p>
                             <ReactMarkdown>
-                                {analysisData?.incoseReq}
+                                {analysisData?.incoseFormat}
                             </ReactMarkdown>
-                        </div>
-                        <div className="text-muted-foreground text-sm mt-2">
+                            <p className="mt-2">
+                                <strong>Feedback:</strong>
+                            </p>
                             <ReactMarkdown>
                                 {analysisData?.incoseFeedback}
                             </ReactMarkdown>
                         </div>
                     </FoldingCard>
 
-                    {/* Regulations */}
+                    {/* Compliance */}
                     <FoldingCard
                         icon={<Scale />}
-                        title="Relevant Regulations"
+                        title="Compliance"
                         disabled={!analysisData}
+                        defaultOpen={false}
                     >
                         <div className="text-muted-foreground text-sm">
                             <ReactMarkdown>
-                                {analysisData?.relevantRegulations}
+                                {analysisData?.complianceFeedback}
+                            </ReactMarkdown>
+                        </div>
+                    </FoldingCard>
+
+                    {/* Enhanced */}
+                    <FoldingCard
+                        icon={<Wand />}
+                        title="Enhanced"
+                        disabled={!analysisData}
+                        defaultOpen={false}
+                    >
+                        <div className="text-muted-foreground text-sm">
+                            <p>
+                                <strong>Enhanced EARS:</strong>
+                            </p>
+                            <ReactMarkdown>
+                                {analysisData?.enhancedReqEars}
+                            </ReactMarkdown>
+
+                            <p className="mt-2">
+                                <strong>Enhanced INCOSE:</strong>
+                            </p>
+                            <ReactMarkdown>
+                                {analysisData?.enhancedReqIncose}
+                            </ReactMarkdown>
+
+                            <p className="mt-2">
+                                <strong>General Feedback:</strong>
+                            </p>
+                            <ReactMarkdown>
+                                {analysisData?.enhancedGeneralFeedback}
                             </ReactMarkdown>
                         </div>
                     </FoldingCard>
