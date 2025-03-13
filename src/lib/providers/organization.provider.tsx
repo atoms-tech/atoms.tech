@@ -5,8 +5,10 @@ import { createContext, useContext, useState } from 'react';
 import { Organization } from '@/types/base/organizations.types';
 
 interface OrganizationContextType {
-    organization: Organization | null;
-    setOrganization: (organization: Organization | null) => void;
+    organizations: Organization[];
+    setOrganizations: (organizations: Organization[]) => void;
+    currentOrganization: Organization | null;
+    setCurrentOrganization: (organization: Organization | null) => void;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(
@@ -15,12 +17,27 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(
 
 export const OrganizationProvider = ({
     children,
+    initialOrganizations,
 }: {
     children: React.ReactNode;
+    initialOrganizations: Organization[];
 }) => {
-    const [organization, setOrganization] = useState<Organization | null>(null);
+    const [organizations, setOrganizations] =
+        useState<Organization[]>(initialOrganizations);
+    const [currentOrganization, setCurrentOrganization] =
+        useState<Organization | null>(
+            initialOrganizations.length > 0 ? initialOrganizations[0] : null,
+        );
+
     return (
-        <OrganizationContext.Provider value={{ organization, setOrganization }}>
+        <OrganizationContext.Provider
+            value={{
+                organizations,
+                setOrganizations,
+                currentOrganization,
+                setCurrentOrganization,
+            }}
+        >
             {children}
         </OrganizationContext.Provider>
     );

@@ -1,15 +1,10 @@
-import {
-    HydrationBoundary,
-    QueryClient,
-    dehydrate,
-} from '@tanstack/react-query';
+// src/app/(protected)/org/[orgId]/[projectId]/layout.tsx
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
-import {
-    getProjectByIdServer,
-    getProjectDocumentsServer,
-} from '@/lib/db/server';
+import { ProjectPageSkeleton } from '@/components/custom/skeletons/ProjectPageSkeleton';
+import { getQueryClient } from '@/lib/constants/queryClient';
+import { fetchProjectData } from '@/lib/db/utils/prefetchData';
 import { ProjectProvider } from '@/lib/providers/project.provider';
 import { Project } from '@/types';
 
@@ -25,43 +20,32 @@ export default async function ProjectLayout({
     children,
     params,
 }: ProjectLayoutProps) {
-    const { projectId } = await params;
+    const { orgId, projectId } = await params;
 
-    if (!projectId) {
-        notFound();
-    }
+    if (!projectId) notFound();
 
-    const queryClient = new QueryClient();
-    let project: Project | null = null;
+    const queryClient = getQueryClient(); // Same instance as previous layouts
 
     try {
-        project = await getProjectByIdServer(projectId);
-        if (!project) {
-            notFound();
-        }
+        // Fetch project data, documents, etc.
+        const { project, documents } = await fetchProjectData(
+            orgId,
+            projectId,
+            queryClient,
+        );
+        console.log('documents', documents);
 
-        await Promise.all([
-            queryClient.prefetchQuery({
-                queryKey: queryKeys.projects.detail(project?.id || ''),
-                queryFn: async () => project,
-            }),
-            queryClient.prefetchQuery({
-                queryKey: queryKeys.documents.byProject(project?.id || ''),
-                queryFn: async () => {
-                    return await getProjectDocumentsServer(project?.id || '');
-                },
-            }),
-        ]);
+        if (!project) notFound();
+
+        return (
+            <ProjectProvider initialProject={project as Project}>
+                <Suspense fallback={<ProjectPageSkeleton />}>
+                    {children}
+                </Suspense>
+            </ProjectProvider>
+        );
     } catch (error) {
-        console.error('Error fetching project data:', error);
-        notFound();
+        console.error('Error in project layout:', error);
+        return notFound();
     }
-
-    return (
-        <ProjectProvider initialProject={project}>
-            <HydrationBoundary state={dehydrate(queryClient)}>
-                <div>{children}</div>
-            </HydrationBoundary>
-        </ProjectProvider>
-    );
 }

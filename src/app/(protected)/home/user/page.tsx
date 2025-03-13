@@ -30,7 +30,7 @@ export default function UserDashboard() {
     const { user, profile } = useUser();
     const router = useRouter();
     const { setCurrentUserId } = useContextStore();
-    const { setOrganization } = useOrganization();
+    const { setCurrentOrganization } = useOrganization();
     const queryClient = useQueryClient();
 
     // Ensure organizations is always an array and use memo to prevent re-renders
@@ -67,7 +67,7 @@ export default function UserDashboard() {
             );
             if (selectedOrg) {
                 setCurrentUserId(user?.id || '');
-                setOrganization(selectedOrg);
+                setCurrentOrganization(selectedOrg);
                 // Make sure we're using a valid UUID for the route
                 if (selectedOrgId && selectedOrgId !== 'user') {
                     router.push(`/org/${selectedOrgId}`);
@@ -80,7 +80,7 @@ export default function UserDashboard() {
         selectedOrgId,
         safeOrganizations,
         setCurrentUserId,
-        setOrganization,
+        setCurrentOrganization,
         router,
         user?.id,
     ]);

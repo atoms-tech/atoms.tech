@@ -27,7 +27,7 @@ export default function ExternalDocsPage() {
     const { theme } = useTheme();
     const uploadDocument = useUploadExternalDocument();
     const deleteDocument = useDeleteExternalDocument();
-    const { organization } = useOrganization();
+    const { currentOrganization } = useOrganization();
     const pathname = usePathname();
     const { toast } = useToast();
 
@@ -35,7 +35,7 @@ export default function ExternalDocsPage() {
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
 
     // Use organization.id if available, otherwise fall back to path-based orgId
-    const currentOrgId = organization?.id || pathOrgId;
+    const currentOrgId = currentOrganization?.id || pathOrgId;
 
     // Only fetch documents if we have a valid orgId
     const { data, refetch } = useExternalDocumentsByOrg(

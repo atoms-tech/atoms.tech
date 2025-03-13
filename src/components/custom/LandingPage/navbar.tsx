@@ -2,6 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Menu, User, X } from 'lucide-react';
+import { useCookies } from 'next-client-cookies';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -14,14 +15,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useAuth } from '@/hooks/useAuth';
-import { queryKeys } from '@/lib/constants/queryKeys';
-import { OrganizationType } from '@/types/base/enums.types';
 
 import { GridBackground } from './grid-background';
 
 export function Navbar() {
+    const cookies = useCookies();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { isAuthenticated, isLoading, userProfile, signOut } = useAuth();
     const router = useRouter();
@@ -31,54 +30,21 @@ export function Navbar() {
     const [isNavigatingToDashboard, setIsNavigatingToDashboard] =
         useState(false);
 
-    // Get organizations using the hook directly
-    // This will use the prefetched data from the server if available
-    const { data: organizations, isLoading: _isOrgsLoading } =
-        useOrganizationsByMembership(userProfile?.id || '');
-
-    // Prefetch routes and data for faster navigation
     useEffect(() => {
-        router.prefetch('/login');
-        router.prefetch('/billing');
+        const cookieOrgId = cookies.get('preferred_org_id');
+        if (cookieOrgId) {
+            setPreferredOrgId(cookieOrgId);
 
-        // If authenticated, prefetch the home route and try to determine preferred org
-        if (isAuthenticated && userProfile && organizations) {
-            router.prefetch('/home');
-
-            // Prefer enterprise orgs, then personal orgs
-            const enterpriseOrg = organizations.find(
-                (org) => org.type === OrganizationType.enterprise,
-            );
-            const personalOrg = organizations.find(
-                (org) => org.type === OrganizationType.personal,
-            );
-
-            const targetOrg = enterpriseOrg || personalOrg;
-            if (targetOrg) {
-                setPreferredOrgId(targetOrg.id);
-                router.prefetch(`/org/${targetOrg.id}`);
-
-                // Check if we already have projects data from server-side prefetching
-                const projectsKey = queryKeys.projects.byOrganization(
-                    targetOrg.id,
-                );
-                const hasProjectsData = queryClient.getQueryData(projectsKey);
-
-                if (!hasProjectsData) {
-                    // If not prefetched on server, ensure we have it on client
-                    // This is a fallback in case server prefetching failed
-                    queryClient.prefetchQuery({
-                        queryKey: projectsKey,
-                        queryFn: () => {
-                            // This would typically call getUserProjects, but we're relying on server prefetching
-                            // Just return an empty array as a fallback
-                            return Promise.resolve([]);
-                        },
-                    });
-                }
+            if (isAuthenticated) {
+                router.prefetch(`/org/${cookieOrgId}`);
             }
         }
-    }, [router, isAuthenticated, userProfile, organizations, queryClient]);
+    }, [router, isAuthenticated, cookies]);
+
+    useEffect(() => {
+        router.prefetch('/login');
+        router.prefetch('/home');
+    }, [router]);
 
     const navLinks = [
         { href: '/#features', label: 'Features' },
@@ -129,6 +95,8 @@ export function Navbar() {
         startTransition(async () => {
             // Clear prefetched data when signing out
             queryClient.clear();
+            // Clear prefetched data when signing out
+            queryClient.clear();
             await signOut();
         });
     };
@@ -142,6 +110,21 @@ export function Navbar() {
 
     return (
         <header className="fixed top-0 left-0 right-0 min-h-16 px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
+            {/* Show full-screen loading overlay when navigating to dashboard */}
+            {isNavigatingToDashboard && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+                    <div className="flex flex-col items-center space-y-4 text-center">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <h2 className="text-2xl font-bold tracking-tight">
+                            Loading dashboard...
+                        </h2>
+                        <p className="text-muted-foreground">
+                            We&apos;re preparing your organization workspace
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* Show full-screen loading overlay when navigating to dashboard */}
             {isNavigatingToDashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
@@ -225,6 +208,17 @@ export function Navbar() {
                                         ) : (
                                             'Dashboard'
                                         )}
+                                        {isPending ||
+                                        isNavigatingToDashboard ? (
+                                            <div className="flex items-center">
+                                                <span className="mr-2">
+                                                    Dashboard
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'Dashboard'
+                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleBilling}
@@ -290,6 +284,17 @@ export function Navbar() {
                                             isPending || isNavigatingToDashboard
                                         }
                                     >
+                                        {isPending ||
+                                        isNavigatingToDashboard ? (
+                                            <div className="flex items-center justify-center">
+                                                <span className="mr-2">
+                                                    LOADING
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'DASHBOARD'
+                                        )}
                                         {isPending ||
                                         isNavigatingToDashboard ? (
                                             <div className="flex items-center justify-center">

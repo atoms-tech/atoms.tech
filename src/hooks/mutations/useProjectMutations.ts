@@ -79,9 +79,7 @@ export function useCreateProject() {
                 queryKey: queryKeys.projects.list({}),
             });
             queryClient.invalidateQueries({
-                queryKey: queryKeys.projects.byOrganization(
-                    data.organization_id,
-                ),
+                queryKey: queryKeys.projects.byOrg(data.organization_id),
             });
         },
     });

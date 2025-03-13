@@ -1,3 +1,4 @@
+// src/app/(protected)/org/[orgId]/[projectId]/documents/[documentId]/layout.tsx
 import {
     HydrationBoundary,
     QueryClient,

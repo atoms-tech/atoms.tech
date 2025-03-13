@@ -2,9 +2,7 @@
 
 import { File } from 'lucide-react';
 import { Building, FileBox, FolderArchive, ListTodo } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,76 +13,49 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-// Import the organization hook and the OrgMembers component
-import { useOrganization } from '@/hooks/queries/useOrganization';
-import { useUserProjects } from '@/hooks/queries/useProject';
-import { useOrganization as useOrgProvider } from '@/lib/providers/organization.provider';
-import { useUser } from '@/lib/providers/user.provider';
-import { useContextStore } from '@/lib/store/context.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization, Project } from '@/types';
 
 import OrgMembers from './OrgMembers.client';
 
-export default function OrgDashboard() {
-    // Navigation hooks
-    const router = useRouter();
-    const params = useParams<{ orgId: string }>();
+interface OrgDashboardProps {
+    organization: Organization | undefined;
+    orgLoading: boolean;
+    projects: Project[] | undefined;
+    projectsLoading: boolean;
+    documents: Document[] | undefined;
+    documentsLoading: boolean;
+    theme: string | undefined;
+    onProjectClick: (project: Project) => void;
+    onExternalDocsClick: () => void;
+    orgId: string;
+}
+
+// Define a Document interface if it doesn't exist
+interface Document {
+    id: string;
+    name: string;
+    type?: string;
+    size?: number;
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+}
+
+export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState('projects');
 
-    // User context hooks
-    const { profile } = useUser();
-    const { setCurrentProjectId } = useContextStore();
-
-    // Validate orgId before using it
-    const orgId = params?.orgId && params.orgId !== 'user' ? params.orgId : '';
-
-    // Fetch organization data
-    const { data: organization, isLoading: orgLoading } =
-        useOrganization(orgId);
-    const { setOrganization } = useOrgProvider();
-
-    // Use useEffect to set the organization when it changes
-    useEffect(() => {
-        if (organization) {
-            setOrganization(organization as Organization);
-        }
-    }, [organization, setOrganization]);
-
-    // Fetch projects data
-    const { data: projects, isLoading: projectsLoading } = useUserProjects(
-        profile?.id || '',
-        orgId,
-    );
-
-    const { data: documents, isLoading: documentsLoading } =
-        useExternalDocumentsByOrg(params?.orgId || '');
-    const { theme } = useTheme();
-
-    const handleProjectClick = (project: Project) => {
-        setCurrentProjectId(project.id);
-        router.push(`/org/${orgId}/${project.id}`);
-    };
-
-    const handleExternalDocsClick = () => {
-        router.push(`/org/${params?.orgId}/externalDocs`);
-    };
-
     const openFile = async (documentId: string) => {
-        if (!params?.orgId) {
+        if (!props.orgId) {
             alert('Organization ID is missing. Cannot open file.');
             return;
         }
 
-        const filePath = `${params.orgId}/${documentId}`;
-
-        // Get a public URL for the file from Supabase storage
+        const filePath = `${props.orgId}/${documentId}`;
         const { data: publicUrl } = supabase.storage
             .from('external_documents')
             .getPublicUrl(filePath);
 
-        // Open the file in a new tab
         if (publicUrl) {
             window.open(publicUrl.publicUrl, '_blank');
         } else {
@@ -98,18 +69,18 @@ export default function OrgDashboard() {
             <div className="flex items-start justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">
-                        {organization?.name || 'Organization Dashboard'}
+                        {props.organization?.name || 'Organization Dashboard'}
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        {organization?.description ||
+                        {props.organization?.description ||
                             'Manage your organization resources'}
                     </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                    {organization?.type && (
+                    {props.organization?.type && (
                         <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                            {organization.type.charAt(0).toUpperCase() +
-                                organization.type.slice(1)}
+                            {props.organization.type.charAt(0).toUpperCase() +
+                                props.organization.type.slice(1)}
                         </span>
                     )}
                 </div>
@@ -171,7 +142,7 @@ export default function OrgDashboard() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {orgLoading ? (
+                                {props.orgLoading ? (
                                     <div className="animate-pulse space-y-2">
                                         <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                                         <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -183,7 +154,7 @@ export default function OrgDashboard() {
                                                 Name:
                                             </span>
                                             <span className="font-medium">
-                                                {organization?.name}
+                                                {props.organization?.name}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -191,7 +162,7 @@ export default function OrgDashboard() {
                                                 Type:
                                             </span>
                                             <span className="font-medium">
-                                                {organization?.type}
+                                                {props.organization?.type}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -199,8 +170,8 @@ export default function OrgDashboard() {
                                                 Members:
                                             </span>
                                             <span className="font-medium">
-                                                {organization?.member_count ||
-                                                    0}
+                                                {props.organization
+                                                    ?.member_count || 0}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
@@ -208,7 +179,10 @@ export default function OrgDashboard() {
                                                 Plan:
                                             </span>
                                             <span className="font-medium">
-                                                {organization?.billing_plan}
+                                                {
+                                                    props.organization
+                                                        ?.billing_plan
+                                                }
                                             </span>
                                         </div>
                                     </div>
@@ -224,7 +198,7 @@ export default function OrgDashboard() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                {orgLoading ? (
+                                {props.orgLoading ? (
                                     <div className="animate-pulse space-y-2">
                                         <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                                         <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -235,14 +209,14 @@ export default function OrgDashboard() {
                                             <div
                                                 className="bg-primary h-2.5 rounded-full"
                                                 style={{
-                                                    width: `${Math.min(((organization?.storage_used || 0) / 1000) * 100, 100)}%`,
+                                                    width: `${Math.min(((props.organization?.storage_used || 0) / 1000) * 100, 100)}%`,
                                                 }}
                                             ></div>
                                         </div>
                                         <div className="flex justify-between text-sm">
                                             <span>
-                                                {organization?.storage_used ||
-                                                    0}{' '}
+                                                {props.organization
+                                                    ?.storage_used || 0}{' '}
                                                 MB used
                                             </span>
                                             <span>1000 MB total</span>
@@ -252,7 +226,6 @@ export default function OrgDashboard() {
                             </CardContent>
                         </Card>
 
-                        {/* Replace the static members card with the OrgMembers component */}
                         <OrgMembers />
                     </div>
                 </TabsContent>
@@ -266,7 +239,7 @@ export default function OrgDashboard() {
                         </button>
                     </div>
 
-                    {projectsLoading ? (
+                    {props.projectsLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[1, 2, 3].map((i) => (
                                 <Card key={i} className="animate-pulse">
@@ -281,13 +254,15 @@ export default function OrgDashboard() {
                                 </Card>
                             ))}
                         </div>
-                    ) : projects && projects.length > 0 ? (
+                    ) : props.projects && props.projects.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {projects.map((project) => (
+                            {props.projects.map((project) => (
                                 <Card
                                     key={project.id}
                                     className="cursor-pointer hover:shadow-md transition-shadow"
-                                    onClick={() => handleProjectClick(project)}
+                                    onClick={() =>
+                                        props.onProjectClick(project)
+                                    }
                                 >
                                     <CardHeader>
                                         <CardTitle>{project.name}</CardTitle>
@@ -342,18 +317,73 @@ export default function OrgDashboard() {
                         </button>
                     </div>
 
-                    <div className="text-center py-12 border rounded-lg">
-                        <FileBox className="h-12 w-12 mx-auto text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">
-                            No documents found
-                        </h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Upload documents to share with your organization
-                        </p>
-                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Upload Document
-                        </button>
-                    </div>
+                    {props.documentsLoading ? (
+                        <div className="text-center py-12 border rounded-lg">
+                            <FileBox className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
+                            <h3 className="mt-4 text-lg font-medium">
+                                Loading documents...
+                            </h3>
+                        </div>
+                    ) : props.documents?.length ? (
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {props.documents
+                                    .sort((a, b) => {
+                                        const dateA = a.created_at
+                                            ? new Date(a.created_at).getTime()
+                                            : 0;
+                                        const dateB = b.created_at
+                                            ? new Date(b.created_at).getTime()
+                                            : 0;
+                                        return dateB - dateA;
+                                    })
+                                    .map((doc) => (
+                                        <Card
+                                            key={doc.id}
+                                            className={`border border-gray-300 ${
+                                                props.theme === 'dark'
+                                                    ? 'hover:bg-accent'
+                                                    : 'hover:bg-gray-200'
+                                            } cursor-pointer`}
+                                            onClick={() => openFile(doc.id)}
+                                        >
+                                            <div className="p-4 flex items-center">
+                                                <File className="w-4 h-4 mr-4" />
+                                                <div>
+                                                    <h3 className="text-sm font-semibold">
+                                                        {doc.name}
+                                                    </h3>
+                                                    <p className="text-xs text-gray-400">
+                                                        {doc.type}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                            </div>
+                            <div className="flex justify-end">
+                                <Button
+                                    variant="secondary"
+                                    onClick={props.onExternalDocsClick}
+                                >
+                                    Go to External Docs
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center py-12 border rounded-lg">
+                            <FileBox className="h-12 w-12 mx-auto text-muted-foreground" />
+                            <h3 className="mt-4 text-lg font-medium">
+                                No documents found
+                            </h3>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Upload documents to share with your organization
+                            </p>
+                            <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                                Upload Document
+                            </button>
+                        </div>
+                    )}
                 </TabsContent>
 
                 {/* Collections Tab */}
@@ -404,52 +434,6 @@ export default function OrgDashboard() {
                     </div>
                 </TabsContent>
             </Tabs>
-            <div className="project-documents mt-8">
-                <h2 className="text-xl font-medium mb-4">
-                    Document Collection
-                </h2>
-                <div className="recent-documents mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 justify-start">
-                    {documentsLoading ? (
-                        <p>Loading recent documents...</p>
-                    ) : documents?.length ? (
-                        documents
-                            .sort(
-                                (a, b) =>
-                                    new Date(b.created_at).getTime() -
-                                    new Date(a.created_at).getTime(),
-                            )
-                            .slice(0, 3)
-                            .map((doc) => (
-                                <Card
-                                    key={doc.id}
-                                    className={`border border-gray-300 ${
-                                        theme === 'dark'
-                                            ? 'hover:bg-accent'
-                                            : 'hover:bg-gray-200'
-                                    } cursor-pointer`}
-                                    onClick={() => openFile(doc.id)}
-                                >
-                                    <div className="p-4 flex items-center">
-                                        <File className="w-4 h-4 mr-4" />
-                                        <div>
-                                            <h3 className="text-sm font-semibold">
-                                                {doc.name}
-                                            </h3>
-                                            <p className="text-xs text-gray-400">
-                                                {doc.type}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ))
-                    ) : (
-                        <p>No recent documents available.</p>
-                    )}
-                </div>
-                <Button variant="secondary" onClick={handleExternalDocsClick}>
-                    Go to External Docs
-                </Button>
-            </div>
         </div>
     );
 }

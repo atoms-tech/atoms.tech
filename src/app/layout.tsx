@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { CookiesProvider } from 'next-client-cookies/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 
 import { QueryProvider } from '@/lib/providers/query.provider';
@@ -36,14 +37,16 @@ export default function RootLayout({
                 <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased`}
                 >
-                    <ThemeProvider
-                        attribute="class"
-                        defaultTheme="system"
-                        enableSystem
-                        disableTransitionOnChange
-                    >
-                        <QueryProvider>{children}</QueryProvider>
-                    </ThemeProvider>
+                    <CookiesProvider>
+                        <ThemeProvider
+                            attribute="class"
+                            defaultTheme="system"
+                            enableSystem
+                            disableTransitionOnChange
+                        >
+                            <QueryProvider>{children}</QueryProvider>
+                        </ThemeProvider>
+                    </CookiesProvider>
                 </body>
             </html>
         </GlobalErrorBoundary>

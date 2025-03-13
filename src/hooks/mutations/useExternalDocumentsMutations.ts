@@ -45,7 +45,7 @@ export function useUploadExternalDocument() {
         onSuccess: (data, variables) => {
             // Invalidate both all documents and organization-specific documents
             queryClient.invalidateQueries({
-                queryKey: queryKeys.externalDocuments.all,
+                queryKey: queryKeys.externalDocuments.root,
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.externalDocuments.byOrg(variables.orgId),
@@ -95,7 +95,7 @@ export function useDeleteExternalDocument() {
         onSuccess: (_, variables) => {
             // Invalidate both all documents and organization-specific documents
             queryClient.invalidateQueries({
-                queryKey: queryKeys.externalDocuments.all,
+                queryKey: queryKeys.externalDocuments.root,
             });
             if (variables.orgId) {
                 queryClient.invalidateQueries({

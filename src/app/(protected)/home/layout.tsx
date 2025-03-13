@@ -1,10 +1,6 @@
 'use server';
 
-import {
-    HydrationBoundary,
-    QueryClient,
-    dehydrate,
-} from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
 import Sidebar from '@/components/base/Sidebar';
@@ -13,7 +9,6 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
 
-// Loading component for the sidebar
 function SidebarSkeleton() {
     return (
         <div className="w-64 h-screen bg-background border-r border-border animate-pulse">
@@ -54,14 +49,12 @@ export default async function HomeLayout({
     ).organizations = organizations;
 
     return (
-        <HydrationBoundary state={dehydrate(queryClient)}>
-            <SidebarProvider>
-                <Suspense fallback={<SidebarSkeleton />}>
-                    <Sidebar />
-                </Suspense>
-                <div className="relative flex-1 p-16">{children}</div>
-                <VerticalToolbar />
-            </SidebarProvider>
-        </HydrationBoundary>
+        <SidebarProvider>
+            <Suspense fallback={<SidebarSkeleton />}>
+                <Sidebar />
+            </Suspense>
+            <div className="relative flex-1 p-16">{children}</div>
+            <VerticalToolbar />
+        </SidebarProvider>
     );
 }

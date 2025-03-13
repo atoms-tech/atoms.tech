@@ -1,51 +1,46 @@
-// Define a more specific type for filters
 import { QueryFilters } from '@/types/base/filters.types';
 
+/**
+ * Centralized query key factory for React Query
+ * Following React Query best practices for key structure and consistency
+ */
 export const queryKeys = {
     externalDocuments: {
-        all: ['externalDocuments'] as const,
-        lists: () => [...queryKeys.externalDocuments.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.externalDocuments.lists(), { filters }] as const,
-        details: () => [...queryKeys.externalDocuments.all, 'detail'] as const,
+        root: ['externalDocuments'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.externalDocuments.root, 'list', filters] as const,
         detail: (id: string) =>
-            [...queryKeys.externalDocuments.details(), id] as const,
+            [...queryKeys.externalDocuments.root, 'detail', id] as const,
         byOrg: (orgId: string) =>
-            [
-                ...queryKeys.externalDocuments.all,
-                'organization_id',
-                orgId,
-            ] as const,
+            [...queryKeys.externalDocuments.root, 'org', orgId] as const,
     },
 
     documents: {
-        all: ['documents'] as const,
-        lists: () => [...queryKeys.documents.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.documents.lists(), { filters }] as const,
-        details: () => [...queryKeys.documents.all, 'detail'] as const,
-        detail: (id: string) => [...queryKeys.documents.details(), id] as const,
+        root: ['documents'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.documents.root, 'list', filters] as const,
+        detail: (id: string) =>
+            [...queryKeys.documents.root, 'detail', id] as const,
         byProject: (projectId: string) =>
-            [...queryKeys.documents.all, 'project', projectId] as const,
+            [...queryKeys.documents.root, 'project', projectId] as const,
     },
+
     blocks: {
-        all: ['blocks'] as const,
-        lists: () => [...queryKeys.blocks.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.blocks.lists(), { filters }] as const,
-        details: () => [...queryKeys.blocks.all, 'detail'] as const,
-        detail: (id: string) => [...queryKeys.blocks.details(), id] as const,
+        root: ['blocks'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.blocks.root, 'list', filters] as const,
+        detail: (id: string) =>
+            [...queryKeys.blocks.root, 'detail', id] as const,
         byDocument: (documentId: string) =>
             [...queryKeys.documents.detail(documentId), 'blocks'] as const,
     },
+
     requirements: {
-        all: ['requirements'] as const,
-        lists: () => [...queryKeys.requirements.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.requirements.lists(), { filters }] as const,
-        details: () => [...queryKeys.requirements.all, 'detail'] as const,
+        root: ['requirements'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.requirements.root, 'list', filters] as const,
         detail: (id: string) =>
-            [...queryKeys.requirements.details(), id] as const,
+            [...queryKeys.requirements.root, 'detail', id] as const,
         byDocument: (documentId: string) =>
             [
                 ...queryKeys.documents.detail(documentId),
@@ -54,33 +49,30 @@ export const queryKeys = {
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'requirements'] as const,
     },
+
     documentPropertySchemas: {
-        all: ['documentPropertySchemas'] as const,
-        details: () =>
-            [...queryKeys.documentPropertySchemas.all, 'detail'] as const,
+        root: ['documentPropertySchemas'] as const,
         detail: (id: string) =>
-            [...queryKeys.documentPropertySchemas.details(), id] as const,
+            [...queryKeys.documentPropertySchemas.root, 'detail', id] as const,
         byDocument: (documentId: string) =>
             [
                 ...queryKeys.documents.detail(documentId),
                 'propertySchemas',
             ] as const,
     },
+
     blockPropertySchemas: {
-        all: ['blockPropertySchemas'] as const,
-        details: () =>
-            [...queryKeys.blockPropertySchemas.all, 'detail'] as const,
+        root: ['blockPropertySchemas'] as const,
         detail: (id: string) =>
-            [...queryKeys.blockPropertySchemas.details(), id] as const,
+            [...queryKeys.blockPropertySchemas.root, 'detail', id] as const,
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'propertySchemas'] as const,
     },
+
     requirementPropertyKVs: {
-        all: ['requirementPropertyKVs'] as const,
-        details: () =>
-            [...queryKeys.requirementPropertyKVs.all, 'detail'] as const,
+        root: ['requirementPropertyKVs'] as const,
         detail: (id: string) =>
-            [...queryKeys.requirementPropertyKVs.details(), id] as const,
+            [...queryKeys.requirementPropertyKVs.root, 'detail', id] as const,
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'propertyKVs'] as const,
         byRequirement: (requirementId: string) =>
@@ -100,75 +92,80 @@ export const queryKeys = {
                       'propertyKVs',
                   ] as const),
     },
+
     projects: {
-        all: ['projects'] as const,
-        lists: () => [...queryKeys.projects.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.projects.lists(), { filters }] as const,
-        details: () => [...queryKeys.projects.all, 'detail'] as const,
-        detail: (id: string) => [...queryKeys.projects.details(), id] as const,
-        byOrganization: (orgId: string) =>
+        root: ['projects'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.projects.root, 'list', filters] as const,
+        detail: (id: string) =>
+            [...queryKeys.projects.root, 'detail', id] as const,
+        byOrg: (orgId: string) =>
             [...queryKeys.organizations.detail(orgId), 'projects'] as const,
         byUser: (userId: string) =>
             [...queryKeys.profiles.detail(userId), 'projects'] as const,
     },
+
     profiles: {
-        all: ['profiles'] as const,
-        detail: (id: string) => [...queryKeys.profiles.all, id] as const,
-    },
-    organizations: {
-        all: ['organizations'] as const,
-        lists: () => [...queryKeys.organizations.all, 'list'] as const,
-        list: (filters: QueryFilters) =>
-            [...queryKeys.organizations.lists(), { filters }] as const,
-        details: () => [...queryKeys.organizations.all, 'detail'] as const,
+        root: ['profiles'] as const,
         detail: (id: string) =>
-            [...queryKeys.organizations.details(), id] as const,
-        byUser: (userId: string) =>
-            [...queryKeys.organizations.all, 'byUser', userId] as const,
-        byMembership: (userId: string) =>
-            [...queryKeys.organizations.all, 'byMembership', userId] as const,
-        createdBy: (userId: string) =>
-            [...queryKeys.organizations.all, 'createdBy', userId] as const,
+            [...queryKeys.profiles.root, 'detail', id] as const,
     },
+
+    organizations: {
+        root: ['organizations'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.organizations.root, 'list', filters] as const,
+        detail: (id: string) =>
+            [...queryKeys.organizations.root, 'detail', id] as const,
+        byUser: (userId: string) =>
+            [...queryKeys.organizations.root, 'byUser', userId] as const,
+        byMembership: (userId: string) =>
+            [...queryKeys.organizations.root, 'byMembership', userId] as const,
+        createdBy: (userId: string) =>
+            [...queryKeys.organizations.root, 'createdBy', userId] as const,
+    },
+
     traceLinks: {
-        all: ['traceLinks'] as const,
+        root: ['traceLinks'] as const,
         bySource: (sourceId: string, sourceType: string) =>
             [
-                ...queryKeys.traceLinks.all,
+                ...queryKeys.traceLinks.root,
                 'source',
                 sourceId,
                 sourceType,
             ] as const,
         byTarget: (targetId: string, targetType: string) =>
             [
-                ...queryKeys.traceLinks.all,
+                ...queryKeys.traceLinks.root,
                 'target',
                 targetId,
                 targetType,
             ] as const,
     },
+
     assignments: {
-        all: ['assignments'] as const,
+        root: ['assignments'] as const,
         byEntity: (entityId: string, entityType: string) =>
             [
-                ...queryKeys.assignments.all,
+                ...queryKeys.assignments.root,
                 'entity',
                 entityId,
                 entityType,
             ] as const,
         byUser: (userId: string) =>
-            [...queryKeys.assignments.all, 'user', userId] as const,
+            [...queryKeys.assignments.root, 'user', userId] as const,
     },
+
     auditLogs: {
-        all: ['auditLogs'] as const,
+        root: ['auditLogs'] as const,
         byEntity: (entityId: string, entityType: string) =>
-            [...queryKeys.auditLogs.all, entityId, entityType] as const,
+            [...queryKeys.auditLogs.root, entityId, entityType] as const,
     },
+
     notifications: {
-        all: ['notifications'] as const,
+        root: ['notifications'] as const,
         byUser: (userId: string) =>
-            [...queryKeys.notifications.all, userId] as const,
+            [...queryKeys.notifications.root, userId] as const,
         unreadCount: (userId: string) =>
             [
                 ...queryKeys.notifications.byUser(userId),

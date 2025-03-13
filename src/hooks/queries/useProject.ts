@@ -48,7 +48,7 @@ export function useProjects(filters?: QueryFilters) {
 
 export function useOrganizationProjects(organizationId: string) {
     return useQuery({
-        queryKey: queryKeys.projects.byOrganization(organizationId),
+        queryKey: queryKeys.projects.byOrg(organizationId),
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('projects')
@@ -65,7 +65,7 @@ export function useOrganizationProjects(organizationId: string) {
 
 export function useUserProjects(userId: string, orgId: string) {
     return useQuery({
-        queryKey: queryKeys.projects.byOrganization(orgId),
+        queryKey: queryKeys.projects.byOrg(orgId),
         queryFn: async () => getUserProjects(userId, orgId),
         enabled: !!userId && !!orgId,
     });
@@ -73,7 +73,7 @@ export function useUserProjects(userId: string, orgId: string) {
 
 export function useProjectsByMembershipForOrg(orgId: string, userId: string) {
     return useQuery({
-        queryKey: queryKeys.projects.byOrganization(orgId),
+        queryKey: queryKeys.projects.byOrg(orgId),
         queryFn: async () => {
             const { data, error } = await supabase
                 .from('project_members')

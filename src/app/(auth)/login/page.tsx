@@ -1,9 +1,9 @@
 'use client';
 
-import { AlertCircle, Github, Mail } from 'lucide-react';
+import { AlertCircle, Github, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import React, { Suspense, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { Suspense, useEffect, useState, useTransition } from 'react';
 
 import { login } from '@/app/(auth)/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -21,17 +21,35 @@ import { Separator } from '@/components/ui/separator';
 // Create a separate client component for the login form
 function LoginForm() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error] = useState(searchParams.get('error') || '');
+    const [error, setError] = useState('');
+    const [isPending, startTransition] = useTransition();
+
+    useEffect(() => {
+        router.prefetch('/home/user');
+        router.prefetch('/org/[orgId]');
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('email', email);
         formData.append('password', password);
-        await login(formData);
+        startTransition(async () => {
+            try {
+                const result = await login(formData);
+
+                if (result.success && result.redirectTo) {
+                    router.push(result.redirectTo);
+                } else {
+                    setError(result.error || 'An unexpected error occurred');
+                }
+            } catch (error) {
+                console.error('Error logging in:', error);
+                setError('An unexpected error occurred');
+            }
+        });
     };
 
     return (
@@ -81,8 +99,19 @@ function LoginForm() {
                             </div>
                         </div>
 
-                        <Button type="submit" className="w-full">
-                            Sign in
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isPending}
+                        >
+                            {isPending ? (
+                                <div className="flex items-center justify-center">
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <span>Signing in...</span>
+                                </div>
+                            ) : (
+                                'Sign in'
+                            )}
                         </Button>
                     </form>
 

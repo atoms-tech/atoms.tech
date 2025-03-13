@@ -1,16 +1,15 @@
-import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
-import { QueryClient } from '@tanstack/react-query';
+// src/app/(protected)/org/[orgId]/layout.tsx
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import Sidebar from '@/components/base/Sidebar';
 import VerticalToolbar from '@/components/custom/VerticalToolbar';
+import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { queryKeys } from '@/lib/constants/queryKeys';
-import {
-    getAuthUserServer,
-    getUserOrganizationsServer,
-    getUserProjectsServer,
-} from '@/lib/db/server';
+import { getQueryClient } from '@/lib/constants/queryClient';
+import { getAuthUserServer } from '@/lib/db/server';
+import { prefetchOrgPageData } from '@/lib/db/utils/prefetchData';
 
 interface OrgLayoutProps {
     children: React.ReactNode;
@@ -18,68 +17,44 @@ interface OrgLayoutProps {
 }
 
 export default async function OrgLayout({ children, params }: OrgLayoutProps) {
+    const queryClient = getQueryClient();
     const { orgId } = await params;
+    if (!orgId) notFound();
 
-    if (!orgId) {
-        notFound();
-    }
-
-    const queryClient = new QueryClient();
-    const user = await getAuthUserServer();
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('user_id')?.value;
 
     try {
-        // Check if we already have organization data in the cache
-        // If not, fetch it
-        const orgQueryKey = queryKeys.organizations.detail(orgId);
-        const organization = queryClient.getQueryData(orgQueryKey);
+        await prefetchOrgPageData(
+            orgId,
+            userId ?? (await getAuthUserServer()).user.id,
+            queryClient,
+        );
 
-        if (!organization) {
-            // Prefetch organization data
-            await queryClient.prefetchQuery({
-                queryKey: orgQueryKey,
-                queryFn: async () => {
-                    const organizations = await getUserOrganizationsServer(
-                        user?.user.id || '',
-                    );
-                    const organization = organizations.find(
-                        (org) => org.id === orgId,
-                    );
-                    if (!organization) notFound();
-                    return organization;
-                },
-            });
-        }
-
-        // Check if we already have projects data in the cache
-        // If not, fetch it
-        const projectsQueryKey = queryKeys.projects.byOrganization(orgId);
-        const projects = queryClient.getQueryData(projectsQueryKey);
-
-        if (!projects) {
-            // Prefetch projects data
-            await queryClient.prefetchQuery({
-                queryKey: projectsQueryKey,
-                queryFn: async () => {
-                    return await getUserProjectsServer(
-                        user?.user.id || '',
-                        orgId,
-                    );
-                },
-            });
-        }
-    } catch (error) {
-        console.error('Error prefetching data:', error);
-    }
-
-    return (
-        <HydrationBoundary state={dehydrate(queryClient)}>
+        return (
             <SidebarProvider>
                 <Sidebar />
                 <div className="relative flex-1 p-16">
-                    {children}
-                    <VerticalToolbar />
+                    <Suspense fallback={<OrgDashboardSkeleton />}>
+                        {children}
+                    </Suspense>
                 </div>
+                <VerticalToolbar />
             </SidebarProvider>
-        </HydrationBoundary>
-    );
+        );
+    } catch (error: unknown) {
+        console.error('Error in organization layout:', error);
+
+        // Handle not found or permission errors
+        if ((error as { status?: number }).status === 404) {
+            return notFound();
+        }
+
+        // Handle other errors
+        return (
+            <div className="error-container">
+                <p>Error loading organization: {(error as Error).message}</p>
+            </div>
+        );
+    }
 }

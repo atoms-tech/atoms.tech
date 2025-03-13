@@ -15,22 +15,18 @@ export const getProjectByIdServer = async (id: string) => {
 
 export const getUserProjectsServer = async (userId: string, orgId: string) => {
     const supabase = await createClient();
-    const { data: projectMemberData, error: memberError } = await supabase
-        .from('project_members')
-        .select('project_id')
-        .eq('user_id', userId)
-        .eq('org_id', orgId)
-        .eq('status', 'active');
-
-    if (memberError) throw memberError;
-
-    const projectIds = projectMemberData.map((pm) => pm.project_id);
-
     const { data: projectData, error } = await supabase
         .from('projects')
-        .select('*')
-        .eq('is_deleted', false)
-        .in('id', projectIds);
+        .select(
+            `
+            *,
+            project_members!inner(project_id)
+        `,
+        )
+        .eq('project_members.user_id', userId)
+        .eq('project_members.org_id', orgId)
+        .eq('project_members.status', 'active')
+        .eq('is_deleted', false);
 
     if (error) throw error;
 

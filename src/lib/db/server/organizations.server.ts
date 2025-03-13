@@ -12,6 +12,18 @@ export const getOrganizationIdBySlugServer = async (slug: string) => {
     return data.id;
 };
 
+export const getOrganizationServer = async (orgId: string) => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', orgId)
+        .eq('is_deleted', false)
+        .single();
+    if (error) throw error;
+    return OrganizationSchema.parse(data);
+};
+
 export const getUserOrganizationsServer = async (userId: string) => {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -37,6 +49,20 @@ export const getUserOrganizationsServer = async (userId: string) => {
 
     const organizations = data.map((member) => member.organizations);
     return organizations.map((org) => OrganizationSchema.parse(org));
+};
+
+// Get all organization ids for a user by membership
+export const getOrganizationIdsByMembershipServer = async (userId: string) => {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .eq('is_deleted', false);
+
+    if (error) throw error;
+    return data.map((member) => member.organization_id);
 };
 
 export const getOrganizationMembersServer = async (organizationId: string) => {

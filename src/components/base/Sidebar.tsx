@@ -25,7 +25,6 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { OrganizationType } from '@/types/base/enums.types';
@@ -54,38 +53,33 @@ export default function Sidebar() {
     const [createPanelType, setCreatePanelType] = useState<
         'project' | 'requirement' | 'document' | 'organization'
     >('project');
-    const { user, profile } = useUser();
-    const { organization } = useOrganization();
-    const { data: memberOrgs, isLoading: isLoadingMemberOrgs } =
-        useOrganizationsByMembership(user?.id || '');
 
-    const personalOrg = memberOrgs?.find(
+    const { user, profile } = useUser();
+    const { organizations, currentOrganization } = useOrganization();
+
+    // Find personal and enterprise organizations from context
+    const personalOrg = organizations.find(
         (org) => org.type === OrganizationType.personal,
     );
-    const enterpriseOrg = memberOrgs?.find(
+    const enterpriseOrg = organizations.find(
         (org) => org.type === OrganizationType.enterprise,
     );
 
     // Define primaryEnterpriseOrg based on enterpriseOrg
     const primaryEnterpriseOrg = enterpriseOrg;
 
-    // Debug logging
-    useEffect(() => {
-        console.log('Sidebar - Current Organization:', organization);
-        console.log('Sidebar - Personal Orgs:', personalOrg);
-        console.log('Sidebar - Member Orgs:', memberOrgs);
-    }, [organization, personalOrg, memberOrgs]);
-
     const isOrgPage = pathname.startsWith('/org');
-    const isPlaygroundPage = organization?.type === OrganizationType.personal;
+    const isPlaygroundPage =
+        currentOrganization?.type === OrganizationType.personal;
     const isUserDashboardPage = pathname.startsWith('/home/user');
 
     // Check if user has only a personal org and no other memberships
     const hasOnlyPersonalOrg =
         personalOrg &&
-        (!memberOrgs ||
-            memberOrgs.length === 0 ||
-            (memberOrgs.length === 1 && memberOrgs[0].id === personalOrg.id));
+        (!organizations ||
+            organizations.length === 0 ||
+            (organizations.length === 1 &&
+                organizations[0].id === personalOrg.id));
 
     const navigateToPlayground = useCallback(() => {
         if (personalOrg) {
@@ -153,8 +147,6 @@ export default function Sidebar() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const isLoadingOrgs = isLoadingMemberOrgs;
-
     return (
         <SidebarContainer inert={isSidebarHidden}>
             <SidebarContent className="px-3 py-2">
@@ -187,11 +179,11 @@ export default function Sidebar() {
                             ))}
 
                             {/* Playground option - show when not in playground and user has a personal org */}
-                            {!isLoadingOrgs &&
+                            {!isLoading &&
                                 personalOrg &&
                                 (isUserDashboardPage ||
-                                    (organization &&
-                                        organization.id !==
+                                    (currentOrganization &&
+                                        currentOrganization.id !==
                                             personalOrg.id)) && (
                                     <SidebarMenuItem className="mb-1">
                                         <SidebarMenuButton asChild>
@@ -210,7 +202,7 @@ export default function Sidebar() {
                                 )}
 
                             {/* Enterprise option - show when in playground or user dashboard and user has an enterprise org */}
-                            {!isLoadingOrgs &&
+                            {!isLoading &&
                                 primaryEnterpriseOrg &&
                                 (isPlaygroundPage || isUserDashboardPage) && (
                                     <SidebarMenuItem className="mb-1">
@@ -230,7 +222,7 @@ export default function Sidebar() {
                                 )}
 
                             {/* Create Organization button (only if user has only personal org) */}
-                            {!isLoadingOrgs && hasOnlyPersonalOrg && (
+                            {!isLoading && hasOnlyPersonalOrg && (
                                 <SidebarMenuItem className="mb-1">
                                     <SidebarMenuButton asChild>
                                         <Button
