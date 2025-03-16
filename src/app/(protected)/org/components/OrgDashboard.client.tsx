@@ -1,7 +1,6 @@
 'use client';
 
-import { File } from 'lucide-react';
-import { Building, FileBox, FolderArchive, ListTodo } from 'lucide-react';
+import { Building, File, FileBox, FolderArchive, ListTodo } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';

@@ -10,8 +10,10 @@ import {
     useDeleteBlock,
     useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
-import { useCreateBlockPropertySchema } from '@/hooks/queries/usePropertySchemas';
-import { useDocumentPropertySchemas } from '@/hooks/queries/usePropertySchemas';
+import {
+    useCreateBlockPropertySchema,
+    useDocumentPropertySchemas,
+} from '@/hooks/queries/usePropertySchemas';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useDocumentStore } from '@/lib/store/document.store';
 import { Json } from '@/types/base/database.types';

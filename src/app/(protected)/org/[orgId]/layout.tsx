@@ -1,4 +1,3 @@
-// src/app/(protected)/org/[orgId]/layout.tsx
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';

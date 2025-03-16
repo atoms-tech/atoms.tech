@@ -1,4 +1,3 @@
-// src/lib/constants/queryClient.ts
 import { QueryClient } from '@tanstack/react-query';
 import { cache } from 'react';
 

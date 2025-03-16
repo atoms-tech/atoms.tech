@@ -2,8 +2,7 @@
 
 import { useTheme } from 'next-themes';
 import { useParams, useRouter } from 'next/navigation';
-import { Suspense } from 'react';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
 import OrgDashboard from '@/app/(protected)/org/components/OrgDashboard.client';
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';

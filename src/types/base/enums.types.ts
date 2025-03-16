@@ -1,4 +1,3 @@
-// src/types/base/enums.ts
 export const EntityType = {
     document: 'document',
     requirement: 'requirement',

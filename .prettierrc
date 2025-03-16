@@ -11,8 +11,7 @@
     "endOfLine": "lf",
     "bracketSameLine": false,
     "singleAttributePerLine": false,
-    "importOrder": ["^@/(.*)$", "^[./]"],
-    "importOrderSeparation": true,
-    "importOrderSortSpecifiers": true,
-    "plugins": ["@trivago/prettier-plugin-sort-imports"]
+    "importOrder": ["<THIRD_PARTY_MODULES>", "", "^@/(.*)$", "", "^[.]"],
+    "importOrderCaseSensitive": true,
+    "plugins": ["@ianvs/prettier-plugin-sort-imports"]
 }

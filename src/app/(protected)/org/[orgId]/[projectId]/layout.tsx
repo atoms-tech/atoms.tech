@@ -1,4 +1,3 @@
-// src/app/(protected)/org/[orgId]/[projectId]/layout.tsx
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
