@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Check, Edit2 } from 'lucide-react';
-import React from 'react';
+import type { FC } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -11,7 +11,7 @@ interface EditModeToggleProps {
     onToggle: () => void;
 }
 
-export const EditModeToggle: React.FC<EditModeToggleProps> = ({
+export const EditModeToggle: FC<EditModeToggleProps> = ({
     isEditMode,
     onToggle,
 }) => {

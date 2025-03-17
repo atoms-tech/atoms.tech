@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, use, useState } from 'react';
 
 import { Project } from '@/types/base/projects.types';
 
@@ -20,14 +20,14 @@ export const ProjectProvider = ({
 }) => {
     const [project, setProject] = useState<Project | null>(initialProject);
     return (
-        <ProjectContext.Provider value={{ project, setProject }}>
+        <ProjectContext value={{ project, setProject }}>
             {children}
-        </ProjectContext.Provider>
+        </ProjectContext>
     );
 };
 
 export const useProject = () => {
-    const context = useContext(ProjectContext);
+    const context = use(ProjectContext);
     if (!context) {
         throw new Error('useProject must be used within a ProjectProvider');
     }

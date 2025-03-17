@@ -2,7 +2,7 @@
 
 import { Lock, Unlock } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import Breadcrumb from '@/components/custom/Breadcrumb';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';

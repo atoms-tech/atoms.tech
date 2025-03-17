@@ -2,7 +2,8 @@
 
 import { ChevronLeft } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import React from 'react';
+import type { FC } from 'react';
+import { Fragment } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { useBreadcrumbData } from '@/hooks/useBreadcrumbData';
@@ -12,7 +13,7 @@ interface BreadcrumbProps {
     className?: string;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
+const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
     const router = useRouter();
     const pathname = usePathname();
     const pathSegments = pathname.split('/').filter(Boolean);
@@ -72,12 +73,12 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ className }) => {
                 <ChevronLeft className="h-3 w-3" />
             </Button>
             {breadcrumbs.map((segment, index) => (
-                <React.Fragment key={index}>
+                <Fragment key={index}>
                     {index > 0 && <span className="opacity-40">/</span>}
                     <span className="hover:text-foreground cursor-default transition-colors">
                         {segment}
                     </span>
-                </React.Fragment>
+                </Fragment>
             ))}
         </div>
     );

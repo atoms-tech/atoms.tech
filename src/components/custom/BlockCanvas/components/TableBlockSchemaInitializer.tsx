@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import React, { useEffect } from 'react';
+import type { FC } from 'react';
+import { useEffect } from 'react';
 
 import {
     BlockPropertySchema,
@@ -15,7 +16,7 @@ interface TableBlockSchemaInitializerProps {
     createBlockPropertySchemas: () => Promise<BlockPropertySchema[]>;
 }
 
-export const TableBlockSchemaInitializer: React.FC<
+export const TableBlockSchemaInitializer: FC<
     TableBlockSchemaInitializerProps
 > = ({
     block,

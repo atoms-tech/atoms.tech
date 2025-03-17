@@ -2,7 +2,8 @@
 
 import { LayoutGroup, motion } from 'framer-motion';
 import { FileText } from 'lucide-react';
-import React from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 
 import { transitionConfig } from '@/lib/utils/animations';
 
@@ -10,7 +11,7 @@ interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
-    renderCell?: (item: T) => React.ReactNode;
+    renderCell?: (item: T) => ReactNode;
 }
 
 interface MonospaceGridProps<T> {
@@ -18,8 +19,8 @@ interface MonospaceGridProps<T> {
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
     handleGoToPage?: (item: T) => void;
-    gridItemRender?: (item: T) => React.ReactNode;
-    renderDetails?: (item: T) => React.ReactNode;
+    gridItemRender?: (item: T) => ReactNode;
+    renderDetails?: (item: T) => ReactNode;
 }
 
 export function MonospaceGrid<T>({
@@ -30,9 +31,9 @@ export function MonospaceGrid<T>({
     gridItemRender,
     renderDetails,
 }: MonospaceGridProps<T>) {
-    const [, setSelectedItem] = React.useState<T | null>(null);
+    const [, setSelectedItem] = useState<T | null>(null);
 
-    const handleItemClick = React.useCallback(
+    const handleItemClick = useCallback(
         (item: T) => {
             if (onRowClick) {
                 onRowClick(item);

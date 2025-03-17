@@ -1,9 +1,11 @@
 'use client';
 
-import { AlertCircle, Github, Loader2, Mail } from 'lucide-react';
+import { SiGithub } from '@icons-pack/react-simple-icons';
+import { AlertCircle, Loader2, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import React, { Suspense, useEffect, useState, useTransition } from 'react';
+import type { FormEvent } from 'react';
+import { Suspense, useEffect, useState, useTransition } from 'react';
 
 import { login } from '@/app/(auth)/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -31,7 +33,7 @@ function LoginForm() {
         router.prefetch('/org/[orgId]');
     }, [router]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('email', email);
@@ -138,7 +140,7 @@ function LoginForm() {
                             variant="outline"
                             onClick={() => router.push('/auth/github')}
                         >
-                            <Github className="mr-2 h-4 w-4" />
+                            <SiGithub className="mr-2 h-4 w-4" />
                             GitHub
                         </Button>
                     </div>

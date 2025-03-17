@@ -1,13 +1,14 @@
 'use client';
 
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import React from 'react';
+import type { ComponentProps, ReactElement } from 'react';
+import { cloneElement, useState } from 'react';
 
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface FoldingCardProps extends React.ComponentProps<typeof Card> {
-    icon?: React.ReactElement<SVGSVGElement>;
+interface FoldingCardProps extends ComponentProps<typeof Card> {
+    icon?: ReactElement<SVGSVGElement>;
     title: string;
     defaultOpen?: boolean;
     disabled?: boolean;
@@ -24,7 +25,7 @@ export function FoldingCard({
     children,
     ...props
 }: FoldingCardProps) {
-    const [isOpen, setIsOpen] = React.useState(defaultOpen);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
         <Card className={cn('p-6', className)} {...props}>
@@ -35,7 +36,7 @@ export function FoldingCard({
             >
                 {icon && (
                     <div className="rounded-full bg-primary/10 p-3">
-                        {React.cloneElement(icon, {
+                        {cloneElement(icon, {
                             className: 'h-6 w-6 text-primary',
                         })}
                     </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 
 interface TableBlockLoadingStateProps {
     isLoading: boolean;
@@ -8,7 +8,7 @@ interface TableBlockLoadingStateProps {
     noSchemas: boolean;
 }
 
-export const TableBlockLoadingState: React.FC<TableBlockLoadingStateProps> = ({
+export const TableBlockLoadingState: FC<TableBlockLoadingStateProps> = ({
     isLoading,
     isError,
     onCreateDefaultSchemas,

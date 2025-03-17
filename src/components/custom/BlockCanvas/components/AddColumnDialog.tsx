@@ -1,5 +1,6 @@
 import { PlusCircle } from 'lucide-react';
-import React, { useState } from 'react';
+import type { FC, FormEvent } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,7 @@ interface AddColumnDialogProps {
     disabled?: boolean;
 }
 
-export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
+export const AddColumnDialog: FC<AddColumnDialogProps> = ({
     onAddColumn,
     disabled = false,
 }) => {
@@ -36,7 +37,7 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
         // Validate input

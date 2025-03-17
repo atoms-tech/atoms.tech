@@ -2,7 +2,7 @@
 
 import { ChevronLeft } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import React from 'react';
+import { Fragment } from 'react';
 
 import { LayoutViewToggle } from '@/components/custom/toggles/LayoutViewToggle';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
@@ -43,12 +43,12 @@ const VerticalToolbar = () => {
                         <ChevronLeft className="h-3 w-3" />
                     </Button>
                     {segments.map((segment, index) => (
-                        <React.Fragment key={index}>
+                        <Fragment key={index}>
                             {index > 0 && <span className="opacity-40">/</span>}
                             <span className="hover:text-foreground cursor-default transition-colors">
                                 {segment}
                             </span>
-                        </React.Fragment>
+                        </Fragment>
                     ))}
                 </div>
             </div>

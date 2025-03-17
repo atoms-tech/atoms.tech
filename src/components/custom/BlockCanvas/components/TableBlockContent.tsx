@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import type { FC } from 'react';
+import { useState } from 'react';
 
 import { SidePanel } from '@/components/base/panels/SidePanel';
 import { EditableTable } from '@/components/custom/BlockCanvas/components/EditableTable';
@@ -21,7 +22,7 @@ interface TableBlockContentProps {
     isEditMode: boolean;
 }
 
-export const TableBlockContent: React.FC<TableBlockContentProps> = ({
+export const TableBlockContent: FC<TableBlockContentProps> = ({
     dynamicRequirements,
     columns,
     onSaveRequirement,

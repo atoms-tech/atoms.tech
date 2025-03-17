@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import type { ReactNode } from 'react';
 
 import { useSettingsStore } from '@/lib/store/settings.store';
 
@@ -11,7 +11,7 @@ export interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
-    renderCell?: (item: T) => React.ReactNode;
+    renderCell?: (item: T) => ReactNode;
     isSortable?: boolean;
 }
 
@@ -22,8 +22,8 @@ export interface DashboardViewProps<T> {
     handleGoToPage?: (item: T) => void;
     isLoading?: boolean;
     emptyMessage?: string;
-    gridItemRender?: (item: T) => React.ReactNode;
-    renderDetails?: (item: T) => React.ReactNode;
+    gridItemRender?: (item: T) => ReactNode;
+    renderDetails?: (item: T) => ReactNode;
 }
 
 function DashboardView<T>({

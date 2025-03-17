@@ -10,7 +10,8 @@ import {
     Wand,
 } from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
-import React, { useEffect, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ export default function RequirementPage() {
     const [missingReqError, setMissingReqError] = useState<string>('');
     const [missingFilesError, setMissingFilesError] = useState<string>('');
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
         setReqText(e.target.value);
         if (missingReqError) {
             setMissingReqError('');
@@ -76,7 +77,7 @@ export default function RequirementPage() {
         organizationId,
     );
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
 
         try {

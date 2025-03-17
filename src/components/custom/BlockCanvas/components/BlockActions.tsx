@@ -1,7 +1,8 @@
 'use client';
 
 import { GripVertical, Plus } from 'lucide-react';
-import React, { useState } from 'react';
+import type { FC } from 'react';
+import { useState } from 'react';
 
 import { BlockActionsProps } from '@/components/custom/BlockCanvas/types';
 import {
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-export const BlockActions: React.FC<BlockActionsProps> = ({
+export const BlockActions: FC<BlockActionsProps> = ({
     onDelete,
     isEditMode,
     dragActivators,

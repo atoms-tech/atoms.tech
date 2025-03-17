@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import React from 'react';
+import type { FC } from 'react';
 
 import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { BlockActions } from './BlockActions';
 import { TableBlock } from './TableBlock';
 import { TextBlock } from './TextBlock';
 
-export const SortableBlock: React.FC<BlockProps> = ({
+export const SortableBlock: FC<BlockProps> = ({
     block,
     isSelected,
     onSelect,

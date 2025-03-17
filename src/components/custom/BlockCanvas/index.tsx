@@ -19,7 +19,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { Table, Type } from 'lucide-react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { SortableBlock } from '@/components/custom/BlockCanvas/components/SortableBlock';
 import { useBlockActions } from '@/components/custom/BlockCanvas/hooks/useBlockActions';

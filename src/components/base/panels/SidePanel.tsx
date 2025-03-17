@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { ExternalLink, MoreVertical, X } from 'lucide-react';
-import React from 'react';
+import type { ReactNode } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +22,7 @@ export interface SidePanelProps {
     onClose: () => void;
     onNavigate?: () => void;
     onOptionSelect?: (option: (typeof EDIT_OPTIONS)[number]['value']) => void;
-    children: React.ReactNode;
+    children: ReactNode;
     showNavigateButton?: boolean;
     showEditButton?: boolean;
     className?: string;
@@ -39,7 +40,7 @@ export function SidePanel({
     className = '',
     width = '35%',
 }: SidePanelProps) {
-    const [isAnimating, setIsAnimating] = React.useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     const handleClose = () => {
         if (!isAnimating) {

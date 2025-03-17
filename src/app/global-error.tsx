@@ -1,9 +1,10 @@
 'use client';
 
-import React, { ErrorInfo } from 'react';
+import type { ReactNode } from 'react';
+import { Component, ErrorInfo } from 'react';
 
 interface Props {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 interface State {
@@ -11,7 +12,7 @@ interface State {
     error: Error | null;
 }
 
-class GlobalErrorBoundary extends React.Component<Props, State> {
+class GlobalErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
         this.state = { hasError: false, error: null };

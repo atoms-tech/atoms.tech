@@ -1,4 +1,4 @@
-import React from 'react';
+import { useMemo } from 'react';
 
 import { EditableColumn } from '@/components/custom/BlockCanvas/components/EditableTable';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
@@ -12,7 +12,7 @@ export const useTableColumns = (
     blockPropertySchemas: BlockPropertySchema[] | undefined,
 ) => {
     // Generate columns dynamically based on block property schemas
-    const columns: EditableColumn<DynamicRequirement>[] = React.useMemo(() => {
+    const columns: EditableColumn<DynamicRequirement>[] = useMemo(() => {
         if (!blockPropertySchemas) {
             return [];
         }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
     DynamicRequirement,
@@ -18,7 +19,7 @@ import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
 import { TableBlockSchemaInitializer } from './TableBlockSchemaInitializer';
 
-export const TableBlock: React.FC<BlockProps> = ({
+export const TableBlock: FC<BlockProps> = ({
     block,
     isEditMode: _isEditMode,
 }) => {

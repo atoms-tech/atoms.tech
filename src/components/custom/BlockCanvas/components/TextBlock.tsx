@@ -10,7 +10,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import React from 'react';
+import type { FC } from 'react';
+import { useEffect } from 'react';
 
 import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import { cn } from '@/lib/utils';
@@ -111,7 +112,7 @@ const customStyles = `
   }
 `;
 
-export const TextBlock: React.FC<BlockProps> = ({
+export const TextBlock: FC<BlockProps> = ({
     block,
     onUpdate,
     isSelected,
@@ -167,14 +168,14 @@ export const TextBlock: React.FC<BlockProps> = ({
     });
 
     // Update editor content when block content changes externally
-    React.useEffect(() => {
+    useEffect(() => {
         if (editor && content?.text && editor.getHTML() !== content.text) {
             editor.commands.setContent(content.text);
         }
     }, [content?.text, editor]);
 
     // Update editor's editable state when isEditMode changes
-    React.useEffect(() => {
+    useEffect(() => {
         if (editor) {
             editor.setEditable(isEditMode || false);
             if (!isEditMode) {

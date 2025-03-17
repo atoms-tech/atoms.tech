@@ -3,7 +3,8 @@
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { LayoutGroup, motion } from 'framer-motion';
 import { Filter } from 'lucide-react';
-import React from 'react';
+import type { ReactNode } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ interface Column<T> {
     header: string;
     width?: number;
     accessor: (item: T) => string;
-    renderCell?: (item: T) => React.ReactNode;
+    renderCell?: (item: T) => ReactNode;
     isSortable?: boolean;
 }
 
@@ -30,11 +31,11 @@ interface MonospaceTableProps<T> {
     data: T[];
     columns: Column<T>[];
     onRowClick?: (item: T) => void;
-    renderDetails?: (item: T) => React.ReactNode;
+    renderDetails?: (item: T) => ReactNode;
     isLoading?: boolean;
     emptyMessage?: string;
     showFilter?: boolean;
-    filterComponent?: React.ReactNode;
+    filterComponent?: ReactNode;
 }
 
 const getStatusColor = (status: string) => {
@@ -68,9 +69,9 @@ export function MonospaceTable<T>({
     showFilter = true,
     filterComponent,
 }: MonospaceTableProps<T>) {
-    const [sortKey, setSortKey] = React.useState<number>(0);
-    const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
-    const [, setSelectedItem] = React.useState<T | null>(null);
+    const [sortKey, setSortKey] = useState<number>(0);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [, setSelectedItem] = useState<T | null>(null);
 
     const sortedData = [...data].sort((a, b) => {
         if (!columns[sortKey].isSortable) return 0;
@@ -81,7 +82,7 @@ export function MonospaceTable<T>({
         return 0;
     });
 
-    const toggleSort = React.useCallback(
+    const toggleSort = useCallback(
         (index: number) => {
             if (!columns[index].isSortable) return;
             if (index === sortKey) {
@@ -94,7 +95,7 @@ export function MonospaceTable<T>({
         [columns, sortKey, sortOrder],
     );
 
-    const handleRowClick = React.useCallback(
+    const handleRowClick = useCallback(
         (item: T) => {
             if (onRowClick) {
                 onRowClick(item);

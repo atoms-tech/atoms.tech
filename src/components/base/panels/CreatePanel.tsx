@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 
 import DocumentForm from '@/components/base/forms/DocumentForm';
 import OrganizationForm from '@/components/base/forms/OrganizationForm';
@@ -31,7 +31,7 @@ export function CreatePanel({
     projectId,
     showTabs = 'show',
 }: CreatePanelProps) {
-    const [activeTab, setActiveTab] = React.useState(initialTab);
+    const [activeTab, setActiveTab] = useState(initialTab);
 
     const handleClose = () => {
         onClose();

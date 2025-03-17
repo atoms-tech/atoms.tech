@@ -1,13 +1,13 @@
-import React from 'react';
+import type { InputHTMLAttributes, Ref } from 'react';
 
 import { cn } from '@/lib/utils';
 
-interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface CheckboxProps extends InputHTMLAttributes<HTMLInputElement> {
     className?: string;
     label?: string;
     labelClassName?: string;
     wrapperClassName?: string;
-    ref?: React.Ref<HTMLInputElement>;
+    ref?: Ref<HTMLInputElement>;
 }
 
 const Checkbox = ({

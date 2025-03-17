@@ -3,7 +3,7 @@
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { Check, Plus, Trash2, X } from 'lucide-react';
-import * as React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     AlertDialog,
@@ -44,29 +44,29 @@ export function EditableTable<
     filterComponent,
     isEditMode = false,
 }: EditableTableProps<T>) {
-    const [sortKey, setSortKey] = React.useState<keyof T | null>(null);
-    const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
-    const [_hoveredCell, setHoveredCell] = React.useState<{
+    const [sortKey, setSortKey] = useState<keyof T | null>(null);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [_hoveredCell, setHoveredCell] = useState<{
         row: number;
         col: number;
     } | null>(null);
-    const [editingData, setEditingData] = React.useState<Record<string, T>>({});
-    const [isAddingNew, setIsAddingNew] = React.useState(false);
-    const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-    const [itemToDelete, setItemToDelete] = React.useState<T | null>(null);
-    const [editingTimeouts, setEditingTimeouts] = React.useState<
+    const [editingData, setEditingData] = useState<Record<string, T>>({});
+    const [isAddingNew, setIsAddingNew] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<T | null>(null);
+    const [editingTimeouts, setEditingTimeouts] = useState<
         Record<string, NodeJS.Timeout>
     >({});
-    const previousDataRef = React.useRef<T[]>([]);
-    const [isHoveringTable, setIsHoveringTable] = React.useState(false);
-    const [localIsEditMode, setLocalIsEditMode] = React.useState(isEditMode);
+    const previousDataRef = useRef<T[]>([]);
+    const [isHoveringTable, setIsHoveringTable] = useState(false);
+    const [localIsEditMode, setLocalIsEditMode] = useState(isEditMode);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setLocalIsEditMode(isEditMode);
     }, [isEditMode]);
 
     // Clear all editing timeouts on unmount
-    React.useEffect(() => {
+    useEffect(() => {
         return () => {
             Object.values(editingTimeouts).forEach((timeout) =>
                 clearTimeout(timeout),
@@ -74,7 +74,7 @@ export function EditableTable<
         };
     }, [editingTimeouts]);
 
-    const sortedData = React.useMemo(() => {
+    const sortedData = useMemo(() => {
         return [...data].sort((a, b) => {
             if (!sortKey) return 0;
             const aValue = a[sortKey];
@@ -100,7 +100,7 @@ export function EditableTable<
     }, [data, sortKey, sortOrder]);
 
     // Update editing data when data changes or edit mode is toggled
-    React.useEffect(() => {
+    useEffect(() => {
         // Skip if data hasn't changed and we're not toggling edit mode
         if (
             JSON.stringify(data) === JSON.stringify(previousDataRef.current) &&
