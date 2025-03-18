@@ -81,12 +81,16 @@ export class GumloopService {
         );
 
         if (files.length === 0) {
-            throw new Error('Please upload at least one PDF file');
+            throw new Error('Please upload at least one file');
         }
 
-        // Validate all files are PDFs
+        // Validate all files are PDFs or Markdown
         for (const file of files) {
-            if (!file.type.includes('pdf')) {
+            if (
+                !file.type.includes('pdf') &&
+                !file.type.includes('markdown') &&
+                !file.name.endsWith('.md')
+            ) {
                 console.error(
                     'Invalid file type detected:',
                     file.type,
@@ -94,7 +98,7 @@ export class GumloopService {
                     file.name,
                 );
                 throw new Error(
-                    `Only PDF files are accepted. Invalid file: ${file.name}`,
+                    `Only PDF and Markdown files are accepted. Invalid file: ${file.name}`,
                 );
             }
         }

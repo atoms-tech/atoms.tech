@@ -92,11 +92,33 @@ export default function RequirementPage() {
             const uploadedFileNames = await uploadFiles(files);
             console.log('Files uploaded successfully:', uploadedFileNames);
 
-            const { run_id } = await startPipeline({
-                fileNames: uploadedFileNames,
-                pipelineType: 'file-processing',
+            // Get only PDF files for conversion
+            const pdfFiles = uploadedFileNames.filter((name) =>
+                name.toLowerCase().endsWith('.pdf'),
+            );
+
+            if (pdfFiles.length > 0) {
+                const { run_id } = await startPipeline({
+                    fileNames: pdfFiles,
+                    pipelineType: 'file-processing',
+                });
+                setConvertPipelineRunId(run_id);
+            }
+
+            // Add non-PDF files directly to uploadedFiles
+            uploadedFileNames.forEach((fileName) => {
+                if (!fileName.toLowerCase().endsWith('.pdf')) {
+                    setUploadedFiles((prev) => ({
+                        ...prev,
+                        [fileName]: fileName,
+                    }));
+                }
             });
-            setConvertPipelineRunId(run_id);
+
+            if (pdfFiles.length == 0) {
+                setIsUploading(false);
+                setCurrentFile('');
+            }
         } catch (error) {
             setIsUploading(false);
             console.error('Failed to upload files:', error);
@@ -330,7 +352,7 @@ export default function RequirementPage() {
                                 type="file"
                                 ref={fileInputRef}
                                 onChange={handleFileUpload}
-                                accept=".pdf"
+                                accept=".pdf,.md"
                                 multiple
                                 className="hidden"
                             />
