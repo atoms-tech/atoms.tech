@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
-import { ProjectSchema } from '@/types/validation/projects.validation';
 
 export type CreateProjectInput = Omit<
     Project,
@@ -71,7 +70,7 @@ export function useCreateProject() {
             // }
             // console.log('Member created successfully', member);
 
-            return ProjectSchema.parse(project);
+            return project;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries

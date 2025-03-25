@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { DocumentSchema } from '@/types/validation/documents.validation';
 
 export const getProjectDocuments = async (projectId: string) => {
     const { data, error } = await supabase
@@ -9,7 +8,7 @@ export const getProjectDocuments = async (projectId: string) => {
         .eq('is_deleted', false);
 
     if (error) throw error;
-    return data.map((doc) => DocumentSchema.parse(doc));
+    return data;
 };
 
 export const getDocumentBlocksAndRequirements = async (documentId: string) => {
@@ -39,5 +38,5 @@ export const getDocumentData = async (documentId: string) => {
         .single();
 
     if (error) throw error;
-    return DocumentSchema.parse(data);
+    return data;
 };

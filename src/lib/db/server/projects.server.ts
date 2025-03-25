@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { ProjectSchema } from '@/types/validation/projects.validation';
 
 export const getProjectByIdServer = async (id: string) => {
     const supabase = await createClient();
@@ -30,11 +29,7 @@ export const getUserProjectsServer = async (userId: string, orgId: string) => {
 
     if (error) throw error;
 
-    const parsedProjects = projectData.map((project) =>
-        ProjectSchema.parse(project),
-    );
-
-    return parsedProjects;
+    return projectData;
 };
 
 export const getProjectMembersServer = async (projectId: string) => {

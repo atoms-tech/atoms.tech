@@ -42,7 +42,7 @@ export default function OrgPage() {
         orgId,
     );
 
-    const { data: documents, isLoading: documentsLoading } =
+    const { data: externalDocuments, isLoading: documentsLoading } =
         useExternalDocumentsByOrg(params?.orgId || '');
 
     const handleProjectClick = (project: Project) => {
@@ -61,7 +61,7 @@ export default function OrgPage() {
                 orgLoading={orgLoading}
                 projects={projects}
                 projectsLoading={projectsLoading}
-                documents={documents}
+                externalDocuments={externalDocuments}
                 documentsLoading={documentsLoading}
                 theme={theme}
                 onProjectClick={handleProjectClick}

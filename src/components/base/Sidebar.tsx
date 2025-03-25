@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { OrganizationType } from '@/types/base/enums.types';
+import { OrganizationType } from '@/types';
 
 interface MenuItem {
     title: string;

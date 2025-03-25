@@ -7,7 +7,6 @@ import {
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Requirement } from '@/types';
-import { RequirementSchema } from '@/types/validation/requirements.validation';
 
 export type CreateRequirementInput = Omit<
     Requirement,
@@ -46,7 +45,6 @@ export function useCreateRequirement() {
                         tags: input.tags,
                         created_by: input.created_by,
                         updated_by: input.updated_by,
-                        data: input.data || {},
                         version: 1,
                     })
                     .select()
@@ -61,7 +59,7 @@ export function useCreateRequirement() {
                 throw new Error('Failed to create requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -99,7 +97,7 @@ export function useUpdateRequirement() {
                 throw new Error('Failed to update requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -141,7 +139,7 @@ export function useDeleteRequirement() {
                 throw new Error('Failed to delete requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -160,13 +158,12 @@ export function useSyncRequirementData() {
             userId,
         }: {
             requirementId: string;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: Record<string, any>;
+            data: Partial<Requirement>;
             userId: string;
         }) => {
             return await updateRequirementMutation.mutateAsync({
                 id: requirementId,
-                data,
+                ...data,
                 updated_by: userId,
             });
         },

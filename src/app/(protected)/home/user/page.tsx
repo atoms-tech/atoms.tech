@@ -23,7 +23,7 @@ import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
-import { OrganizationType } from '@/types/base/enums.types';
+import { OrganizationType } from '@/types';
 import { Organization } from '@/types/base/organizations.types';
 
 export default function UserDashboard() {

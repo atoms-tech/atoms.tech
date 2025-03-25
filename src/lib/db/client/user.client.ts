@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { ProfileSchema } from '@/types/validation/profiles.validation';
 
 export const getUserProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -9,7 +8,7 @@ export const getUserProfile = async (userId: string) => {
         .single();
 
     if (error) throw error;
-    return ProfileSchema.parse(data);
+    return data;
 };
 
 export const getAuthUser = async () => {

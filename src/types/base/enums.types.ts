@@ -1,57 +1,59 @@
+import { Database } from './database.types';
+
+export type EEntityType = Database['public']['Enums']['entity_type'];
 export const EntityType = {
     document: 'document',
     requirement: 'requirement',
 } as const;
-export type EntityType = (typeof EntityType)[keyof typeof EntityType];
 
+export type EAssignmentRole = Database['public']['Enums']['assignment_role'];
 export const AssignmentRole = {
     assignee: 'assignee',
     reviewer: 'reviewer',
     approver: 'approver',
 } as const;
-export type AssignmentRole =
-    (typeof AssignmentRole)[keyof typeof AssignmentRole];
 
+export type EBillingPlan = Database['public']['Enums']['billing_plan'];
 export const BillingPlan = {
     free: 'free',
     pro: 'pro',
     enterprise: 'enterprise',
 } as const;
-export type BillingPlan = (typeof BillingPlan)[keyof typeof BillingPlan];
 
+export type EInvitationStatus =
+    Database['public']['Enums']['invitation_status'];
 export const InvitationStatus = {
     pending: 'pending',
     accepted: 'accepted',
     rejected: 'rejected',
     revoked: 'revoked',
 } as const;
-export type InvitationStatus =
-    (typeof InvitationStatus)[keyof typeof InvitationStatus];
 
+export type ENotificationType =
+    Database['public']['Enums']['notification_type'];
 export const NotificationType = {
     invitation: 'invitation',
     mention: 'mention',
     system: 'system',
 } as const;
-export type NotificationType =
-    (typeof NotificationType)[keyof typeof NotificationType];
 
+export type EOrganizationType =
+    Database['public']['Enums']['organization_type'];
 export const OrganizationType = {
     personal: 'personal',
     team: 'team',
     enterprise: 'enterprise',
 } as const;
-export type OrganizationType =
-    (typeof OrganizationType)[keyof typeof OrganizationType];
 
+export type EPricingPlanInterval =
+    Database['public']['Enums']['pricing_plan_interval'];
 export const PricingPlanInterval = {
     none: 'none',
     month: 'month',
     year: 'year',
 } as const;
-export type PricingPlanInterval =
-    (typeof PricingPlanInterval)[keyof typeof PricingPlanInterval];
 
+export type EProjectRole = Database['public']['Enums']['project_role'];
 export const ProjectRole = {
     owner: 'owner',
     admin: 'admin',
@@ -59,18 +61,18 @@ export const ProjectRole = {
     editor: 'editor',
     viewer: 'viewer',
 } as const;
-export type ProjectRole = (typeof ProjectRole)[keyof typeof ProjectRole];
 
+export type EProjectStatus = Database['public']['Enums']['project_status'];
 export const ProjectStatus = {
     active: 'active',
     archived: 'archived',
     draft: 'draft',
     deleted: 'deleted',
 } as const;
-export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
 
+export type EPropertyType = Database['public']['Enums']['property_type'];
 export const PropertyType = {
-    string: 'string',
+    text: 'text',
     number: 'number',
     boolean: 'boolean',
     date: 'date',
@@ -78,46 +80,51 @@ export const PropertyType = {
     array: 'array',
     enum: 'enum',
     entity_reference: 'entity_reference',
+    select: 'select',
+    multi_select: 'multi_select',
+    file: 'file',
 } as const;
-export type PropertyType = (typeof PropertyType)[keyof typeof PropertyType];
 
+export type ERequirementFormat =
+    Database['public']['Enums']['requirement_format'];
 export const RequirementFormat = {
     incose: 'incose',
     ears: 'ears',
     other: 'other',
 } as const;
-export type RequirementFormat =
-    (typeof RequirementFormat)[keyof typeof RequirementFormat];
 
+export type ERequirementLevel =
+    Database['public']['Enums']['requirement_level'];
 export const RequirementLevel = {
     component: 'component',
     system: 'system',
     subsystem: 'subsystem',
 } as const;
-export type RequirementLevel =
-    (typeof RequirementLevel)[keyof typeof RequirementLevel];
 
+export type ERequirementPriority =
+    Database['public']['Enums']['requirement_priority'];
 export const RequirementPriority = {
     low: 'low',
     medium: 'medium',
     high: 'high',
+    critical: 'critical',
 } as const;
-export type RequirementPriority =
-    (typeof RequirementPriority)[keyof typeof RequirementPriority];
 
+export type ERequirementStatus =
+    Database['public']['Enums']['requirement_status'];
 export const RequirementStatus = {
     active: 'active',
     archived: 'archived',
     draft: 'draft',
     deleted: 'deleted',
-    pending: 'pending',
+    in_review: 'in_review',
     in_progress: 'in_progress',
     approved: 'approved',
     rejected: 'rejected',
 } as const;
-export type RequirementStatus =
-    (typeof RequirementStatus)[keyof typeof RequirementStatus];
 
+export type ESubscriptionStatus =
+    Database['public']['Enums']['subscription_status'];
 export const SubscriptionStatus = {
     active: 'active',
     inactive: 'inactive',
@@ -126,9 +133,8 @@ export const SubscriptionStatus = {
     canceled: 'canceled',
     paused: 'paused',
 } as const;
-export type SubscriptionStatus =
-    (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 
+export type ETraceLinkType = Database['public']['Enums']['trace_link_type'];
 export const TraceLinkType = {
     derives_from: 'derives_from',
     implements: 'implements',
@@ -138,26 +144,25 @@ export const TraceLinkType = {
     parent_of: 'parent_of',
     child_of: 'child_of',
 } as const;
-export type TraceLinkType = (typeof TraceLinkType)[keyof typeof TraceLinkType];
 
+export type EUserRoleType = Database['public']['Enums']['user_role_type'];
 export const UserRoleType = {
     member: 'member',
     admin: 'admin',
     owner: 'owner',
     super_admin: 'super_admin',
 } as const;
-export type UserRoleType = (typeof UserRoleType)[keyof typeof UserRoleType];
 
+export type EUserStatus = Database['public']['Enums']['user_status'];
 export const UserStatus = {
     active: 'active',
     inactive: 'inactive',
 } as const;
-export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 
+export type EVisibility = Database['public']['Enums']['visibility'];
 export const Visibility = {
     private: 'private',
     team: 'team',
     organization: 'organization',
     public: 'public',
 } as const;
-export type Visibility = (typeof Visibility)[keyof typeof Visibility];

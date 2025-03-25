@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { buildQuery } from '@/lib/utils/queryFactory';
-import { EntityType } from '@/types/base/enums.types';
+import type { EEntityType } from '@/types';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useTraceLinks(
     sourceId: string,
-    sourceType: EntityType,
+    sourceType: EEntityType,
     queryFilters?: Omit<QueryFilters, 'filters'>,
 ) {
     return useQuery({
@@ -28,7 +28,7 @@ export function useTraceLinks(
 
 export function useReverseTraceLinks(
     targetId: string,
-    targetType: EntityType,
+    targetType: EEntityType,
     queryFilters?: Omit<QueryFilters, 'filters'>,
 ) {
     return useQuery({
@@ -49,7 +49,7 @@ export function useReverseTraceLinks(
 
 export function useAssignments(
     entityId: string,
-    entityType: EntityType,
+    entityType: EEntityType,
     queryFilters?: Omit<QueryFilters, 'filters'>,
 ) {
     return useQuery({

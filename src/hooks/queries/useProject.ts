@@ -5,7 +5,6 @@ import { getUserProjects } from '@/lib/db/client';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { QueryFilters } from '@/types/base/filters.types';
 import { Project } from '@/types/base/projects.types';
-import { ProjectSchema } from '@/types/validation/projects.validation';
 
 export function useProject(projectId: string) {
     return useQuery({
@@ -91,7 +90,7 @@ export function useProjectsByMembershipForOrg(orgId: string, userId: string) {
                 .in('id', projectIds)
                 .eq('is_deleted', false);
             if (projectError) throw projectError;
-            return projects.map((project) => ProjectSchema.parse(project));
+            return projects;
         },
         enabled: !!orgId && !!userId,
     });

@@ -1,10 +1,5 @@
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import {
-    BillingPlan,
-    OrganizationType,
-    PricingPlanInterval,
-} from '@/types/base/enums.types';
-import { OrganizationSchema } from '@/types/validation/organizations.validation';
+import { BillingPlan, OrganizationType, PricingPlanInterval } from '@/types';
 
 export const getUserOrganizations = async (userId: string) => {
     if (!userId) {
@@ -34,8 +29,7 @@ export const getUserOrganizations = async (userId: string) => {
     }
 
     try {
-        const organizations = data.map((member) => member.organizations);
-        return organizations.map((org) => OrganizationSchema.parse(org));
+        return data.map((member) => member.organizations);
     } catch (error) {
         console.error('Error parsing organizations:', error);
         return [];
@@ -79,7 +73,7 @@ export const ensurePersonalOrganization = async (
 
     // If the user already has a personal organization, return it
     if (existingOrgs && existingOrgs.length > 0) {
-        return OrganizationSchema.parse(existingOrgs[0]);
+        return existingOrgs[0];
     }
 
     // Otherwise, create a new personal organization
@@ -132,5 +126,5 @@ export const ensurePersonalOrganization = async (
         throw memberError;
     }
 
-    return OrganizationSchema.parse(newOrg);
+    return newOrg;
 };

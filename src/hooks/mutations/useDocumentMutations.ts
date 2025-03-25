@@ -1,7 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { v4 as uuidv4 } from 'uuid';
 
-import { DocumentPropertySchema } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
@@ -21,12 +19,11 @@ export function useCreateDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (document: Partial<Document>) => {
+        mutationFn: async (document: CreateDocumentInput) => {
             const { data, error } = await supabase
                 .from('documents')
                 .insert({
                     ...document,
-                    id: document.id || uuidv4(),
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                     is_deleted: false,
@@ -50,7 +47,7 @@ export function useUpdateDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (document: Partial<Document>) => {
+        mutationFn: async (document: Document) => {
             const { data, error } = await supabase
                 .from('documents')
                 .update({
@@ -106,92 +103,13 @@ export function useDeleteDocument() {
     });
 }
 
-export function useCreateDocumentPropertySchema() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (schema: Partial<DocumentPropertySchema>) => {
-            const { data, error } = await supabase
-                .from('document_property_schemas')
-                .insert({
-                    ...schema,
-                    id: schema.id || uuidv4(),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    is_deleted: false,
-                    version: 1,
-                })
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as DocumentPropertySchema;
-        },
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.documentPropertySchemas.byDocument(
-                    data.document_id,
-                ),
-            });
-        },
-    });
-}
-
 export function useCreateDocumentWithDefaultSchemas() {
     const createDocumentMutation = useCreateDocument();
-    const createDocumentPropertySchemaMutation =
-        useCreateDocumentPropertySchema();
 
     return useMutation({
-        mutationFn: async (document: Partial<Document>) => {
+        mutationFn: async (document: CreateDocumentInput) => {
             const createdDocument =
                 await createDocumentMutation.mutateAsync(document);
-
-            const defaultSchemas: Partial<DocumentPropertySchema>[] = [
-                {
-                    document_id: createdDocument.id,
-                    name: 'ReqID',
-                    data_type: 'string',
-                    created_by: document.created_by,
-                    updated_by: document.updated_by,
-                },
-                {
-                    document_id: createdDocument.id,
-                    name: 'Name',
-                    data_type: 'string',
-                    created_by: document.created_by,
-                    updated_by: document.updated_by,
-                },
-                {
-                    document_id: createdDocument.id,
-                    name: 'Description',
-                    data_type: 'string',
-                    created_by: document.created_by,
-                    updated_by: document.updated_by,
-                },
-                {
-                    document_id: createdDocument.id,
-                    name: 'Status',
-                    data_type: 'string',
-                    created_by: document.created_by,
-                    updated_by: document.updated_by,
-                },
-                {
-                    document_id: createdDocument.id,
-                    name: 'Priority',
-                    data_type: 'string',
-                    created_by: document.created_by,
-                    updated_by: document.updated_by,
-                },
-            ];
-
-            await Promise.all(
-                defaultSchemas.map(async (schema) => {
-                    return await createDocumentPropertySchemaMutation.mutateAsync(
-                        schema,
-                    );
-                }),
-            );
 
             return createdDocument;
         },

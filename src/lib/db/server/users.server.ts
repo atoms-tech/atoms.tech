@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { ProfileSchema } from '@/types/validation/profiles.validation';
 
 export const getUserProfileServer = async (userId: string) => {
     const supabase = await createClient();
@@ -10,7 +9,7 @@ export const getUserProfileServer = async (userId: string) => {
         .single();
 
     if (error) throw error;
-    return ProfileSchema.parse(data);
+    return data;
 };
 
 export const getAuthUserServer = async () => {

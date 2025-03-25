@@ -19,7 +19,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getOrganizationMembers } from '@/lib/db/client';
-import { UserRoleType } from '@/types';
+import { EUserRoleType } from '@/types';
 
 interface OrgMembersProps {
     className?: string;
@@ -34,7 +34,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         enabled: !!params.orgId,
     });
 
-    const getRoleColor = (role: UserRoleType) => {
+    const getRoleColor = (role: EUserRoleType) => {
         switch (role) {
             case 'owner':
                 return 'bg-purple-100 text-purple-800';
@@ -91,11 +91,15 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                     </div>
                                     <div>
                                         <div className="font-medium">
-                                            {member.profiles?.full_name ||
-                                                'User'}
+                                            {/* TODO: Implement user name display, profiles does not exist
+                                              {member.profiles?.full_name ||
+                                                'User'} */}
+                                            User
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                            {member.profiles?.email}
+                                            {/* TODO: Implement user email display, profiles does not exist
+                                            {member.profiles?.email */}
+                                            Email
                                         </div>
                                     </div>
                                 </div>

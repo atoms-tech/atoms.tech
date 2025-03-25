@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { Organization, Project } from '@/types';
+import { ExternalDocument, Organization, Project } from '@/types';
 
 import OrgMembers from './OrgMembers.client';
 
@@ -22,23 +22,12 @@ interface OrgDashboardProps {
     orgLoading: boolean;
     projects: Project[] | undefined;
     projectsLoading: boolean;
-    documents: Document[] | undefined;
+    externalDocuments: ExternalDocument[] | undefined;
     documentsLoading: boolean;
     theme: string | undefined;
     onProjectClick: (project: Project) => void;
     onExternalDocsClick: () => void;
     orgId: string;
-}
-
-// Define a Document interface if it doesn't exist
-interface Document {
-    id: string;
-    name: string;
-    type?: string;
-    size?: number;
-    created_at?: string;
-    updated_at?: string;
-    [key: string]: unknown;
 }
 
 export default function OrgDashboard(props: OrgDashboardProps) {
@@ -323,10 +312,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 Loading documents...
                             </h3>
                         </div>
-                    ) : props.documents?.length ? (
+                    ) : props.externalDocuments?.length ? (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {props.documents
+                                {props.externalDocuments
                                     .sort((a, b) => {
                                         const dateA = a.created_at
                                             ? new Date(a.created_at).getTime()

@@ -13,18 +13,17 @@ import {
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { BlockCanvas } from '@/components/custom/BlockCanvas';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import LayoutView from '@/components/views/LayoutView';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getDocumentData } from '@/lib/db/client';
 import { useDocumentStore } from '@/lib/store/document.store';
-import { RequirementPriority, RequirementStatus } from '@/types';
+import { ERequirementPriority, ERequirementStatus } from '@/types';
 
 type BlockContent = {
-    status: RequirementStatus;
-    priority: RequirementPriority;
+    status: ERequirementStatus;
+    priority: ERequirementPriority;
 };
 
 export default function DocDashboard() {
@@ -199,10 +198,6 @@ export default function DocDashboard() {
                 </motion.div>
 
                 <br />
-                {/* Canvas */}
-                <div>
-                    <BlockCanvas documentId={documentId} />
-                </div>
             </div>
         </LayoutView>
     );

@@ -13,7 +13,6 @@ import { useProject } from '@/lib/providers/project.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 import { Requirement } from '@/types/base/requirements.types';
-import { RequirementSchema } from '@/types/validation';
 
 export default function ProjectPage() {
     const router = useRouter();
@@ -53,15 +52,11 @@ export default function ProjectPage() {
 
             console.log('Requirements', requirements);
 
-            if (!requirements?.length) {
+            if (!requirements) {
                 return [];
             }
 
-            const parsedRequirements = requirements.map((requirement) =>
-                RequirementSchema.parse(requirement),
-            );
-
-            return parsedRequirements;
+            return requirements;
         },
     });
 

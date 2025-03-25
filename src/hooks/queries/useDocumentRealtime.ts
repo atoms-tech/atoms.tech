@@ -5,8 +5,6 @@ import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types/base/documents.types';
 import { Requirement } from '@/types/base/requirements.types';
-import { BlockSchema } from '@/types/validation/blocks.validation';
-import { RequirementSchema } from '@/types/validation/requirements.validation';
 
 type BlockWithRequirements = Block & { requirements: Requirement[] };
 
@@ -37,14 +35,8 @@ const fetchInitialData = async (documentId: string) => {
         throw requirementsError;
     }
 
-    // Parse and merge the data
-    const blocks = blocksData.map((block) => BlockSchema.parse(block));
-    const requirements = requirementsData.map((req) =>
-        RequirementSchema.parse(req),
-    );
-
     // Group requirements by block_id
-    const requirementsByBlock = requirements.reduce(
+    const requirementsByBlock = requirementsData.reduce(
         (acc, req) => {
             if (!acc[req.block_id]) {
                 acc[req.block_id] = [];
@@ -56,7 +48,7 @@ const fetchInitialData = async (documentId: string) => {
     );
 
     // Merge blocks with their requirements
-    return blocks.map((block) => ({
+    return blocksData.map((block) => ({
         ...block,
         requirements: requirementsByBlock[block.id] || [],
     }));
@@ -113,7 +105,7 @@ export function useDocumentRealtime(documentId: string) {
                 // Set up block subscription
                 blockChannel = supabase
                     .channel(`blocks:${documentId}`)
-                    .on(
+                    .on<Block>(
                         'postgres_changes',
                         {
                             event: 'INSERT',
@@ -123,7 +115,7 @@ export function useDocumentRealtime(documentId: string) {
                         },
                         async (payload) => {
                             console.log('Block INSERT event:', payload);
-                            const newBlock = BlockSchema.parse(payload.new);
+                            const newBlock = payload.new;
                             setLocalBlocks((prev) => {
                                 const exists = prev.some(
                                     (b) => b.id === newBlock.id,
@@ -138,7 +130,7 @@ export function useDocumentRealtime(documentId: string) {
                             addBlock(newBlock);
                         },
                     )
-                    .on(
+                    .on<Block>(
                         'postgres_changes',
                         {
                             event: 'UPDATE',
@@ -148,7 +140,7 @@ export function useDocumentRealtime(documentId: string) {
                         },
                         async (payload) => {
                             console.log('Block UPDATE event:', payload);
-                            const updatedBlock = BlockSchema.parse(payload.new);
+                            const updatedBlock = payload.new;
                             if (updatedBlock.is_deleted) {
                                 // Delete all requirements of this block first
                                 await deleteBlockRequirements(updatedBlock.id);
@@ -198,7 +190,7 @@ export function useDocumentRealtime(documentId: string) {
                 // Set up requirements subscription with store updates
                 requirementChannel = supabase
                     .channel(`requirements:${documentId}`)
-                    .on(
+                    .on<Requirement>(
                         'postgres_changes',
                         {
                             event: 'INSERT',
@@ -208,9 +200,7 @@ export function useDocumentRealtime(documentId: string) {
                         },
                         async (payload) => {
                             console.log('Requirement INSERT event:', payload);
-                            const newRequirement = RequirementSchema.parse(
-                                payload.new,
-                            );
+                            const newRequirement = payload.new;
                             if (newRequirement.is_deleted) {
                                 console.log(
                                     'Skipping deleted requirement:',
@@ -233,7 +223,7 @@ export function useDocumentRealtime(documentId: string) {
                             );
                         },
                     )
-                    .on(
+                    .on<Requirement>(
                         'postgres_changes',
                         {
                             event: 'UPDATE',
@@ -243,9 +233,7 @@ export function useDocumentRealtime(documentId: string) {
                         },
                         async (payload) => {
                             console.log('Requirement UPDATE event:', payload);
-                            const updatedRequirement = RequirementSchema.parse(
-                                payload.new,
-                            );
+                            const updatedRequirement = payload.new;
 
                             updateBothStates((prev) =>
                                 prev.map((block) => {

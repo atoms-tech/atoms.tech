@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types';
-import { BlockSchema } from '@/types/validation/blocks.validation';
 
 const fetchBlocks = async (documentId: string) => {
     const { data: blocks, error } = await supabase
@@ -19,7 +18,7 @@ const fetchBlocks = async (documentId: string) => {
         throw error;
     }
 
-    return blocks.map((block) => BlockSchema.parse(block));
+    return blocks;
 };
 
 export function useBlockSubscription(documentId: string) {
@@ -37,7 +36,7 @@ export function useBlockSubscription(documentId: string) {
                 // First set up the subscription to not miss any events
                 channel = supabase
                     .channel(`blocks:${documentId}`)
-                    .on(
+                    .on<Block>(
                         'postgres_changes',
                         {
                             event: 'INSERT',
@@ -46,7 +45,7 @@ export function useBlockSubscription(documentId: string) {
                             filter: `document_id=eq.${documentId}`,
                         },
                         async (payload) => {
-                            const newBlock = BlockSchema.parse(payload.new);
+                            const newBlock = payload.new;
                             setLocalBlocks((prev) => {
                                 const exists = prev.some(
                                     (b) => b.id === newBlock.id,
@@ -60,7 +59,7 @@ export function useBlockSubscription(documentId: string) {
                             addBlock(newBlock);
                         },
                     )
-                    .on(
+                    .on<Block>(
                         'postgres_changes',
                         {
                             event: 'UPDATE',
@@ -69,7 +68,7 @@ export function useBlockSubscription(documentId: string) {
                             filter: `document_id=eq.${documentId}`,
                         },
                         async (payload) => {
-                            const updatedBlock = BlockSchema.parse(payload.new);
+                            const updatedBlock = payload.new;
                             // Handle soft deletes
                             if (updatedBlock.is_deleted) {
                                 setLocalBlocks((prev) =>

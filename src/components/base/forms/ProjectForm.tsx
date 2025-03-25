@@ -26,7 +26,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectStore } from '@/lib/store/project.store';
-import { ProjectStatus, Visibility } from '@/types/base/enums.types';
+import { ProjectStatus, Visibility } from '@/types';
 
 const projectFormSchema = z.object({
     name: z.string().min(1, 'Project name is required'),

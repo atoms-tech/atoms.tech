@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { OrganizationSchema } from '@/types/validation/organizations.validation';
 
 export const getOrganizationIdBySlugServer = async (slug: string) => {
     const supabase = await createClient();
@@ -21,7 +20,7 @@ export const getOrganizationServer = async (orgId: string) => {
         .eq('is_deleted', false)
         .single();
     if (error) throw error;
-    return OrganizationSchema.parse(data);
+    return data;
 };
 
 export const getUserOrganizationsServer = async (userId: string) => {
@@ -47,8 +46,7 @@ export const getUserOrganizationsServer = async (userId: string) => {
         return [];
     }
 
-    const organizations = data.map((member) => member.organizations);
-    return organizations.map((org) => OrganizationSchema.parse(org));
+    return data.map((member) => member.organizations);
 };
 
 // Get all organization ids for a user by membership

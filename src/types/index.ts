@@ -4,17 +4,9 @@ export type { Organization } from './base/organizations.types';
 
 export type { Profile } from './base/profiles.types';
 
-export type {
-    Document,
-    DocumentPropertySchema,
-    Block,
-    BlockPropertySchema,
-} from './base/documents.types';
+export type { Document, Block, ExternalDocument } from './base/documents.types';
 
-export type {
-    Requirement,
-    RequirementPropertyKV,
-} from './base/requirements.types';
+export type { Requirement } from './base/requirements.types';
 
 export type {
     TraceLink,
@@ -26,6 +18,28 @@ export type {
 } from './base/traceability.types';
 
 export type {
+    EEntityType,
+    EAssignmentRole,
+    EBillingPlan,
+    EInvitationStatus,
+    ENotificationType,
+    EOrganizationType,
+    EPricingPlanInterval,
+    EProjectRole,
+    EProjectStatus,
+    EPropertyType,
+    ERequirementFormat,
+    ERequirementLevel,
+    ERequirementPriority,
+    ERequirementStatus,
+    ESubscriptionStatus,
+    ETraceLinkType,
+    EUserRoleType,
+    EUserStatus,
+    EVisibility,
+} from './base/enums.types';
+
+export {
     EntityType,
     AssignmentRole,
     BillingPlan,

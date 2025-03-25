@@ -7,7 +7,6 @@ import {
     gumloopService,
 } from '@/lib/services/gumloop';
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { BillingCacheSchema } from '@/types/validation';
 
 // import { rateLimit } from '@/lib/middleware/rateLimit';
 
@@ -103,14 +102,13 @@ export async function GET(request: NextRequest) {
 
             // increment the API usage counter
             const supabase = await createClient();
-            const { data, error } = await supabase
+            const { data: billingRecord, error } = await supabase
                 .from('billing_cache')
                 .select('*')
-                .eq('organization_id', organizationId);
+                .eq('organization_id', organizationId)
+                .single();
 
             if (error) throw error;
-
-            const billingRecord = BillingCacheSchema.parse(data[0]);
 
             // @ts-expect-error The property exists
             billingRecord.current_period_usage.api_calls += status.credit_cost;

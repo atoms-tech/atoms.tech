@@ -122,13 +122,16 @@ export default function ExternalDocsPage() {
     const sortedFiles = filteredFiles?.sort((a, b) => {
         switch (sortOption) {
             case 'size':
+                if (!a.size || !b.size) return 0;
                 return a.size - b.size;
             case 'created_at':
+                if (!a.created_at || !b.created_at) return 0;
                 return (
                     new Date(a.created_at).getTime() -
                     new Date(b.created_at).getTime()
                 );
             case 'type':
+                if (!a.type || !b.type) return 0;
                 return a.type.localeCompare(b.type);
             case 'name-asc':
                 return a.name.localeCompare(b.name);

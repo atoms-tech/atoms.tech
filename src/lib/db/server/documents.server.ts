@@ -1,6 +1,4 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { Document } from '@/types/base/documents.types';
-import { DocumentSchema } from '@/types/validation/documents.validation';
 
 export const getProjectDocumentsServer = async (projectId: string) => {
     const supabase = await createClient();
@@ -11,7 +9,7 @@ export const getProjectDocumentsServer = async (projectId: string) => {
         .eq('is_deleted', false);
 
     if (error) throw error;
-    return data.map((doc) => DocumentSchema.parse(doc));
+    return data;
 };
 
 export const getDocumentBlocksAndRequirementsServer = async (
@@ -43,5 +41,5 @@ export const getDocumentDataServer = async (documentId: string) => {
         .eq('is_deleted', false);
 
     if (error) throw error;
-    return DocumentSchema.parse(data) as Document;
+    return data;
 };

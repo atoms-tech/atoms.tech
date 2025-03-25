@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 
 import { getUserOrganizationsServer } from '@/lib/db/server';
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { OrganizationType } from '@/types/base/enums.types';
+import { OrganizationType } from '@/types';
 
 export async function login(formData: FormData) {
     const supabase = await createClient();
