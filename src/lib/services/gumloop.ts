@@ -33,7 +33,7 @@ interface PipelineInput {
 export type StartPipelineParams = {
     pipelineType: PipelineType;
     requirement?: string;
-    fileNames?: string[] | string;
+    fileNames?: string[];
     systemName?: string;
     objective?: string;
     customPipelineInputs?: PipelineInput[];
@@ -191,18 +191,12 @@ export class GumloopService {
         const pipelineInputs = customPipelineInputs || [];
 
         if (!customPipelineInputs) {
-            // Convert filenames to array if it's a string
-            const filenamesArray =
-                typeof fileNames === 'string'
-                    ? fileNames.split(',').map((f) => f.trim())
-                    : fileNames;
+            console.log('Processed filenames:', fileNames);
 
-            console.log('Processed filenames:', filenamesArray);
-
-            if (filenamesArray?.length) {
+            if (fileNames?.length) {
                 pipelineInputs.push({
                     input_name: 'File Names',
-                    value: filenamesArray.join('\n'),
+                    value: fileNames.join('\n'),
                 });
             }
 

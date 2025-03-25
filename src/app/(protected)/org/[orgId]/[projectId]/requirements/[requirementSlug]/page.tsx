@@ -4,20 +4,32 @@ import {
     Brain,
     Check,
     CircleAlert,
+    FilePlus,
     Scale,
     Target,
     Upload,
     Wand,
 } from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
-import type { ChangeEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FoldingCard } from '@/components/ui/folding-card';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    useUpdateExternalDocumentGumloopName,
+    useUploadExternalDocument,
+} from '@/hooks/mutations/useExternalDocumentsMutations';
+import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useGumloop } from '@/hooks/useGumloop';
 
@@ -61,13 +73,31 @@ export default function RequirementPage() {
         }
     };
 
-    const [currentFile, setCurrentFile] = useState<string>('');
-    // uploaded files maps processed file name to original file name
-    const [uploadedFiles, setUploadedFiles] = useState<{
+    const { data: existingDocs } = useExternalDocumentsByOrg(organizationId);
+    const existingDocsNameMap = useMemo(() => {
+        if (!existingDocs) return {};
+        return existingDocs.reduce(
+            (acc, doc) => {
+                acc[doc.name] = doc.gumloop_name || doc.name;
+                return acc;
+            },
+            {} as { [key: string]: string },
+        );
+    }, [existingDocs]);
+    const [existingDocsValue, setExistingDocsValue] = useState<string>('');
+
+    const [selectedFiles, setSelectedFiles] = useState<{
         [key: string]: string;
     }>({});
+
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [processingPdfFiles, setProcessingPdfFiles] = useState<
+        { name: string; supabaseId: string }[]
+    >([]);
+
+    const uploadFileToSupabase = useUploadExternalDocument();
+    const updateGumloopName = useUpdateExternalDocumentGumloopName();
 
     const { startPipeline, getPipelineRun, uploadFiles } = useGumloop();
     const [convertPipelineRunId, setConvertPipelineRunId] =
@@ -82,50 +112,90 @@ export default function RequirementPage() {
 
         try {
             const files = Array.from(e.target.files);
-            setCurrentFile(files[0].name);
             setIsUploading(true);
 
             if (missingFilesError) {
                 setMissingFilesError('');
             }
 
-            const uploadedFileNames = await uploadFiles(files);
-            console.log('Files uploaded successfully:', uploadedFileNames);
-
-            // Get only PDF files for conversion
-            const pdfFiles = uploadedFileNames.filter((name) =>
-                name.toLowerCase().endsWith('.pdf'),
+            // upload to Supabase
+            const uploadPromises = files.map((file) =>
+                uploadFileToSupabase.mutateAsync({
+                    file,
+                    orgId: organizationId,
+                }),
             );
+            const supabaseUploads = await Promise.all(uploadPromises);
+            console.log('Uploaded files to Supabase: ', supabaseUploads);
 
-            if (pdfFiles.length > 0) {
-                const { run_id } = await startPipeline({
-                    fileNames: pdfFiles,
-                    pipelineType: 'file-processing',
-                });
-                setConvertPipelineRunId(run_id);
-            }
+            // upload to Gumloop
+            const uploadedFileNames = await uploadFiles(files);
+            console.log('Uploaded files to Gumloop: ', uploadedFileNames);
 
-            // Add non-PDF files directly to uploadedFiles
-            uploadedFileNames.forEach((fileName) => {
-                if (!fileName.toLowerCase().endsWith('.pdf')) {
-                    setUploadedFiles((prev) => ({
-                        ...prev,
-                        [fileName]: fileName,
-                    }));
+            const nonPdfFiles: { name: string; supabaseId: string }[] = [];
+            const pdfFiles: { name: string; supabaseId: string }[] = [];
+
+            supabaseUploads.forEach((file) => {
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    pdfFiles.push({
+                        name: file.name,
+                        supabaseId: file.id,
+                    });
+                } else {
+                    nonPdfFiles.push({
+                        name: file.name,
+                        supabaseId: file.id,
+                    });
                 }
             });
 
+            // Add non-PDF files directly to selectedFiles
+            nonPdfFiles.forEach((file) => {
+                setSelectedFiles((prev) => ({
+                    ...prev,
+                    [file.name]: file.name,
+                }));
+            });
+
+            const gumloopNamePromises = nonPdfFiles.map((file) => {
+                updateGumloopName.mutateAsync({
+                    documentId: file.supabaseId,
+                    gumloopName: file.name,
+                    orgId: organizationId,
+                });
+            });
+            await Promise.all(gumloopNamePromises);
+
             if (pdfFiles.length == 0) {
                 setIsUploading(false);
-                setCurrentFile('');
+                return;
             }
+
+            setProcessingPdfFiles(pdfFiles);
+
+            const { run_id } = await startPipeline({
+                fileNames: pdfFiles.map((file) => file.name),
+                pipelineType: 'file-processing',
+            });
+            setConvertPipelineRunId(run_id);
         } catch (error) {
             setIsUploading(false);
             console.error('Failed to upload files:', error);
         }
     };
 
-    // set the uploadedFiles when the pipeline run is completed
+    const handleExistingDocSelect = (docName: string) => {
+        if (missingFilesError) {
+            setMissingFilesError('');
+        }
+        setSelectedFiles((prev) => ({
+            ...prev,
+            [existingDocsNameMap[docName]]: docName,
+        }));
+        setExistingDocsValue('');
+    };
+
+    // set the selectedFiles when the pipeline run is completed
     useEffect(() => {
         switch (convertResponse?.state) {
             case 'DONE': {
@@ -147,10 +217,18 @@ export default function RequirementPage() {
                     break;
                 }
 
-                for (const fileName of convertedFileNames) {
-                    setUploadedFiles((prevFiles) => ({
-                        ...prevFiles,
-                        [fileName]: currentFile,
+                for (let i = 0; i < convertedFileNames.length; i++) {
+                    const convertedFileName = convertedFileNames[i];
+                    const currentFile = processingPdfFiles[i];
+                    updateGumloopName.mutate({
+                        documentId: currentFile.supabaseId,
+                        gumloopName: convertedFileName,
+                        orgId: organizationId,
+                    });
+
+                    setSelectedFiles((prev) => ({
+                        ...prev,
+                        [convertedFileName]: currentFile.name,
                     }));
                 }
 
@@ -165,8 +243,13 @@ export default function RequirementPage() {
         }
         setIsUploading(false);
         setConvertPipelineRunId('');
-        setCurrentFile('');
-    }, [convertResponse, currentFile]);
+        setProcessingPdfFiles([]);
+    }, [
+        convertResponse,
+        processingPdfFiles,
+        organizationId,
+        updateGumloopName,
+    ]);
 
     const [uploadButtonText, setUploadButtonText] = useState('Upload Files');
 
@@ -199,7 +282,7 @@ export default function RequirementPage() {
             return;
         }
         // or if no files are uploaded
-        if (Object.keys(uploadedFiles).length === 0) {
+        if (Object.keys(selectedFiles).length === 0) {
             setMissingFilesError('At least one file is required');
             return;
         }
@@ -215,7 +298,7 @@ export default function RequirementPage() {
                     : 'requirement-analysis',
                 requirement: reqText,
                 systemName: 'Backup Camera',
-                fileNames: Object.keys(uploadedFiles),
+                fileNames: Object.keys(selectedFiles),
             });
             setAnalysisPipelineRunId(run_id);
         } catch (error) {
@@ -368,13 +451,38 @@ export default function RequirementPage() {
                                 )}
                                 {uploadButtonText}
                             </Button>
-                            {Object.keys(uploadedFiles).length > 0 && (
+
+                            {existingDocs && existingDocs.length > 0 && (
+                                <div className="mt-2">
+                                    <Select
+                                        value={existingDocsValue}
+                                        onValueChange={handleExistingDocSelect}
+                                    >
+                                        <SelectTrigger className="w-full gap-2">
+                                            <FilePlus className="h-4 w-4" />
+                                            <SelectValue placeholder="Add existing document" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {existingDocs.map((doc) => (
+                                                <SelectItem
+                                                    key={doc.id}
+                                                    value={doc.name}
+                                                >
+                                                    {doc.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            {Object.keys(selectedFiles).length > 0 && (
                                 <div className="mt-4">
                                     <h4 className="text-sm font-medium mb-2">
                                         Attached Files
                                     </h4>
                                     <ul className="space-y-1">
-                                        {Object.values(uploadedFiles).map(
+                                        {Object.values(selectedFiles).map(
                                             (fileName) => (
                                                 <li
                                                     key={fileName}
