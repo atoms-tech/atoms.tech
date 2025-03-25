@@ -208,17 +208,6 @@ export function Navbar() {
                                         ) : (
                                             'Dashboard'
                                         )}
-                                        {isPending ||
-                                        isNavigatingToDashboard ? (
-                                            <div className="flex items-center">
-                                                <span className="mr-2">
-                                                    Dashboard
-                                                </span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'Dashboard'
-                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleBilling}
