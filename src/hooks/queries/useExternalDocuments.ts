@@ -33,5 +33,8 @@ export function useExternalDocumentsByOrg(orgId: string) {
             return data;
         },
         enabled: !!orgId,
+        staleTime: Infinity,
+        gcTime: Infinity,
+        refetchOnWindowFocus: false,
     });
 }

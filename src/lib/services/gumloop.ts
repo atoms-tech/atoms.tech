@@ -43,7 +43,7 @@ export type GetPipelineRunParams = {
     runId: string;
 };
 
-interface StartPipelineResponse {
+export interface StartPipelineResponse {
     run_id: string;
 }
 
@@ -55,10 +55,10 @@ export enum PipelineRunState {
     TERMINATED = 'TERMINATED',
 }
 
-interface PipelineRunStatusResponse {
+export interface PipelineRunStatusResponse {
     run_id: string;
     state: PipelineRunState;
-    outputs?: Record<string, string>;
+    outputs?: Record<string, string[] | string>;
     credit_cost: number;
 }
 
@@ -110,10 +110,7 @@ export class GumloopService {
                 files.map(async (file) => {
                     const fileContents = await file.bytes();
 
-                    const binString = Array.from(fileContents, (byte) =>
-                        String.fromCodePoint(byte),
-                    ).join('');
-                    return btoa(binString);
+                    return Buffer.from(fileContents).toString('base64');
                 }),
             );
 

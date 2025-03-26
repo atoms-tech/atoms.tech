@@ -31,7 +31,9 @@ import {
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useRequirement } from '@/hooks/queries/useRequirement';
+import { useChunkr } from '@/hooks/useChunkr';
 import { useGumloop } from '@/hooks/useGumloop';
+import { TaskResponse, TaskStatus } from '@/lib/services/chunkr';
 
 interface AnalysisData {
     reqId: string;
@@ -100,12 +102,9 @@ export default function RequirementPage() {
     const updateGumloopName = useUpdateExternalDocumentGumloopName();
 
     const { startPipeline, getPipelineRun, uploadFiles } = useGumloop();
-    const [convertPipelineRunId, setConvertPipelineRunId] =
-        useState<string>('');
-    const { data: convertResponse } = getPipelineRun(
-        convertPipelineRunId,
-        organizationId,
-    );
+    const { startOcrTask, getTaskStatuses } = useChunkr();
+    const [ocrPipelineTaskIds, setOcrPipelineTaskIds] = useState<string[]>([]);
+    const taskStatusQueries = getTaskStatuses(ocrPipelineTaskIds);
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
@@ -126,45 +125,52 @@ export default function RequirementPage() {
                 }),
             );
             const supabaseUploads = await Promise.all(uploadPromises);
-            console.log('Uploaded files to Supabase: ', supabaseUploads);
+            console.log('Uploaded files to Supabase');
 
-            // upload to Gumloop
-            const uploadedFileNames = await uploadFiles(files);
-            console.log('Uploaded files to Gumloop: ', uploadedFileNames);
+            const nonPdfFiles = [];
+            const pdfFiles = [];
 
-            const nonPdfFiles: { name: string; supabaseId: string }[] = [];
-            const pdfFiles: { name: string; supabaseId: string }[] = [];
-
-            supabaseUploads.forEach((file) => {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const supabaseId = supabaseUploads[i].id;
                 if (file.name.toLowerCase().endsWith('.pdf')) {
                     pdfFiles.push({
+                        file,
+                        supabaseId,
                         name: file.name,
-                        supabaseId: file.id,
                     });
                 } else {
                     nonPdfFiles.push({
+                        file,
+                        supabaseId,
                         name: file.name,
-                        supabaseId: file.id,
                     });
                 }
-            });
+            }
 
-            // Add non-PDF files directly to selectedFiles
-            nonPdfFiles.forEach((file) => {
-                setSelectedFiles((prev) => ({
-                    ...prev,
-                    [file.name]: file.name,
-                }));
-            });
+            // upload to Gumloop
+            if (nonPdfFiles.length > 0) {
+                await uploadFiles(nonPdfFiles.map((file) => file.file));
+                console.log('Uploaded files to Gumloop');
 
-            const gumloopNamePromises = nonPdfFiles.map((file) => {
-                updateGumloopName.mutateAsync({
-                    documentId: file.supabaseId,
-                    gumloopName: file.name,
-                    orgId: organizationId,
+                // Add non-PDF files directly to selectedFiles
+                nonPdfFiles.forEach((file) => {
+                    setSelectedFiles((prev) => ({
+                        ...prev,
+                        [file.name]: file.name,
+                    }));
                 });
-            });
-            await Promise.all(gumloopNamePromises);
+
+                const gumloopNamePromises = nonPdfFiles.map((file) => {
+                    updateGumloopName.mutateAsync({
+                        documentId: file.supabaseId,
+                        gumloopName: file.name,
+                        orgId: organizationId,
+                    });
+                });
+                await Promise.all(gumloopNamePromises);
+                console.log('Updated gumloop names in Supabase');
+            }
 
             if (pdfFiles.length == 0) {
                 setIsUploading(false);
@@ -173,11 +179,10 @@ export default function RequirementPage() {
 
             setProcessingPdfFiles(pdfFiles);
 
-            const { run_id } = await startPipeline({
-                fileNames: pdfFiles.map((file) => file.name),
-                pipelineType: 'file-processing',
-            });
-            setConvertPipelineRunId(run_id);
+            const taskIds = await startOcrTask(
+                pdfFiles.map((file) => file.file),
+            );
+            setOcrPipelineTaskIds(taskIds);
         } catch (error) {
             setIsUploading(false);
             console.error('Failed to upload files:', error);
@@ -197,71 +202,96 @@ export default function RequirementPage() {
 
     // set the selectedFiles when the pipeline run is completed
     useEffect(() => {
-        switch (convertResponse?.state) {
-            case 'DONE': {
-                // check that the response has the expected outputs
-                const convertedFileNames =
-                    convertResponse.outputs?.convertedFileNames;
-
-                console.log('Converted file names:', convertedFileNames);
-
-                // append the converted file name to the uploaded files
-                if (!convertedFileNames) {
-                    console.error('No converted file names found in response');
-                    break;
-                }
-
-                // assert that it is an array
-                if (!Array.isArray(convertedFileNames)) {
-                    console.error('Converted file names is not an array');
-                    break;
-                }
-
-                for (let i = 0; i < convertedFileNames.length; i++) {
-                    const convertedFileName = convertedFileNames[i];
-                    const currentFile = processingPdfFiles[i];
-                    updateGumloopName.mutate({
-                        documentId: currentFile.supabaseId,
-                        gumloopName: convertedFileName,
-                        orgId: organizationId,
-                    });
-
-                    setSelectedFiles((prev) => ({
-                        ...prev,
-                        [convertedFileName]: currentFile.name,
-                    }));
-                }
-
-                break;
-            }
-            case 'FAILED': {
-                console.error('File processing pipeline failed');
-                break;
-            }
-            default:
-                return;
+        // Check if taskStatuses array is empty or any queries are still loading
+        if (!taskStatusQueries.length) {
+            return;
         }
-        setIsUploading(false);
-        setConvertPipelineRunId('');
-        setProcessingPdfFiles([]);
+
+        // Check if any task failed
+        if (
+            taskStatusQueries.some(
+                (query) =>
+                    query.isError || query.data?.status === TaskStatus.FAILED,
+            )
+        ) {
+            console.error('One or more OCR pipeline tasks failed');
+            setIsUploading(false);
+            setOcrPipelineTaskIds([]);
+            setProcessingPdfFiles([]);
+            return;
+        }
+
+        // Process all successful tasks
+        if (
+            taskStatusQueries.every(
+                (query) =>
+                    query.isSuccess &&
+                    query.data?.status === TaskStatus.SUCCEEDED,
+            )
+        ) {
+            // from each parsed file, construct a File object
+            const markdownFiles = taskStatusQueries.map((query) => {
+                const file = query.data as TaskResponse;
+                let mdContents = '';
+                for (const chunk of file.output.chunks) {
+                    for (const segment of chunk.segments) {
+                        mdContents += segment.markdown + '\n';
+                    }
+                    mdContents += '\n';
+                }
+                mdContents += '\n';
+                const mdFilename = `${file.output.file_name.split('.pdf')[0]}.md`;
+                const mdBlob = new Blob([mdContents], {
+                    type: 'text/markdown',
+                });
+                return new File([mdBlob], mdFilename);
+            });
+
+            uploadFiles(markdownFiles);
+            console.log('Uploaded files to Gumloop');
+
+            for (let i = 0; i < markdownFiles.length; i++) {
+                const convertedFileName = markdownFiles[i].name;
+                const currentFile = processingPdfFiles[i];
+                updateGumloopName.mutate({
+                    documentId: currentFile.supabaseId,
+                    gumloopName: convertedFileName,
+                    orgId: organizationId,
+                });
+                console.log(
+                    'Updated Gumloop name for file:',
+                    convertedFileName,
+                );
+
+                setSelectedFiles((prev) => ({
+                    ...prev,
+                    [convertedFileName]: currentFile.name,
+                }));
+            }
+
+            setIsUploading(false);
+            setOcrPipelineTaskIds([]);
+            setProcessingPdfFiles([]);
+        }
     }, [
-        convertResponse,
-        processingPdfFiles,
         organizationId,
+        processingPdfFiles,
+        taskStatusQueries,
         updateGumloopName,
+        uploadFiles,
     ]);
 
     const [uploadButtonText, setUploadButtonText] = useState('Upload Files');
 
     useEffect(() => {
         if (isUploading) {
-            if (convertPipelineRunId) {
+            if (ocrPipelineTaskIds.length > 0) {
                 setUploadButtonText('Converting...');
             } else setUploadButtonText('Uploading...');
         } else {
             setUploadButtonText('Upload Files');
         }
-    }, [isUploading, convertPipelineRunId]);
+    }, [isUploading, ocrPipelineTaskIds]);
 
     const [isReasoning, setIsReasoning] = useState(false);
     const [isAnalysing, setIsAnalysing] = useState(false);

@@ -1,18 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
-import { StartPipelineParams } from '@/lib/services/gumloop';
-
-interface PipelineResponse {
-    run_id: string;
-}
-
-interface PipelineRunResponse {
-    run_id: string;
-    state: 'RUNNING' | 'DONE' | 'FAILED';
-    // outputs is an optional object mapping strings to either strings or arrays of strings
-    outputs?: Record<string, string | string[]>;
-}
+import {
+    PipelineRunStatusResponse,
+    StartPipelineParams,
+    StartPipelineResponse,
+} from '@/lib/services/gumloop';
 
 interface GumloopOptions {
     skipCache?: boolean;
@@ -24,10 +17,6 @@ export function useGumloop(options: GumloopOptions = {}) {
 
     const uploadFilesMutation = useMutation({
         mutationFn: async (files: File[]): Promise<string[]> => {
-            console.log(
-                'Uploading files:',
-                files.map((f) => ({ name: f.name, size: f.size })),
-            );
             const formData = new FormData();
             files.forEach((file) => {
                 formData.append('files', file);
@@ -46,7 +35,6 @@ export function useGumloop(options: GumloopOptions = {}) {
             }
 
             const result = await response.json();
-            console.log('Upload successful:', result.files);
             return result.files;
         },
         onError: (error: Error) => {
@@ -58,7 +46,7 @@ export function useGumloop(options: GumloopOptions = {}) {
     const startPipelineMutation = useMutation({
         mutationFn: async (
             startPipelineParams: StartPipelineParams,
-        ): Promise<PipelineResponse> => {
+        ): Promise<StartPipelineResponse> => {
             console.log('Starting pipeline:', startPipelineParams);
             const response = await fetch('/api/ai', {
                 method: 'POST',
@@ -92,7 +80,7 @@ export function useGumloop(options: GumloopOptions = {}) {
         async (
             runId: string,
             organizationId: string,
-        ): Promise<PipelineRunResponse> => {
+        ): Promise<PipelineRunStatusResponse> => {
             console.log('Fetching pipeline run status for runId:', runId);
             const url = new URL('/api/ai', window.location.href);
             url.searchParams.set('runId', runId);
@@ -117,7 +105,7 @@ export function useGumloop(options: GumloopOptions = {}) {
     );
 
     const usePipelineRun = (runId: string, organizationId: string) => {
-        return useQuery<PipelineRunResponse, Error>({
+        return useQuery<PipelineRunStatusResponse, Error>({
             queryKey: ['pipelineRun', runId],
             queryFn: () => getPipelineRun(runId, organizationId),
             enabled: !!runId && !options.skipCache,

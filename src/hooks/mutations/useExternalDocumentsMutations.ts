@@ -120,8 +120,6 @@ export function useUpdateExternalDocumentGumloopName() {
             gumloopName: string;
             orgId: string;
         }) => {
-            console.log('documentId', documentId);
-            console.log('gumloopName', gumloopName);
             const { data, error } = await supabase
                 .from('external_documents')
                 .update({ gumloop_name: gumloopName })

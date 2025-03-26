@@ -2,14 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { gumloopService } from '@/lib/services/gumloop';
 
-// import { rateLimit } from '@/lib/middleware/rateLimit';
-
-// Apply rate limiting middleware
-// const rateLimitMiddleware = rateLimit({
-//     maxRequests: 20, // 20 requests per minute
-//     windowMs: 60 * 1000, // 1 minute
-// });
-
 export async function POST(request: NextRequest) {
     try {
         // Parse body as form data
