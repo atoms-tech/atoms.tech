@@ -1,30 +1,8 @@
 'use client';
 
-import {
-    Brain,
-    Check,
-    CircleAlert,
-    FilePlus,
-    Scale,
-    Target,
-    Upload,
-    Wand,
-} from 'lucide-react';
 import { useParams, usePathname } from 'next/navigation';
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { FoldingCard } from '@/components/ui/folding-card';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import {
     useUpdateExternalDocumentGumloopName,
     useUploadExternalDocument,
@@ -35,6 +13,15 @@ import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useChunkr } from '@/hooks/useChunkr';
 import { useGumloop } from '@/hooks/useGumloop';
 import { TaskResponse, TaskStatus } from '@/lib/services/chunkr';
+
+import {
+    ComplianceCard,
+    EarsCard,
+    EnhancedCard,
+    IncoseCard,
+    OriginalRequirementCard,
+    RequirementForm,
+} from './components';
 
 interface AnalysisData {
     reqId: string;
@@ -59,6 +46,8 @@ export default function RequirementPage() {
     const { data: requirement, isLoading: isReqLoading } =
         useRequirement(requirementSlug);
     const [reqText, setReqText] = useState<string>();
+    const [systemName, setSystemName] = useState<string>('');
+    const [objective, setObjective] = useState<string>('');
 
     // Set requirement description when loaded
     useEffect(() => {
@@ -69,13 +58,6 @@ export default function RequirementPage() {
 
     const [missingReqError, setMissingReqError] = useState<string>('');
     const [missingFilesError, setMissingFilesError] = useState<string>('');
-
-    const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        setReqText(e.target.value);
-        if (missingReqError) {
-            setMissingReqError('');
-        }
-    };
 
     const { data: existingDocs } = useExternalDocumentsByOrg(organizationId);
     const existingDocsNameMap = useMemo(() => {
@@ -94,7 +76,6 @@ export default function RequirementPage() {
         [key: string]: string;
     }>({});
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [processingPdfFiles, setProcessingPdfFiles] = useState<
         { name: string; supabaseId: string }[]
@@ -339,7 +320,8 @@ export default function RequirementPage() {
                     ? 'reasoning-requirement-analysis'
                     : 'requirement-analysis',
                 requirement: reqText,
-                systemName: 'Backup Camera',
+                systemName: systemName,
+                objective: objective,
                 fileNames: Object.keys(selectedFiles),
             });
             setAnalysisPipelineRunId(run_id);
@@ -442,310 +424,65 @@ export default function RequirementPage() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">Requirement</h2>
-                    <Card className="p-6">
-                        <h3 className="font-semibold mb-2">
-                            {requirement?.name}
-                        </h3>
-                        <textarea
-                            className="w-full h-32 p-2 border rounded-md text-muted-foreground"
-                            value={reqText}
-                            onChange={handleInputChange}
-                        />
-                        <div className="mt-4 space-y-2">
-                            <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 sm:gap-0">
-                                <div className="flex items-center gap-2">
-                                    <Brain className="h-5 w-5" />
-                                    <Checkbox
-                                        checked={isReasoning}
-                                        onChange={() =>
-                                            setIsReasoning(!isReasoning)
-                                        }
-                                        label="Reasoning"
-                                        labelClassName="hidden md:block"
-                                    />
-                                </div>
-                                <Button
-                                    className="gap-2"
-                                    onClick={handleAnalyze}
-                                    disabled={isAnalysing}
-                                >
-                                    {isAnalysing ? (
-                                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                                    ) : (
-                                        <Wand className="h-4 w-4" />
-                                    )}
-                                    Analyze with AI
-                                </Button>
-                            </div>
-                            {(missingReqError || missingFilesError) && (
-                                <div className="flex items-center gap-2 text-red-500 bg-red-50 p-2 rounded">
-                                    <CircleAlert className="h-4 w-4" />
-                                    <span>
-                                        {missingReqError || missingFilesError}
-                                    </span>
-                                </div>
-                            )}
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                                accept=".pdf,.md"
-                                multiple
-                                className="hidden"
-                            />
-                            <Button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="gap-2 w-full"
-                                disabled={isUploading}
-                            >
-                                {isUploading ? (
-                                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                                ) : (
-                                    <Upload className="h-4 w-4" />
-                                )}
-                                {uploadButtonText}
-                            </Button>
-
-                            {existingDocs && existingDocs.length > 0 && (
-                                <div className="mt-2">
-                                    <Select
-                                        value={existingDocsValue}
-                                        onValueChange={handleExistingDocSelect}
-                                    >
-                                        <SelectTrigger className="w-full gap-2">
-                                            <FilePlus className="h-4 w-4" />
-                                            <SelectValue placeholder="Add existing document" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {existingDocs.map((doc) => (
-                                                <SelectItem
-                                                    key={doc.id}
-                                                    value={doc.name}
-                                                >
-                                                    {doc.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            )}
-
-                            {Object.keys(selectedFiles).length > 0 && (
-                                <div className="mt-4">
-                                    <h4 className="text-sm font-medium mb-2">
-                                        Attached Files
-                                    </h4>
-                                    <ul className="space-y-1">
-                                        {Object.values(selectedFiles).map(
-                                            (fileName) => (
-                                                <li
-                                                    key={fileName}
-                                                    className="text-sm text-muted-foreground flex items-center"
-                                                >
-                                                    <Check className="h-3 w-3 mr-1" />
-                                                    {fileName}
-                                                </li>
-                                            ),
-                                        )}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
+                    <RequirementForm
+                        requirement={requirement || { id: '' }}
+                        reqText={reqText || ''}
+                        setReqText={setReqText}
+                        systemName={systemName}
+                        setSystemName={setSystemName}
+                        objective={objective}
+                        setObjective={setObjective}
+                        isReasoning={isReasoning}
+                        setIsReasoning={setIsReasoning}
+                        isAnalysing={isAnalysing}
+                        handleAnalyze={handleAnalyze}
+                        missingReqError={missingReqError}
+                        missingFilesError={missingFilesError}
+                        isUploading={isUploading}
+                        uploadButtonText={uploadButtonText}
+                        handleFileUpload={handleFileUpload}
+                        existingDocs={existingDocs}
+                        existingDocsValue={existingDocsValue}
+                        handleExistingDocSelect={handleExistingDocSelect}
+                        selectedFiles={selectedFiles}
+                    />
                 </div>
 
                 {/* Right Column - Analysis Blocks */}
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">AI Analysis</h2>
 
-                    {/* Original Requirement */}
-                    <Card className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="rounded-full bg-primary/10 p-3">
-                                <Brain className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <h3 className="font-semibold mb-1">
-                                    Original Requirement
-                                </h3>
-                                {analysisData ? (
-                                    <div className="text-muted-foreground text-sm">
-                                        <p>
-                                            <strong>ID:</strong>{' '}
-                                            {analysisData.reqId}
-                                        </p>
-                                        <p>
-                                            {analysisData.originalRequirement}
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">
-                                        Upload files and analyze the requirement
-                                        to get AI feedback
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </Card>
+                    <OriginalRequirementCard
+                        reqId={analysisData?.reqId}
+                        originalRequirement={analysisData?.originalRequirement}
+                    />
 
-                    {/* EARS */}
-                    <FoldingCard
-                        icon={<Target />}
-                        title="EARS"
-                        disabled={!analysisData}
-                        defaultOpen={false}
-                    >
-                        <div className="text-muted-foreground text-sm">
-                            <p>
-                                <strong>Pattern:</strong>{' '}
-                                {analysisData?.earsPattern}
-                            </p>
-                            <div className="flex justify-between items-center mt-2">
-                                <p>
-                                    <strong>Requirement:</strong>{' '}
-                                    {analysisData?.earsRequirement}
-                                </p>
-                                <Button
-                                    size="sm"
-                                    onClick={() =>
-                                        handleAcceptChange(
-                                            analysisData?.earsRequirement,
-                                        )
-                                    }
-                                    disabled={!analysisData?.earsRequirement}
-                                >
-                                    Accept Pattern
-                                </Button>
-                            </div>
-                            <p>
-                                <strong>Template:</strong>{' '}
-                                {analysisData?.earsTemplate}
-                            </p>
-                        </div>
-                    </FoldingCard>
+                    <EarsCard
+                        earsPattern={analysisData?.earsPattern}
+                        earsRequirement={analysisData?.earsRequirement}
+                        earsTemplate={analysisData?.earsTemplate}
+                        onAccept={handleAcceptChange}
+                    />
 
-                    {/* INCOSE */}
-                    <FoldingCard
-                        icon={<Check />}
-                        title="INCOSE"
-                        disabled={!analysisData}
-                        defaultOpen={false}
-                    >
-                        <div className="text-muted-foreground text-sm">
-                            <div className="flex justify-between items-start mt-2">
-                                <div>
-                                    <p>
-                                        <strong>Format:</strong>
-                                    </p>
-                                    <ReactMarkdown>
-                                        {analysisData?.incoseFormat}
-                                    </ReactMarkdown>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() =>
-                                        handleAcceptChange(
-                                            analysisData?.incoseFormat,
-                                        )
-                                    }
-                                    disabled={!analysisData?.incoseFormat}
-                                >
-                                    Accept Format
-                                </Button>
-                            </div>
-                            <p className="mt-2">
-                                <strong>Feedback:</strong>
-                            </p>
-                            <ReactMarkdown>
-                                {analysisData?.incoseFeedback}
-                            </ReactMarkdown>
-                        </div>
-                    </FoldingCard>
+                    <IncoseCard
+                        incoseFormat={analysisData?.incoseFormat}
+                        incoseFeedback={analysisData?.incoseFeedback}
+                        onAccept={handleAcceptChange}
+                    />
 
-                    {/* Compliance */}
-                    <FoldingCard
-                        icon={<Scale />}
-                        title="Compliance"
-                        disabled={!analysisData}
-                        defaultOpen={false}
-                    >
-                        <div className="text-muted-foreground text-sm">
-                            <ReactMarkdown>
-                                {analysisData?.complianceFeedback}
-                            </ReactMarkdown>
-                            {analysisData?.relevantRegulations && (
-                                <div className="mt-2">
-                                    <p>
-                                        <strong>Relevant Regulations:</strong>
-                                    </p>
-                                    <ReactMarkdown>
-                                        {analysisData.relevantRegulations}
-                                    </ReactMarkdown>
-                                </div>
-                            )}
-                        </div>
-                    </FoldingCard>
+                    <ComplianceCard
+                        complianceFeedback={analysisData?.complianceFeedback}
+                        relevantRegulations={analysisData?.relevantRegulations}
+                    />
 
-                    {/* Enhanced */}
-                    <FoldingCard
-                        icon={<Wand />}
-                        title="Enhanced"
-                        disabled={!analysisData}
-                        defaultOpen={false}
-                    >
-                        <div className="text-muted-foreground text-sm">
-                            <div className="flex justify-between items-start mt-2">
-                                <div>
-                                    <p>
-                                        <strong>Enhanced EARS:</strong>
-                                    </p>
-                                    <ReactMarkdown>
-                                        {analysisData?.enhancedReqEars}
-                                    </ReactMarkdown>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() =>
-                                        handleAcceptChange(
-                                            analysisData?.enhancedReqEars,
-                                        )
-                                    }
-                                    disabled={!analysisData?.enhancedReqEars}
-                                >
-                                    Accept EARS
-                                </Button>
-                            </div>
-
-                            <div className="flex justify-between items-start mt-2">
-                                <div>
-                                    <p>
-                                        <strong>Enhanced INCOSE:</strong>
-                                    </p>
-                                    <ReactMarkdown>
-                                        {analysisData?.enhancedReqIncose}
-                                    </ReactMarkdown>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() =>
-                                        handleAcceptChange(
-                                            analysisData?.enhancedReqIncose,
-                                        )
-                                    }
-                                    disabled={!analysisData?.enhancedReqIncose}
-                                >
-                                    Accept INCOSE
-                                </Button>
-                            </div>
-
-                            <p className="mt-2">
-                                <strong>General Feedback:</strong>
-                            </p>
-                            <ReactMarkdown>
-                                {analysisData?.enhancedGeneralFeedback}
-                            </ReactMarkdown>
-                        </div>
-                    </FoldingCard>
+                    <EnhancedCard
+                        enhancedReqEars={analysisData?.enhancedReqEars}
+                        enhancedReqIncose={analysisData?.enhancedReqIncose}
+                        enhancedGeneralFeedback={
+                            analysisData?.enhancedGeneralFeedback
+                        }
+                        onAccept={handleAcceptChange}
+                    />
                 </div>
             </div>
         </div>
