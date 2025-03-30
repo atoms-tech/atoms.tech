@@ -192,7 +192,7 @@ export class GumloopService {
 
             if (fileNames?.length) {
                 pipelineInputs.push({
-                    input_name: 'File Names',
+                    input_name: 'Regulation Document Name',
                     value: fileNames.join('\n'),
                 });
             }
@@ -213,7 +213,7 @@ export class GumloopService {
 
             if (requirement) {
                 pipelineInputs.push({
-                    input_name: 'Original Requirement',
+                    input_name: 'Requirement',
                     value: requirement,
                 });
             }

@@ -48,6 +48,7 @@ interface AnalysisData {
     enhancedReqEars: string;
     enhancedReqIncose: string;
     enhancedGeneralFeedback: string;
+    relevantRegulations: string;
 }
 
 export default function RequirementPage() {
@@ -392,6 +393,7 @@ export default function RequirementPage() {
                             parsedData['ENHANCED_REQUIREMENT_INCOSE'],
                         enhancedGeneralFeedback:
                             parsedData['ENHANCED_GENERAL_FEEDBACK'],
+                        relevantRegulations: parsedData['RELEVANT_REGULATIONS'],
                     });
                 } catch (error) {
                     console.error('Failed to parse analysis JSON:', error);
@@ -671,6 +673,16 @@ export default function RequirementPage() {
                             <ReactMarkdown>
                                 {analysisData?.complianceFeedback}
                             </ReactMarkdown>
+                            {analysisData?.relevantRegulations && (
+                                <div className="mt-2">
+                                    <p>
+                                        <strong>Relevant Regulations:</strong>
+                                    </p>
+                                    <ReactMarkdown>
+                                        {analysisData.relevantRegulations}
+                                    </ReactMarkdown>
+                                </div>
+                            )}
                         </div>
                     </FoldingCard>
 
