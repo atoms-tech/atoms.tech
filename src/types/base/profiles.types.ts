@@ -1,3 +1,3 @@
-import { Database } from './database.types';
+import { Tables } from './database.types';
 
-export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type Profile = Tables<'profiles'>;

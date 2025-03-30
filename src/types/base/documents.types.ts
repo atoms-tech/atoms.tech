@@ -1,8 +1,7 @@
-import { Database } from './database.types';
+import { Tables } from './database.types';
 
-export type Document = Database['public']['Tables']['documents']['Row'];
+export type Document = Tables<'documents'>;
 
-export type Block = Database['public']['Tables']['blocks']['Row'];
+export type Block = Tables<'blocks'>;
 
-export type ExternalDocument =
-    Database['public']['Tables']['external_documents']['Row'];
+export type ExternalDocument = Tables<'external_documents'>;

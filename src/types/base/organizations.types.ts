@@ -1,6 +1,5 @@
-import { Database } from './database.types';
+import { Tables } from './database.types';
 
-export type Organization = Database['public']['Tables']['organizations']['Row'];
+export type Organization = Tables<'organizations'>;
 
-export type OrganizationMembers =
-    Database['public']['Tables']['organization_members']['Row'];
+export type OrganizationMembers = Tables<'organization_members'>;

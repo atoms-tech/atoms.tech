@@ -1,13 +1,13 @@
-import { Database } from './database.types';
+import { Tables } from './database.types';
 
-export type TraceLink = Database['public']['Tables']['trace_links']['Row'];
+export type TraceLink = Tables<'trace_links'>;
 
-export type Assignment = Database['public']['Tables']['assignments']['Row'];
+export type Assignment = Tables<'assignments'>;
 
-export type AuditLog = Database['public']['Tables']['audit_logs']['Row'];
+export type AuditLog = Tables<'audit_logs'>;
 
-export type BillingCache = Database['public']['Tables']['billing_cache']['Row'];
+export type BillingCache = Tables<'billing_cache'>;
 
-export type Notification = Database['public']['Tables']['notifications']['Row'];
+export type Notification = Tables<'notifications'>;
 
-export type UserRole = Database['public']['Tables']['user_roles']['Row'];
+export type UserRole = Tables<'user_roles'>;
