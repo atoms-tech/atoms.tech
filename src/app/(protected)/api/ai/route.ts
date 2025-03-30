@@ -51,8 +51,6 @@ export async function GET(request: NextRequest) {
 
         const status = await gumloopService.getPipelineRun({ runId });
 
-        console.log('Pipeline status:', status.state);
-
         if (status.state == PipelineRunState.DONE) {
             console.log(
                 `Adding ${status.credit_cost} cost to the billing cache`,
@@ -75,7 +73,7 @@ export async function GET(request: NextRequest) {
             }
 
             // Update the record in database
-            const { data: updateData, error: updateError } = await supabase
+            const { error: updateError } = await supabase
                 .from('billing_cache')
                 .update({
                     current_period_usage: {
@@ -87,8 +85,6 @@ export async function GET(request: NextRequest) {
                 .select();
 
             if (updateError) throw updateError;
-
-            console.log('updateData', updateData);
         }
 
         return NextResponse.json(status);
