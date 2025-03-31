@@ -1,18 +1,11 @@
 'use client';
 
 import { useParams, usePathname } from 'next/navigation';
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import {
-    useUpdateExternalDocumentGumloopName,
-    useUploadExternalDocument,
-} from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useUpdateRequirement } from '@/hooks/mutations/useRequirementMutations';
-import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useRequirement } from '@/hooks/queries/useRequirement';
-import { useChunkr } from '@/hooks/useChunkr';
 import { useGumloop } from '@/hooks/useGumloop';
-import { TaskResponse, TaskStatus } from '@/lib/services/chunkr';
 
 import {
     ComplianceCard,
@@ -45,7 +38,7 @@ export default function RequirementPage() {
     }>();
     const { data: requirement, isLoading: isReqLoading } =
         useRequirement(requirementSlug);
-    const [reqText, setReqText] = useState<string>();
+    const [reqText, setReqText] = useState<string>('');
     const [systemName, setSystemName] = useState<string>('');
     const [objective, setObjective] = useState<string>('');
 
@@ -57,224 +50,13 @@ export default function RequirementPage() {
     }, [requirement]);
 
     const [missingReqError, setMissingReqError] = useState<string>('');
-    const [missingFilesError, setMissingFilesError] = useState<string>('');
-
-    const { data: existingDocs } = useExternalDocumentsByOrg(organizationId);
-    const existingDocsNameMap = useMemo(() => {
-        if (!existingDocs) return {};
-        return existingDocs.reduce(
-            (acc, doc) => {
-                acc[doc.name] = doc.gumloop_name || doc.name;
-                return acc;
-            },
-            {} as { [key: string]: string },
-        );
-    }, [existingDocs]);
-    const [existingDocsValue, setExistingDocsValue] = useState<string>('');
+    // const [missingFilesError, setMissingFilesError] = useState<string>('');
 
     const [selectedFiles, setSelectedFiles] = useState<{
         [key: string]: string;
     }>({});
 
-    const [isUploading, setIsUploading] = useState(false);
-    const [processingPdfFiles, setProcessingPdfFiles] = useState<
-        { name: string; supabaseId: string }[]
-    >([]);
-
-    const uploadFileToSupabase = useUploadExternalDocument();
-    const updateGumloopName = useUpdateExternalDocumentGumloopName();
-
-    const { startPipeline, getPipelineRun, uploadFiles } = useGumloop();
-    const { startOcrTask, getTaskStatuses } = useChunkr();
-    const [ocrPipelineTaskIds, setOcrPipelineTaskIds] = useState<string[]>([]);
-    const taskStatusQueries = getTaskStatuses(ocrPipelineTaskIds);
-
-    const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files?.length) return;
-
-        try {
-            const files = Array.from(e.target.files);
-            setIsUploading(true);
-
-            if (missingFilesError) {
-                setMissingFilesError('');
-            }
-
-            // upload to Supabase
-            const uploadPromises = files.map((file) =>
-                uploadFileToSupabase.mutateAsync({
-                    file,
-                    orgId: organizationId,
-                }),
-            );
-            const supabaseUploads = await Promise.all(uploadPromises);
-            console.log('Uploaded files to Supabase');
-
-            const nonPdfFiles = [];
-            const pdfFiles = [];
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const supabaseId = supabaseUploads[i].id;
-                if (file.name.toLowerCase().endsWith('.pdf')) {
-                    pdfFiles.push({
-                        file,
-                        supabaseId,
-                        name: file.name,
-                    });
-                } else {
-                    nonPdfFiles.push({
-                        file,
-                        supabaseId,
-                        name: file.name,
-                    });
-                }
-            }
-
-            // upload to Gumloop
-            if (nonPdfFiles.length > 0) {
-                await uploadFiles(nonPdfFiles.map((file) => file.file));
-                console.log('Uploaded files to Gumloop');
-
-                // Add non-PDF files directly to selectedFiles
-                nonPdfFiles.forEach((file) => {
-                    setSelectedFiles((prev) => ({
-                        ...prev,
-                        [file.name]: file.name,
-                    }));
-                });
-
-                const gumloopNamePromises = nonPdfFiles.map((file) => {
-                    updateGumloopName.mutateAsync({
-                        documentId: file.supabaseId,
-                        gumloopName: file.name,
-                        orgId: organizationId,
-                    });
-                });
-                await Promise.all(gumloopNamePromises);
-                console.log('Updated gumloop names in Supabase');
-            }
-
-            if (pdfFiles.length == 0) {
-                setIsUploading(false);
-                return;
-            }
-
-            setProcessingPdfFiles(pdfFiles);
-
-            const taskIds = await startOcrTask(
-                pdfFiles.map((file) => file.file),
-            );
-            setOcrPipelineTaskIds(taskIds);
-        } catch (error) {
-            setIsUploading(false);
-            console.error('Failed to upload files:', error);
-        }
-    };
-
-    const handleExistingDocSelect = (docName: string) => {
-        if (missingFilesError) {
-            setMissingFilesError('');
-        }
-        setSelectedFiles((prev) => ({
-            ...prev,
-            [existingDocsNameMap[docName]]: docName,
-        }));
-        setExistingDocsValue('');
-    };
-
-    // set the selectedFiles when the pipeline run is completed
-    useEffect(() => {
-        // Check if taskStatuses array is empty or any queries are still loading
-        if (!taskStatusQueries.length) {
-            return;
-        }
-
-        // Check if any task failed
-        if (
-            taskStatusQueries.some(
-                (query) =>
-                    query.isError || query.data?.status === TaskStatus.FAILED,
-            )
-        ) {
-            console.error('One or more OCR pipeline tasks failed');
-            setIsUploading(false);
-            setOcrPipelineTaskIds([]);
-            setProcessingPdfFiles([]);
-            return;
-        }
-
-        // Process all successful tasks
-        if (
-            taskStatusQueries.every(
-                (query) =>
-                    query.isSuccess &&
-                    query.data?.status === TaskStatus.SUCCEEDED,
-            )
-        ) {
-            // from each parsed file, construct a File object
-            const markdownFiles = taskStatusQueries.map((query) => {
-                const file = query.data as TaskResponse;
-                let mdContents = '';
-                for (const chunk of file.output.chunks) {
-                    for (const segment of chunk.segments) {
-                        mdContents += segment.markdown + '\n';
-                    }
-                    mdContents += '\n';
-                }
-                mdContents += '\n';
-                const mdFilename = `${file.output.file_name.split('.pdf')[0]}.md`;
-                const mdBlob = new Blob([mdContents], {
-                    type: 'text/markdown',
-                });
-                return new File([mdBlob], mdFilename);
-            });
-
-            uploadFiles(markdownFiles);
-            console.log('Uploaded files to Gumloop');
-
-            for (let i = 0; i < markdownFiles.length; i++) {
-                const convertedFileName = markdownFiles[i].name;
-                const currentFile = processingPdfFiles[i];
-                updateGumloopName.mutate({
-                    documentId: currentFile.supabaseId,
-                    gumloopName: convertedFileName,
-                    orgId: organizationId,
-                });
-                console.log(
-                    'Updated Gumloop name for file:',
-                    convertedFileName,
-                );
-
-                setSelectedFiles((prev) => ({
-                    ...prev,
-                    [convertedFileName]: currentFile.name,
-                }));
-            }
-
-            setIsUploading(false);
-            setOcrPipelineTaskIds([]);
-            setProcessingPdfFiles([]);
-        }
-    }, [
-        organizationId,
-        processingPdfFiles,
-        taskStatusQueries,
-        updateGumloopName,
-        uploadFiles,
-    ]);
-
-    const [uploadButtonText, setUploadButtonText] = useState('Upload Files');
-
-    useEffect(() => {
-        if (isUploading) {
-            if (ocrPipelineTaskIds.length > 0) {
-                setUploadButtonText('Converting...');
-            } else setUploadButtonText('Uploading...');
-        } else {
-            setUploadButtonText('Upload Files');
-        }
-    }, [isUploading, ocrPipelineTaskIds]);
+    const { startPipeline, getPipelineRun } = useGumloop();
 
     const [isReasoning, setIsReasoning] = useState(false);
     const [isAnalysing, setIsAnalysing] = useState(false);
@@ -305,13 +87,13 @@ export default function RequirementPage() {
             return;
         }
         // or if no files are uploaded
-        if (Object.keys(selectedFiles).length === 0) {
-            setMissingFilesError('At least one file is required');
-            return;
-        }
+        // if (Object.keys(selectedFiles).length === 0) {
+        //     setMissingFilesError('At least one file is required');
+        //     return;
+        // }
         console.log('Starting analysis pipeline...');
         setMissingReqError('');
-        setMissingFilesError('');
+        // setMissingFilesError('');
         setIsAnalysing(true);
 
         try {
@@ -425,6 +207,7 @@ export default function RequirementPage() {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">Requirement</h2>
                     <RequirementForm
+                        organizationId={organizationId}
                         requirement={requirement || { id: '' }}
                         reqText={reqText || ''}
                         setReqText={setReqText}
@@ -437,14 +220,16 @@ export default function RequirementPage() {
                         isAnalysing={isAnalysing}
                         handleAnalyze={handleAnalyze}
                         missingReqError={missingReqError}
-                        missingFilesError={missingFilesError}
-                        isUploading={isUploading}
-                        uploadButtonText={uploadButtonText}
-                        handleFileUpload={handleFileUpload}
-                        existingDocs={existingDocs}
-                        existingDocsValue={existingDocsValue}
-                        handleExistingDocSelect={handleExistingDocSelect}
+                        // missingFilesError={missingFilesError}
+                        // setMissingFilesError={setMissingFilesError}
+                        // isUploading={isUploading}
+                        // uploadButtonText={uploadButtonText}
+                        // handleFileUpload={handleFileUpload}
+                        // existingDocs={existingDocs}
+                        // existingDocsValue={existingDocsValue}
+                        // handleExistingDocSelect={handleExistingDocSelect}
                         selectedFiles={selectedFiles}
+                        setSelectedFiles={setSelectedFiles}
                     />
                 </div>
 
