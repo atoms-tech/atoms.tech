@@ -13,6 +13,7 @@ import {
     EnhancedCard,
     IncoseCard,
     OriginalRequirementCard,
+    RegulationFile,
     RequirementForm,
 } from './components';
 
@@ -53,7 +54,7 @@ export default function RequirementPage() {
     // const [missingFilesError, setMissingFilesError] = useState<string>('');
 
     const [selectedFiles, setSelectedFiles] = useState<{
-        [key: string]: string;
+        [key: string]: RegulationFile;
     }>({});
 
     const { startPipeline, getPipelineRun } = useGumloop();
@@ -104,7 +105,9 @@ export default function RequirementPage() {
                 requirement: reqText,
                 systemName: systemName,
                 objective: objective,
-                fileNames: Object.keys(selectedFiles),
+                fileNames: Object.values(selectedFiles).map(
+                    (file) => file.gumloopName,
+                ),
             });
             setAnalysisPipelineRunId(run_id);
         } catch (error) {
