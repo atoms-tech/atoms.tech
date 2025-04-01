@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { v4 as _uuidv4 } from 'uuid';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,7 @@ export default function DocumentForm({
             await createDocumentWithSchemas({
                 name: data.name,
                 description: data.description || null,
-                project_id: projectId,
+                project_id: projectId as string,
                 slug: data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                 tags: data.tags || null,
                 created_by: userProfile.id,

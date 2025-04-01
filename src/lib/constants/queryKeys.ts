@@ -50,47 +50,17 @@ export const queryKeys = {
             [...queryKeys.blocks.detail(blockId), 'requirements'] as const,
     },
 
-    documentPropertySchemas: {
-        root: ['documentPropertySchemas'] as const,
+    // New properties query keys
+    properties: {
+        root: ['properties'] as const,
+        list: (filters?: QueryFilters) =>
+            [...queryKeys.properties.root, 'list', filters] as const,
         detail: (id: string) =>
-            [...queryKeys.documentPropertySchemas.root, 'detail', id] as const,
+            [...queryKeys.properties.root, 'detail', id] as const,
         byDocument: (documentId: string) =>
-            [
-                ...queryKeys.documents.detail(documentId),
-                'propertySchemas',
-            ] as const,
-    },
-
-    blockPropertySchemas: {
-        root: ['blockPropertySchemas'] as const,
-        detail: (id: string) =>
-            [...queryKeys.blockPropertySchemas.root, 'detail', id] as const,
+            [...queryKeys.documents.detail(documentId), 'properties'] as const,
         byBlock: (blockId: string) =>
-            [...queryKeys.blocks.detail(blockId), 'propertySchemas'] as const,
-    },
-
-    requirementPropertyKVs: {
-        root: ['requirementPropertyKVs'] as const,
-        detail: (id: string) =>
-            [...queryKeys.requirementPropertyKVs.root, 'detail', id] as const,
-        byBlock: (blockId: string) =>
-            [...queryKeys.blocks.detail(blockId), 'propertyKVs'] as const,
-        byRequirement: (requirementId: string) =>
-            [
-                ...queryKeys.requirements.detail(requirementId),
-                'propertyKVs',
-            ] as const,
-        byBlockAndRequirement: (blockId: string, requirementId?: string) =>
-            requirementId
-                ? ([
-                      ...queryKeys.blocks.detail(blockId),
-                      'propertyKVs',
-                      requirementId,
-                  ] as const)
-                : ([
-                      ...queryKeys.blocks.detail(blockId),
-                      'propertyKVs',
-                  ] as const),
+            [...queryKeys.blocks.detail(blockId), 'properties'] as const,
     },
 
     projects: {

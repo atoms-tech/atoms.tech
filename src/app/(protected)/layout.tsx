@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
+import LayoutManager from '@/components/base/LayoutManager';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { getQueryClient } from '@/lib/constants/queryClient';
@@ -55,13 +56,15 @@ export default async function ProtectedLayout({
 
         return (
             <HydrationBoundary state={dehydrate(queryClient)}>
-                <OrganizationProvider initialOrganizations={organizations}>
-                    <UserProvider initialUser={user} initialProfile={profile}>
-                        <Suspense fallback={<RootLayoutSkeleton />}>
-                            {children}
-                        </Suspense>
-                    </UserProvider>
-                </OrganizationProvider>
+                <UserProvider initialUser={user} initialProfile={profile}>
+                    <OrganizationProvider initialOrganizations={organizations}>
+                        <LayoutManager>
+                            <Suspense fallback={<RootLayoutSkeleton />}>
+                                {children}
+                            </Suspense>
+                        </LayoutManager>
+                    </OrganizationProvider>
+                </UserProvider>
             </HydrationBoundary>
         );
     } catch (error) {

@@ -21,7 +21,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { BillingPlan, OrganizationType, PricingPlanInterval } from '@/types';
+import {
+    BillingPlan,
+    OrganizationType,
+    PricingPlanInterval,
+} from '@/types/base/enums.types';
 
 const formSchema = z.object({
     name: z.string().min(2, {

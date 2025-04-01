@@ -2,6 +2,13 @@ import { useMutation } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types';
+import { Json } from '@/types/base/database.types';
+
+export type BlockContent = {
+    columns?: Json | null;
+    order?: Json | null;
+    requirements?: Json | null;
+};
 
 export type CreateBlockInput = Omit<
     Block,
@@ -13,6 +20,11 @@ export type CreateBlockInput = Omit<
     | 'is_deleted'
     | 'version'
 >;
+
+export type UpdateBlockContent = {
+    id: string;
+    content?: BlockContent;
+} & Partial<Block>;
 
 export function useCreateBlock() {
     return useMutation({
@@ -48,11 +60,8 @@ export function useCreateBlock() {
 
 export function useUpdateBlock() {
     return useMutation({
-        mutationFn: async ({
-            id,
-            ...input
-        }: Partial<Block> & { id: string }) => {
-            console.log('Updating block', id, input);
+        mutationFn: async (input: Partial<Block> & { id: string }) => {
+            console.log('Updating block', input.id, input);
 
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
@@ -60,7 +69,7 @@ export function useUpdateBlock() {
                     ...input,
                     updated_at: new Date().toISOString(),
                 })
-                .eq('id', id)
+                .eq('id', input.id)
                 .select()
                 .single();
 
@@ -97,7 +106,7 @@ export function useDeleteBlock() {
                     deleted_by: deletedBy,
                 })
                 .eq('id', id)
-                .select()
+                .select('*')
                 .single();
 
             if (blockError) {

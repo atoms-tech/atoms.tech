@@ -11,16 +11,27 @@ export function useOrganization(orgId: string) {
     return useQuery({
         queryKey: queryKeys.organizations.detail(orgId),
         queryFn: async () => {
+            // Handle empty or invalid orgId more gracefully
+            if (!orgId || orgId === '') {
+                console.warn('Empty organization ID provided');
+                return null;
+            }
+
+            // Skip validation for special cases like 'project'
+            if (orgId === 'project') {
+                console.warn('Special case organization ID:', orgId);
+                return null;
+            }
+
             // Validate that orgId is a valid UUID format before querying
             if (
-                !orgId ||
                 orgId === 'user' ||
                 !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
                     orgId,
                 )
             ) {
                 console.error('Invalid organization ID format:', orgId);
-                throw new Error('Invalid organization ID format');
+                return null; // Return null instead of throwing to prevent UI errors
             }
 
             const { data, error } = await supabase
@@ -32,11 +43,11 @@ export function useOrganization(orgId: string) {
 
             if (error) {
                 console.error('Error fetching organization:', error);
-                throw error;
+                return null; // Return null instead of throwing to prevent UI errors
             }
             return data;
         },
-        enabled: !!orgId && orgId !== 'user',
+        enabled: !!orgId && orgId !== 'user' && orgId !== 'project',
     });
 }
 

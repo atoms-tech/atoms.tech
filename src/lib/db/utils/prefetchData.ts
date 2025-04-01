@@ -104,7 +104,7 @@ export const fetchProjectData = cache(
                     return data;
                 }),
                 getProjectDocumentsServer(projectId).then((data) => {
-                    // Update cache
+                    // The data is already typed as Document[] from the database
                     client.setQueryData(
                         queryKeys.documents.byProject(projectId),
                         data,

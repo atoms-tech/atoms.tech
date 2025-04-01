@@ -1,4 +1,8 @@
-const CHUNKR_API_KEY = process.env.NEXT_PUBLIC_CHUNKR_API_KEY;
+const CHUNKR_API_KEY =
+    process.env.NEXT_PUBLIC_CHUNKR_API_KEY ||
+    (process.env.NODE_ENV === 'production'
+        ? undefined
+        : 'mock_api_key_for_build');
 const CHUNKR_API_URL =
     process.env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1';
 

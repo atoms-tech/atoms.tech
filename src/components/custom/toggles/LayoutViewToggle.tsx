@@ -1,38 +1,36 @@
 'use client';
 
 import { Maximize2, Minimize2 } from 'lucide-react';
+import { memo } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { useSettingsStore } from '@/lib/store/settings.store';
+import BaseToggle from '@/components/custom/toggles/BaseToggle';
+import { useLayout } from '@/lib/providers/layout.provider';
 
-export function LayoutViewToggle() {
-    const { layoutViewMode, setLayoutViewMode } = useSettingsStore();
+export const LayoutViewToggle = memo(() => {
+    const { layoutViewMode, setLayoutViewMode } = useLayout();
+
+    const isWideMode = layoutViewMode === 'wide';
 
     const cycleLayoutViewMode = () => {
-        const modes = ['standard', 'wide'] as const;
-        const currentIndex = modes.indexOf(layoutViewMode);
-        const nextIndex = (currentIndex + 1) % modes.length;
-        setLayoutViewMode(modes[nextIndex]);
+        setLayoutViewMode(isWideMode ? 'standard' : 'wide');
     };
 
-    const getIcon = () => {
-        switch (layoutViewMode) {
-            case 'standard':
-                return <Maximize2 className="h-[1.2rem] w-[1.2rem]" />;
-            case 'wide':
-                return <Minimize2 className="h-[1.2rem] w-[1.2rem]" />;
-        }
-    };
+    const tooltip = isWideMode
+        ? 'Switch to Standard View'
+        : 'Switch to Wide View';
 
     return (
-        <Button
-            variant="ghost"
-            size="icon"
+        <BaseToggle
+            icon={<Maximize2 className="h-[1.2rem] w-[1.2rem]" />}
+            activeIcon={<Minimize2 className="h-[1.2rem] w-[1.2rem]" />}
+            tooltip={tooltip}
+            isActive={isWideMode}
             onClick={cycleLayoutViewMode}
-            className="h-9 w-9"
-        >
-            {getIcon()}
-            <span className="sr-only">Toggle view mode</span>
-        </Button>
+        />
     );
-}
+});
+
+// Display name for debugging
+LayoutViewToggle.displayName = 'LayoutViewToggle';
+
+export default LayoutViewToggle;

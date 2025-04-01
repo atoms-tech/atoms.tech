@@ -10,33 +10,36 @@ import { Industries } from '@/components/custom/LandingPage/industries';
 import { Navbar } from '@/components/custom/LandingPage/navbar';
 import { Testimonials } from '@/components/custom/LandingPage/testimonials';
 import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
+import { ProfilerWrapper } from '@/components/custom/ProfilerWrapper';
 
 export default async function Home() {
     return (
-        <div className="min-h-screen bg-[#0f0f0f] text-[#B5B5B5] relative">
-            <div className="relative z-10">
-                <Navbar />
-                <main className="space-y-64">
-                    <Hero />
-                    <div className="section-divider">
-                        <Features />
-                    </div>
-                    <HowItWorks />
-                    <TimeSavingEdge />
-                    <div className="section-divider">
-                        <Industries />
-                    </div>
-                    <Testimonials />
-                    <div className="section-divider">
-                        <CTA />
-                    </div>
-                    <div className="section-divider">
-                        <Contact />
-                    </div>
-                </main>
-                <Footer />
+        <ProfilerWrapper id="LandingPage">
+            <div className="min-h-screen bg-[#0f0f0f] text-[#B5B5B5] relative">
+                <div className="relative z-10">
+                    <Navbar />
+                    <main className="space-y-64">
+                        <Hero />
+                        <div className="section-divider">
+                            <Features />
+                        </div>
+                        <HowItWorks />
+                        <TimeSavingEdge />
+                        <div className="section-divider">
+                            <Industries />
+                        </div>
+                        <Testimonials />
+                        <div className="section-divider">
+                            <CTA />
+                        </div>
+                        <div className="section-divider">
+                            <Contact />
+                        </div>
+                    </main>
+                    <Footer />
+                </div>
+                <GridBackground />
             </div>
-            <GridBackground />
-        </div>
+        </ProfilerWrapper>
     );
 }

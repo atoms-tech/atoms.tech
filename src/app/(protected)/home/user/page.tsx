@@ -2,7 +2,14 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Building, Filter, Folder, Plus, Sparkles, Users } from 'lucide-react';
+import {
+    Building,
+    FilterIcon,
+    Folder,
+    Plus,
+    Sparkles,
+    Users,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -23,7 +30,7 @@ import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
-import { OrganizationType } from '@/types';
+import { OrganizationType } from '@/types/base/enums.types';
 import { Organization } from '@/types/base/organizations.types';
 
 export default function UserDashboard() {
@@ -307,7 +314,7 @@ export default function UserDashboard() {
                         className="w-full md:w-64"
                     />
                     <Button variant="default" className="w-9 h-9">
-                        <Filter className="w-4 h-4" />
+                        <FilterIcon className="w-4 h-4" />
                     </Button>
                 </div>
             </div>

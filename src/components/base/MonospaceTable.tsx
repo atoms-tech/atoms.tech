@@ -2,7 +2,7 @@
 
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { LayoutGroup, motion } from 'framer-motion';
-import { Filter } from 'lucide-react';
+import { FilterIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 
@@ -136,7 +136,7 @@ export function MonospaceTable<T>({
                                     size="sm"
                                     className="inline-flex items-center"
                                 >
-                                    <Filter className="h-4 w-4 mr-2" />
+                                    <FilterIcon className="h-4 w-4 mr-2" />
                                     Filter
                                 </Button>
                             )}

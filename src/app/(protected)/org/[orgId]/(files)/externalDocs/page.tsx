@@ -1,4 +1,4 @@
-import ExternalDocsPages from '@/app/(protected)/org/components/ExternalDocs.client';
+import ExternalDocsPages from './ExternalDocs.client';
 
 export default function ProjectPageWrapper() {
     return <ExternalDocsPages />;

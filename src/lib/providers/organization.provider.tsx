@@ -30,7 +30,7 @@ export const OrganizationProvider = ({
         );
 
     return (
-        <OrganizationContext
+        <OrganizationContext.Provider
             value={{
                 organizations,
                 setOrganizations,
@@ -39,16 +39,16 @@ export const OrganizationProvider = ({
             }}
         >
             {children}
-        </OrganizationContext>
+        </OrganizationContext.Provider>
     );
 };
 
-export const useOrganization = () => {
+export function useOrganization() {
     const context = use(OrganizationContext);
-    if (!context) {
+    if (context === undefined) {
         throw new Error(
             'useOrganization must be used within an OrganizationProvider',
         );
     }
     return context;
-};
+}

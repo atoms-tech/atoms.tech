@@ -2,10 +2,7 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
-import Sidebar from '@/components/base/Sidebar';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { getAuthUserServer } from '@/lib/db/server';
 import { prefetchOrgPageData } from '@/lib/db/utils/prefetchData';
@@ -31,15 +28,11 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
         );
 
         return (
-            <SidebarProvider>
-                <Sidebar />
-                <div className="relative flex-1 p-16">
-                    <Suspense fallback={<OrgDashboardSkeleton />}>
-                        {children}
-                    </Suspense>
-                </div>
-                <VerticalToolbar />
-            </SidebarProvider>
+            <div className="relative flex-1">
+                <Suspense fallback={<OrgDashboardSkeleton />}>
+                    {children}
+                </Suspense>
+            </div>
         );
     } catch (error: unknown) {
         console.error('Error in organization layout:', error);

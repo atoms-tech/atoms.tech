@@ -1,28 +1,9 @@
 'use server';
 
 import { QueryClient } from '@tanstack/react-query';
-import { Suspense } from 'react';
 
-import Sidebar from '@/components/base/Sidebar';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
-
-function SidebarSkeleton() {
-    return (
-        <div className="w-64 h-screen bg-background border-r border-border animate-pulse">
-            <div className="p-4 space-y-4">
-                <div className="h-8 bg-muted rounded-md w-3/4"></div>
-                <div className="space-y-2">
-                    <div className="h-6 bg-muted rounded-md w-full"></div>
-                    <div className="h-6 bg-muted rounded-md w-5/6"></div>
-                    <div className="h-6 bg-muted rounded-md w-4/6"></div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default async function HomeLayout({
     children,
@@ -48,13 +29,5 @@ export default async function HomeLayout({
         queryClient as QueryClient & { organizations: typeof organizations }
     ).organizations = organizations;
 
-    return (
-        <SidebarProvider>
-            <Suspense fallback={<SidebarSkeleton />}>
-                <Sidebar />
-            </Suspense>
-            <div className="relative flex-1 p-16">{children}</div>
-            <VerticalToolbar />
-        </SidebarProvider>
-    );
+    return <div className="relative flex-1 p-16">{children}</div>;
 }

@@ -7,6 +7,8 @@ import {
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Requirement } from '@/types';
+import { TablesInsert } from '@/types/base/database.types';
+import { RequirementSchema } from '@/types/validation/requirements.validation';
 
 export type CreateRequirementInput = Omit<
     Requirement,
@@ -26,27 +28,31 @@ export function useCreateRequirement() {
         mutationFn: async (input: CreateRequirementInput) => {
             console.log('Creating requirement', input);
 
+            const insertData: TablesInsert<'requirements'> = {
+                block_id: input.block_id,
+                document_id: input.document_id,
+                name: input.name,
+                ai_analysis: input.ai_analysis,
+                description: input.description,
+                enchanced_requirement: input.enchanced_requirement,
+                external_id: 'REQ-001',
+                format: input.format,
+                level: input.level,
+                original_requirement: input.original_requirement,
+                priority: input.priority,
+                status: input.status,
+                tags: input.tags,
+                created_by: input.created_by,
+                updated_by: input.updated_by,
+                properties: input.properties || {},
+                version: 1,
+                position: input.position,
+            };
+
             const { data: requirement, error: requirementError } =
                 await supabase
                     .from('requirements')
-                    .insert({
-                        ai_analysis: input.ai_analysis,
-                        block_id: input.block_id,
-                        description: input.description,
-                        document_id: input.document_id,
-                        enchanced_requirement: input.enchanced_requirement,
-                        external_id: 'REQ-001',
-                        format: input.format,
-                        level: input.level,
-                        name: input.name,
-                        original_requirement: input.original_requirement,
-                        priority: input.priority,
-                        status: input.status,
-                        tags: input.tags,
-                        created_by: input.created_by,
-                        updated_by: input.updated_by,
-                        version: 1,
-                    })
+                    .insert(insertData)
                     .select()
                     .single();
 
@@ -59,7 +65,7 @@ export function useCreateRequirement() {
                 throw new Error('Failed to create requirement');
             }
 
-            return requirement;
+            return RequirementSchema.parse(requirement);
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -97,7 +103,7 @@ export function useUpdateRequirement() {
                 throw new Error('Failed to update requirement');
             }
 
-            return requirement;
+            return RequirementSchema.parse(requirement);
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -139,7 +145,7 @@ export function useDeleteRequirement() {
                 throw new Error('Failed to delete requirement');
             }
 
-            return requirement;
+            return RequirementSchema.parse(requirement);
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -158,12 +164,13 @@ export function useSyncRequirementData() {
             userId,
         }: {
             requirementId: string;
-            data: Partial<Requirement>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: Record<string, any>;
             userId: string;
         }) => {
             return await updateRequirementMutation.mutateAsync({
                 id: requirementId,
-                ...data,
+                properties: data,
                 updated_by: userId,
             });
         },

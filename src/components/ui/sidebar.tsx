@@ -45,12 +45,11 @@ type SidebarContext = {
 
 const SidebarContext = createContext<SidebarContext | null>(null);
 
-function useSidebar() {
+export function useSidebar() {
     const context = use(SidebarContext);
     if (!context) {
-        throw new Error('useSidebar must be used within a SidebarProvider.');
+        throw new Error('useSidebar must be used within a SidebarProvider');
     }
-
     return context;
 }
 
@@ -129,7 +128,7 @@ const SidebarProvider = ({
     };
 
     return (
-        <SidebarContext value={contextValue}>
+        <SidebarContext.Provider value={contextValue}>
             <TooltipProvider delayDuration={0}>
                 <div
                     style={
@@ -149,7 +148,7 @@ const SidebarProvider = ({
                     {children}
                 </div>
             </TooltipProvider>
-        </SidebarContext>
+        </SidebarContext.Provider>
     );
 };
 SidebarProvider.displayName = 'SidebarProvider';
@@ -799,29 +798,29 @@ const SidebarMenuSubButton = ({
 };
 SidebarMenuSubButton.displayName = 'SidebarMenuSubButton';
 
+export const Sidebar = SidebarProvider;
+export { SidebarTrigger };
+
 export {
     SidebarContainer,
-    SidebarContent,
+    SidebarRail,
+    SidebarInset,
+    SidebarInput,
+    SidebarHeader,
     SidebarFooter,
+    SidebarSeparator,
+    SidebarContent,
     SidebarGroup,
+    SidebarGroupLabel,
     SidebarGroupAction,
     SidebarGroupContent,
-    SidebarGroupLabel,
-    SidebarHeader,
-    SidebarInput,
-    SidebarInset,
     SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
     SidebarMenuAction,
     SidebarMenuBadge,
-    SidebarMenuButton,
-    SidebarMenuItem,
     SidebarMenuSkeleton,
     SidebarMenuSub,
-    SidebarMenuSubButton,
     SidebarMenuSubItem,
-    SidebarProvider,
-    SidebarRail,
-    SidebarSeparator,
-    SidebarTrigger,
-    useSidebar,
+    SidebarMenuSubButton,
 };
