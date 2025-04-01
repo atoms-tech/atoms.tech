@@ -56,7 +56,7 @@ export enum BlockType {
 
 export interface BlockProps {
     block: BlockWithRequirements;
-    isSelected?: boolean;
+    _isSelected?: boolean;
     onSelect?: (blockId: string) => void;
     onUpdate: (content: Json) => void;
     onDelete?: () => void;

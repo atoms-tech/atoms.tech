@@ -284,30 +284,38 @@ export const useBlockActions = ({
     };
 
     const handleUpdateBlock = async (blockId: string, updates: Json) => {
-        if (!userProfile?.id) return;
+        if (!userProfile?.id) {
+            console.error('Cannot update block: User profile not found');
+            throw new Error('User profile not found');
+        }
 
         try {
-            const currentBlock = blocks?.find((b) => b.id === blockId);
-            if (!currentBlock) return;
+            // Update local state first for optimistic updates
+            setLocalBlocks((prevBlocks) =>
+                prevBlocks.map((block) =>
+                    block.id === blockId
+                        ? {
+                              ...block,
+                              content: updates,
+                              updated_by: userProfile.id,
+                              updated_at: new Date().toISOString(),
+                          }
+                        : block,
+                ),
+            );
 
-            // Extract name and other fields from updates
-            const { name, content, ...otherUpdates } = updates as {
-                name?: string;
-                content?: Json;
-                [key: string]: unknown;
-            };
-
-            // Pass parameters correctly to match the expected API
+            // Then update the server
             await updateBlockMutation.mutateAsync({
                 id: blockId,
-                content: content || currentBlock.content,
-                ...(name && { name }), // Only include name if it exists
-                ...otherUpdates,
+                content: updates,
                 updated_by: userProfile.id,
-                version: (currentBlock.version || 1) + 1,
             });
         } catch (error) {
             console.error('Failed to update block:', error);
+            // Revert local state on error
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.blocks.byDocument(documentId),
+            });
         }
     };
 

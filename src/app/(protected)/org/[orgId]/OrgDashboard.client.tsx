@@ -4,6 +4,7 @@ import { Building, File, FileBox, FolderArchive, ListTodo } from 'lucide-react';
 import { useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
+import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -33,6 +34,11 @@ interface OrgDashboardProps {
 
 export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState('projects');
+    const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+
+    const handleCreateProject = () => {
+        setIsCreatePanelOpen(true);
+    };
 
     const openFile = async (documentId: string) => {
         if (!props.orgId) {
@@ -223,7 +229,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 <TabsContent value="projects" className="space-y-6">
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl font-semibold">Projects</h2>
-                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                        <button
+                            className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
+                            onClick={handleCreateProject}
+                        >
                             Create Project
                         </button>
                     </div>
@@ -288,7 +297,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             <p className="mt-2 text-sm text-muted-foreground">
                                 Get started by creating your first project
                             </p>
-                            <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
+                            <button
+                                className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
+                                onClick={handleCreateProject}
+                            >
                                 Create Project
                             </button>
                         </div>
@@ -423,6 +435,14 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                     </div>
                 </TabsContent>
             </Tabs>
+
+            <CreatePanel
+                isOpen={isCreatePanelOpen}
+                onClose={() => setIsCreatePanelOpen(false)}
+                showTabs="project"
+                initialTab="project"
+                organizationId={props.orgId}
+            />
         </div>
     );
 }

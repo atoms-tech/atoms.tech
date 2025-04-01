@@ -309,6 +309,7 @@ export function useCreateDocumentProperties() {
 export function useCreateDocumentWithDefaultSchemas() {
     const createDocumentMutation = useCreateDocument();
     const createBaseOrgPropertiesMutation = useCreateBaseOrgProperties();
+    const createDocumentPropertiesMutation = useCreateDocumentProperties();
 
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
@@ -342,6 +343,12 @@ export function useCreateDocumentWithDefaultSchemas() {
             // Create the document
             const createdDocument =
                 await createDocumentMutation.mutateAsync(document);
+
+            // Create document-specific properties based on base properties
+            await createDocumentPropertiesMutation.mutateAsync({
+                documentId: createdDocument.id,
+                orgId,
+            });
 
             return createdDocument;
         },

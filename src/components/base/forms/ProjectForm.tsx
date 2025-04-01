@@ -45,9 +45,13 @@ const defaultValues: Partial<ProjectFormValues> = {
 
 interface ProjectFormProps {
     onSuccess: () => void;
+    organizationId?: string;
 }
 
-export default function ProjectForm({ onSuccess }: ProjectFormProps) {
+export default function ProjectForm({
+    onSuccess,
+    organizationId,
+}: ProjectFormProps) {
     const { userProfile } = useAuth();
     const { mutateAsync: createProject, isPending } = useCreateProject();
     const { toast } = useToast();
@@ -74,6 +78,7 @@ export default function ProjectForm({ onSuccess }: ProjectFormProps) {
                 description: data.description || null,
                 visibility: data.visibility,
                 organization_id:
+                    organizationId ||
                     userProfile.current_organization_id ||
                     userProfile.personal_organization_id ||
                     '',

@@ -34,30 +34,30 @@ export async function login(formData: FormData) {
 
         let redirectUrl = '/home/user'; // Default fallback
 
-        // Determine where to redirect based on organizations
-        if (organizations && organizations.length > 0) {
-            // Find enterprise organization
-            const enterpriseOrg = organizations.find(
-                (org) => org.type === OrganizationType.enterprise,
-            );
+        // Find enterprise organization first
+        const enterpriseOrg = organizations.find(
+            (org) => org.type === OrganizationType.enterprise,
+        );
 
-            // Find personal organization
+        // Only set cookie if enterprise org exists or if no preferred_org_id is set yet
+        const existingPreferredOrgId =
+            cookieStore.get('preferred_org_id')?.value;
+
+        if (enterpriseOrg) {
+            // If enterprise org exists, always set it as preferred and redirect there
+            redirectUrl = `/org/${enterpriseOrg.id}`;
+            cookieStore.set('preferred_org_id', enterpriseOrg.id);
+        } else if (!existingPreferredOrgId && organizations.length > 0) {
+            // Only set a new preferred org if none exists and we have orgs
             const personalOrg = organizations.find(
                 (org) => org.type === OrganizationType.personal,
             );
 
-            if (enterpriseOrg) {
-                redirectUrl = `/org/${enterpriseOrg.id}`;
-            } else if (personalOrg) {
+            if (personalOrg) {
                 redirectUrl = `/org/${personalOrg.id}`;
+                cookieStore.set('preferred_org_id', personalOrg.id);
             }
         }
-
-        // Store minimal data in cookies if needed for hydration
-        cookieStore.set(
-            'preferred_org_id',
-            redirectUrl.includes('/org/') ? redirectUrl.split('/org/')[1] : '',
-        );
 
         cookieStore.set('user_id', authData.user.id);
 

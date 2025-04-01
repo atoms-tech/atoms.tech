@@ -147,8 +147,26 @@ export const useDocumentRealtime = ({
                     table: 'blocks',
                     filter: `document_id=eq.${documentId}`,
                 },
-                () => {
-                    fetchBlocks();
+                (payload) => {
+                    // Handle individual block changes instead of fetching all blocks
+                    if (payload.eventType === 'UPDATE') {
+                        setBlocks((prevBlocks) => {
+                            if (!prevBlocks) return prevBlocks;
+                            return prevBlocks.map((block) =>
+                                block.id === payload.new.id
+                                    ? {
+                                          ...block,
+                                          ...payload.new,
+                                          requirements: block.requirements,
+                                          columns: block.columns,
+                                      }
+                                    : block,
+                            );
+                        });
+                    } else {
+                        // For INSERT and DELETE, fetch all blocks
+                        fetchBlocks();
+                    }
                 },
             )
             .subscribe();

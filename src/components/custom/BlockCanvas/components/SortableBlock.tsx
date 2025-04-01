@@ -12,7 +12,7 @@ import { TextBlock } from './TextBlock';
 
 export const SortableBlock: React.FC<BlockProps> = ({
     block,
-    isSelected,
+    _isSelected,
     onSelect,
     onUpdate,
     onDelete,
@@ -69,7 +69,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                 <TextBlock
                     block={block}
                     onUpdate={onUpdate}
-                    isSelected={isSelected}
+                    _isSelected={_isSelected}
                     onSelect={onSelect}
                     isEditMode={isEditMode}
                     onDelete={onDelete}
@@ -81,7 +81,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                 <TableBlock
                     block={block}
                     onUpdate={onUpdate}
-                    isSelected={isSelected}
+                    _isSelected={_isSelected}
                     onSelect={onSelect}
                     isEditMode={isEditMode}
                     onDelete={onDelete}

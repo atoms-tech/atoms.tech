@@ -1,13 +1,18 @@
 'use client';
 
-import { Building, Home, LucideIcon, Plus, Sparkles, User } from 'lucide-react';
+import {
+    Home,
+    LayoutDashboard,
+    LucideIcon,
+    Sparkles,
+    User,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { setCookie } from '@/app/(protected)/org/actions';
-import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -37,7 +42,7 @@ interface MenuItem {
 }
 
 // Menu items with app router paths
-const items: MenuItem[] = [
+const _items: MenuItem[] = [
     {
         title: 'Home',
         url: '/home/user',
@@ -49,10 +54,6 @@ function AppSidebar() {
     const router = useRouter();
     const pathname = usePathname();
     const [isLoading, setIsLoading] = useState(false);
-    const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
-    const [createPanelType, setCreatePanelType] = useState<
-        'project' | 'requirement' | 'document' | 'organization'
-    >('project');
 
     const { user, profile } = useUser();
     const { organizations, currentOrganization } = useOrganization();
@@ -68,13 +69,13 @@ function AppSidebar() {
     // Define primaryEnterpriseOrg based on enterpriseOrg
     const primaryEnterpriseOrg = enterpriseOrg;
 
-    const isOrgPage = pathname.startsWith('/org');
-    const isPlaygroundPage =
+    const _isOrgPage = pathname.startsWith('/org');
+    const _isPlaygroundPage =
         currentOrganization?.type === OrganizationType.personal;
-    const isUserDashboardPage = pathname.startsWith('/home/user');
+    const _isUserDashboardPage = pathname.startsWith('/home/user');
 
     // Check if user has only a personal org and no other memberships
-    const hasOnlyPersonalOrg =
+    const _hasOnlyPersonalOrg =
         personalOrg &&
         (!organizations ||
             organizations.length === 0 ||
@@ -84,32 +85,26 @@ function AppSidebar() {
     const navigateToPlayground = useCallback(() => {
         if (personalOrg) {
             console.log('Navigating to playground:', personalOrg.id);
-            setCookie('preferred_org_id', personalOrg.id);
+            // Only set preferred_org_id if there's no enterprise org
+            if (!enterpriseOrg) {
+                setCookie('preferred_org_id', personalOrg.id);
+            }
             router.push(`/org/${personalOrg.id}`);
         } else {
             console.log('No personal organization found');
         }
-    }, [personalOrg, router]);
+    }, [personalOrg, router, enterpriseOrg]);
 
     const navigateToEnterprise = useCallback(() => {
         if (primaryEnterpriseOrg) {
             console.log('Navigating to enterprise:', primaryEnterpriseOrg.id);
+            // Always set preferred_org_id for enterprise org
             setCookie('preferred_org_id', primaryEnterpriseOrg.id);
             router.push(`/org/${primaryEnterpriseOrg.id}`);
         } else {
             console.log('No enterprise organization found');
         }
     }, [primaryEnterpriseOrg, router]);
-
-    const handleCreateOrganization = useCallback(() => {
-        setCreatePanelType('organization');
-        setIsCreatePanelOpen(true);
-    }, []);
-
-    const handleCreateNew = useCallback(() => {
-        setCreatePanelType('project');
-        setIsCreatePanelOpen(true);
-    }, []);
 
     const handleSignOut = useCallback(async () => {
         try {
@@ -151,77 +146,66 @@ function AppSidebar() {
             <SidebarContent className="px-3 py-2">
                 <SidebarGroup>
                     <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-4">
-                        <Image
-                            src="/atoms.png"
-                            alt="Atoms logo"
-                            width={20}
-                            height={20}
-                            className="object-contain dark:invert"
-                        />
-                        <span className="font-semibold text-base">Atoms</span>
+                        <Link href="/" className="flex items-center gap-2">
+                            <Image
+                                src="/atoms.png"
+                                alt="Atoms logo"
+                                width={20}
+                                height={20}
+                                className="object-contain dark:invert"
+                            />
+                            <span className="font-semibold text-base">
+                                Atoms
+                            </span>
+                        </Link>
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {items.map((item) => (
-                                <Link
-                                    key={item.title}
-                                    href={item.url}
-                                    className="block mb-0.5"
-                                >
-                                    <SidebarMenuItem className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary transition-colors">
-                                        <item.icon className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <span className="text-xs font-medium">
-                                            {item.title}
-                                        </span>
-                                    </SidebarMenuItem>
-                                </Link>
-                            ))}
+                            <Link href="/home/user" className="block mb-0.5">
+                                <SidebarMenuItem className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary transition-colors">
+                                    <Home className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-xs font-medium">
+                                        Home
+                                    </span>
+                                </SidebarMenuItem>
+                            </Link>
 
-                            {/* Playground option - show when not in playground and user has a personal org */}
-                            {!isLoading &&
-                                personalOrg &&
-                                (isUserDashboardPage ||
-                                    (currentOrganization &&
-                                        currentOrganization.id !==
-                                            personalOrg.id)) && (
-                                    <SidebarMenuItem className="mb-1">
-                                        <SidebarMenuButton asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full justify-start"
-                                                onClick={navigateToPlayground}
-                                            >
-                                                <Sparkles className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                <span className="text-xs font-medium">
-                                                    Playground
-                                                </span>
-                                            </Button>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                )}
+                            {primaryEnterpriseOrg && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToEnterprise}
+                                        >
+                                            <LayoutDashboard className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Dashboard
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
 
-                            {/* Enterprise option - show when in playground or user dashboard and user has an enterprise org */}
-                            {!isLoading &&
-                                primaryEnterpriseOrg &&
-                                (isPlaygroundPage || isUserDashboardPage) && (
-                                    <SidebarMenuItem className="mb-1">
-                                        <SidebarMenuButton asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full justify-start"
-                                                onClick={navigateToEnterprise}
-                                            >
-                                                <Building className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                <span className="text-xs font-medium">
-                                                    Enterprise
-                                                </span>
-                                            </Button>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                )}
+                            {personalOrg && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToPlayground}
+                                        >
+                                            <Sparkles className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Playground
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
 
                             {/* Create Organization button (only if user has only personal org) */}
-                            {!isLoading && hasOnlyPersonalOrg && (
+                            {/* {!isLoading && hasOnlyPersonalOrg && (
                                 <SidebarMenuItem className="mb-1">
                                     <SidebarMenuButton asChild>
                                         <Button
@@ -234,10 +218,10 @@ function AppSidebar() {
                                         </Button>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            )}
+                            )} */}
 
                             {/* Create New button (only on org pages) */}
-                            {isOrgPage && (
+                            {/* {isOrgPage && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild>
                                         <Button
@@ -250,14 +234,14 @@ function AppSidebar() {
                                         </Button>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
-                            )}
+                            )} */}
 
-                            <CreatePanel
+                            {/* <CreatePanel
                                 isOpen={isCreatePanelOpen}
                                 onClose={() => setIsCreatePanelOpen(false)}
                                 showTabs={createPanelType}
                                 initialTab={createPanelType}
-                            />
+                            /> */}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

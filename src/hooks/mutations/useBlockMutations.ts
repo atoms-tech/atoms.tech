@@ -63,13 +63,17 @@ export function useUpdateBlock() {
         mutationFn: async (input: Partial<Block> & { id: string }) => {
             console.log('Updating block', input.id, input);
 
+            // Separate content from other fields
+            const { id, content, ...otherFields } = input;
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
                 .update({
-                    ...input,
+                    ...otherFields,
+                    content: content || null, // Ensure content is properly handled as JSON
                     updated_at: new Date().toISOString(),
                 })
-                .eq('id', input.id)
+                .eq('id', id)
                 .select()
                 .single();
 

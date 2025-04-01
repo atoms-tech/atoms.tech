@@ -155,7 +155,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                 <SortableBlock
                     key={block.id}
                     block={block}
-                    isSelected={isSelected}
+                    _isSelected={isSelected}
                     isEditMode={isEditMode}
                     onSelect={() => setSelectedBlockId(block.id)}
                     onUpdate={(content) => handleUpdateBlock(block.id, content)}
@@ -273,7 +273,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                         <div className="opacity-100 w-full pointer-events-none">
                             <SortableBlock
                                 block={activeBlock}
-                                isSelected={false}
+                                _isSelected={false}
                                 isEditMode={isEditMode}
                                 onSelect={() => {}}
                                 onUpdate={() => {}}

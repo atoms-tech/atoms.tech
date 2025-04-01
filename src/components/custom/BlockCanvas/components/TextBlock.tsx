@@ -9,6 +9,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import { GripVertical, Trash2 } from 'lucide-react';
 import React from 'react';
 
 import { BlockProps } from '@/components/custom/BlockCanvas/types';
@@ -122,14 +123,11 @@ const customStyles = `
 export const TextBlock: React.FC<BlockProps> = ({
     block,
     onUpdate,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    isSelected,
+    _isSelected,
     onSelect,
     isEditMode,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     onDelete,
     onDoubleClick,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     dragActivators,
 }) => {
     const content = block.content as { text?: string; format?: string };
@@ -142,6 +140,7 @@ export const TextBlock: React.FC<BlockProps> = ({
         left: 0,
     });
     const editorRef = React.useRef<HTMLDivElement>(null);
+    const lastSavedContent = React.useRef(content?.text || '<p></p>');
 
     // Add click outside handler
     React.useEffect(() => {
@@ -195,7 +194,6 @@ export const TextBlock: React.FC<BlockProps> = ({
         ],
         content: content?.text || '<p></p>',
         editable: Boolean(isEditMode),
-        immediatelyRender: false,
         onSelectionUpdate: ({ editor }) => {
             if (!isEditMode) return;
 
@@ -221,9 +219,7 @@ export const TextBlock: React.FC<BlockProps> = ({
         onUpdate: ({ editor }) => {
             if (!isEditMode) return;
             const newContent = editor.getHTML();
-            if (newContent !== localContent) {
-                setLocalContent(newContent);
-            }
+            setLocalContent(newContent);
         },
     });
 
@@ -236,69 +232,94 @@ export const TextBlock: React.FC<BlockProps> = ({
 
     // Save content when exiting edit mode
     React.useEffect(() => {
-        if (!isEditMode && localContent !== content?.text) {
+        if (!isEditMode && localContent !== lastSavedContent.current) {
+            lastSavedContent.current = localContent;
             onUpdate({
                 text: localContent,
+                format: content?.format || 'default',
             } as Json);
         }
-    }, [isEditMode, localContent, content?.text, onUpdate]);
+    }, [isEditMode, localContent, content?.format, onUpdate]);
 
-    // Sync external content changes
+    // Sync external content changes only when not in edit mode
     React.useEffect(() => {
-        if (!editor || !content?.text) return;
-        if (!isEditMode && content.text !== localContent) {
+        if (!editor || !content?.text || isEditMode) return;
+
+        if (content.text !== lastSavedContent.current) {
+            lastSavedContent.current = content.text;
             setLocalContent(content.text);
             editor.commands.setContent(content.text);
         }
-    }, [content?.text, editor, isEditMode, localContent]);
+    }, [content?.text, editor, isEditMode]);
 
     return (
-        <div
-            ref={editorRef}
-            className={cn(
-                'relative w-full',
-                isEditMode && 'ring-1 ring-purple-300/50 ring-offset-0',
-            )}
-            onClick={(e) => {
-                e.stopPropagation();
-                onSelect?.(block.id);
-                if (isEditMode && editor && editor.state.selection.empty) {
-                    editor.commands.focus();
-                }
-            }}
-            onDoubleClick={(e) => {
-                e.stopPropagation();
-                onDoubleClick?.();
-            }}
-        >
-            {isEditMode && showToolbar && (
-                <div
-                    className="absolute z-50 format-toolbar"
-                    style={{
-                        top: `${toolbarPosition.top}px`,
-                        left: `${toolbarPosition.left}px`,
-                    }}
-                    onMouseDown={(e) => {
-                        // Prevent toolbar interactions from stealing focus
-                        e.preventDefault();
-                    }}
-                >
-                    <Toolbar
-                        editor={editor}
-                        className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-1 transform -translate-y-full transition-all duration-200"
-                    />
+        <div className="group flex items-start gap-2">
+            {isEditMode && (
+                <div className="flex flex-col gap-2 -mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div
+                        {...dragActivators}
+                        className="cursor-grab active:cursor-grabbing"
+                    >
+                        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete?.();
+                        }}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </button>
                 </div>
             )}
-            <style>{customStyles}</style>
-            <EditorContent
-                editor={editor}
-                className="prose prose-sm dark:prose-invert max-w-none w-full focus:outline-none"
-                onClick={() => {
-                    if (editor?.state.selection.empty) {
-                        setShowToolbar(false);
+            <div
+                ref={editorRef}
+                className={cn(
+                    'relative w-full',
+                    isEditMode && 'ring-1 ring-purple-300/50 ring-offset-0',
+                )}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onSelect?.(block.id);
+                    if (isEditMode && editor && editor.state.selection.empty) {
+                        editor.commands.focus();
                     }
                 }}
-            />
+                onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    onDoubleClick?.();
+                }}
+            >
+                {isEditMode && showToolbar && (
+                    <div
+                        className="absolute z-50 format-toolbar"
+                        style={{
+                            top: `${toolbarPosition.top}px`,
+                            left: `${toolbarPosition.left}px`,
+                        }}
+                        onMouseDown={(e) => {
+                            // Prevent toolbar interactions from stealing focus
+                            e.preventDefault();
+                        }}
+                    >
+                        <Toolbar
+                            editor={editor}
+                            className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-1 transform -translate-y-full transition-all duration-200"
+                        />
+                    </div>
+                )}
+                <style>{customStyles}</style>
+                <EditorContent
+                    editor={editor}
+                    className="prose prose-sm dark:prose-invert max-w-none w-full focus:outline-none"
+                    onClick={() => {
+                        if (editor?.state.selection.empty) {
+                            setShowToolbar(false);
+                        }
+                    }}
+                />
+            </div>
         </div>
     );
 };
