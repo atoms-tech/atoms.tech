@@ -154,6 +154,8 @@ export const useBlockActions = ({
                     .select('*')
                     .eq('org_id', orgId)
                     .eq('is_base', true)
+                    .is('document_id', null)
+                    .is('project_id', null)
                     .eq('scope', 'org');
 
             if (basePropertiesError) {
@@ -215,17 +217,17 @@ export const useBlockActions = ({
 
     const handleAddBlock = async (type: BlockType, content: Json) => {
         if (!userProfile?.id) {
-            console.error('❌ Cannot create block: User profile not found');
+            console.error('Cannot create block: User profile not found');
             throw new Error('User profile not found');
         }
 
         if (!orgId) {
-            console.error('❌ Cannot create block: Organization ID not found');
+            console.error('Cannot create block: Organization ID not found');
             throw new Error('Organization ID not found');
         }
 
         try {
-            console.log('🚀 Creating new block', { type, content });
+            console.log('Creating new block', { type, content });
             const createdBlock = await createBlockMutation.mutateAsync({
                 type,
                 content,
@@ -236,7 +238,7 @@ export const useBlockActions = ({
                 org_id: orgId,
                 name: `${type.toString().charAt(0).toUpperCase() + type.toString().slice(1)} Block`,
             });
-            console.log('✅ Block created successfully', createdBlock);
+            console.log('Block created successfully', createdBlock);
 
             // Update both document store and local state immediately
             addBlock(createdBlock);
@@ -253,22 +255,20 @@ export const useBlockActions = ({
                     }),
                 );
             });
-            console.log('🔄 Local state updated with new block');
+            console.log('Local state updated with new block');
 
             // If it's a table block, create columns based on base properties
             if (type === BlockType.table) {
-                console.log('📊 Creating columns for table block', {
+                console.log('Creating columns for table block', {
                     blockId: createdBlock.id,
                 });
 
                 try {
                     await createDefaultBlockProperties(createdBlock.id);
-                    console.log(
-                        '✅ Successfully created columns for table block',
-                    );
+                    console.log('Successfully created columns for table block');
                 } catch (error) {
                     console.error(
-                        '❌ Failed to create columns for table block:',
+                        'Failed to create columns for table block:',
                         error,
                     );
                     throw error;
@@ -277,7 +277,7 @@ export const useBlockActions = ({
 
             return createdBlock;
         } catch (error) {
-            console.error('❌ Failed to create block:', error);
+            console.error('Failed to create block:', error);
             console.error('Error details:', JSON.stringify(error));
             throw error;
         }

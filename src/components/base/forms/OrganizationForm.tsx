@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useCreateBaseOrgProperties } from '@/hooks/mutations/useDocumentMutations';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import {
@@ -54,6 +55,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useUser();
+    const createBaseOrgProperties = useCreateBaseOrgProperties();
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -96,6 +98,12 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                 .single();
 
             if (orgError) throw orgError;
+
+            // Create base organization properties
+            await createBaseOrgProperties.mutateAsync({
+                orgId: orgData.id,
+                userId: user.id,
+            });
 
             // Add the creator as an owner of the organization
             const { error: memberError } = await supabase

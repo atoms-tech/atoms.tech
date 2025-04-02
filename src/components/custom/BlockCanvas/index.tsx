@@ -284,33 +284,31 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                 </DragOverlay>
             </DndContext>
 
-            {!isEditMode && (
-                <div className="flex gap-2 mt-4 z-10 relative">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                            handleAddBlock(BlockType.text, {
-                                format: 'markdown',
-                                text: '',
-                            })
-                        }
-                    >
-                        <Type className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                            handleAddBlock(BlockType.table, {
-                                requirements: [],
-                            })
-                        }
-                    >
-                        <Table className="h-4 w-4" />
-                    </Button>
-                </div>
-            )}
+            <div className="flex gap-2 mt-4 z-10 relative">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                        handleAddBlock(BlockType.text, {
+                            format: 'markdown',
+                            text: '',
+                        })
+                    }
+                >
+                    <Type className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                        handleAddBlock(BlockType.table, {
+                            requirements: [],
+                        })
+                    }
+                >
+                    <Table className="h-4 w-4" />
+                </Button>
+            </div>
         </div>
     );
 }

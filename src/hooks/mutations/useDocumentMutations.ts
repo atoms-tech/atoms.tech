@@ -13,6 +13,14 @@ interface PropertyCreateData {
     property_type: string;
     org_id: string;
     is_base?: boolean;
+    scope?:
+        | 'org'
+        | 'document'
+        | 'project'
+        | 'document,project'
+        | 'org,document,project';
+    document_id?: string;
+    project_id?: string;
     options?: {
         values: string[];
     };
@@ -154,13 +162,24 @@ export function useCreateBaseOrgProperties() {
                     .select('*')
                     .eq('org_id', orgId)
                     .eq('is_base', true)
+                    .eq('scope', 'org')
                     .is('document_id', null)
                     .is('project_id', null);
 
             if (fetchError) throw fetchError;
 
             // If base properties already exist, return them
-            if (existingProperties && existingProperties.length > 0) {
+            const existingPropertyNames = new Set(
+                existingProperties.map((p) => p.name),
+            );
+            const missingProperties = [
+                'External_ID',
+                'Name',
+                'Description',
+                'Status',
+                'Priority',
+            ].filter((name) => !existingPropertyNames.has(name));
+            if (missingProperties.length === 0) {
                 return existingProperties as Property[];
             }
 
@@ -171,24 +190,36 @@ export function useCreateBaseOrgProperties() {
                     property_type: 'text',
                     org_id: orgId,
                     is_base: true,
+                    scope: 'org',
+                    document_id: undefined,
+                    project_id: undefined,
                 },
                 {
                     name: 'Name',
                     property_type: 'text',
                     org_id: orgId,
                     is_base: true,
+                    scope: 'org',
+                    document_id: undefined,
+                    project_id: undefined,
                 },
                 {
                     name: 'Description',
                     property_type: 'text',
                     org_id: orgId,
                     is_base: true,
+                    scope: 'org',
+                    document_id: undefined,
+                    project_id: undefined,
                 },
                 {
                     name: 'Status',
                     property_type: 'select',
                     org_id: orgId,
                     is_base: true,
+                    scope: 'org',
+                    document_id: undefined,
+                    project_id: undefined,
                     options: {
                         values: [
                             'active',
@@ -207,6 +238,9 @@ export function useCreateBaseOrgProperties() {
                     property_type: 'select',
                     org_id: orgId,
                     is_base: true,
+                    scope: 'org',
+                    document_id: undefined,
+                    project_id: undefined,
                     options: {
                         values: ['low', 'medium', 'high', 'critical'],
                     },
@@ -309,16 +343,13 @@ export function useCreateDocumentProperties() {
 export function useCreateDocumentWithDefaultSchemas() {
     const createDocumentMutation = useCreateDocument();
     const createBaseOrgPropertiesMutation = useCreateBaseOrgProperties();
-    const createDocumentPropertiesMutation = useCreateDocumentProperties();
 
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
-            // Ensure project_id is available
             if (!document.project_id) {
                 throw new Error('Project ID is required to create a document');
             }
 
-            // Get the org_id for the project
             const { data: project, error: projectError } = await supabase
                 .from('projects')
                 .select('organization_id')
@@ -332,23 +363,17 @@ export function useCreateDocumentWithDefaultSchemas() {
             const orgId = project.organization_id;
 
             // Check/create base property schemas for the organization
-            const baseProperties =
-                await createBaseOrgPropertiesMutation.mutateAsync({
-                    orgId,
-                    userId: document.created_by as string,
-                });
+            // Only ensure base properties exist, don't create document properties
+            await createBaseOrgPropertiesMutation.mutateAsync({
+                orgId,
+                userId: document.created_by as string,
+            });
 
-            console.log('baseProperties', baseProperties);
+            console.log('baseProperties checked/created');
 
             // Create the document
             const createdDocument =
                 await createDocumentMutation.mutateAsync(document);
-
-            // Create document-specific properties based on base properties
-            await createDocumentPropertiesMutation.mutateAsync({
-                documentId: createdDocument.id,
-                orgId,
-            });
 
             return createdDocument;
         },
