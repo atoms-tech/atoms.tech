@@ -34,7 +34,7 @@ export function IncoseCard({
                 <div className="flex justify-between items-start mt-2">
                     <div>
                         <p>
-                            <strong>Format:</strong>
+                            <strong>INCOSE Format:</strong>
                         </p>
                         <ReactMarkdown>{incoseFormat}</ReactMarkdown>
                     </div>

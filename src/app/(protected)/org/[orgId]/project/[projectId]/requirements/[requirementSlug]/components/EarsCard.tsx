@@ -37,7 +37,7 @@ export function EarsCard({
                 </p>
                 <div className="flex justify-between items-center mt-2">
                     <p>
-                        <strong>Requirement:</strong> {earsRequirement}
+                        <strong>EARS Format:</strong> {earsRequirement}
                     </p>
                     <TooltipProvider>
                         <Tooltip>

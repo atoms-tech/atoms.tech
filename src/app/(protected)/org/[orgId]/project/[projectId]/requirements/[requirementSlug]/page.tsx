@@ -182,11 +182,13 @@ export default function RequirementPage() {
         if (!text || !requirement) {
             return;
         }
-        setReqText(text);
-        await updateRequirement({
-            id: requirement.id,
-            description: text,
-        });
+        // copy to clipboard
+        navigator.clipboard.writeText(text);
+        // setReqText(text);
+        // await updateRequirement({
+        //     id: requirement.id,
+        //     description: text,
+        // });
     };
 
     if (isReqLoading) {
