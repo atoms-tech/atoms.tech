@@ -126,7 +126,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
         handleUpdateBlock,
         handleDeleteBlock,
         handleReorder,
-        _createDefaultBlockProperties,
+        _createDefaultBlockColumns,
     } = useBlockActions({
         documentId,
         userProfile,

@@ -10,7 +10,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
 import { setCookie } from '@/app/(protected)/org/actions';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { OrganizationType } from '@/types';
@@ -53,8 +54,7 @@ const _items: MenuItem[] = [
 function AppSidebar() {
     const router = useRouter();
     const pathname = usePathname();
-    const [isLoading, setIsLoading] = useState(false);
-
+    const { signOut, isLoading: isSigningOut } = useSignOut();
     const { user, profile } = useUser();
     const { organizations, currentOrganization } = useOrganization();
 
@@ -105,25 +105,6 @@ function AppSidebar() {
             console.log('No enterprise organization found');
         }
     }, [primaryEnterpriseOrg, router]);
-
-    const handleSignOut = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const response = await fetch('/auth/signout', {
-                method: 'POST',
-            });
-
-            if (response.ok) {
-                router.push('/login');
-            } else {
-                console.error('Failed to sign out');
-            }
-        } catch (error) {
-            console.error('Error signing out:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [router]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -271,11 +252,11 @@ function AppSidebar() {
                                     <Link href="/billing">Billing</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                    onSelect={handleSignOut}
-                                    disabled={isLoading}
+                                    onSelect={() => signOut()}
+                                    disabled={isSigningOut}
                                 >
                                     <span>
-                                        {isLoading
+                                        {isSigningOut
                                             ? 'Signing out...'
                                             : 'Sign out'}
                                     </span>

@@ -1,6 +1,22 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
 
 export function Hero() {
+    const router = useRouter();
+    const { isAuthenticated } = useAuth();
+
+    const handleGetStarted = () => {
+        if (isAuthenticated) {
+            router.push('/home');
+        } else {
+            router.push('/login');
+        }
+    };
+
     return (
         <section className="bg-[url('/../../../nodesbackground.jpg')] bg-cover bg-center min-h-screen flex items-center justify-center  text-white relative overflow-hidden">
             <div className="absolute bottom-0 left-0 w-full h-1 bg-white" />
@@ -21,14 +37,20 @@ export function Hero() {
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row justify-start items-start space-y-4 sm:space-y-0 sm:space-x-6">
-                    <Button className="btn-primary w-full sm:w-auto">
-                        GET STARTED FREE
+                    <Button
+                        className="btn-primary w-full sm:w-auto"
+                        onClick={handleGetStarted}
+                    >
+                        GET STARTED
                     </Button>
                     <Button
                         variant="outline"
                         className="btn-secondary w-full sm:w-auto bg-black hover:bg-white hover:text-black"
+                        onClick={() => {
+                            router.push('/demo');
+                        }}
                     >
-                        WATCH DEMO
+                        TRY DEMO
                     </Button>
                 </div>
             </div>

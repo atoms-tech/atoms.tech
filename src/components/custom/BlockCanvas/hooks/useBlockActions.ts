@@ -1,14 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query';
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-import { useParams } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
 import {
     BlockType,
-    BlockWithRequirements /* eslint-disable-next-line @typescript-eslint/no-unused-vars */,
-    DefaultPropertyKeys /* eslint-disable-next-line @typescript-eslint/no-unused-vars */,
-    Property /* eslint-disable-next-line @typescript-eslint/no-unused-vars */,
-    PropertyType,
+    BlockWithRequirements,
     UseBlockActionsProps,
 } from '@/components/custom/BlockCanvas/types';
 import {
@@ -25,11 +20,6 @@ import { queryKeys } from '@/lib/constants/queryKeys';
 import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Json } from '@/types/base/database.types';
-import {
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    RequirementPriority /* eslint-disable-next-line @typescript-eslint/no-unused-vars */,
-    RequirementStatus,
-} from '@/types/base/enums.types';
 
 export const useBlockActions = ({
     documentId,
@@ -130,12 +120,10 @@ export const useBlockActions = ({
         return newBlock;
     };
 
-    // Create default properties for a block (using the new properties table)
-    const createDefaultBlockProperties = async (blockId: string) => {
+    // Create default columns for a block
+    const createDefaultBlockColumns = async (blockId: string) => {
         if (!userProfile?.id) {
-            console.error(
-                'Cannot create default properties without user profile',
-            );
+            console.error('Cannot create default columns without user profile');
             throw new Error('User profile not found');
         }
 
@@ -144,7 +132,7 @@ export const useBlockActions = ({
             throw new Error('Organization ID not found');
         }
 
-        console.log('Creating default properties for block', blockId);
+        console.log('Creating default columns for block', blockId);
 
         try {
             // Fetch base properties for the organization
@@ -168,12 +156,34 @@ export const useBlockActions = ({
 
             // Create columns for each base property
             const columnPromises = baseProperties.map(async (baseProp) => {
+                // Determine position based on property name
+                let position = 0;
+                switch (baseProp.name.toLowerCase()) {
+                    case 'external_id':
+                        position = 0;
+                        break;
+                    case 'name':
+                        position = 1;
+                        break;
+                    case 'description':
+                        position = 2;
+                        break;
+                    case 'status':
+                        position = 3;
+                        break;
+                    case 'priority':
+                        position = 4;
+                        break;
+                    default:
+                        position = 5; // Any other properties will be placed after the default ones
+                }
+
                 const { data: column, error: columnError } = await supabase
                     .from('columns')
                     .insert({
                         block_id: blockId,
                         property_id: baseProp.id,
-                        position: 0,
+                        position: position,
                         width: 200, // Default width
                         is_hidden: false,
                         is_pinned: false,
@@ -210,7 +220,7 @@ export const useBlockActions = ({
                 throw error;
             }
         } catch (error) {
-            console.error('Error in createDefaultBlockProperties:', error);
+            console.error('Error in createDefaultBlockColumns:', error);
             throw error;
         }
     };
@@ -264,7 +274,7 @@ export const useBlockActions = ({
                 });
 
                 try {
-                    await createDefaultBlockProperties(createdBlock.id);
+                    await createDefaultBlockColumns(createdBlock.id);
                     console.log('Successfully created columns for table block');
                 } catch (error) {
                     console.error(
@@ -374,7 +384,7 @@ export const useBlockActions = ({
         handleUpdateBlock,
         handleDeleteBlock,
         handleReorder,
-        _createDefaultBlockProperties: createDefaultBlockProperties,
+        _createDefaultBlockColumns: createDefaultBlockColumns,
         getNewBlockOrder,
         getBlocksBelow,
         makeSpaceForBlock,

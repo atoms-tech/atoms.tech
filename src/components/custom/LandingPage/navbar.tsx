@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Menu, User, X } from 'lucide-react';
 import { useCookies } from 'next-client-cookies';
 import Image from 'next/image';
@@ -16,17 +15,18 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useSignOut } from '@/hooks/useSignOut';
 
 import { GridBackground } from './grid-background';
 
 export function Navbar() {
     const cookies = useCookies();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const { isAuthenticated, isLoading, userProfile, signOut } = useAuth();
+    const { isAuthenticated, isLoading, userProfile } = useAuth();
+    const { signOut, isLoading: isSigningOut } = useSignOut();
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [preferredOrgId, setPreferredOrgId] = useState<string | null>(null);
-    const queryClient = useQueryClient();
     const [isNavigatingToDashboard, setIsNavigatingToDashboard] =
         useState(false);
 
@@ -92,12 +92,8 @@ export function Navbar() {
     };
 
     const handleSignOut = () => {
-        startTransition(async () => {
-            // Clear prefetched data when signing out
-            queryClient.clear();
-            // Clear prefetched data when signing out
-            queryClient.clear();
-            await signOut();
+        startTransition(() => {
+            signOut();
         });
     };
 
@@ -108,23 +104,15 @@ export function Navbar() {
         }
     }, [isPending]);
 
+    // Add cleanup for loading states
+    useEffect(() => {
+        return () => {
+            setIsNavigatingToDashboard(false);
+        };
+    }, []);
+
     return (
         <header className="fixed top-0 left-0 right-0 min-h-16 px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
-            {/* Show full-screen loading overlay when navigating to dashboard */}
-            {isNavigatingToDashboard && (
-                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-                    <div className="flex flex-col items-center space-y-4 text-center">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <h2 className="text-2xl font-bold tracking-tight">
-                            Loading dashboard...
-                        </h2>
-                        <p className="text-muted-foreground">
-                            We&apos;re preparing your organization workspace
-                        </p>
-                    </div>
-                </div>
-            )}
-
             {/* Show full-screen loading overlay when navigating to dashboard */}
             {isNavigatingToDashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
@@ -217,9 +205,9 @@ export function Navbar() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleSignOut}
-                                        disabled={isPending}
+                                        disabled={isPending || isSigningOut}
                                     >
-                                        {isPending
+                                        {isSigningOut
                                             ? 'Signing out...'
                                             : 'Sign Out'}
                                     </DropdownMenuItem>
@@ -295,11 +283,11 @@ export function Navbar() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
+                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending || isSigningOut ? 'opacity-70 pointer-events-none' : ''}`}
                                         onClick={handleSignOut}
-                                        disabled={isPending}
+                                        disabled={isPending || isSigningOut}
                                     >
-                                        {isPending
+                                        {isSigningOut
                                             ? 'SIGNING OUT...'
                                             : 'SIGN OUT'}
                                     </Button>

@@ -144,11 +144,26 @@ export async function signOut() {
             throw error;
         }
 
+        // Clear auth cookies on server side
+        const cookieStore = await cookies();
+        [
+            'preferred_org_id',
+            'user_id',
+            'sb-access-token',
+            'sb-refresh-token',
+        ].forEach((name) => {
+            cookieStore.set(name, '', {
+                expires: new Date(0),
+                path: '/',
+            });
+        });
+
         revalidatePath('/', 'layout');
-        redirect('/login');
+
+        // Send a properly formatted JSON response
+        return Response.json({ success: true });
     } catch (error) {
         console.error('Error signing out:', error);
-        // Still redirect even if there's an error
-        redirect('/login');
+        return Response.json({ success: false, error: 'Failed to sign out' });
     }
 }
