@@ -51,7 +51,7 @@ export default function RequirementPage() {
     }, [requirement]);
 
     const [missingReqError, setMissingReqError] = useState<string>('');
-    // const [missingFilesError, setMissingFilesError] = useState<string>('');
+    const [missingFilesError, setMissingFilesError] = useState<string>('');
 
     const [selectedFiles, setSelectedFiles] = useState<{
         [key: string]: RegulationFile;
@@ -88,13 +88,13 @@ export default function RequirementPage() {
             return;
         }
         // or if no files are uploaded
-        // if (Object.keys(selectedFiles).length === 0) {
-        //     setMissingFilesError('At least one file is required');
-        //     return;
-        // }
+        if (Object.keys(selectedFiles).length === 0) {
+            setMissingFilesError('At least one file is required');
+            return;
+        }
         console.log('Starting analysis pipeline...');
         setMissingReqError('');
-        // setMissingFilesError('');
+        setMissingFilesError('');
         setIsAnalysing(true);
 
         try {
@@ -223,8 +223,8 @@ export default function RequirementPage() {
                         isAnalysing={isAnalysing}
                         handleAnalyze={handleAnalyze}
                         missingReqError={missingReqError}
-                        // missingFilesError={missingFilesError}
-                        // setMissingFilesError={setMissingFilesError}
+                        missingFilesError={missingFilesError}
+                        setMissingFilesError={setMissingFilesError}
                         // isUploading={isUploading}
                         // uploadButtonText={uploadButtonText}
                         // handleFileUpload={handleFileUpload}

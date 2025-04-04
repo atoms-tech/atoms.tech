@@ -1,8 +1,14 @@
-import { Check } from 'lucide-react';
+import { Check, Clipboard } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface IncoseCardProps {
     incoseFormat?: string;
@@ -32,13 +38,25 @@ export function IncoseCard({
                         </p>
                         <ReactMarkdown>{incoseFormat}</ReactMarkdown>
                     </div>
-                    <Button
-                        size="sm"
-                        onClick={() => incoseFormat && onAccept(incoseFormat)}
-                        disabled={!incoseFormat}
-                    >
-                        Accept Format
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        incoseFormat && onAccept(incoseFormat)
+                                    }
+                                    disabled={!incoseFormat}
+                                >
+                                    <Clipboard className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Update requirement</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
                 <p className="mt-2">
                     <strong>Feedback:</strong>

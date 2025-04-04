@@ -182,7 +182,8 @@ export default function ProjectPage() {
                     ))}
                     {documents?.length === 0 && !isLoading && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
-                            No documents found
+                            No documents found. Create a new requirement
+                            document to get started.
                         </div>
                     )}
                 </div>
@@ -198,7 +199,7 @@ export default function ProjectPage() {
                     columns={columns}
                     isLoading={isLoading}
                     onRowClick={handleRowClick}
-                    emptyMessage="No requirements found for this project."
+                    emptyMessage="Create a new requirement document to get started"
                 />
             </div> */}
             {showCreateDocumentPanel && (

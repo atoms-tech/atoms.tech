@@ -1,8 +1,14 @@
-import { Wand } from 'lucide-react';
+import { Clipboard, Wand } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface EnhancedCardProps {
     enhancedReqEars?: string;
@@ -36,15 +42,26 @@ export function EnhancedCard({
                         </p>
                         <ReactMarkdown>{enhancedReqEars}</ReactMarkdown>
                     </div>
-                    <Button
-                        size="sm"
-                        onClick={() =>
-                            enhancedReqEars && onAccept(enhancedReqEars)
-                        }
-                        disabled={!enhancedReqEars}
-                    >
-                        Accept EARS
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        enhancedReqEars &&
+                                        onAccept(enhancedReqEars)
+                                    }
+                                    disabled={!enhancedReqEars}
+                                >
+                                    <Clipboard className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Update requirement</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
 
                 <div className="flex justify-between items-start mt-2">
@@ -54,15 +71,26 @@ export function EnhancedCard({
                         </p>
                         <ReactMarkdown>{enhancedReqIncose}</ReactMarkdown>
                     </div>
-                    <Button
-                        size="sm"
-                        onClick={() =>
-                            enhancedReqIncose && onAccept(enhancedReqIncose)
-                        }
-                        disabled={!enhancedReqIncose}
-                    >
-                        Accept INCOSE
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        enhancedReqIncose &&
+                                        onAccept(enhancedReqIncose)
+                                    }
+                                    disabled={!enhancedReqIncose}
+                                >
+                                    <Clipboard className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Update requirement</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
 
                 <p className="mt-2">

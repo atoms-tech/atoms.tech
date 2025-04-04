@@ -62,8 +62,8 @@ interface RequirementFormProps {
     isAnalysing: boolean;
     handleAnalyze: () => void;
     missingReqError: string;
-    // missingFilesError: string;
-    // setMissingFilesError: Dispatch<SetStateAction<string>>;
+    missingFilesError: string;
+    setMissingFilesError: Dispatch<SetStateAction<string>>;
     selectedFiles: { [key: string]: RegulationFile };
     setSelectedFiles: Dispatch<
         SetStateAction<{ [key: string]: RegulationFile }>
@@ -75,17 +75,17 @@ export function RequirementForm({
     requirement,
     reqText,
     setReqText,
-    systemName,
-    setSystemName,
-    objective,
-    setObjective,
+    // systemName,
+    // setSystemName,
+    // objective,
+    // setObjective,
     isReasoning,
     setIsReasoning,
     isAnalysing,
     handleAnalyze,
     missingReqError,
-    // missingFilesError,
-    // setMissingFilesError,
+    missingFilesError,
+    setMissingFilesError,
     selectedFiles,
     setSelectedFiles,
 }: RequirementFormProps) {
@@ -116,7 +116,7 @@ export function RequirementForm({
         try {
             const files = Array.from(e.target.files);
             setIsUploading(true);
-            // setMissingFilesError('');
+            setMissingFilesError('');
 
             // upload to Supabase
             const uploadPromises = files.map((file) =>
@@ -300,7 +300,7 @@ export function RequirementForm({
     const [existingDocsValue, setExistingDocsValue] = useState<string>('');
 
     const handleExistingDocSelect = (supabaseId: string) => {
-        // setMissingFilesError('');
+        setMissingFilesError('');
         setSelectedFiles((prev) => ({
             ...prev,
             [supabaseId]: unusedDocsNameMap[supabaseId],
@@ -394,40 +394,40 @@ export function RequirementForm({
                 placeholder="Enter requirement text"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                    <label
-                        htmlFor="systemName"
-                        className="text-sm font-medium text-muted-foreground block mb-1"
-                    >
-                        System Name - Optional
-                    </label>
-                    <input
-                        id="systemName"
-                        type="text"
-                        className="w-full p-2 border rounded-md text-muted-foreground"
-                        value={systemName}
-                        onChange={(e) => setSystemName(e.target.value)}
-                        placeholder="e.g. Backup Camera"
-                    />
-                </div>
-                <div>
-                    <label
-                        htmlFor="objective"
-                        className="text-sm font-medium text-muted-foreground block mb-1"
-                    >
-                        System Objective - Optional
-                    </label>
-                    <input
-                        id="objective"
-                        type="text"
-                        className="w-full p-2 border rounded-md text-muted-foreground"
-                        value={objective}
-                        onChange={(e) => setObjective(e.target.value)}
-                        placeholder="e.g. Provide rear visibility"
-                    />
-                </div>
-            </div>
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"> */}
+            {/*     <div> */}
+            {/*         <label */}
+            {/*             htmlFor="systemName" */}
+            {/*             className="text-sm font-medium text-muted-foreground block mb-1" */}
+            {/*         > */}
+            {/*             System Name - Optional */}
+            {/*         </label> */}
+            {/*         <input */}
+            {/*             id="systemName" */}
+            {/*             type="text" */}
+            {/*             className="w-full p-2 border rounded-md text-muted-foreground" */}
+            {/*             value={systemName} */}
+            {/*             onChange={(e) => setSystemName(e.target.value)} */}
+            {/*             placeholder="e.g. Backup Camera" */}
+            {/*         /> */}
+            {/*     </div> */}
+            {/*     <div> */}
+            {/*         <label */}
+            {/*             htmlFor="objective" */}
+            {/*             className="text-sm font-medium text-muted-foreground block mb-1" */}
+            {/*         > */}
+            {/*             System Objective - Optional */}
+            {/*         </label> */}
+            {/*         <input */}
+            {/*             id="objective" */}
+            {/*             type="text" */}
+            {/*             className="w-full p-2 border rounded-md text-muted-foreground" */}
+            {/*             value={objective} */}
+            {/*             onChange={(e) => setObjective(e.target.value)} */}
+            {/*             placeholder="e.g. Provide rear visibility" */}
+            {/*         /> */}
+            {/*     </div> */}
+            {/* </div> */}
             <div className="mt-4 space-y-2">
                 <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 sm:gap-0">
                     <div className="flex items-center gap-2">
@@ -452,18 +452,13 @@ export function RequirementForm({
                         Analyze with AI
                     </Button>
                 </div>
-                {missingReqError && (
-                    // || missingFilesError
-                    <div className="flex items-center gap-2 text-red-500 bg-red-50 p-2 rounded">
-                        <CircleAlert className="h-4 w-4" />
-                        <span>
-                            {
-                                missingReqError
-                                // || missingFilesError
-                            }
-                        </span>
-                    </div>
-                )}
+                {missingReqError ||
+                    (missingFilesError && (
+                        <div className="flex items-center gap-2 text-red-500 bg-red-50 p-2 rounded">
+                            <CircleAlert className="h-4 w-4" />
+                            <span>{missingReqError || missingFilesError}</span>
+                        </div>
+                    ))}
                 <input
                     type="file"
                     ref={fileInputRef}
@@ -485,7 +480,6 @@ export function RequirementForm({
                     {uploadButtonText}
                 </Button>
 
-                {/* {Object.keys(unusedDocsNameMap).length > 0 && ( */}
                 <div className="mt-2">
                     <Select
                         value={existingDocsValue}
@@ -508,7 +502,6 @@ export function RequirementForm({
                         </SelectContent>
                     </Select>
                 </div>
-                {/* )} */}
 
                 {Object.keys(selectedFiles).length > 0 && (
                     <div className="mt-4">

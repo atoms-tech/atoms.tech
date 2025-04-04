@@ -1,7 +1,13 @@
-import { Target } from 'lucide-react';
+import { Clipboard, Target } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface EarsCardProps {
     earsPattern?: string;
@@ -33,15 +39,26 @@ export function EarsCard({
                     <p>
                         <strong>Requirement:</strong> {earsRequirement}
                     </p>
-                    <Button
-                        size="sm"
-                        onClick={() =>
-                            earsRequirement && onAccept(earsRequirement)
-                        }
-                        disabled={!earsRequirement}
-                    >
-                        Accept Pattern
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        earsRequirement &&
+                                        onAccept(earsRequirement)
+                                    }
+                                    disabled={!earsRequirement}
+                                >
+                                    <Clipboard className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Update requirement</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
                 <p>
                     <strong>Template:</strong> {earsTemplate}
