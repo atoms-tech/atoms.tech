@@ -176,21 +176,89 @@ export function usePersonalOrg(userId: string) {
     });
 }
 
-// export function useOrgsByUser(userId: string) {
-//     return useQuery({
-//         queryKey: queryKeys.organizations.byUser(userId),
-//         queryFn: async () => {
-//             const { data: organizations, error } = await supabase
-//                 .from('organizations')
-//                 .select('*')
-//                 .eq('created_by', userId)
-//                 .eq('is_deleted', false);
+export function useOrgInvitation(email: string) {
+    return useQuery({
+        queryKey: queryKeys.organizationInvitations.byEmail(email),
+        queryFn: async () => {
+            // Validate email
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                console.error('Invalid email format:', email);
+                throw new Error('Invalid email format');
+            }
 
-//             if (error) {
-//                 console.error('Error fetching organizations:', error);
-//                 throw error;
-//             }
+            const { data, error } = await supabase
+                .from('organization_invitations')
+                .select('*')
+                .eq('email', email)
+                .neq('status', 'rejected'); // Exclude rejected invitations
 
+            if (error) {
+                console.error(
+                    'Error fetching organization invitations by email:',
+                    error,
+                );
+                throw error;
+            }
+
+            return data;
+        },
+        enabled: !!email,
+    });
+}
+
+export function useUserSentOrgInvitations(userId: string) {
+    return useQuery({
+        queryKey: queryKeys.organizationInvitations.byCreator(userId),
+        queryFn: async () => {
+            // Validate userId
+            if (
+                !userId ||
+                !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                    userId,
+                )
+            ) {
+                console.error('Invalid user ID format:', userId);
+                throw new Error('Invalid user ID format');
+            }
+
+            const { data, error } = await supabase
+                .from('organization_invitations')
+                .select('*')
+                .eq('created_by', userId);
+
+            if (error) {
+                console.error('Error fetching user sent invitations:', error);
+                throw error;
+            }
+
+            return data;
+        },
+        enabled: !!userId,
+    });
+}
+
+export function useOrgInvitationsByOrgId(orgId: string) {
+    return useQuery({
+        queryKey: queryKeys.organizationInvitations.byOrganization(orgId),
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('organization_invitations')
+                .select('*')
+                .eq('organization_id', orgId);
+
+            if (error) {
+                console.error(
+                    'Error fetching invitations by organization ID:',
+                    error,
+                );
+                throw error;
+            }
+
+            return data;
+        },
+        enabled: !!orgId,
+    });
+}
 //             return organizations;
 //         },
 //         enabled: !!userId,

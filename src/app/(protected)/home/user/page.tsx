@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import UserInvitations from '@/app/(protected)/user/components/UserInvitations.client'; // Import UserInvitations
 import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,11 +27,12 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useOrgInvitation } from '@/hooks/queries/useOrganization';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
-import { OrganizationType } from '@/types/base/enums.types';
+import { InvitationStatus, OrganizationType } from '@/types/base/enums.types';
 import { Organization } from '@/types/base/organizations.types';
 
 export default function UserDashboard() {
@@ -38,7 +40,13 @@ export default function UserDashboard() {
     const router = useRouter();
     const { setCurrentUserId } = useContextStore();
     const { setCurrentOrganization } = useOrganization();
+    const { data: allInvitations } = useOrgInvitation(user?.email || '');
     const queryClient = useQueryClient();
+
+    // Filter the invitations to only include pending ones
+    const invitations = allInvitations?.filter(
+        (invitation) => invitation.status === InvitationStatus.pending,
+    );
 
     // Ensure organizations is always an array and use memo to prevent re-renders
     const safeOrganizations = useMemo(() => {
@@ -57,6 +65,7 @@ export default function UserDashboard() {
         'project' | 'requirement' | 'document' | 'organization'
     >('organization');
     const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+    const [inviteCount, setInviteCount] = useState(0);
 
     // Set greeting based on time of day
     useEffect(() => {
@@ -65,6 +74,11 @@ export default function UserDashboard() {
         else if (hour < 18) setGreeting('Good afternoon');
         else setGreeting('Good evening');
     }, []);
+
+    // Update invite count whenever invitations change
+    useEffect(() => {
+        setInviteCount(invitations?.length || 0);
+    }, [invitations]);
 
     // Handle organization selection and navigation
     useEffect(() => {
@@ -123,6 +137,7 @@ export default function UserDashboard() {
                     org.type !== OrganizationType.personal &&
                     org.type !== OrganizationType.enterprise
                 );
+            if (activeTab === 'invites') return false; // No organizations for invites
             return matchesSearch;
         },
     );
@@ -289,7 +304,7 @@ export default function UserDashboard() {
                     onValueChange={setActiveTab}
                     className="w-full md:w-auto"
                 >
-                    <TabsList className="grid grid-cols-4 w-full md:w-auto">
+                    <TabsList className="grid grid-cols-5 w-full md:w-auto">
                         <TabsTrigger value="all">
                             All ({safeOrganizations.length})
                         </TabsTrigger>
@@ -301,6 +316,9 @@ export default function UserDashboard() {
                         </TabsTrigger>
                         <TabsTrigger value="team">
                             Teams ({teamCount})
+                        </TabsTrigger>
+                        <TabsTrigger value="invites">
+                            Invites ({inviteCount})
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
@@ -319,87 +337,97 @@ export default function UserDashboard() {
                 </div>
             </div>
 
-            <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-                {filteredOrganizations.length > 0 ? (
-                    filteredOrganizations.map((org: Organization) => (
-                        <motion.div key={org.id} variants={itemVariants}>
-                            <Card
-                                className="h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2 hover:border-primary/20"
-                                onClick={() => handleRowClick(org)}
-                            >
-                                <CardHeader className="pb-3">
-                                    <div className="flex justify-between items-start">
-                                        <CardTitle className="text-lg font-semibold">
-                                            {org.name}
-                                        </CardTitle>
-                                        {org.type ===
-                                        OrganizationType.personal ? (
-                                            <Sparkles className="h-5 w-5 text-yellow-500" />
-                                        ) : org.type ===
-                                          OrganizationType.enterprise ? (
-                                            <Building className="h-5 w-5 text-blue-500" />
-                                        ) : (
-                                            <Users className="h-5 w-5 text-green-500" />
-                                        )}
-                                    </div>
-                                    <CardDescription className="text-sm text-muted-foreground">
-                                        {org.slug}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="pb-3">
-                                    <p className="text-sm">
-                                        {org.description ||
-                                            'No description provided'}
-                                    </p>
-                                </CardContent>
-                                <CardFooter className="flex justify-between pt-0">
-                                    <Badge
-                                        variant="outline"
-                                        className={
-                                            org.status === 'active'
-                                                ? 'border-green-500 text-green-500'
-                                                : org.status === 'inactive'
-                                                  ? 'border-gray-500 text-gray-500'
-                                                  : 'border-yellow-500 text-yellow-500'
-                                        }
-                                    >
-                                        {org.status}
-                                    </Badge>
-                                    <Badge variant="secondary">
-                                        {org.type === OrganizationType.personal
-                                            ? 'Playground'
-                                            : org.type ===
-                                                OrganizationType.enterprise
-                                              ? 'Enterprise'
-                                              : 'Team'}
-                                    </Badge>
-                                </CardFooter>
-                            </Card>
-                        </motion.div>
-                    ))
-                ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                        <Folder className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-medium">
-                            No organizations found
-                        </h3>
-                        <p className="text-muted-foreground mt-1 mb-4">
-                            {searchTerm
-                                ? `No organizations match your search "${searchTerm}"`
-                                : "You don't have any organizations in this category yet"}
-                        </p>
-                        <Button onClick={handleCreateOrganization}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Organization
-                        </Button>
+            {activeTab === 'invites' ? (
+                <div className="col-span-full flex flex-col">
+                    {/* Render UserInvitations component */}
+                    <div>
+                        <UserInvitations />
                     </div>
-                )}
-            </motion.div>
+                </div>
+            ) : (
+                <motion.div
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                >
+                    {filteredOrganizations.length > 0 ? (
+                        filteredOrganizations.map((org: Organization) => (
+                            <motion.div key={org.id} variants={itemVariants}>
+                                <Card
+                                    className="h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2 hover:border-primary/20"
+                                    onClick={() => handleRowClick(org)}
+                                >
+                                    <CardHeader className="pb-3">
+                                        <div className="flex justify-between items-start">
+                                            <CardTitle className="text-lg font-semibold">
+                                                {org.name}
+                                            </CardTitle>
+                                            {org.type ===
+                                            OrganizationType.personal ? (
+                                                <Sparkles className="h-5 w-5 text-yellow-500" />
+                                            ) : org.type ===
+                                              OrganizationType.enterprise ? (
+                                                <Building className="h-5 w-5 text-blue-500" />
+                                            ) : (
+                                                <Users className="h-5 w-5 text-green-500" />
+                                            )}
+                                        </div>
+                                        <CardDescription className="text-sm text-muted-foreground">
+                                            {org.slug}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="pb-3">
+                                        <p className="text-sm">
+                                            {org.description ||
+                                                'No description provided'}
+                                        </p>
+                                    </CardContent>
+                                    <CardFooter className="flex justify-between pt-0">
+                                        <Badge
+                                            variant="outline"
+                                            className={
+                                                org.status === 'active'
+                                                    ? 'border-green-500 text-green-500'
+                                                    : org.status === 'inactive'
+                                                      ? 'border-gray-500 text-gray-500'
+                                                      : 'border-yellow-500 text-yellow-500'
+                                            }
+                                        >
+                                            {org.status}
+                                        </Badge>
+                                        <Badge variant="secondary">
+                                            {org.type ===
+                                            OrganizationType.personal
+                                                ? 'Playground'
+                                                : org.type ===
+                                                    OrganizationType.enterprise
+                                                  ? 'Enterprise'
+                                                  : 'Team'}
+                                        </Badge>
+                                    </CardFooter>
+                                </Card>
+                            </motion.div>
+                        ))
+                    ) : (
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                            <Folder className="h-12 w-12 text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-medium">
+                                No organizations found
+                            </h3>
+                            <p className="text-muted-foreground mt-1 mb-4">
+                                {searchTerm
+                                    ? `No organizations match your search "${searchTerm}"`
+                                    : "You don't have any organizations in this category yet"}
+                            </p>
+                            <Button onClick={handleCreateOrganization}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Create Organization
+                            </Button>
+                        </div>
+                    )}
+                </motion.div>
+            )}
 
             <CreatePanel
                 isOpen={isCreatePanelOpen}

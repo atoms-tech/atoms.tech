@@ -37,15 +37,50 @@ export const getUserOrganizations = async (userId: string) => {
 };
 
 export const getOrganizationMembers = async (organizationId: string) => {
-    const { data, error } = await supabase
+    // Fetch all members of the organization along with their roles
+    const { data: members, error: membersError } = await supabase
         .from('organization_members')
-        .select('*, profiles(*)')
+        .select('user_id, role')
         .eq('organization_id', organizationId)
         .eq('status', 'active')
         .eq('is_deleted', false);
 
-    if (error) throw error;
-    return data;
+    if (membersError) {
+        console.error('Error fetching organization members:', membersError);
+        throw membersError;
+    }
+
+    if (!members || members.length === 0) {
+        console.log('No members found for organization:', organizationId);
+        return [];
+    }
+
+    // Extract user IDs and roles from the members
+    const userIds = members.map((member) => member.user_id);
+    const userRoles = members.reduce(
+        (acc, member) => {
+            acc[member.user_id] = member.role;
+            return acc;
+        },
+        {} as Record<string, string>,
+    );
+
+    // Fetch profiles for the extracted user IDs
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+    if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+    }
+
+    // Attach roles to the profiles
+    return profiles.map((profile) => ({
+        ...profile,
+        role: userRoles[profile.id],
+    }));
 };
 
 /**

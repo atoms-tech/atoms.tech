@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { File, FilterIcon, Grid, List, Trash, Upload } from 'lucide-react';
+import { File, Filter, Grid, List, Trash, Upload } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -27,7 +27,8 @@ export default function ExternalDocsPage() {
     const { theme } = useTheme();
     const uploadDocument = useUploadExternalDocument();
     const deleteDocument = useDeleteExternalDocument();
-    const { currentOrganization } = useOrganization();
+    const organizationContext = useOrganization();
+    const organization = organizationContext?.currentOrganization || null;
     const pathname = usePathname();
     const { toast } = useToast();
 
@@ -35,7 +36,7 @@ export default function ExternalDocsPage() {
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
 
     // Use organization.id if available, otherwise fall back to path-based orgId
-    const currentOrgId = currentOrganization?.id || pathOrgId;
+    const currentOrgId = organization?.id || pathOrgId;
 
     // Only fetch documents if we have a valid orgId
     const { data, refetch } = useExternalDocumentsByOrg(
@@ -203,7 +204,7 @@ export default function ExternalDocsPage() {
                             className="w-9 h-9"
                             onClick={() => setShowSortOptions(!showSortOptions)}
                         >
-                            <FilterIcon className="w-4 h-4" />
+                            <Filter className="w-4 h-4" />
                         </Button>
                         <motion.select
                             initial={{ width: 0, opacity: 0 }}
