@@ -337,21 +337,33 @@ export type Database = {
             };
             excalidraw_diagrams: {
                 Row: {
-                    created_at: string;
+                    created_at: string | null;
                     diagram_data: Json | null;
-                    id: number;
+                    id: string;
+                    organization_id: string;
+                    project_id: string;
+                    created_by: string;
+                    updated_by: string;
                     updated_at: string | null;
                 };
                 Insert: {
-                    created_at?: string;
+                    created_at?: string | null;
                     diagram_data?: Json | null;
-                    id?: number;
+                    id?: string;
+                    organization_id?: string;
+                    project_id?: string;
+                    created_by?: string;
+                    updated_by?: string;
                     updated_at?: string | null;
                 };
                 Update: {
-                    created_at?: string;
+                    created_at?: string | null;
                     diagram_data?: Json | null;
-                    id?: number;
+                    id?: string;
+                    organization_id?: string;
+                    project_id?: string;
+                    created_by?: string;
+                    updated_by?: string;
                     updated_at?: string | null;
                 };
                 Relationships: [];

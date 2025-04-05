@@ -2,6 +2,7 @@
 
 // import { useQuery } from '@tanstack/react-query';
 // import { useCookies } from 'next-client-cookies';
+import { PenTool } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -119,6 +120,10 @@ export default function ProjectPage() {
     //     );
     // };
 
+    const handleGoToCanvas = () => {
+        router.push(`/org/${params.orgId}/project/${params.projectId}/canvas`);
+    };
+
     const handleDocumentClick = (doc: Document) => {
         router.push(
             `/org/${params.orgId}/project/${params.projectId}/documents/${doc.id}`,
@@ -150,6 +155,17 @@ export default function ProjectPage() {
                     </Badge>
                     <Badge variant="outline">{project?.visibility}</Badge>
                 </div>
+            </div>
+
+            <div className="space-y-4">
+                <Button
+                    variant="outline"
+                    className="bg-primary text-primary-foreground text-md hover:bg-primary/90"
+                    onClick={handleGoToCanvas}
+                >
+                    Go to Canvas
+                    <PenTool className="w-4 h-4 ml-2" />
+                </Button>
             </div>
 
             {/* Documents List */}

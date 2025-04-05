@@ -6,6 +6,8 @@ const GUMLOOP_FILE_CONVERT_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
 const GUMLOOP_REQ_ANALYSIS_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
+    process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
 
 for (const [key, value] of Object.entries({
     GUMLOOP_API_KEY,
@@ -23,7 +25,8 @@ for (const [key, value] of Object.entries({
 type PipelineType =
     | 'file-processing'
     | 'requirement-analysis'
-    | 'reasoning-requirement-analysis';
+    | 'reasoning-requirement-analysis'
+    | 'text-to-mermaid';
 
 interface PipelineInput {
     input_name: string;
@@ -172,6 +175,9 @@ export class GumloopService {
                 break;
             case 'requirement-analysis':
                 pipeline_id = GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+                break;
+            case 'text-to-mermaid':
+                pipeline_id = GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
                 break;
             default:
                 throw new Error(`Unsupported pipeline type: ${pipelineType}`);

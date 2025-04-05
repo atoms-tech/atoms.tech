@@ -3,6 +3,13 @@
 import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
 import { PanelLeft } from 'lucide-react';
+import React, {
+    createContext,
+    use,
+    useCallback,
+    useEffect,
+    useState,
+} from 'react';
 import type {
     CSSProperties,
     ComponentProps,
@@ -10,7 +17,6 @@ import type {
     Ref,
     RefObject,
 } from 'react';
-import { createContext, use, useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
