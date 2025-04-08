@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleAlert } from 'lucide-react';
+import { ChevronDown, CircleAlert } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -16,10 +16,13 @@ const ExcalidrawWithClientOnly = dynamic(
     },
 );
 
+type DiagramType = 'flowchart' | 'sequence' | 'class';
+
 export default function Draw() {
     // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
     const organizationId = usePathname().split('/')[2];
     const [prompt, setPrompt] = useState('');
+    const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
     const [excalidrawApi, setExcalidrawApi] = useState<{
         addMermaidDiagram: (mermaidSyntax: string) => Promise<void>;
     } | null>(null);
@@ -58,6 +61,10 @@ export default function Draw() {
                         input_name: 'Requirements(s)',
                         value: prompt.trim(),
                     },
+                    {
+                        input_name: 'Diagram-type',
+                        value: diagramType,
+                    },
                 ],
             });
             setPipelineRunId(run_id);
@@ -93,17 +100,36 @@ export default function Draw() {
                         break;
                     }
 
+                    // Clean the mermaid syntax
+                    const syntaxStr = Array.isArray(mermaidSyntax)
+                        ? mermaidSyntax[0]
+                        : mermaidSyntax;
+                    let cleanedSyntax = syntaxStr.replace(
+                        /```[\s\S]*?```/g,
+                        (match: string) => {
+                            const content = match
+                                .replace(/```[\w]*\n?/, '')
+                                .replace(/\n?```$/, '');
+                            return content;
+                        },
+                    );
+                    cleanedSyntax = cleanedSyntax
+                        .replace(/^```[\w]*\n?/, '')
+                        .replace(/\n?```$/, '');
+                    cleanedSyntax = cleanedSyntax.trim();
+
+                    // console.log('Cleaned mermaid syntax:', cleanedSyntax);
+
                     if (excalidrawApi) {
-                        const syntax = Array.isArray(mermaidSyntax)
-                            ? mermaidSyntax[0]
-                            : mermaidSyntax;
-                        excalidrawApi.addMermaidDiagram(syntax).catch((err) => {
-                            console.error(
-                                'Error rendering mermaid diagram:',
-                                err,
-                            );
-                            setError('Failed to render diagram');
-                        });
+                        excalidrawApi
+                            .addMermaidDiagram(cleanedSyntax)
+                            .catch((err) => {
+                                console.error(
+                                    'Error rendering mermaid diagram:',
+                                    err,
+                                );
+                                setError('Failed to render diagram');
+                            });
                     }
                 } catch (err) {
                     console.error('Error parsing pipeline output:', err);
@@ -135,22 +161,14 @@ export default function Draw() {
     );
 
     return (
-        <div style={{ display: 'flex', gap: '20px', padding: '20px' }}>
-            <div style={{ flexShrink: 0 }}>
+        <div className="flex gap-5 p-5">
+            <div className="flex-shrink-0">
                 <ExcalidrawWithClientOnly onMounted={handleExcalidrawMount} />
             </div>
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    padding: '20px',
-                    background: '#f5f5f5',
-                    borderRadius: '8px',
-                    height: 'fit-content',
-                }}
-            >
-                <h3 style={{ margin: '0 0 10px 0' }}>Text to Diagram</h3>
+            <div className="flex flex-col gap-2.5 p-5 bg-gray-100 dark:bg-sidebar rounded-lg h-fit">
+                <h3 className="text-xl text-BLACK dark:text-white">
+                    Text to Diagram
+                </h3>
                 <textarea
                     value={prompt}
                     onChange={(e) => {
@@ -158,48 +176,41 @@ export default function Draw() {
                         if (error) setError('');
                     }}
                     placeholder="Describe your diagram here..."
-                    style={{
-                        width: '300px',
-                        height: '150px',
-                        padding: '10px',
-                        borderRadius: '0px',
-                        border: '1px solid #ddd',
-                        resize: 'vertical',
-                    }}
+                    className="w-[300px] h-[150px] p-2.5 rounded-none border border-[#454545] resize-y"
                 />
+                <div className="mb-2.5">
+                    <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
+                        Diagram Type
+                    </label>
+                    <div className="relative">
+                        <select
+                            value={diagramType}
+                            onChange={(e) =>
+                                setDiagramType(e.target.value as DiagramType)
+                            }
+                            className="w-full p-2.5 bg-white dark:bg-[#121212] border border-[#454545] appearance-none cursor-pointer"
+                        >
+                            <option value="flowchart">Flowchart</option>
+                            <option value="sequence">Sequence</option>
+                            <option value="class">Class</option>
+                        </select>
+                        <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                            <ChevronDown size={16} />
+                        </div>
+                    </div>
+                </div>
                 <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    style={{
-                        padding: '10px 20px',
-                        backgroundColor: '#993CF6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0px',
-                        cursor: isGenerating ? 'default' : 'pointer',
-                        opacity: isGenerating ? 0.7 : 1,
-                        fontWeight: 'bold',
-                    }}
+                    className={`px-5 py-2.5 bg-[#993CF6] text-white border-none rounded-none font-bold ${
+                        isGenerating
+                            ? 'opacity-70 cursor-default'
+                            : 'opacity-100 cursor-pointer'
+                    }`}
                 >
                     {isGenerating ? (
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '8px',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    border: '2px solid #ffffff',
-                                    borderTopColor: 'transparent',
-                                    borderRadius: '50%',
-                                    animation: 'spin 1s linear infinite',
-                                }}
-                            />
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             Generating...
                         </div>
                     ) : (
@@ -207,45 +218,17 @@ export default function Draw() {
                     )}
                 </button>
                 {error && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            color: '#dc2626',
-                            backgroundColor: '#fee2e2',
-                            padding: '8px',
-                            borderRadius: '4px',
-                            fontSize: '14px',
-                        }}
-                    >
-                        <CircleAlert
-                            style={{ width: '16px', height: '16px' }}
-                        />
+                    <div className="flex items-center gap-2 text-red-600 bg-red-100 p-2 rounded text-sm">
+                        <CircleAlert className="w-4 h-4" />
                         {error}
                     </div>
                 )}
                 {pipelineResponse?.state === 'DONE' && (
-                    <div
-                        style={{
-                            color: '#059669',
-                            backgroundColor: '#d1fae5',
-                            padding: '8px',
-                            borderRadius: '4px',
-                            fontSize: '14px',
-                        }}
-                    >
+                    <div className="text-emerald-600 bg-emerald-100 p-2 rounded text-sm">
                         Diagram generated successfully!
                     </div>
                 )}
             </div>
-            <style jsx>{`
-                @keyframes spin {
-                    to {
-                        transform: rotate(360deg);
-                    }
-                }
-            `}</style>
         </div>
     );
 }

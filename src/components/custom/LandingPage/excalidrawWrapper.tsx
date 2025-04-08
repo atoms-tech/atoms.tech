@@ -16,6 +16,7 @@ import '@excalidraw/excalidraw/index.css';
 
 import { convertToExcalidrawElements } from '@excalidraw/excalidraw';
 import { parseMermaidToExcalidraw } from '@excalidraw/mermaid-to-excalidraw';
+import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -55,6 +56,15 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({ onMounted }) => {
         elements: readonly ExcalidrawElement[];
         appState: AppState;
     } | null>(null);
+
+    // Get theme from next-themes
+    const { theme, resolvedTheme } = useTheme();
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Update dark mode state whenever theme changes
+    useEffect(() => {
+        setIsDarkMode(theme === 'dark' || resolvedTheme === 'dark');
+    }, [theme, resolvedTheme]);
 
     const { user } = useUser();
     const organizationId = usePathname().split('/')[2];
@@ -155,6 +165,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({ onMounted }) => {
                                 zoom: appState?.zoom || {
                                     value: 1 as NormalizedZoomValue,
                                 },
+                                theme: isDarkMode ? 'dark' : 'light',
                             },
                             files: files,
                         };
@@ -195,7 +206,18 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({ onMounted }) => {
         };
 
         initializeDiagram();
-    }, []);
+    }, [isDarkMode]);
+
+    // Update theme in Excalidraw when dark mode changes
+    useEffect(() => {
+        if (excalidrawApiRef.current) {
+            excalidrawApiRef.current.updateScene({
+                appState: {
+                    theme: isDarkMode ? 'dark' : 'light',
+                },
+            });
+        }
+    }, [isDarkMode]);
 
     const hasChanges = useCallback(
         (elements: readonly ExcalidrawElement[], appState: AppState) => {
@@ -361,7 +383,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({ onMounted }) => {
                         top: '10px',
                         right: '10px',
                         fontSize: '12px',
-                        color: '#666',
+                        color: isDarkMode ? '#aaa' : '#666',
                     }}
                 >
                     Last saved: {lastSaved.toLocaleTimeString()}
@@ -369,7 +391,14 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({ onMounted }) => {
             )}
             <Excalidraw
                 onChange={handleChange}
-                initialData={initialData}
+                initialData={{
+                    ...initialData,
+                    appState: {
+                        ...(initialData?.appState || {}),
+                        theme: isDarkMode ? 'dark' : 'light',
+                    },
+                }}
+                theme={isDarkMode ? 'dark' : 'light'}
                 excalidrawAPI={(api) => {
                     excalidrawApiRef.current = api;
                 }}
