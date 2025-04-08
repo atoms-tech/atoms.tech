@@ -33,22 +33,6 @@ import { EditableColumnType, PropertyConfig } from './EditableTable/types';
 import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
 
-// Helper function to format enum values for display
-const _formatEnumValueForDisplay = (value: string): string => {
-    if (!value) return '';
-
-    // Handle snake_case values (e.g., "in_progress" -> "In Progress")
-    if (value.includes('_')) {
-        return value
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    }
-
-    // Handle simple values (e.g., "draft" -> "Draft")
-    return value.charAt(0).toUpperCase() + value.slice(1);
-};
-
 // Helper function to convert property type to editable column type
 const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
     switch (type) {
@@ -61,22 +45,6 @@ const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
             return 'date';
         default:
             return 'text';
-    }
-};
-
-// Helper function to convert EditableColumnType to PropertyType
-const _columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
-    switch (type) {
-        case 'select':
-            return PropertyType.select;
-        case 'multi_select':
-            return PropertyType.multi_select;
-        case 'number':
-            return PropertyType.number;
-        case 'date':
-            return PropertyType.date;
-        default:
-            return PropertyType.text;
     }
 };
 
@@ -424,13 +392,8 @@ export const TableBlock: React.FC<BlockProps> = ({
                             columns={columns}
                             onSaveRequirement={handleSaveRequirement}
                             onDeleteRequirement={handleDeleteRequirement}
-                            onAddColumn={handleAddColumn}
                             isEditMode={globalIsEditMode}
                             alwaysShowAddRow={true}
-                            orgId={currentOrganization?.id || ''}
-                            projectId={projectId}
-                            documentId={block.document_id}
-                            onDelete={onDelete}
                         />
                     )}
                 </div>

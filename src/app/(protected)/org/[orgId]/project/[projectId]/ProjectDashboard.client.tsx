@@ -1,27 +1,35 @@
 'use client';
 
-// import { useQuery } from '@tanstack/react-query';
-// import { useCookies } from 'next-client-cookies';
-import { PenTool } from 'lucide-react';
+// Dynamic import to avoid loading the CreatePanel until needed
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { setCookie as _setCookie } from '@/app/(protected)/org/actions';
-// import DashboardView, { Column } from '@/components/base/DashboardView';
-import { CreatePanel } from '@/components/base/panels/CreatePanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useProject } from '@/lib/providers/project.provider';
-// import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 
-// import { Requirement } from '@/types/base/requirements.types';
+// Dynamically import the CreatePanel with no SSR
+const CreatePanel = dynamic(
+    () =>
+        import('@/components/base/panels/CreatePanel').then(
+            (mod) => mod.CreatePanel,
+        ),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="fixed inset-0 bg-black/20 flex items-center justify-center">
+                Loading...
+            </div>
+        ),
+    },
+);
 
 export default function ProjectPage() {
     const router = useRouter();
-    // const _cookies = useCookies();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
     const { currentOrganization: _currentOrganization } = useOrganization();
@@ -29,100 +37,6 @@ export default function ProjectPage() {
         useState(false);
     const { data: documents, isLoading: documentsLoading } =
         useProjectDocuments(params.projectId);
-
-    // const { data: requirements, isLoading: requirementsLoading } = useQuery({
-    //     queryKey: ['requirements', params.projectId],
-    //     queryFn: async () => {
-    //         // Get all documents belonging to the project
-    //         const { data: docIds } = await supabase
-    //             .from('documents')
-    //             .select('id')
-    //             .eq('project_id', params.projectId);
-
-    //         console.log('Documents', docIds);
-
-    //         // If no documents found, return empty array
-    //         if (!docIds?.length) {
-    //             return [];
-    //         }
-
-    //         // Get last 5 modified requirements belonging to the documents
-    //         const { data: requirements } = await supabase
-    //             .from('requirements')
-    //             .select('*')
-    //             .in(
-    //                 'document_id',
-    //                 docIds.map((doc) => doc.id),
-    //             )
-    //             .order('updated_at', { ascending: false })
-    //             .limit(5);
-
-    //         console.log('Requirements', requirements);
-
-    //         if (!requirements) {
-    //             return [];
-    //         }
-
-    //         return requirements;
-    //     },
-    // });
-
-    // const columns: Column<Requirement>[] = [
-    //     {
-    //         header: 'Name',
-    //         accessor: (item: Requirement) => item.name,
-    //     },
-    //     {
-    //         header: 'Priority',
-    //         accessor: (item: Requirement) => item.priority,
-    //         renderCell: (item: Requirement) => (
-    //             <Badge
-    //                 variant="outline"
-    //                 className={
-    //                     item.priority === 'high'
-    //                         ? 'border-red-500 text-red-500'
-    //                         : item.priority === 'medium'
-    //                           ? 'border-yellow-500 text-yellow-500'
-    //                           : 'border-blue-500 text-blue-500'
-    //                 }
-    //             >
-    //                 {item.priority}
-    //             </Badge>
-    //         ),
-    //     },
-    //     {
-    //         header: 'Status',
-    //         accessor: (item: Requirement) => item.status,
-    //         renderCell: (item: Requirement) => (
-    //             <Badge
-    //                 variant="outline"
-    //                 className={
-    //                     item.status === 'active'
-    //                         ? 'border-green-500 text-green-500'
-    //                         : item.status === 'draft'
-    //                           ? 'border-gray-500 text-gray-500'
-    //                           : 'border-yellow-500 text-yellow-500'
-    //                 }
-    //             >
-    //                 {item.status}
-    //             </Badge>
-    //         ),
-    //     },
-    //     {
-    //         header: 'Format',
-    //         accessor: (item: Requirement) => item.format,
-    //     },
-    // ];
-
-    // const handleRowClick = (item: Requirement) => {
-    //     router.push(
-    //         `/org/${params.orgId}/project/${params.projectId}/requirements/${item.id}`,
-    //     );
-    // };
-
-    const handleGoToCanvas = () => {
-        router.push(`/org/${params.orgId}/project/${params.projectId}/canvas`);
-    };
 
     const handleDocumentClick = (doc: Document) => {
         router.push(
@@ -157,17 +71,6 @@ export default function ProjectPage() {
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <Button
-                    variant="outline"
-                    className="bg-primary text-primary-foreground text-md hover:bg-primary/90"
-                    onClick={handleGoToCanvas}
-                >
-                    Go to Canvas
-                    <PenTool className="w-4 h-4 ml-2" />
-                </Button>
-            </div>
-
             {/* Documents List */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -198,29 +101,16 @@ export default function ProjectPage() {
                     ))}
                     {documents?.length === 0 && !isLoading && (
                         <div className="col-span-full text-center py-8 text-muted-foreground">
-                            No documents found. Create a new requirement
-                            document to get started.
+                            No documents found
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Requirements List */}
-            {/* <div className="space-y-4">
-                <h2 className="text-xl font-semibold">
-                    Recently Modified Requirements
-                </h2>
-                <DashboardView
-                    data={requirements || []}
-                    columns={columns}
-                    isLoading={isLoading}
-                    onRowClick={handleRowClick}
-                    emptyMessage="Create a new requirement document to get started"
-                />
-            </div> */}
+            {/* Only render CreatePanel when needed */}
             {showCreateDocumentPanel && (
                 <CreatePanel
-                    isOpen={showCreateDocumentPanel}
+                    isOpen={true}
                     projectId={project?.id || ''}
                     onClose={() => setShowCreateDocumentPanel(false)}
                     showTabs="document"

@@ -92,29 +92,6 @@ export default function ProjectForm({
                 updated_by: userProfile.id,
             });
 
-            // const project = await supabase.from('projects').insert({
-            //     name: data.name,
-            //     slug: data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            //     description: data.description || null,
-            //     status: data.status,
-            //     visibility: data.visibility,
-            //     organization_id: userProfile.current_organization_id || userProfile.personal_organization_id || '',
-            //     owned_by: userProfile.id,
-            //     metadata: {
-            //         source: 'web_app',
-            //         template_version: '1.0',
-            //     },
-            //     created_by: userProfile.id,
-            //     updated_by: userProfile.id,
-            // }).select().single();
-
-            // if (project.error) {
-            //     console.error('Failed to create project', project.error);
-            //     throw new Error(project.error.message);
-            // }
-
-            // console.log('Project created successfully', project.data);
-
             toast({
                 variant: 'default',
                 title: 'Success',

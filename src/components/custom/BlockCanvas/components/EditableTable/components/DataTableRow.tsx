@@ -15,6 +15,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { TableCell, TableRow } from '@/components/ui/table';
+import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
 
 interface DataTableRowProps<T> {
@@ -51,6 +52,7 @@ export function DataTableRow<
     const params = useParams();
     const orgId = params.orgId as string;
     const projectId = params.projectId as string;
+    const { currentDocument } = useDocumentStore();
 
     const handleRowClick = () => {
         if (!isEditing) {
@@ -61,6 +63,14 @@ export function DataTableRow<
     const handleNavigateToRequirement = () => {
         router.push(
             `/org/${orgId}/project/${projectId}/requirements/${item.id}`,
+        );
+    };
+
+    const handleNavigateToTrace = () => {
+        // Include the document ID as a query parameter
+        const documentId = currentDocument?.id || params.documentId;
+        router.push(
+            `/org/${orgId}/project/${projectId}/requirements/${item.id}/trace?documentId=${documentId}`,
         );
     };
 
@@ -152,6 +162,17 @@ export function DataTableRow<
                                 >
                                     <span className="text-muted-foreground group-hover:text-accent-foreground transition-colors">
                                         ANALYZE
+                                    </span>
+                                    <ArrowUpRight className="ml-2 h-3 w-3 text-muted-foreground/70 group-hover:text-accent-foreground/70 transition-colors" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="group h-8 px-4 text-[10px] font-medium tracking-widest rounded-none border hover:bg-accent transition-all duration-200"
+                                    onClick={handleNavigateToTrace}
+                                >
+                                    <span className="text-muted-foreground group-hover:text-accent-foreground transition-colors">
+                                        TRACE
                                     </span>
                                     <ArrowUpRight className="ml-2 h-3 w-3 text-muted-foreground/70 group-hover:text-accent-foreground/70 transition-colors" />
                                 </Button>

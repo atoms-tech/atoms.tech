@@ -26,6 +26,9 @@ export type LayoutViewMode = 'standard' | 'wide';
 export type SidebarState = 'expanded' | 'collapsed';
 
 export interface LayoutState {
+    // Loading state
+    isLayoutReady: boolean;
+
     // Sidebar state
     sidebarState: SidebarState;
     toggleSidebar: () => void;
@@ -65,6 +68,9 @@ interface LayoutProviderProps {
 }
 
 export const LayoutProvider = ({ children }: LayoutProviderProps) => {
+    // Loading state
+    const [isLayoutReady, setIsLayoutReady] = useState(false);
+
     // Sidebar state
     const [sidebarState, setSidebarState] = useState<SidebarState>('expanded');
 
@@ -133,7 +139,12 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
                 if (newIsMobile && sidebarState === 'expanded') {
                     setSidebarState('collapsed');
                 }
-            }, 100); // 100ms debounce
+
+                // Mark layout as ready after initial sizing
+                if (!isLayoutReady) {
+                    setIsLayoutReady(true);
+                }
+            }, 50); // Reduced to 50ms for faster initial load
         };
 
         // Initial check
@@ -147,7 +158,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
             window.removeEventListener('resize', handleResize);
             clearTimeout(resizeTimer);
         };
-    }, [sidebarState]); // Only re-run when sidebarState changes
+    }, [sidebarState, isLayoutReady]); // Added isLayoutReady as a dependency
 
     // Extract document name from path
     useEffect(() => {
@@ -167,6 +178,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     // Memoize context value to prevent unnecessary renders
     const contextValue = useMemo(
         () => ({
+            isLayoutReady,
             sidebarState,
             toggleSidebar,
             isMobile,
@@ -185,6 +197,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
             isDocumentPage,
         }),
         [
+            isLayoutReady,
             sidebarState,
             toggleSidebar,
             isMobile,

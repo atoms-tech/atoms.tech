@@ -18,6 +18,7 @@ export function useTraceLinks(
                 filters: [
                     { field: 'source_id', operator: 'eq', value: sourceId },
                     { field: 'source_type', operator: 'eq', value: sourceType },
+                    { field: 'is_deleted', operator: 'eq', value: false },
                 ],
             });
             return data;
@@ -39,6 +40,7 @@ export function useReverseTraceLinks(
                 filters: [
                     { field: 'target_id', operator: 'eq', value: targetId },
                     { field: 'target_type', operator: 'eq', value: targetType },
+                    { field: 'is_deleted', operator: 'eq', value: false },
                 ],
             });
             return data;

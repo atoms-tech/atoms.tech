@@ -1,10 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 
-import DocumentForm from '@/components/base/forms/DocumentForm';
-import OrganizationForm from '@/components/base/forms/OrganizationForm';
-import ProjectForm from '@/components/base/forms/ProjectForm';
 import {
     Sheet,
     SheetContent,
@@ -14,13 +11,25 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-// import RequirementForm from '@/components/base/forms/RequirementForm';
+// Lazy load form components to reduce initial bundle size
+const ProjectForm = lazy(() => import('@/components/base/forms/ProjectForm'));
+const DocumentForm = lazy(() => import('@/components/base/forms/DocumentForm'));
+const OrganizationForm = lazy(
+    () => import('@/components/base/forms/OrganizationForm'),
+);
+
+// Fallback loading component
+const FormLoader = () => (
+    <div className="p-4 flex items-center justify-center">
+        <div className="animate-pulse">Loading form...</div>
+    </div>
+);
 
 export interface CreatePanelProps {
     isOpen: boolean;
     onClose: () => void;
     initialTab?: 'project' | 'requirement' | 'document' | 'organization';
-    projectId?: string; // For creating requirements under a project
+    projectId?: string;
     showTabs?: 'show' | 'project' | 'requirement' | 'document' | 'organization';
     organizationId?: string;
 }
@@ -41,6 +50,9 @@ export function CreatePanel({
         setActiveTab(initialTab);
     };
 
+    // Don't render anything if not open
+    if (!isOpen) return null;
+
     // If showTabs is not 'show', render only the specified form
     if (showTabs !== 'show') {
         return (
@@ -57,28 +69,26 @@ export function CreatePanel({
                         </SheetDescription>
                     </SheetHeader>
                     <div className="space-y-6">
-                        {showTabs === 'project' && (
-                            <ProjectForm
-                                onSuccess={handleClose}
-                                organizationId={organizationId}
-                            />
-                        )}
-                        {showTabs === 'requirement' && (
-                            // <RequirementForm
-                            //     projectId={projectId}
-                            //     onSuccess={handleClose}
-                            // />
-                            <div>Requirement Form: Work in Progress</div>
-                        )}
-                        {showTabs === 'document' && (
-                            <DocumentForm
-                                projectId={projectId || ''}
-                                onSuccess={handleClose}
-                            />
-                        )}
-                        {showTabs === 'organization' && (
-                            <OrganizationForm onSuccess={handleClose} />
-                        )}
+                        <Suspense fallback={<FormLoader />}>
+                            {showTabs === 'project' && (
+                                <ProjectForm
+                                    onSuccess={handleClose}
+                                    organizationId={organizationId}
+                                />
+                            )}
+                            {showTabs === 'requirement' && (
+                                <div>Requirement Form: Work in Progress</div>
+                            )}
+                            {showTabs === 'document' && (
+                                <DocumentForm
+                                    projectId={projectId || ''}
+                                    onSuccess={handleClose}
+                                />
+                            )}
+                            {showTabs === 'organization' && (
+                                <OrganizationForm onSuccess={handleClose} />
+                            )}
+                        </Suspense>
                     </div>
                 </SheetContent>
             </Sheet>
@@ -118,24 +128,22 @@ export function CreatePanel({
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="project" className="mt-6">
-                            <ProjectForm
-                                onSuccess={handleClose}
-                                organizationId={organizationId}
-                            />
-                        </TabsContent>
+                        <Suspense fallback={<FormLoader />}>
+                            <TabsContent value="project" className="mt-6">
+                                <ProjectForm
+                                    onSuccess={handleClose}
+                                    organizationId={organizationId}
+                                />
+                            </TabsContent>
 
-                        <TabsContent value="requirement" className="mt-6">
-                            {/* <RequirementForm
-                                projectId={projectId}
-                                onSuccess={handleClose}
-                            /> */}
-                            <div>Requirement Form: Work in Progress</div>
-                        </TabsContent>
+                            <TabsContent value="requirement" className="mt-6">
+                                <div>Requirement Form: Work in Progress</div>
+                            </TabsContent>
 
-                        <TabsContent value="organization" className="mt-6">
-                            <OrganizationForm onSuccess={handleClose} />
-                        </TabsContent>
+                            <TabsContent value="organization" className="mt-6">
+                                <OrganizationForm onSuccess={handleClose} />
+                            </TabsContent>
+                        </Suspense>
                     </Tabs>
                 </div>
             </SheetContent>

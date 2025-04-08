@@ -11,7 +11,10 @@ const Card = ({
 }) => (
     <div
         ref={ref}
-        className={cn('border bg-card text-card-foreground shadow', className)}
+        className={cn(
+            'border bg-card text-card-foreground shadow dark:bg-black dark:border-gray-600 dark:text-white',
+            className,
+        )}
         {...props}
     />
 );

@@ -168,6 +168,12 @@ export const queryKeys = {
                 'count',
             ] as const,
     },
+
+    auth: {
+        root: ['auth'] as const,
+        user: () => [...queryKeys.auth.root, 'user'] as const,
+        session: () => [...queryKeys.auth.root, 'session'] as const,
+    },
 } as const;
 
 export type QueryKeys = typeof queryKeys;

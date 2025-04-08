@@ -34,12 +34,13 @@ interface PipelineInput {
 }
 
 export type StartPipelineParams = {
-    pipelineType: PipelineType;
+    pipelineType?: PipelineType;
     requirement?: string;
     fileNames?: string[];
     systemName?: string;
     objective?: string;
     customPipelineInputs?: PipelineInput[];
+    savedItemId?: string; // Direct saved_item_id for Gumloop API
 };
 
 export type GetPipelineRunParams = {
@@ -48,6 +49,7 @@ export type GetPipelineRunParams = {
 
 export interface StartPipelineResponse {
     run_id: string;
+    useRegulation?: boolean;
 }
 
 export enum PipelineRunState {
@@ -167,20 +169,31 @@ export class GumloopService {
         systemName,
         objective,
         customPipelineInputs,
+        savedItemId,
     }: StartPipelineParams): Promise<StartPipelineResponse> {
-        let pipeline_id;
-        switch (pipelineType) {
-            case 'file-processing':
-                pipeline_id = GUMLOOP_FILE_CONVERT_FLOW_ID;
-                break;
-            case 'requirement-analysis':
-                pipeline_id = GUMLOOP_REQ_ANALYSIS_FLOW_ID;
-                break;
-            case 'text-to-mermaid':
-                pipeline_id = GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
-                break;
-            default:
-                throw new Error(`Unsupported pipeline type: ${pipelineType}`);
+        let pipeline_id = savedItemId;
+
+        // If no savedItemId is provided, use the pipeline type to determine the ID
+        if (!pipeline_id && pipelineType) {
+            switch (pipelineType) {
+                case 'file-processing':
+                    pipeline_id = GUMLOOP_FILE_CONVERT_FLOW_ID;
+                    break;
+                case 'requirement-analysis':
+                    pipeline_id = GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+                    break;
+                case 'text-to-mermaid':
+                    pipeline_id = GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
+                    break;
+                default:
+                    throw new Error(`Unknown pipeline type: ${pipelineType}`);
+            }
+        }
+
+        if (!pipeline_id) {
+            throw new Error(
+                'Either savedItemId or pipelineType must be provided',
+            );
         }
 
         console.log('Starting pipeline with params:', {
@@ -188,18 +201,23 @@ export class GumloopService {
             systemName,
             objective,
             requirement,
-            pipeline_id,
         });
 
-        const pipelineInputs = customPipelineInputs || [];
+        const pipelineInputs: PipelineInput[] = customPipelineInputs || [];
 
-        if (!customPipelineInputs) {
-            console.log('Processed filenames:', fileNames);
-
+        // Only add standard inputs if customPipelineInputs is not provided and we're using a standard pipeline type
+        if (
+            !customPipelineInputs &&
+            pipelineType &&
+            (pipelineType === 'file-processing' ||
+                pipelineType === 'requirement-analysis')
+        ) {
             if (fileNames?.length) {
-                pipelineInputs.push({
-                    input_name: 'Regulation Document Name',
-                    value: fileNames.join('\n'),
+                fileNames.forEach((fileName) => {
+                    pipelineInputs.push({
+                        input_name: 'file_name',
+                        value: fileName,
+                    });
                 });
             }
 

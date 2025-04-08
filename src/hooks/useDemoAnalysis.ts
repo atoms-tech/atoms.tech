@@ -17,6 +17,7 @@ interface StartAnalysisParams {
     systemName?: string;
     objective?: string;
     files?: File[];
+    useRegulation?: boolean;
 }
 
 export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
@@ -27,7 +28,13 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
         Error,
         StartAnalysisParams
     >({
-        mutationFn: async ({ requirement, systemName, objective, files }) => {
+        mutationFn: async ({
+            requirement,
+            systemName,
+            objective,
+            files,
+            useRegulation,
+        }) => {
             const formData = new FormData();
             files?.forEach((file) => {
                 formData.append('files', file);
@@ -37,6 +44,8 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
             formData.append('requirement', requirement);
             if (systemName) formData.append('systemName', systemName);
             if (objective) formData.append('objective', objective);
+            if (useRegulation !== undefined)
+                formData.append('useRegulation', useRegulation.toString());
 
             const response = await fetch('/demo/api', {
                 method: 'POST',
@@ -58,7 +67,7 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
         },
     });
 
-    const getPipelineStatus = async (
+    const _getPipelineStatus = async (
         runId: string,
     ): Promise<PipelineRunStatusResponse> => {
         const url = new URL('/demo/api', window.location.origin);
@@ -75,10 +84,29 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
         return response.json();
     };
 
-    const usePipelineStatus = (runId: string | null) => {
+    const usePipelineStatus = (
+        runId: string | null,
+        useRegulation?: boolean,
+    ) => {
         return useQuery<PipelineRunStatusResponse, Error>({
-            queryKey: ['demoPipeline', runId],
-            queryFn: () => getPipelineStatus(runId!),
+            queryKey: ['demoPipeline', runId, useRegulation],
+            queryFn: async () => {
+                const url = new URL('/demo/api', window.location.origin);
+                url.searchParams.set('runId', runId!);
+                if (useRegulation) {
+                    url.searchParams.set('useRegulation', 'true');
+                }
+                const response = await fetch(url.href);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(
+                        `Failed to get pipeline status: ${errorData.error || response.statusText}`,
+                    );
+                }
+
+                return response.json();
+            },
             enabled: !!runId && !options.skipCache,
             refetchInterval: (query) => {
                 const state = query.state.data?.state;

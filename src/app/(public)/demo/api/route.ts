@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { TaskStatus, chunkrService } from '@/lib/services/chunkr';
-import { gumloopService } from '@/lib/services/gumloop';
+import { PipelineRunState, gumloopService } from '@/lib/services/gumloop';
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
 
         switch (action) {
             case 'startAnalysis': {
+                const useRegulation = formData.get('useRegulation') === 'true';
                 const requirement = formData.get('requirement') as string;
                 const systemName = formData.get('systemName') as string;
                 const objective = formData.get('objective') as string;
@@ -62,14 +63,59 @@ export async function POST(request: NextRequest) {
                         .join('\n'),
                 }));
 
-                // Start the analysis pipeline
+                // Start the analysis pipeline based on regulation setting
+                const savedItemId = useRegulation
+                    ? 'ioyextDshJrS61aMxj3YFF' // with regulation
+                    : 'cfF45UM6MXgcGW7ddhwvDc'; // without regulation
+
+                // Prepare pipeline inputs based on regulation setting
+                const pipelineInputs = [
+                    ...ocrResults,
+                    {
+                        input_name: 'System Name',
+                        value: systemName || '',
+                    },
+                    {
+                        input_name: 'Requirement',
+                        value: requirement,
+                    },
+                    {
+                        input_name: 'Objective',
+                        value: objective || '',
+                    },
+                    {
+                        input_name: 'REQ-ID',
+                        value: '',
+                    },
+                ];
+
+                // Add additional parameters for non-regulated flow
+                if (!useRegulation) {
+                    pipelineInputs.push(
+                        {
+                            input_name: 'Temperature',
+                            value: '1',
+                        },
+                        {
+                            input_name: 'model_preference',
+                            value: 'GPT-4o Mini',
+                        },
+                    );
+                }
+
                 const pipelineResponse = await gumloopService.startPipeline({
-                    pipelineType: 'requirement-analysis',
-                    requirement,
-                    systemName,
-                    objective,
-                    customPipelineInputs: ocrResults,
+                    savedItemId,
+                    customPipelineInputs: pipelineInputs,
                 });
+
+                // For regulated flow, we need to store the pipeline run ID to upload results to Gumloop later
+                if (useRegulation) {
+                    // Store the run ID in the response for later use
+                    return NextResponse.json({
+                        ...pipelineResponse,
+                        useRegulation: true,
+                    });
+                }
 
                 return NextResponse.json(pipelineResponse);
             }
@@ -120,6 +166,8 @@ export async function GET(request: NextRequest) {
     try {
         const runId = request.nextUrl.searchParams.get('runId');
         const taskId = request.nextUrl.searchParams.get('taskId');
+        const useRegulation =
+            request.nextUrl.searchParams.get('useRegulation') === 'true';
 
         if (!runId && !taskId) {
             return NextResponse.json(
@@ -132,6 +180,71 @@ export async function GET(request: NextRequest) {
             const pipelineRun = await gumloopService.getPipelineRun({
                 runId,
             });
+
+            // For regulated flow, if the pipeline is done, upload the results to Gumloop
+            if (useRegulation && pipelineRun.state === PipelineRunState.DONE) {
+                try {
+                    // Extract the analysis JSON from the pipeline run
+                    let analysisJSON = pipelineRun.outputs?.analysisJson;
+
+                    if (!analysisJSON) {
+                        console.error('No analysis JSON found in response');
+                    } else {
+                        // If analysisJSON is an array, take the first element
+                        if (Array.isArray(analysisJSON)) {
+                            analysisJSON = analysisJSON[0];
+                        }
+
+                        // If the content is a string and contains ```json```, clean it
+                        let parsedJSON;
+                        if (typeof analysisJSON === 'string') {
+                            analysisJSON = analysisJSON
+                                .replace(/```json\n?/g, '')
+                                .replace(/```/g, '');
+                            parsedJSON = JSON.parse(analysisJSON);
+                        } else {
+                            parsedJSON = analysisJSON;
+                        }
+
+                        // Upload the results to Gumloop for the regulated flow
+                        await gumloopService.startPipeline({
+                            savedItemId: 'ioyextDshJrS61aMxj3YFF',
+                            customPipelineInputs: [
+                                {
+                                    input_name: 'System Name',
+                                    value: '',
+                                },
+                                {
+                                    input_name: 'Requirement',
+                                    value: '',
+                                },
+                                {
+                                    input_name: 'Objective',
+                                    value: '',
+                                },
+                                {
+                                    input_name: 'REQ-ID',
+                                    value: '',
+                                },
+                                {
+                                    input_name: 'analysis_result',
+                                    value: JSON.stringify(parsedJSON),
+                                },
+                            ],
+                        });
+
+                        console.log(
+                            'Uploaded analysis results to Gumloop for regulated flow',
+                        );
+                    }
+                } catch (error) {
+                    console.error(
+                        'Failed to upload analysis results to Gumloop:',
+                        error,
+                    );
+                }
+            }
+
             return NextResponse.json(pipelineRun);
         }
 

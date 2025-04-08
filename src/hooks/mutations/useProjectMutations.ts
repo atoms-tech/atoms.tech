@@ -50,26 +50,6 @@ export function useCreateProject() {
                 throw new Error('Failed to create project');
             }
 
-            // // Add the creator as a project owner
-            // const { data: member, error: memberError } = await supabase
-            //     .from('project_members')
-            //     .insert({
-            //         project_id: project.id,
-            //         user_id: input.owned_by,
-            //         role: 'owner',
-            //         org_id: input.organization_id,
-            //     })
-            //     .select()
-            //     .single();
-
-            // if (memberError) {
-            //     // If member creation fails, we should probably delete the project
-            //     console.error('Failed to create member', memberError);
-            //     await supabase.from('projects').delete().eq('id', project.id);
-            //     throw memberError;
-            // }
-            // console.log('Member created successfully', member);
-
             return project;
         },
         onSuccess: (data) => {
@@ -79,6 +59,14 @@ export function useCreateProject() {
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.projects.byOrg(data.organization_id),
+            });
+            // Invalidate the specific project detail query to ensure ProjectDashboard updates correctly
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(data.id),
+            });
+            // Also invalidate any project member queries that might be affected
+            queryClient.invalidateQueries({
+                queryKey: ['project_members'],
             });
         },
     });

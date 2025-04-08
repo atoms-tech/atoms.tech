@@ -40,22 +40,40 @@ export function useRequirements(
     });
 }
 
+/**
+ * Hook to fetch multiple requirements by their IDs
+ */
+export function useRequirementsByIds(requirementIds: string[]) {
+    return useQuery({
+        queryKey: [...queryKeys.requirements.root, 'byIds', requirementIds],
+        queryFn: async () => {
+            if (!requirementIds.length) return [];
+
+            const { data, error } = await supabase
+                .from('requirements')
+                .select('*')
+                .in('id', requirementIds);
+
+            if (error) throw error;
+            return data as Requirement[];
+        },
+        enabled: requirementIds.length > 0,
+    });
+}
+
 export function useDocumentRequirements(
     documentId: string,
-    queryFilters?: Omit<GenericQueryFilters<'requirements'>, 'filters'>,
+    _queryFilters?: Omit<GenericQueryFilters<'requirements'>, 'filters'>,
 ) {
     return useQuery({
         queryKey: queryKeys.requirements.byDocument(documentId),
         queryFn: async () => {
-            const { data } = await buildQuery('requirements', {
-                ...queryFilters,
-                filters: [
-                    { field: 'document_id', operator: 'eq', value: documentId },
-                ],
-                sort: queryFilters?.sort || [
-                    { field: 'created_at', direction: 'desc' },
-                ],
-            });
+            const { data } = await supabase
+                .from('requirements')
+                .select('*')
+                .eq('document_id', documentId)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: false });
             return data;
         },
         enabled: !!documentId,

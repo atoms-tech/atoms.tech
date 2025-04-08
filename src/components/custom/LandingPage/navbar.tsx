@@ -5,7 +5,7 @@ import { useCookies } from 'next-client-cookies';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,10 +25,12 @@ export function Navbar() {
     const { isAuthenticated, isLoading, userProfile } = useAuth();
     const { signOut, isLoading: isSigningOut } = useSignOut();
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
+    const [loadingStates, setLoadingStates] = useState({
+        dashboard: false,
+        signIn: false,
+        billing: false,
+    });
     const [preferredOrgId, setPreferredOrgId] = useState<string | null>(null);
-    const [isNavigatingToDashboard, setIsNavigatingToDashboard] =
-        useState(false);
 
     useEffect(() => {
         const cookieOrgId = cookies.get('preferred_org_id');
@@ -64,57 +66,53 @@ export function Navbar() {
         </Link>
     );
 
+    const setLoading = useCallback(
+        (key: keyof typeof loadingStates, isLoading: boolean) => {
+            setLoadingStates((prev) => ({ ...prev, [key]: isLoading }));
+        },
+        [],
+    );
+
     const handleSignIn = () => {
-        startTransition(() => {
-            router.push('/login');
-        });
+        setLoading('signIn', true);
+        router.push('/login');
     };
 
     const handleDashboard = useCallback(() => {
-        setIsNavigatingToDashboard(true);
-        startTransition(() => {
-            // If we have a preferred org, go directly there
-            if (preferredOrgId) {
-                // We can navigate directly to the org dashboard
-                // The data should already be prefetched from the server
-                router.push(`/org/${preferredOrgId}`);
-            } else {
-                // Otherwise use the /home route handler
-                router.push('/home');
-            }
-        });
-    }, [router, preferredOrgId]);
+        setLoading('dashboard', true);
+
+        // If we have a preferred org, go directly there
+        if (preferredOrgId) {
+            router.push(`/org/${preferredOrgId}`);
+        } else {
+            router.push('/home');
+        }
+    }, [router, preferredOrgId, setLoading]);
 
     const handleBilling = () => {
-        startTransition(() => {
-            router.push('/billing');
-        });
+        setLoading('billing', true);
+        router.push('/billing');
     };
 
     const handleSignOut = () => {
-        startTransition(() => {
-            signOut();
-        });
+        signOut();
     };
 
-    // Reset navigation state when the component unmounts or when isPending changes to false
-    useEffect(() => {
-        if (!isPending) {
-            setIsNavigatingToDashboard(false);
-        }
-    }, [isPending]);
-
-    // Add cleanup for loading states
+    // Cleanup loading states when component unmounts
     useEffect(() => {
         return () => {
-            setIsNavigatingToDashboard(false);
+            setLoadingStates({
+                dashboard: false,
+                signIn: false,
+                billing: false,
+            });
         };
     }, []);
 
     return (
         <header className="fixed top-0 left-0 right-0 min-h-16 px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
             {/* Show full-screen loading overlay when navigating to dashboard */}
-            {isNavigatingToDashboard && (
+            {loadingStates.dashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
                     <div className="flex flex-col items-center space-y-4 text-center">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -159,18 +157,14 @@ export function Navbar() {
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex gap-2 ${isPending || isNavigatingToDashboard ? 'opacity-70 pointer-events-none' : ''}`}
-                                        disabled={
-                                            isPending || isNavigatingToDashboard
-                                        }
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex gap-2"
                                     >
                                         <User size={18} />
                                         <span className="max-w-32 truncate">
                                             {userProfile?.full_name ||
                                                 'Account'}
                                         </span>
-                                        {(isPending ||
-                                            isNavigatingToDashboard) && (
+                                        {loadingStates.dashboard && (
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         )}
                                     </Button>
@@ -181,12 +175,9 @@ export function Navbar() {
                                 >
                                     <DropdownMenuItem
                                         onClick={handleDashboard}
-                                        disabled={
-                                            isPending || isNavigatingToDashboard
-                                        }
+                                        disabled={loadingStates.dashboard}
                                     >
-                                        {isPending ||
-                                        isNavigatingToDashboard ? (
+                                        {loadingStates.dashboard ? (
                                             <div className="flex items-center">
                                                 <span className="mr-2">
                                                     Dashboard
@@ -199,32 +190,48 @@ export function Navbar() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleBilling}
-                                        disabled={isPending}
+                                        disabled={loadingStates.billing}
                                     >
-                                        Billing
+                                        {loadingStates.billing ? (
+                                            <div className="flex items-center">
+                                                <span className="mr-2">
+                                                    Billing
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'Billing'
+                                        )}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={handleSignOut}
-                                        disabled={isPending || isSigningOut}
+                                        disabled={isSigningOut}
                                     >
-                                        {isSigningOut
-                                            ? 'Signing out...'
-                                            : 'Sign Out'}
+                                        {isSigningOut ? (
+                                            <div className="flex items-center">
+                                                <span className="mr-2">
+                                                    Signing out
+                                                </span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'Sign Out'
+                                        )}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (
                             <Button
                                 variant="outline"
-                                className={`btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
+                                className="btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex"
                                 onClick={handleSignIn}
-                                disabled={isPending}
+                                disabled={loadingStates.signIn}
                             >
-                                {isPending ? (
-                                    <>
-                                        <span className="mr-2">SIGNING IN</span>
-                                        <span className="h-4 w-4 rounded-full border-2 border-t-transparent border-white animate-spin"></span>
-                                    </>
+                                {loadingStates.signIn ? (
+                                    <div className="flex items-center gap-2">
+                                        <span>SIGNING IN</span>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    </div>
                                 ) : (
                                     'SIGN IN'
                                 )}
@@ -234,7 +241,6 @@ export function Navbar() {
                             className="md:hidden text-white p-2 touch-manipulation"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-                            disabled={isPending}
                         >
                             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                         </button>
@@ -255,18 +261,13 @@ export function Navbar() {
                                 <>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending || isNavigatingToDashboard ? 'opacity-70 pointer-events-none' : ''}`}
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
                                         onClick={handleDashboard}
-                                        disabled={
-                                            isPending || isNavigatingToDashboard
-                                        }
+                                        disabled={loadingStates.dashboard}
                                     >
-                                        {isPending ||
-                                        isNavigatingToDashboard ? (
-                                            <div className="flex items-center justify-center">
-                                                <span className="mr-2">
-                                                    LOADING
-                                                </span>
+                                        {loadingStates.dashboard ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span>LOADING</span>
                                                 <Loader2 className="h-4 w-4 animate-spin" />
                                             </div>
                                         ) : (
@@ -275,31 +276,50 @@ export function Navbar() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
                                         onClick={handleBilling}
-                                        disabled={isPending}
+                                        disabled={loadingStates.billing}
                                     >
-                                        BILLING
+                                        {loadingStates.billing ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span>LOADING</span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'BILLING'
+                                        )}
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending || isSigningOut ? 'opacity-70 pointer-events-none' : ''}`}
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
                                         onClick={handleSignOut}
-                                        disabled={isPending || isSigningOut}
+                                        disabled={isSigningOut}
                                     >
-                                        {isSigningOut
-                                            ? 'SIGNING OUT...'
-                                            : 'SIGN OUT'}
+                                        {isSigningOut ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span>SIGNING OUT</span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'SIGN OUT'
+                                        )}
                                     </Button>
                                 </>
                             ) : (
                                 <Button
                                     variant="outline"
-                                    className={`btn-secondary bg-black hover:bg-white hover:text-black w-full ${isPending ? 'opacity-70 pointer-events-none' : ''}`}
+                                    className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
                                     onClick={handleSignIn}
-                                    disabled={isPending}
+                                    disabled={loadingStates.signIn}
                                 >
-                                    {isPending ? 'LOADING...' : 'SIGN IN'}
+                                    {loadingStates.signIn ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span>SIGNING IN</span>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        </div>
+                                    ) : (
+                                        'SIGN IN'
+                                    )}
                                 </Button>
                             )}
                         </nav>

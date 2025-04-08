@@ -1,5 +1,6 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
@@ -21,6 +22,7 @@ interface LayoutManagerProps {
  */
 const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
     const {
+        isLayoutReady,
         sidebarState,
         isMobile,
         isTablet,
@@ -45,6 +47,15 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
     // Show horizontal toolbar on mobile and tablet
     const showHorizontalToolbar = isMobile || isTablet;
 
+    // If layout is not ready, render a minimal container with loading spinner to prevent layout shift
+    if (!isLayoutReady) {
+        return (
+            <div className="w-full h-screen bg-background flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
+            </div>
+        );
+    }
+
     return (
         <Sidebar
             defaultOpen={_isSidebarExpanded}
@@ -63,7 +74,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             <div
                 className={cn(
                     'flex-1 p-4 md:p-6 lg:p-8 xl:p-16',
-                    isMobile && 'pt-16', // Extra padding for mobile toolbar
+                    showHorizontalToolbar && 'pt-16', // Extra padding when horizontal toolbar is active
                 )}
             >
                 {children}
