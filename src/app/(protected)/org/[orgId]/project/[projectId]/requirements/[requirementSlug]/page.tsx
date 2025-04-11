@@ -99,15 +99,15 @@ export default function RequirementPage() {
 
         try {
             const { run_id } = await startPipeline({
-                pipelineType: isReasoning
-                    ? 'reasoning-requirement-analysis'
-                    : 'requirement-analysis',
+                pipelineType: 'requirement-analysis',
                 requirement: reqText,
                 systemName: systemName,
                 objective: objective,
                 fileNames: Object.values(selectedFiles).map(
                     (file) => file.gumloopName,
                 ),
+                model_preference: isReasoning ? 'o1' : 'gemini-2.0-flash-001',
+                temperature: isReasoning ? 1 : 0.1,
             });
             setAnalysisPipelineRunId(run_id);
         } catch (error) {
@@ -120,47 +120,74 @@ export default function RequirementPage() {
             case 'DONE': {
                 console.log('Analysis response:', analysisResponse);
 
-                let analysisJSON = analysisResponse.outputs?.analysisJson;
-
-                if (!analysisJSON) {
-                    console.error('No analysis JSON found in response');
-                    break;
-                }
-
-                if (Array.isArray(analysisJSON)) {
-                    if (analysisJSON.length > 1) {
-                        console.error(
-                            'Multiple analysis JSONs found in response',
-                        );
-                        break;
-                    }
-                    analysisJSON = analysisJSON[0];
-                }
-
                 try {
-                    // if ```json``` is present in the string, remove it
-                    analysisJSON = analysisJSON.replace('```json\n', '');
-                    analysisJSON = analysisJSON.replace('```', '');
+                    // Create a merged data object from all JSON outputs
+                    const mergedData: Record<string, string> = {};
 
-                    const parsedData = JSON.parse(analysisJSON);
+                    // Process analysisJson (main EARS data)
+                    if (analysisResponse.outputs?.analysisJson) {
+                        const json = analysisResponse.outputs.analysisJson;
+                        if (Array.isArray(json) && json.length > 0) {
+                            const parsed = JSON.parse(json[0]);
+                            Object.assign(mergedData, parsed);
+                        }
+                    }
+
+                    // Process analysisJson2 (regulations data)
+                    if (analysisResponse.outputs?.analysisJson2) {
+                        const json = analysisResponse.outputs.analysisJson2;
+                        if (Array.isArray(json) && json.length > 0) {
+                            const parsed = JSON.parse(json[0]);
+                            Object.assign(mergedData, parsed);
+                        }
+                    }
+
+                    // Process analysisJson3 (enhanced requirements data)
+                    if (analysisResponse.outputs?.analysisJson3) {
+                        const json = analysisResponse.outputs.analysisJson3;
+                        if (Array.isArray(json) && json.length > 0) {
+                            const parsed = JSON.parse(json[0]);
+                            Object.assign(mergedData, parsed);
+                        }
+                    }
+
+                    // some newlines might be encoded as \\n, we need to
+                    // convert it back into \n
+                    for (const key in mergedData) {
+                        if (mergedData[key]) {
+                            mergedData[key] = mergedData[key].replace(
+                                '\\\\n',
+                                '\\n',
+                            );
+                            mergedData[key] = mergedData[key].replace(
+                                '\\n',
+                                '\n',
+                            );
+                            mergedData[key] = mergedData[key].replace(
+                                '\n',
+                                '  \n',
+                            );
+                        }
+                    }
+
                     setAnalysisData({
-                        reqId: parsedData['REQ ID'],
-                        originalRequirement: parsedData['Original Requirement'],
+                        reqId: mergedData['REQ ID'],
+                        originalRequirement: mergedData['Original Requirement'],
                         earsRequirement:
-                            parsedData['EARS Generated Requirement'],
-                        earsPattern: parsedData['EARS Pattern'],
-                        earsTemplate: parsedData['EARS_SYNTAX_TEMPLATE'],
-                        incoseFormat: parsedData['INCOSE_FORMAT'],
+                            mergedData['EARS Generated Requirement'],
+                        earsPattern: mergedData['EARS Pattern'],
+                        earsTemplate: mergedData['EARS_SYNTAX_TEMPLATE'],
+                        incoseFormat: mergedData['INCOSE_FORMAT'],
                         incoseFeedback:
-                            parsedData['INCOSE_REQUIREMENT_FEEDBACK'],
-                        complianceFeedback: parsedData['COMPLIANCE_FEEDBACK'],
+                            mergedData['INCOSE_REQUIREMENT_FEEDBACK'],
+                        complianceFeedback: mergedData['COMPLIANCE_FEEDBACK'],
                         enhancedReqEars:
-                            parsedData['ENHANCED_REQUIREMENT_EARS'],
+                            mergedData['ENHANCED_REQUIREMENT_EARS'],
                         enhancedReqIncose:
-                            parsedData['ENHANCED_REQUIREMENT_INCOSE'],
+                            mergedData['ENHANCED_REQUIREMENT_INCOSE'],
                         enhancedGeneralFeedback:
-                            parsedData['ENHANCED_GENERAL_FEEDBACK'],
-                        relevantRegulations: parsedData['RELEVANT_REGULATIONS'],
+                            mergedData['ENHANCED_GENERAL_FEEDBACK'],
+                        relevantRegulations: mergedData['RELEVANT_REGULATIONS'],
                     });
                 } catch (error) {
                     console.error('Failed to parse analysis JSON:', error);

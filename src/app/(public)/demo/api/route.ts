@@ -126,8 +126,7 @@ export async function POST(request: NextRequest) {
                 const objective = formData.get('objective') as string;
                 const pipelineType = formData.get('pipelineType') as
                     | 'file-processing'
-                    | 'requirement-analysis'
-                    | 'reasoning-requirement-analysis';
+                    | 'requirement-analysis';
                 const customPipelineInputs = JSON.parse(
                     (formData.get('customPipelineInputs') as string) || '[]',
                 );

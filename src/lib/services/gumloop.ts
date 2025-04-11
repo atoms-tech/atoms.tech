@@ -25,7 +25,6 @@ for (const [key, value] of Object.entries({
 type PipelineType =
     | 'file-processing'
     | 'requirement-analysis'
-    | 'reasoning-requirement-analysis'
     | 'text-to-mermaid';
 
 interface PipelineInput {
@@ -39,6 +38,8 @@ export type StartPipelineParams = {
     fileNames?: string[];
     systemName?: string;
     objective?: string;
+    model_preference?: string;
+    temperature?: number;
     customPipelineInputs?: PipelineInput[];
     savedItemId?: string; // Direct saved_item_id for Gumloop API
 };
@@ -168,6 +169,8 @@ export class GumloopService {
         fileNames,
         systemName,
         objective,
+        model_preference,
+        temperature,
         customPipelineInputs,
         savedItemId,
     }: StartPipelineParams): Promise<StartPipelineResponse> {
@@ -239,6 +242,20 @@ export class GumloopService {
                 pipelineInputs.push({
                     input_name: 'Requirement',
                     value: requirement,
+                });
+            }
+
+            if (model_preference) {
+                pipelineInputs.push({
+                    input_name: 'model_preference',
+                    value: model_preference,
+                });
+            }
+
+            if (temperature) {
+                pipelineInputs.push({
+                    input_name: 'Temperature',
+                    value: temperature.toString(),
                 });
             }
         }
