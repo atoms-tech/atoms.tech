@@ -1,4 +1,4 @@
-import { Clipboard, Target } from 'lucide-react';
+import { Copy, Target } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
@@ -51,11 +51,11 @@ export function EarsCard({
                                     }
                                     disabled={!earsRequirement}
                                 >
-                                    <Clipboard className="h-4 w-4" />
+                                    <Copy className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Update requirement</p>
+                                <p>Copy to clipboard</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>

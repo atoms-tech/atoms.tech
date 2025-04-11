@@ -1,4 +1,4 @@
-import { Clipboard, Wand } from 'lucide-react';
+import { Copy, Wand } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -54,11 +54,11 @@ export function EnhancedCard({
                                     }
                                     disabled={!enhancedReqEars}
                                 >
-                                    <Clipboard className="h-4 w-4" />
+                                    <Copy className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Update requirement</p>
+                                <p>Copy to clipboard</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -83,11 +83,11 @@ export function EnhancedCard({
                                     }
                                     disabled={!enhancedReqIncose}
                                 >
-                                    <Clipboard className="h-4 w-4" />
+                                    <Copy className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Update requirement</p>
+                                <p>Copy to clipboard</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>

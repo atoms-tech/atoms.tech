@@ -1,4 +1,4 @@
-import { Check, Clipboard } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -49,11 +49,11 @@ export function IncoseCard({
                                     }
                                     disabled={!incoseFormat}
                                 >
-                                    <Clipboard className="h-4 w-4" />
+                                    <Copy className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Update requirement</p>
+                                <p>Copy to clipboard</p>
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
