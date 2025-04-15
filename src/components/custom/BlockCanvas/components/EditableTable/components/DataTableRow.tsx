@@ -76,6 +76,15 @@ export function DataTableRow<
         );
     };
 
+    const handleNavigateToDiagram = () => {
+        // Use the property name (column header/accessor) for the description.
+        // Update 'Description' if your property is named differently.
+        const description = String(item['Description'] || '');
+        router.push(
+            `/org/${orgId}/project/${projectId}/canvas?diagramPrompt=${encodeURIComponent(description)}`,
+        );
+    };
+
     return (
         <>
             <TableRow
@@ -175,6 +184,17 @@ export function DataTableRow<
                                 >
                                     <span className="text-muted-foreground group-hover:text-accent-foreground transition-colors">
                                         TRACE
+                                    </span>
+                                    <ArrowUpRight className="ml-2 h-3 w-3 text-muted-foreground/70 group-hover:text-accent-foreground/70 transition-colors" />
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="group h-8 px-4 text-[10px] font-medium tracking-widest rounded-none border hover:bg-accent transition-all duration-200"
+                                    onClick={handleNavigateToDiagram}
+                                >
+                                    <span className="text-muted-foreground group-hover:text-accent-foreground transition-colors">
+                                        DIAGRAM
                                     </span>
                                     <ArrowUpRight className="ml-2 h-3 w-3 text-muted-foreground/70 group-hover:text-accent-foreground/70 transition-colors" />
                                 </Button>

@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: 'Atoms',
-    description: 'Atoms.tech - AI-powered requirements engineering',
+    title: 'ATOMS',
+    description: 'ATOMS.TECH - AI-powered requirements engineering',
 };
 
 export default function RootLayout({

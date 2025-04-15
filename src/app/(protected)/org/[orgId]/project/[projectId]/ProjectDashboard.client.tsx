@@ -1,6 +1,12 @@
 'use client';
 
-import { ArrowDown, ArrowUp, FileBox, FolderArchive } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    FileBox,
+    FolderArchive,
+    PenTool,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -75,6 +81,10 @@ export default function ProjectPage() {
         );
     };
 
+    const handleGoToCanvas = () => {
+        router.push(`/org/${params.orgId}/project/${params.projectId}/canvas`);
+    };
+
     const sortedDocuments = [...(documents || [])].sort((a, b) => {
         if (!sortBy) return 0;
         const dateA =
@@ -101,6 +111,17 @@ export default function ProjectPage() {
                             'Manage your project resources and details'}
                     </p>
                 </div>
+            </div>
+
+            <div className="space-y-4">
+                <Button
+                    variant="outline"
+                    className="bg-primary text-primary-foreground text-md hover:bg-primary/90"
+                    onClick={handleGoToCanvas}
+                >
+                    Go to Canvas
+                    <PenTool className="w-4 h-4 ml-2" />
+                </Button>
             </div>
 
             {/* Tabs Menu */}

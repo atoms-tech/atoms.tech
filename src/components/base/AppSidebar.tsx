@@ -136,7 +136,7 @@ function AppSidebar() {
                                 className="object-contain dark:invert"
                             />
                             <span className="font-semibold text-base">
-                                Atoms
+                                ATOMS
                             </span>
                         </Link>
                     </SidebarGroupLabel>
