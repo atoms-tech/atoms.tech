@@ -1,8 +1,14 @@
-import { Check } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface IncoseCardProps {
     incoseFormat?: string;
@@ -28,17 +34,29 @@ export function IncoseCard({
                 <div className="flex justify-between items-start mt-2">
                     <div>
                         <p>
-                            <strong>Format:</strong>
+                            <strong>INCOSE Format:</strong>
                         </p>
                         <ReactMarkdown>{incoseFormat}</ReactMarkdown>
                     </div>
-                    <Button
-                        size="sm"
-                        onClick={() => incoseFormat && onAccept(incoseFormat)}
-                        disabled={!incoseFormat}
-                    >
-                        Accept Format
-                    </Button>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        incoseFormat && onAccept(incoseFormat)
+                                    }
+                                    disabled={!incoseFormat}
+                                >
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Copy to clipboard</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
                 <p className="mt-2">
                     <strong>Feedback:</strong>

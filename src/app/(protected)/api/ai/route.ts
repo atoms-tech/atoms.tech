@@ -41,14 +41,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const organizationId =
-            request.nextUrl.searchParams.get('organizationId');
-        if (!organizationId) {
-            return NextResponse.json(
-                { error: 'Organization ID is required' },
-                { status: 400 },
-            );
-        }
+        // const organizationId = request.nextUrl.searchParams.get('organizationId');
 
         const status = await gumloopService.getPipelineRun({ runId });
 

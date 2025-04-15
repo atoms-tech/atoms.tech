@@ -24,6 +24,8 @@ export function useExternalDocumentsByOrg(orgId: string) {
     return useQuery({
         queryKey: queryKeys.externalDocuments.byOrg(orgId),
         queryFn: async () => {
+            if (!orgId) return [];
+
             const { data, error } = await supabase
                 .from('external_documents')
                 .select('*')

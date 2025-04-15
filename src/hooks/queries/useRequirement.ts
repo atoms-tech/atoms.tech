@@ -13,6 +13,8 @@ export function useRequirement(requirementId: string) {
     return useQuery({
         queryKey: queryKeys.requirements.detail(requirementId),
         queryFn: async () => {
+            if (!requirementId) return null;
+
             const { data, error } = await supabase
                 .from('requirements')
                 .select('*')
