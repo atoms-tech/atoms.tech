@@ -225,6 +225,11 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                         <CardTitle>Outgoing Invitations</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        {errorMessage && (
+                            <div className="text-red-600 text-sm mb-4">
+                                {errorMessage}
+                            </div>
+                        )}
                         {outgoingLoading ? (
                             <p>Loading outgoing invitations...</p>
                         ) : outgoingInvitations?.length ? (

@@ -80,10 +80,12 @@ export function useCreateProjectMember() {
             userId,
             projectId,
             role,
+            orgId,
         }: {
             userId: string;
             projectId: string;
             role: 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
+            orgId: string; // Add orgId to the parameters
         }) => {
             const { data, error } = await supabase
                 .from('project_members')
@@ -91,6 +93,7 @@ export function useCreateProjectMember() {
                     user_id: userId,
                     project_id: projectId,
                     role,
+                    org_id: orgId, // Include org_id in the insert
                     status: 'active',
                 })
                 .select()

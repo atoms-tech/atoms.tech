@@ -50,8 +50,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
     console.log('projects: ', props.projects);
 
-    console.log('projects: ', props.projects);
-
     const handleCreateProject = () => {
         setIsCreatePanelOpen(true);
     };

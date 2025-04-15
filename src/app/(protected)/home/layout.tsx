@@ -29,5 +29,5 @@ export default async function HomeLayout({
         queryClient as QueryClient & { organizations: typeof organizations }
     ).organizations = organizations;
 
-    return <div className="relative flex-1 p-16">{children}</div>;
+    return <div className="relative flex-1">{children}</div>;
 }

@@ -77,18 +77,23 @@ export function useProjectsByMembershipForOrg(orgId: string, userId: string) {
             const { data, error } = await supabase
                 .from('project_members')
                 .select('project_id')
-                .eq('user_id', userId)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false });
-            console.log('Project members', data);
+                .eq('org_id', orgId) // Filter by organization ID
+                .eq('user_id', userId) // Filter by user ID
+                .eq('status', 'active'); // Ensure the membership is active
+
             if (error) throw error;
+
             const projectIds = data.map((member) => member.project_id);
+
             const { data: projects, error: projectError } = await supabase
                 .from('projects')
                 .select('*')
                 .in('id', projectIds)
-                .eq('is_deleted', false);
+                .eq('organization_id', orgId) // Ensure projects belong to the organization
+                .eq('is_deleted', false); // Exclude deleted projects
+
             if (projectError) throw projectError;
+
             return projects;
         },
         enabled: !!orgId && !!userId,

@@ -15,11 +15,11 @@ interface LayoutViewProps {
 const layoutVariants = {
     standard: {
         width: '100%',
-        maxWidth: '50rem', // Approximately 50% of a typical wide screen
+        maxWidth: '65rem',
     },
     wide: {
         width: '100%',
-        maxWidth: '100%',
+        maxWidth: '100rem',
     },
 };
 
@@ -32,11 +32,11 @@ const LayoutView = memo(({ children, className }: LayoutViewProps) => {
 
     return (
         <motion.div
-            initial={false} // Prevents animation on initial render
+            initial={true} // Prevents animation on initial render
             animate={effectiveLayoutMode}
             variants={layoutVariants}
             transition={{
-                duration: 0.3, // Shortened for better UX
+                duration: 0.00001, // Shortened for better UX
                 ease: 'easeInOut', // More natural feeling easing
             }}
             className={cn(

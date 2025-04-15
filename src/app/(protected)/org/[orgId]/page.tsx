@@ -6,6 +6,7 @@ import { Suspense, useEffect } from 'react';
 
 import OrgDashboard from '@/app/(protected)/org/[orgId]/OrgDashboard.client';
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
+import LayoutView from '@/components/views/LayoutView';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useOrganization as useOrgQuery } from '@/hooks/queries/useOrganization';
 import { useProjectsByMembershipForOrg } from '@/hooks/queries/useProject';
@@ -54,19 +55,21 @@ export default function OrgPage() {
     };
 
     return (
-        <Suspense fallback={<OrgDashboardSkeleton />}>
-            <OrgDashboard
-                organization={organization}
-                orgLoading={orgLoading}
-                projects={projects}
-                projectsLoading={projectsLoading}
-                externalDocuments={externalDocuments}
-                documentsLoading={documentsLoading}
-                theme={theme}
-                onProjectClick={handleProjectClick}
-                onExternalDocsClick={handleExternalDocsClick}
-                orgId={orgId}
-            />
-        </Suspense>
+        <LayoutView>
+            <Suspense fallback={<OrgDashboardSkeleton />}>
+                <OrgDashboard
+                    organization={organization}
+                    orgLoading={orgLoading}
+                    projects={projects}
+                    projectsLoading={projectsLoading}
+                    externalDocuments={externalDocuments}
+                    documentsLoading={documentsLoading}
+                    theme={theme}
+                    onProjectClick={handleProjectClick}
+                    onExternalDocsClick={handleExternalDocsClick}
+                    orgId={orgId}
+                />
+            </Suspense>
+        </LayoutView>
     );
 }
