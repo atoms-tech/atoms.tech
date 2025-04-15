@@ -61,8 +61,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         }
     }, [props.orgId, setOrgMemberCount]);
 
-    console.log('projects: ', props.projects);
-
     const handleCreateProject = () => {
         setIsCreatePanelOpen(true);
     };
@@ -171,99 +169,114 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 {/* Organization Overview Tab */}
                 <TabsContent value="overview" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Organization Details</CardTitle>
-                                <CardDescription>
-                                    Basic information about your organization
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {props.orgLoading ? (
-                                    <div className="animate-pulse space-y-2">
-                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Name:
-                                            </span>
-                                            <span className="font-medium">
-                                                {props.organization?.name}
-                                            </span>
+                        {/* Left Column */}
+                        <div className="md:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Organization Details</CardTitle>
+                                    <CardDescription>
+                                        Basic information about your
+                                        organization
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {props.orgLoading ? (
+                                        <div className="animate-pulse space-y-2">
+                                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Type:
-                                            </span>
-                                            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                                                {props.organization?.type}
-                                            </span>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Name:
+                                                </span>
+                                                <span className="font-medium">
+                                                    {props.organization?.name}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Type:
+                                                </span>
+                                                <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                                                    {props.organization?.type}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Members:
+                                                </span>
+                                                <span className="font-medium">
+                                                    {props.organization
+                                                        ?.member_count || 0}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Plan:
+                                                </span>
+                                                <span className="font-medium">
+                                                    {
+                                                        props.organization
+                                                            ?.billing_plan
+                                                    }
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Members:
-                                            </span>
-                                            <span className="font-medium">
-                                                {props.organization
-                                                    ?.member_count || 0}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Plan:
-                                            </span>
-                                            <span className="font-medium">
-                                                {
-                                                    props.organization
-                                                        ?.billing_plan
-                                                }
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    )}
+                                </CardContent>
+                            </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Storage Usage</CardTitle>
-                                <CardDescription>
-                                    Current storage utilization
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {props.orgLoading ? (
-                                    <div className="animate-pulse space-y-2">
-                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                                            <div
-                                                className="bg-primary h-2.5 rounded-full"
-                                                style={{
-                                                    width: `${Math.min(((props.organization?.storage_used || 0) / 1000) * 100, 100)}%`,
-                                                }}
-                                            ></div>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Storage Usage</CardTitle>
+                                    <CardDescription>
+                                        Current storage utilization
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {props.orgLoading ? (
+                                        <div className="animate-pulse space-y-2">
+                                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                                         </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span>
-                                                {props.organization
-                                                    ?.storage_used || 0}{' '}
-                                                MB used
-                                            </span>
-                                            <span>1000 MB total</span>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                                <div
+                                                    className="bg-primary h-2.5 rounded-full"
+                                                    style={{
+                                                        width: `${Math.min(
+                                                            ((props.organization
+                                                                ?.storage_used ||
+                                                                0) /
+                                                                1000) *
+                                                                100,
+                                                            100,
+                                                        )}%`,
+                                                    }}
+                                                ></div>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                                <span>
+                                                    {props.organization
+                                                        ?.storage_used ||
+                                                        0}{' '}
+                                                    MB used
+                                                </span>
+                                                <span>1000 MB total</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                        <OrgMembers />
+                        {/* Right Column */}
+                        <div className="space-y-6">
+                            <OrgMembers />
+                        </div>
                     </div>
                 </TabsContent>
 
@@ -443,6 +456,25 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                     }`}
                                                 >
                                                     {project.status}
+                                                </span>
+                                                <span
+                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${
+                                                        project.visibility ===
+                                                        'private'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : project.visibility ===
+                                                                'team'
+                                                              ? 'bg-blue-100 text-blue-800'
+                                                              : project.visibility ===
+                                                                  'organization'
+                                                                ? 'bg-purple-100 text-purple-800'
+                                                                : project.visibility ===
+                                                                    'public'
+                                                                  ? 'bg-green-100 text-green-800'
+                                                                  : 'bg-gray-100 text-gray-800'
+                                                    }`}
+                                                >
+                                                    {project.visibility}
                                                 </span>
                                             </CardDescription>
                                         </CardHeader>

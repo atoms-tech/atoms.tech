@@ -246,7 +246,7 @@ function AppSidebar() {
                                 className="w-[--radix-popper-anchor-width] text-xs"
                             >
                                 <DropdownMenuItem asChild>
-                                    <Link href="/account">Account</Link>
+                                    <Link href="user/account">Account</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                     <Link href="/billing">Billing</Link>

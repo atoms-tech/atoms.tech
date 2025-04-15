@@ -2,14 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import {
-    Building,
-    FilterIcon,
-    Folder,
-    Plus,
-    Sparkles,
-    Users,
-} from 'lucide-react';
+import { Building, Folder, Plus, Sparkles, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -43,6 +36,17 @@ export default function UserDashboard() {
     const { setCurrentOrganization } = useOrganization();
     const { data: allInvitations } = useOrgInvitation(user?.email || '');
     const queryClient = useQueryClient();
+
+    const refetchOrganizations = useCallback(() => {
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.organizations.byMembership(user?.id || ''),
+        });
+    }, [queryClient, user?.id]);
+
+    // Re-fetch organizations on component mount
+    useEffect(() => {
+        refetchOrganizations();
+    }, [refetchOrganizations]);
 
     // Filter the invitations to only include pending ones
     const invitations = allInvitations?.filter(
@@ -333,17 +337,14 @@ export default function UserDashboard() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full md:w-64"
                         />
-                        <Button variant="default" className="w-9 h-9">
-                            <FilterIcon className="w-4 h-4" />
-                        </Button>
                     </div>
                 </div>
 
                 {activeTab === 'invites' ? (
                     <div className="col-span-full flex flex-col">
-                        {/* Render UserInvitations component */}
+                        {/* Pass refetchOrganizations to UserInvitations */}
                         <div>
-                            <UserInvitations />
+                            <UserInvitations onAccept={refetchOrganizations} />
                         </div>
                     </div>
                 ) : (

@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowUp, FileBox, FolderArchive } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,16 @@ export default function ProjectPage() {
         useState(false);
     const { data: documents, isLoading: documentsLoading } =
         useProjectDocuments(project?.id || '');
+
+    useEffect(() => {
+        // Trigger refetch of users in ProjectMembers when the dashboard loads
+        const projectMembersComponent = document.querySelector(
+            '[data-component="ProjectMembers"]',
+        );
+        if (projectMembersComponent) {
+            projectMembersComponent.dispatchEvent(new CustomEvent('refetch'));
+        }
+    }, []);
 
     const handleDocumentClick = (doc: Document) => {
         router.push(
@@ -120,63 +130,70 @@ export default function ProjectPage() {
                 {/* Overview Tab */}
                 <TabsContent value="overview" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Project Details */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Project Details</CardTitle>
-                                <CardDescription>
-                                    Basic information about your project
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
-                                            Name:
-                                        </span>
-                                        <span className="font-medium">
-                                            {project?.name}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
-                                            Status:
-                                        </span>
-                                        <Badge
-                                            variant="outline"
-                                            className={
-                                                project?.status === 'active'
-                                                    ? 'border-green-500 text-green-500'
-                                                    : 'border-gray-500 text-gray-500'
-                                            }
-                                        >
-                                            {project?.status}
-                                        </Badge>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">
-                                            Visibility:
-                                        </span>
-                                        <span className="font-medium">
-                                            {project?.visibility}
-                                        </span>
-                                    </div>
-                                    {project?.description && (
-                                        <div>
+                        {/* Left Column */}
+                        <div className="md:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Project Details</CardTitle>
+                                    <CardDescription>
+                                        Basic information about your project
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between">
                                             <span className="text-muted-foreground">
-                                                Description:
+                                                Name:
                                             </span>
-                                            <p className="mt-1">
-                                                {project.description}
-                                            </p>
+                                            <span className="font-medium">
+                                                {project?.name}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Status:
+                                            </span>
+                                            <Badge
+                                                variant="outline"
+                                                className={
+                                                    project?.status === 'active'
+                                                        ? 'border-green-500 text-green-500'
+                                                        : 'border-gray-500 text-gray-500'
+                                                }
+                                            >
+                                                {project?.status}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">
+                                                Visibility:
+                                            </span>
+                                            <span className="font-medium">
+                                                {project?.visibility}
+                                            </span>
+                                        </div>
+                                        {project?.description && (
+                                            <div>
+                                                <span className="text-muted-foreground">
+                                                    Description:
+                                                </span>
+                                                <p className="mt-1">
+                                                    {project.description}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                        {/* Project Members */}
-                        <ProjectMembers projectId={project?.id || ''} />
+                        {/* Right Column */}
+                        <div className="space-y-6">
+                            <ProjectMembers
+                                projectId={project?.id || ''}
+                                data-component="ProjectMembers"
+                            />
+                        </div>
                     </div>
                 </TabsContent>
 
