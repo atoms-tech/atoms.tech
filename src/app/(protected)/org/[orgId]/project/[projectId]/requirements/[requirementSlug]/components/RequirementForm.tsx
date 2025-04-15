@@ -396,47 +396,12 @@ export function RequirementForm({
         <Card className="p-6">
             <h3 className="font-semibold mb-2">{requirement?.name}</h3>
             <textarea
-                className="w-full h-32 p-2 border rounded-md text-muted-foreground"
+                className="w-full h-72 p-2 border rounded-md text-muted-foreground"
                 value={reqText}
                 onChange={(e) => setReqText(e.target.value)}
                 placeholder="Enter requirement text"
             />
-
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"> */}
-            {/*     <div> */}
-            {/*         <label */}
-            {/*             htmlFor="systemName" */}
-            {/*             className="text-sm font-medium text-muted-foreground block mb-1" */}
-            {/*         > */}
-            {/*             System Name - Optional */}
-            {/*         </label> */}
-            {/*         <input */}
-            {/*             id="systemName" */}
-            {/*             type="text" */}
-            {/*             className="w-full p-2 border rounded-md text-muted-foreground" */}
-            {/*             value={systemName} */}
-            {/*             onChange={(e) => setSystemName(e.target.value)} */}
-            {/*             placeholder="e.g. Backup Camera" */}
-            {/*         /> */}
-            {/*     </div> */}
-            {/*     <div> */}
-            {/*         <label */}
-            {/*             htmlFor="objective" */}
-            {/*             className="text-sm font-medium text-muted-foreground block mb-1" */}
-            {/*         > */}
-            {/*             System Objective - Optional */}
-            {/*         </label> */}
-            {/*         <input */}
-            {/*             id="objective" */}
-            {/*             type="text" */}
-            {/*             className="w-full p-2 border rounded-md text-muted-foreground" */}
-            {/*             value={objective} */}
-            {/*             onChange={(e) => setObjective(e.target.value)} */}
-            {/*             placeholder="e.g. Provide rear visibility" */}
-            {/*         /> */}
-            {/*     </div> */}
-            {/* </div> */}
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 space-y-4">
                 <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 sm:gap-0">
                     <div className="flex items-center gap-2">
                         <Brain className="h-5 w-5" />
@@ -447,7 +412,7 @@ export function RequirementForm({
                             labelClassName="hidden md:block"
                         />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-4">
                         <Button
                             className="gap-2"
                             onClick={handleSave}
@@ -518,7 +483,7 @@ export function RequirementForm({
                     >
                         <SelectTrigger className="w-full gap-2">
                             <FilePlus className="h-4 w-4" />
-                            <SelectValue placeholder="Add existing document" />
+                            <SelectValue placeholder="Use existing requirement document" />
                         </SelectTrigger>
                         <SelectContent>
                             {Object.values(unusedDocsNameMap).map((doc) => (
