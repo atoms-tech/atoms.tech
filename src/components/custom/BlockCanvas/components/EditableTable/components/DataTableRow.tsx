@@ -146,7 +146,7 @@ export function DataTableRow<
 
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetContent
-                    className="font-mono p-0 gap-0 bg-background/90 border-l shadow-none"
+                    className="font-mono p-0 gap-0 bg-background/90 border-l shadow-none overflow-scroll"
                     data-overlay-disabled
                 >
                     <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-muted">
@@ -202,7 +202,7 @@ export function DataTableRow<
                         </div>
                     </div>
 
-                    <div className="px-6">
+                    <div className="px-6  mb-8">
                         {columns.map((column, index) => (
                             <div
                                 key={String(column.accessor)}
