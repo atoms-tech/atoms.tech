@@ -35,12 +35,47 @@ export const getUserProjects = async (userId: string, orgId: string) => {
 };
 
 export const getProjectMembers = async (projectId: string) => {
-    const { data, error } = await supabase
+    // Fetch all members of the project along with their roles
+    const { data: members, error: membersError } = await supabase
         .from('project_members')
-        .select('*, profiles(*)')
+        .select('user_id, role')
         .eq('project_id', projectId)
         .eq('status', 'active');
 
-    if (error) throw error;
-    return data;
+    if (membersError) {
+        console.error('Error fetching project members:', membersError);
+        throw membersError;
+    }
+
+    if (!members || members.length === 0) {
+        console.log('No members found for project:', projectId);
+        return [];
+    }
+
+    // Extract user IDs and roles from the members
+    const userIds = members.map((member) => member.user_id);
+    const userRoles = members.reduce(
+        (acc, member) => {
+            acc[member.user_id] = member.role;
+            return acc;
+        },
+        {} as Record<string, string>,
+    );
+
+    // Fetch profiles for the extracted user IDs
+    const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+    if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+    }
+
+    // Attach roles to the profiles
+    return profiles.map((profile) => ({
+        ...profile,
+        role: userRoles[profile.id],
+    }));
 };

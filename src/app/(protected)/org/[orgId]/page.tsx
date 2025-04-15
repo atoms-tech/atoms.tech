@@ -8,13 +8,16 @@ import OrgDashboard from '@/app/(protected)/org/[orgId]/OrgDashboard.client';
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useOrganization as useOrgQuery } from '@/hooks/queries/useOrganization';
-import { useOrganizationProjects } from '@/hooks/queries/useProject';
+import { useProjectsByMembershipForOrg } from '@/hooks/queries/useProject';
 import { useOrganization } from '@/lib/providers/organization.provider';
+import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/lib/store/context.store';
 import { Project } from '@/types/base/projects.types';
 
 export default function OrgPage() {
     const router = useRouter();
+
+    const { user } = useUser();
     const params = useParams<{ orgId: string }>();
     const { setCurrentProjectId } = useContextStore();
     const { theme } = useTheme();
@@ -37,8 +40,7 @@ export default function OrgPage() {
 
     // Fetch projects data
     const { data: projects, isLoading: projectsLoading } =
-        useOrganizationProjects(orgId);
-
+        useProjectsByMembershipForOrg(orgId, user?.id || '');
     const { data: externalDocuments, isLoading: documentsLoading } =
         useExternalDocumentsByOrg(params?.orgId || '');
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Building, File, FileBox, FolderArchive, ListTodo } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
 import { CreatePanel } from '@/components/base/panels/CreatePanel';
@@ -14,6 +14,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
 import { Organization } from '@/types/base/organizations.types';
@@ -37,6 +38,17 @@ interface OrgDashboardProps {
 export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState('projects');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+    const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
+
+    useEffect(() => {
+        if (props.orgId) {
+            setOrgMemberCount(props.orgId).catch((error) => {
+                console.error('Failed to refresh member count:', error);
+            });
+        }
+    }, [props.orgId, setOrgMemberCount]);
+
+    console.log('projects: ', props.projects);
 
     console.log('projects: ', props.projects);
 
@@ -175,7 +187,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                             <span className="text-muted-foreground">
                                                 Type:
                                             </span>
-                                            <span className="font-medium">
+                                            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                                                 {props.organization?.type}
                                             </span>
                                         </div>

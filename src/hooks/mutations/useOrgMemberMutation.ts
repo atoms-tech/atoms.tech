@@ -49,3 +49,89 @@ export function useCreateOrgMember() {
         },
     });
 }
+
+export function useSetOrgMemberCount() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (orgId: string) => {
+            // Query the organization_members table to count members
+            const { count, error: countError } = await supabase
+                .from('organization_members')
+                .select('*', { count: 'exact', head: true })
+                .eq('organization_id', orgId);
+
+            if (countError) {
+                console.error(
+                    'Failed to count organization members',
+                    countError,
+                );
+                throw countError;
+            }
+
+            // Update the member_count in the organizations table
+            const { error: updateError } = await supabase
+                .from('organizations')
+                .update({ member_count: count })
+                .eq('id', orgId);
+
+            if (updateError) {
+                console.error(
+                    'Failed to update member count in organizations',
+                    updateError,
+                );
+                throw updateError;
+            }
+
+            return count;
+        },
+        onSuccess: (_, orgId) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.organizations.detail(orgId),
+            });
+        },
+    });
+}
+
+export function useSetOrgMemberRole() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            userId,
+            orgId,
+            role,
+        }: {
+            userId: string;
+            orgId: string;
+            role: 'member' | 'admin' | 'owner' | 'super_admin';
+        }) => {
+            // Update the role of the user in the organization_members table
+            const { error } = await supabase
+                .from('organization_members')
+                .update({ role })
+                .eq('organization_id', orgId)
+                .eq('user_id', userId);
+
+            if (error) {
+                console.error(
+                    'Failed to update organization member role',
+                    error,
+                );
+                throw error;
+            }
+
+            return { userId, orgId, role };
+        },
+        onSuccess: (_, { orgId }) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.organizations.detail(orgId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: [queryKeys.organizations.list, orgId],
+            });
+        },
+    });
+}

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'; // Import Badge
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
 import { useCreateOrgInvitation } from '@/hooks/mutations/useOrgInvitationMutations';
 import { useOrgInvitationsByOrgId } from '@/hooks/queries/useOrganization';
 import { getOrganizationMembers } from '@/lib/db/client';
@@ -31,7 +30,6 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
         isLoading: outgoingLoading,
         refetch,
     } = useOrgInvitationsByOrgId(orgId);
-    const { toast } = useToast(); // Initialize toast
 
     // Filter invitations to only include pending ones
     const outgoingInvitations = allInvitations?.filter(
@@ -43,41 +41,21 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
 
         if (!inviteEmail) {
             setErrorMessage('Please enter a valid email.');
-            toast({
-                title: 'Error',
-                description: 'Please enter a valid email.',
-                variant: 'destructive',
-            });
             return;
         }
         if (!user?.id) {
             setErrorMessage('User not authenticated.');
-            toast({
-                title: 'Error',
-                description: 'User not authenticated.',
-                variant: 'destructive',
-            });
             return;
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(inviteEmail.trim())) {
             setErrorMessage('Please enter a valid email address.');
-            toast({
-                title: 'Error',
-                description: 'Please enter a valid email address.',
-                variant: 'destructive',
-            });
             return;
         }
 
         if (inviteEmail.trim() === user.email) {
             setErrorMessage('You cannot send an invitation to yourself.');
-            toast({
-                title: 'Error',
-                description: 'You cannot send an invitation to yourself.',
-                variant: 'default',
-            });
             return;
         }
 
@@ -92,12 +70,6 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                 setErrorMessage(
                     'This user is already a member of the organization.',
                 );
-                toast({
-                    title: 'Error',
-                    description:
-                        'This user is already a member of the organization.',
-                    variant: 'default',
-                });
                 return;
             }
 
@@ -146,12 +118,6 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                 setErrorMessage(
                     'An invitation has already been sent to this email for this organization.',
                 );
-                toast({
-                    title: 'Error',
-                    description:
-                        'An invitation has already been sent to this email for this organization.',
-                    variant: 'destructive',
-                });
                 return;
             }
 
@@ -167,11 +133,6 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                 },
                 {
                     onSuccess: () => {
-                        toast({
-                            title: 'Success',
-                            description: 'Invitation sent successfully!',
-                            variant: 'default',
-                        });
                         setInviteEmail('');
                         setErrorMessage(null); // Reset error message
                         setUserExists(null); // Reset user existence state
@@ -180,32 +141,18 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                     onError: (error) => {
                         console.error('Error sending invitation:', error);
                         setErrorMessage('Failed to send invitation.');
-                        toast({
-                            title: 'Error',
-                            description: 'Failed to send invitation.',
-                            variant: 'destructive',
-                        });
                     },
                 },
             );
         } catch (error) {
             console.error('Error handling invitation:', error);
             setErrorMessage('Failed to process the invitation.');
-            toast({
-                title: 'Error',
-                description: 'Failed to process the invitation.',
-                variant: 'destructive',
-            });
         }
     };
 
     const handleRevoke = async (invitationId: string) => {
         if (!user?.id) {
-            toast({
-                title: 'Error',
-                description: 'User not authenticated.',
-                variant: 'destructive',
-            });
+            setErrorMessage('User not authenticated.');
             return;
         }
 
@@ -223,19 +170,11 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                 throw error;
             }
 
-            toast({
-                title: 'Success',
-                description: 'Invitation revoked successfully!',
-                variant: 'default',
-            });
+            setErrorMessage(null); // Clear error message on success
             refetch(); // Refresh the list of outgoing invitations
         } catch (error) {
             console.error('Error revoking invitation:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to revoke invitation.',
-                variant: 'destructive',
-            });
+            setErrorMessage('Failed to revoke invitation.');
         }
     };
 

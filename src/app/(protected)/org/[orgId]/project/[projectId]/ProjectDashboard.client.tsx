@@ -12,6 +12,8 @@ import { useOrganization } from '@/lib/providers/organization.provider';
 import { useProject } from '@/lib/providers/project.provider';
 import { Document } from '@/types/base/documents.types';
 
+import ProjectMembers from './ProjectMembers';
+
 // Dynamically import the CreatePanel with no SSR
 const CreatePanel = dynamic(
     () =>
@@ -107,7 +109,11 @@ export default function ProjectPage() {
                 </div>
             </div>
 
-            {/* Only render CreatePanel when needed */}
+            {/* Project Management */}
+            <div className="space-y-4">
+                <h2 className="text-xl font-semibold">Project Management</h2>
+                <ProjectMembers projectId={params.projectId} />
+            </div>
             {showCreateDocumentPanel && (
                 <CreatePanel
                     isOpen={true}
