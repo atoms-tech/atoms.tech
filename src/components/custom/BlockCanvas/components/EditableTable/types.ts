@@ -1,3 +1,5 @@
+import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+
 export type PropertyScope = 'org' | 'project' | 'document';
 
 export interface PropertyConfig {
@@ -35,7 +37,13 @@ export interface ColumnValidation {
 }
 
 // Type for the possible values in a cell
-export type CellValue = string | number | Date | string[] | null;
+export type CellValue =
+    | string
+    | number
+    | Date
+    | string[]
+    | RequirementAiAnalysis
+    | null;
 
 export interface EditableColumn<T> {
     header: string;

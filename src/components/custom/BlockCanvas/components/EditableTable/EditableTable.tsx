@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
+import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
     AddRowPlaceholder,
@@ -19,7 +20,10 @@ import { TableState, tableReducer } from './reducers/tableReducer';
 import { CellValue, EditableTableProps } from './types';
 
 export function EditableTable<
-    T extends Record<string, CellValue> & { id: string },
+    T extends Record<string, CellValue> & {
+        id: string;
+        ai_analysis: RequirementAiAnalysis;
+    },
 >({
     data,
     columns,

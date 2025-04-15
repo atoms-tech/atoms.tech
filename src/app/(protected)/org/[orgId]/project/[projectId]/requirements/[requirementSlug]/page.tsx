@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useUpdateRequirement } from '@/hooks/mutations/useRequirementMutations';
 import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useGumloop } from '@/hooks/useGumloop';
+import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
     ComplianceCard,
@@ -42,6 +43,7 @@ export default function RequirementPage() {
     const [reqText, setReqText] = useState<string>('');
     const [systemName, setSystemName] = useState<string>('');
     const [objective, setObjective] = useState<string>('');
+    const [isSaving, setIsSaving] = useState<boolean>(false);
 
     // Set requirement description when loaded
     useEffect(() => {
@@ -49,6 +51,49 @@ export default function RequirementPage() {
             setReqText(requirement?.description || '');
         }
     }, [requirement]);
+
+    const updateRequirementWithHistory = async (newDescription: string) => {
+        if (!requirement) {
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const reqUpdate = {
+                id: requirement.id,
+                description: newDescription,
+                ai_analysis: requirement.ai_analysis,
+            };
+            let analysis_history =
+                requirement.ai_analysis as RequirementAiAnalysis;
+            console.log(analysis_history);
+            if (!analysis_history) {
+                analysis_history = {
+                    descriptionHistory: [],
+                };
+            }
+            // check if descriptionHistory is not present
+            if (!analysis_history.descriptionHistory) {
+                analysis_history.descriptionHistory = [];
+            }
+            if (requirement.description) {
+                analysis_history.descriptionHistory.push({
+                    description: newDescription,
+                    createdAt: new Date().toISOString(),
+                });
+            }
+            reqUpdate.ai_analysis = analysis_history;
+            await updateRequirement(reqUpdate);
+            console.log('Updated requirement with new description:', reqUpdate);
+        } catch (error) {
+            console.error('Failed to update requirement:', error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleSave = () => {
+        updateRequirementWithHistory(reqText);
+    };
 
     const [missingReqError, setMissingReqError] = useState<string>('');
     const [missingFilesError, setMissingFilesError] = useState<string>('');
@@ -77,10 +122,7 @@ export default function RequirementPage() {
         }
 
         setAnalysisData(null);
-        await updateRequirement({
-            id: requirement.id,
-            description: reqText,
-        });
+        await updateRequirementWithHistory(reqText);
 
         // check if the requirement is empty
         if (!reqText) {
@@ -209,13 +251,7 @@ export default function RequirementPage() {
         if (!text || !requirement) {
             return;
         }
-        // copy to clipboard
         navigator.clipboard.writeText(text);
-        // setReqText(text);
-        // await updateRequirement({
-        //     id: requirement.id,
-        //     description: text,
-        // });
     };
 
     if (isReqLoading) {
@@ -241,6 +277,7 @@ export default function RequirementPage() {
                     <RequirementForm
                         organizationId={organizationId}
                         requirement={requirement || { id: '' }}
+                        origReqText={requirement?.description || ''}
                         reqText={reqText || ''}
                         setReqText={setReqText}
                         systemName={systemName}
@@ -251,6 +288,8 @@ export default function RequirementPage() {
                         setIsReasoning={setIsReasoning}
                         isAnalysing={isAnalysing}
                         handleAnalyze={handleAnalyze}
+                        handleSave={handleSave}
+                        isSaving={isSaving}
                         missingReqError={missingReqError}
                         missingFilesError={missingFilesError}
                         setMissingFilesError={setMissingFilesError}

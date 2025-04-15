@@ -1,4 +1,4 @@
-import { ArrowUpRight, Trash2 } from 'lucide-react';
+import { ArrowUpRight, History, Trash2 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import React from 'react';
 
@@ -17,6 +17,7 @@ import {
 import { TableCell, TableRow } from '@/components/ui/table';
 import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
+import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 interface DataTableRowProps<T> {
     item: T;
@@ -34,6 +35,7 @@ interface DataTableRowProps<T> {
 export function DataTableRow<
     T extends Record<string, CellValue> & {
         id: string;
+        ai_analysis: RequirementAiAnalysis;
     },
 >({
     item,
@@ -203,6 +205,68 @@ export function DataTableRow<
                                 </div>
                             </div>
                         ))}
+
+                        {item.ai_analysis?.descriptionHistory &&
+                            item.ai_analysis.descriptionHistory.length > 0 && (
+                                <>
+                                    <div className="border-t border-dashed border-muted mt-4 pt-4">
+                                        <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-4">
+                                            Description History
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute top-0 bottom-0 left-[11px] border-l border-dotted border-muted-foreground/40"></div>
+                                            {[
+                                                ...item.ai_analysis
+                                                    .descriptionHistory,
+                                            ]
+                                                .reverse()
+                                                .map((historyItem) => {
+                                                    const date = new Date(
+                                                        historyItem.createdAt,
+                                                    );
+                                                    const formattedDate =
+                                                        new Intl.DateTimeFormat(
+                                                            'en-US',
+                                                            {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                            },
+                                                        ).format(date);
+
+                                                    return (
+                                                        <div
+                                                            key={
+                                                                historyItem.createdAt
+                                                            }
+                                                            className="flex mb-6 last:mb-0 relative"
+                                                        >
+                                                            <div className="mr-4 z-10">
+                                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+                                                                    <History className="h-3.5 w-3.5 text-muted-foreground" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <div className="text-[10px] text-muted-foreground mb-1">
+                                                                    {
+                                                                        formattedDate
+                                                                    }
+                                                                </div>
+                                                                <div className="text-sm bg-muted/40 p-3 rounded-md">
+                                                                    {
+                                                                        historyItem.description
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                     </div>
                 </SheetContent>
             </Sheet>

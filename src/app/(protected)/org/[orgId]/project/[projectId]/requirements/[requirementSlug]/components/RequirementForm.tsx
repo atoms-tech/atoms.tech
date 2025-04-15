@@ -4,6 +4,7 @@ import {
     CircleAlert,
     FilePlus,
     Pencil,
+    Save,
     Trash,
     Upload,
     Wand,
@@ -51,6 +52,7 @@ interface RequirementFormProps {
         id: string;
         name?: string;
     };
+    origReqText: string;
     reqText: string;
     setReqText: Dispatch<SetStateAction<string>>;
     systemName: string;
@@ -61,6 +63,8 @@ interface RequirementFormProps {
     setIsReasoning: Dispatch<SetStateAction<boolean>>;
     isAnalysing: boolean;
     handleAnalyze: () => void;
+    handleSave: () => void;
+    isSaving: boolean;
     missingReqError: string;
     missingFilesError: string;
     setMissingFilesError: Dispatch<SetStateAction<string>>;
@@ -73,6 +77,7 @@ interface RequirementFormProps {
 export function RequirementForm({
     organizationId,
     requirement,
+    origReqText,
     reqText,
     setReqText,
     // systemName,
@@ -83,6 +88,8 @@ export function RequirementForm({
     setIsReasoning,
     isAnalysing,
     handleAnalyze,
+    handleSave,
+    isSaving,
     missingReqError,
     missingFilesError,
     setMissingFilesError,
@@ -90,10 +97,6 @@ export function RequirementForm({
     setSelectedFiles,
 }: RequirementFormProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        setReqText(e.target.value);
-    };
 
     const [isUploading, setIsUploading] = useState(false);
     const [processingPdfFiles, setProcessingPdfFiles] = useState<
@@ -109,6 +112,11 @@ export function RequirementForm({
     const { startOcrTask, getTaskStatuses } = useChunkr();
     const [ocrPipelineTaskIds, setOcrPipelineTaskIds] = useState<string[]>([]);
     const taskStatusQueries = getTaskStatuses(ocrPipelineTaskIds);
+
+    // Check if there are unsaved changes
+    const hasUnsavedChanges = useMemo(() => {
+        return origReqText !== reqText && reqText !== '';
+    }, [origReqText, reqText]);
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
@@ -390,7 +398,7 @@ export function RequirementForm({
             <textarea
                 className="w-full h-32 p-2 border rounded-md text-muted-foreground"
                 value={reqText}
-                onChange={handleInputChange}
+                onChange={(e) => setReqText(e.target.value)}
                 placeholder="Enter requirement text"
             />
 
@@ -439,19 +447,41 @@ export function RequirementForm({
                             labelClassName="hidden md:block"
                         />
                     </div>
-                    <Button
-                        className="gap-2"
-                        onClick={handleAnalyze}
-                        disabled={isAnalysing}
-                    >
-                        {isAnalysing ? (
-                            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                        ) : (
-                            <Wand className="h-4 w-4" />
-                        )}
-                        Analyze with AI
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            className="gap-2"
+                            onClick={handleSave}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                            ) : (
+                                <Save className="h-4 w-4" />
+                            )}
+                            {hasUnsavedChanges ? 'Save*' : 'Save'}
+                        </Button>
+                        <Button
+                            className="gap-2"
+                            onClick={handleAnalyze}
+                            disabled={isAnalysing}
+                        >
+                            {isAnalysing ? (
+                                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                            ) : (
+                                <Wand className="h-4 w-4" />
+                            )}
+                            Analyze with AI
+                        </Button>
+                    </div>
                 </div>
+
+                {/* {hasUnsavedChanges && (
+                    <div className="flex items-center gap-2 text-amber-500 bg-amber-50 p-2 rounded">
+                        <Info className="h-4 w-4" />
+                        <span>You have unsaved changes</span>
+                    </div>
+                )} */}
+
                 {missingReqError ||
                     (missingFilesError && (
                         <div className="flex items-center gap-2 text-red-500 bg-red-50 p-2 rounded">

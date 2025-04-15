@@ -15,11 +15,15 @@ import {
     RequirementFormat as _RequirementFormat,
     RequirementLevel as _RequirementLevel,
 } from '@/types/base/enums.types';
-import { Requirement } from '@/types/base/requirements.types';
+import {
+    Requirement,
+    RequirementAiAnalysis,
+} from '@/types/base/requirements.types';
 
 // Type for the requirement data that will be displayed in the table
 export type DynamicRequirement = {
     id: string;
+    ai_analysis: RequirementAiAnalysis;
     [key: string]: CellValue;
 };
 
@@ -124,6 +128,7 @@ export const useRequirementActions = ({
         return localRequirements.map((req) => {
             const dynamicReq: DynamicRequirement = {
                 id: req.id,
+                ai_analysis: req.ai_analysis as RequirementAiAnalysis,
             };
 
             // Extract values from properties object
@@ -228,6 +233,14 @@ export const useRequirementActions = ({
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    ai_analysis: {
+                        descriptionHistory: [
+                            {
+                                description: naturalFields?.description || '',
+                                createdAt: new Date().toISOString(),
+                            },
+                        ],
+                    } as RequirementAiAnalysis,
                 };
 
                 const { data, error } = await supabase
