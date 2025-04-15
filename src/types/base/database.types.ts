@@ -338,84 +338,39 @@ export type Database = {
             excalidraw_diagrams: {
                 Row: {
                     created_at: string | null;
+                    created_by: string | null;
                     diagram_data: Json | null;
                     id: string;
-                    organization_id: string;
-                    project_id: string;
-                    created_by: string;
-                    updated_by: string;
+                    name: string | null;
+                    organization_id: string | null;
+                    project_id: string | null;
+                    thumbnail_url: string | null;
                     updated_at: string | null;
+                    updated_by: string | null;
                 };
                 Insert: {
                     created_at?: string | null;
+                    created_by?: string | null;
                     diagram_data?: Json | null;
                     id?: string;
-                    organization_id?: string;
-                    project_id?: string;
-                    created_by?: string;
-                    updated_by?: string;
+                    name?: string | null;
+                    organization_id?: string | null;
+                    project_id?: string | null;
+                    thumbnail_url?: string | null;
                     updated_at?: string | null;
+                    updated_by?: string | null;
                 };
                 Update: {
                     created_at?: string | null;
+                    created_by?: string | null;
                     diagram_data?: Json | null;
                     id?: string;
-                    organization_id?: string;
-                    project_id?: string;
-                    created_by?: string;
-                    updated_by?: string;
+                    name?: string | null;
+                    organization_id?: string | null;
+                    project_id?: string | null;
+                    thumbnail_url?: string | null;
                     updated_at?: string | null;
-                };
-                Relationships: [];
-            };
-            extdocuments: {
-                Row: {
-                    created_at: string | null;
-                    created_by: string;
-                    deleted_at: string | null;
-                    deleted_by: string | null;
-                    id: string;
-                    is_deleted: boolean | null;
-                    name: string;
-                    organization_id: string;
-                    owned_by: string;
-                    size: number | null;
-                    type: string | null;
-                    updated_at: string | null;
-                    updated_by: string;
-                    url: string | null;
-                };
-                Insert: {
-                    created_at?: string | null;
-                    created_by: string;
-                    deleted_at?: string | null;
-                    deleted_by?: string | null;
-                    id?: string;
-                    is_deleted?: boolean | null;
-                    name: string;
-                    organization_id: string;
-                    owned_by: string;
-                    size?: number | null;
-                    type?: string | null;
-                    updated_at?: string | null;
-                    updated_by: string;
-                    url?: string | null;
-                };
-                Update: {
-                    created_at?: string | null;
-                    created_by?: string;
-                    deleted_at?: string | null;
-                    deleted_by?: string | null;
-                    id?: string;
-                    is_deleted?: boolean | null;
-                    name?: string;
-                    organization_id?: string;
-                    owned_by?: string;
-                    size?: number | null;
-                    type?: string | null;
-                    updated_at?: string | null;
-                    updated_by?: string;
-                    url?: string | null;
+                    updated_by?: string | null;
                 };
                 Relationships: [];
             };
@@ -584,6 +539,7 @@ export type Database = {
                     role: Database['public']['Enums']['user_role_type'];
                     status: Database['public']['Enums']['user_status'] | null;
                     updated_at: string | null;
+                    updated_by: string | null;
                     user_id: string;
                 };
                 Insert: {
@@ -598,6 +554,7 @@ export type Database = {
                     role?: Database['public']['Enums']['user_role_type'];
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
+                    updated_by?: string | null;
                     user_id: string;
                 };
                 Update: {
@@ -612,6 +569,7 @@ export type Database = {
                     role?: Database['public']['Enums']['user_role_type'];
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
+                    updated_by?: string | null;
                     user_id?: string;
                 };
                 Relationships: [
@@ -1399,9 +1357,7 @@ export type Database = {
         };
         Functions: {
             accept_invitation: {
-                Args: {
-                    invitation_token: string;
-                };
+                Args: { invitation_token: string };
                 Returns: boolean;
             };
             can_use_resource: {
@@ -1413,10 +1369,7 @@ export type Database = {
                 Returns: boolean;
             };
             create_columns_for_table_block: {
-                Args: {
-                    block_id: string;
-                    p_org_id: string;
-                };
+                Args: { block_id: string; p_org_id: string };
                 Returns: undefined;
             };
             create_notification: {
@@ -1430,352 +1383,235 @@ export type Database = {
                 Returns: string;
             };
             create_personal_organization: {
-                Args: {
-                    user_id: string;
-                    name: string;
-                };
+                Args: { user_id: string; name: string };
                 Returns: string;
             };
             gbt_bit_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_bool_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_bool_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_bpchar_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_bytea_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_cash_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_cash_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_date_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_date_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_decompress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_enum_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_enum_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_float4_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_float4_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_float8_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_float8_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_inet_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int2_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int2_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int4_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int4_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int8_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_int8_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_intv_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_intv_decompress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_intv_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_macad_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_macad_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_macad8_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_macad8_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_numeric_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_oid_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_oid_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_text_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_time_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_time_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_timetz_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_ts_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_ts_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_tstz_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_uuid_compress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_uuid_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_var_decompress: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbt_var_fetch: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey_var_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey_var_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey16_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey16_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey2_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey2_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey32_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey32_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey4_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey4_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey8_in: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             gbtreekey8_out: {
-                Args: {
-                    '': unknown;
-                };
+                Args: { '': unknown };
                 Returns: unknown;
             };
             generate_slug: {
-                Args: {
-                    name: string;
-                };
+                Args: { name: string };
                 Returns: string;
             };
             get_organization_usage: {
@@ -1787,10 +1623,7 @@ export type Database = {
                 Returns: Json;
             };
             get_user_organizations: {
-                Args: {
-                    user_id: string;
-                    include_inactive?: boolean;
-                };
+                Args: { user_id: string; include_inactive?: boolean };
                 Returns: {
                     id: string;
                     name: string;
@@ -1812,10 +1645,7 @@ export type Database = {
                 Returns: boolean;
             };
             initialize_billing: {
-                Args: {
-                    user_id: string;
-                    org_id: string;
-                };
+                Args: { user_id: string; org_id: string };
                 Returns: undefined;
             };
             invite_organization_member: {
@@ -1827,22 +1657,15 @@ export type Database = {
                 Returns: string;
             };
             is_project_owner_or_admin: {
-                Args: {
-                    project_id: string;
-                    user_id: string;
-                };
+                Args: { project_id: string; user_id: string };
                 Returns: boolean;
             };
             is_valid_email: {
-                Args: {
-                    email: string;
-                };
+                Args: { email: string };
                 Returns: boolean;
             };
             is_valid_slug: {
-                Args: {
-                    slug: string;
-                };
+                Args: { slug: string };
                 Returns: boolean;
             };
             log_resource_usage: {
@@ -1865,16 +1688,11 @@ export type Database = {
                 Returns: undefined;
             };
             switch_organization: {
-                Args: {
-                    user_id: string;
-                    org_id: string;
-                };
+                Args: { user_id: string; org_id: string };
                 Returns: boolean;
             };
             sync_billing_data: {
-                Args: {
-                    org_id: string;
-                };
+                Args: { org_id: string };
                 Returns: Json;
             };
         };
@@ -1942,29 +1760,29 @@ export type Database = {
     };
 };
 
-type PublicSchema = Database[Extract<keyof Database, 'public'>];
+type DefaultSchema = Database[Extract<keyof Database, 'public'>];
 
 export type Tables<
-    PublicTableNameOrOptions extends
-        | keyof (PublicSchema['Tables'] & PublicSchema['Views'])
+    DefaultSchemaTableNameOrOptions extends
+        | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
         | { schema: keyof Database },
-    TableName extends PublicTableNameOrOptions extends {
+    TableName extends DefaultSchemaTableNameOrOptions extends {
         schema: keyof Database;
     }
-        ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-              Database[PublicTableNameOrOptions['schema']]['Views'])
+        ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+              Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
         : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-    ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-          Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+          Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
           Row: infer R;
       }
         ? R
         : never
-    : PublicTableNameOrOptions extends keyof (PublicSchema['Tables'] &
-            PublicSchema['Views'])
-      ? (PublicSchema['Tables'] &
-            PublicSchema['Views'])[PublicTableNameOrOptions] extends {
+    : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] &
+            DefaultSchema['Views'])
+      ? (DefaultSchema['Tables'] &
+            DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
             Row: infer R;
         }
           ? R
@@ -1972,22 +1790,22 @@ export type Tables<
       : never;
 
 export type TablesInsert<
-    PublicTableNameOrOptions extends
-        | keyof PublicSchema['Tables']
+    DefaultSchemaTableNameOrOptions extends
+        | keyof DefaultSchema['Tables']
         | { schema: keyof Database },
-    TableName extends PublicTableNameOrOptions extends {
+    TableName extends DefaultSchemaTableNameOrOptions extends {
         schema: keyof Database;
     }
-        ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+        ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-    ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Insert: infer I;
       }
         ? I
         : never
-    : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-      ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+      ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
             Insert: infer I;
         }
           ? I
@@ -1995,22 +1813,22 @@ export type TablesInsert<
       : never;
 
 export type TablesUpdate<
-    PublicTableNameOrOptions extends
-        | keyof PublicSchema['Tables']
+    DefaultSchemaTableNameOrOptions extends
+        | keyof DefaultSchema['Tables']
         | { schema: keyof Database },
-    TableName extends PublicTableNameOrOptions extends {
+    TableName extends DefaultSchemaTableNameOrOptions extends {
         schema: keyof Database;
     }
-        ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+        ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-    ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+    ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Update: infer U;
       }
         ? U
         : never
-    : PublicTableNameOrOptions extends keyof PublicSchema['Tables']
-      ? PublicSchema['Tables'][PublicTableNameOrOptions] extends {
+    : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+      ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
             Update: infer U;
         }
           ? U
@@ -2018,21 +1836,23 @@ export type TablesUpdate<
       : never;
 
 export type Enums<
-    PublicEnumNameOrOptions extends
-        | keyof PublicSchema['Enums']
+    DefaultSchemaEnumNameOrOptions extends
+        | keyof DefaultSchema['Enums']
         | { schema: keyof Database },
-    EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-        ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+    EnumName extends DefaultSchemaEnumNameOrOptions extends {
+        schema: keyof Database;
+    }
+        ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
         : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
-    : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
-      ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+    ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+    : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+      ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
       : never;
 
 export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
-        | keyof PublicSchema['CompositeTypes']
+        | keyof DefaultSchema['CompositeTypes']
         | { schema: keyof Database },
     CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
         schema: keyof Database;
@@ -2041,6 +1861,68 @@ export type CompositeTypes<
         : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
     ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-    : PublicCompositeTypeNameOrOptions extends keyof PublicSchema['CompositeTypes']
-      ? PublicSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+      ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
       : never;
+
+export const Constants = {
+    public: {
+        Enums: {
+            assignment_role: ['assignee', 'reviewer', 'approver'],
+            billing_plan: ['free', 'pro', 'enterprise'],
+            entity_type: ['document', 'requirement'],
+            invitation_status: ['pending', 'accepted', 'rejected', 'revoked'],
+            notification_type: ['invitation', 'mention', 'system'],
+            organization_type: ['personal', 'team', 'enterprise'],
+            pricing_plan_interval: ['none', 'month', 'year'],
+            project_role: ['owner', 'admin', 'maintainer', 'editor', 'viewer'],
+            project_status: ['active', 'archived', 'draft', 'deleted'],
+            property_type: [
+                'text',
+                'number',
+                'boolean',
+                'date',
+                'url',
+                'array',
+                'enum',
+                'entity_reference',
+                'select',
+                'multi_select',
+                'file',
+            ],
+            requirement_format: ['incose', 'ears', 'other'],
+            requirement_level: ['component', 'system', 'subsystem'],
+            requirement_priority: ['low', 'medium', 'high', 'critical'],
+            requirement_status: [
+                'active',
+                'archived',
+                'draft',
+                'deleted',
+                'in_review',
+                'in_progress',
+                'approved',
+                'rejected',
+            ],
+            subscription_status: [
+                'active',
+                'inactive',
+                'trialing',
+                'past_due',
+                'canceled',
+                'paused',
+            ],
+            trace_link_type: [
+                'derives_from',
+                'implements',
+                'relates_to',
+                'conflicts_with',
+                'is_related_to',
+                'parent_of',
+                'child_of',
+            ],
+            user_role_type: ['member', 'admin', 'owner', 'super_admin'],
+            user_status: ['active', 'inactive'],
+            visibility: ['private', 'team', 'organization', 'public'],
+        },
+    },
+} as const;
