@@ -13,6 +13,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -38,6 +46,11 @@ interface OrgDashboardProps {
 export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState('projects');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [visibilityFilter, setVisibilityFilter] = useState<string | null>(
+        null,
+    );
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
     useEffect(() => {
@@ -256,16 +269,124 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
                 {/* Projects Tab */}
                 <TabsContent value="projects" className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">Projects</h2>
-                        <button
+                    <div className="flex items-center space-x-2">
+                        <div className="flex w-full md:w-auto space-x-2">
+                            <Input
+                                type="text"
+                                placeholder="Search projects..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full md:w-64"
+                            />
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="default"
+                                        className="w-9 h-9"
+                                    >
+                                        <FolderArchive className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                        onClick={() =>
+                                            setVisibilityFilter(null)
+                                        }
+                                    >
+                                        <span
+                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                                visibilityFilter === null
+                                                    ? 'bg-primary'
+                                                    : 'bg-gray-200'
+                                            }`}
+                                        ></span>
+                                        All Visibility
+                                    </DropdownMenuItem>
+                                    {[
+                                        'private',
+                                        'team',
+                                        'organization',
+                                        'public',
+                                    ].map((visibility) => (
+                                        <DropdownMenuItem
+                                            key={visibility}
+                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                            onClick={() =>
+                                                setVisibilityFilter(
+                                                    visibilityFilter ===
+                                                        visibility
+                                                        ? null
+                                                        : visibility,
+                                                )
+                                            }
+                                        >
+                                            <span
+                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                                    visibilityFilter ===
+                                                    visibility
+                                                        ? 'bg-primary'
+                                                        : 'bg-gray-200'
+                                                }`}
+                                            ></span>
+                                            {visibility
+                                                .charAt(0)
+                                                .toUpperCase() +
+                                                visibility.slice(1)}
+                                        </DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                        onClick={() => setStatusFilter(null)}
+                                    >
+                                        <span
+                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                                statusFilter === null
+                                                    ? 'bg-primary'
+                                                    : 'bg-gray-200'
+                                            }`}
+                                        ></span>
+                                        All Status
+                                    </DropdownMenuItem>
+                                    {[
+                                        'active',
+                                        'archived',
+                                        'draft',
+                                        'deleted',
+                                    ].map((status) => (
+                                        <DropdownMenuItem
+                                            key={status}
+                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                            onClick={() =>
+                                                setStatusFilter(
+                                                    statusFilter === status
+                                                        ? null
+                                                        : status,
+                                                )
+                                            }
+                                        >
+                                            <span
+                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                                    statusFilter === status
+                                                        ? 'bg-primary'
+                                                        : 'bg-gray-200'
+                                                }`}
+                                            ></span>
+                                            {status.charAt(0).toUpperCase() +
+                                                status.slice(1)}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <Button
                             className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                             onClick={handleCreateProject}
                         >
                             Create Project
-                        </button>
+                        </Button>
                     </div>
-
                     {props.projectsLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[1, 2, 3].map((i) => (
@@ -283,39 +404,56 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         </div>
                     ) : props.projects && props.projects.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {props.projects.map((project) => (
-                                <Card
-                                    key={project.id}
-                                    className="cursor-pointer hover:shadow-md transition-shadow"
-                                    onClick={() =>
-                                        props.onProjectClick(project)
-                                    }
-                                >
-                                    <CardHeader>
-                                        <CardTitle>{project.name}</CardTitle>
-                                        <CardDescription>
-                                            <span
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                    project.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : project.status ===
-                                                            'archived'
-                                                          ? 'bg-gray-100 text-gray-800'
-                                                          : 'bg-yellow-100 text-yellow-800'
-                                                }`}
-                                            >
-                                                {project.status}
-                                            </span>
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-sm text-muted-foreground line-clamp-2">
-                                            {project.description ||
-                                                'No description provided'}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                            {props.projects
+                                .filter(
+                                    (project) =>
+                                        project.name
+                                            .toLowerCase()
+                                            .includes(
+                                                searchQuery.toLowerCase(),
+                                            ) &&
+                                        (!visibilityFilter ||
+                                            project.visibility ===
+                                                visibilityFilter) &&
+                                        (!statusFilter ||
+                                            project.status === statusFilter),
+                                )
+                                .map((project) => (
+                                    <Card
+                                        key={project.id}
+                                        className="cursor-pointer hover:shadow-md transition-shadow"
+                                        onClick={() =>
+                                            props.onProjectClick(project)
+                                        }
+                                    >
+                                        <CardHeader>
+                                            <CardTitle>
+                                                {project.name}
+                                            </CardTitle>
+                                            <CardDescription>
+                                                <span
+                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                        project.status ===
+                                                        'active'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : project.status ===
+                                                                'archived'
+                                                              ? 'bg-gray-100 text-gray-800'
+                                                              : 'bg-yellow-100 text-yellow-800'
+                                                    }`}
+                                                >
+                                                    {project.status}
+                                                </span>
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-sm text-muted-foreground line-clamp-2">
+                                                {project.description ||
+                                                    'No description provided'}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                         </div>
                     ) : (
                         <div className="text-center py-12 border rounded-lg">
@@ -326,12 +464,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             <p className="mt-2 text-sm text-muted-foreground">
                                 Get started by creating your first project
                             </p>
-                            <button
+                            <Button
                                 className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                                 onClick={handleCreateProject}
                             >
                                 Create Project
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </TabsContent>

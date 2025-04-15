@@ -58,7 +58,7 @@ export default function UserDashboard() {
         return Array.isArray(organizations) ? organizations : [];
     }, [queryClient, user?.id]);
 
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(''); // Ensure the initial state is an empty string
     const [activeTab, setActiveTab] = useState('all');
     const [greeting, setGreeting] = useState('');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
@@ -329,7 +329,7 @@ export default function UserDashboard() {
                         <Input
                             type="text"
                             placeholder="Search organizations..."
-                            value={searchTerm}
+                            value={searchTerm || ''} // Ensure value is always a string
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full md:w-64"
                         />

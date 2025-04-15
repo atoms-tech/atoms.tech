@@ -1,14 +1,28 @@
 'use client';
 
-// Dynamic import to avoid loading the CreatePanel until needed
+import { ArrowDown, ArrowUp, FileBox, FolderArchive } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
-import { useOrganization } from '@/lib/providers/organization.provider';
 import { useProject } from '@/lib/providers/project.provider';
 import { Document } from '@/types/base/documents.types';
 
@@ -34,11 +48,16 @@ export default function ProjectPage() {
     const router = useRouter();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-    const { currentOrganization: _currentOrganization } = useOrganization();
+    const [activeTab, setActiveTab] = useState('overview');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>(
+        null,
+    );
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
         useState(false);
     const { data: documents, isLoading: documentsLoading } =
-        useProjectDocuments(params.projectId);
+        useProjectDocuments(project?.id || '');
 
     const handleDocumentClick = (doc: Document) => {
         router.push(
@@ -46,74 +65,216 @@ export default function ProjectPage() {
         );
     };
 
-    const isLoading = documentsLoading;
+    const sortedDocuments = [...(documents || [])].sort((a, b) => {
+        if (!sortBy) return 0;
+        const dateA =
+            sortBy && a[sortBy] ? new Date(a[sortBy] as string).getTime() : 0;
+        const dateB =
+            sortBy && b[sortBy] ? new Date(b[sortBy] as string).getTime() : 0;
+        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    const filteredDocuments = sortedDocuments.filter((doc) =>
+        doc.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
 
     return (
-        <div className="p-6 space-y-8">
-            {/* Project Details */}
-            <div className="space-y-4">
-                <h1 className="text-3xl font-bold">{project?.name}</h1>
-                {project?.description && (
-                    <p className="text-muted-foreground">
-                        {project.description}
+        <div className="container mx-auto p-6 space-y-6">
+            {/* Project Header */}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">
+                        {project?.name || 'Project Dashboard'}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        {project?.description ||
+                            'Manage your project resources and details'}
                     </p>
-                )}
-                <div className="flex items-center gap-2">
-                    <Badge
-                        variant="outline"
-                        className={
-                            project?.status === 'active'
-                                ? 'border-green-500 text-green-500'
-                                : 'border-gray-500 text-gray-500'
-                        }
-                    >
-                        {project?.status}
-                    </Badge>
-                    <Badge variant="outline">{project?.visibility}</Badge>
                 </div>
             </div>
 
-            {/* Documents List */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">
-                        Requirement Documents
-                    </h2>
-                    <Button
-                        variant="outline"
-                        onClick={() => setShowCreateDocumentPanel(true)}
+            {/* Tabs Menu */}
+            <Tabs
+                defaultValue="overview"
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="w-full"
+            >
+                <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger
+                        value="overview"
+                        className="flex items-center gap-2"
                     >
-                        Add Requirement Document
-                    </Button>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {documents?.map((doc) => (
-                        <div
-                            key={doc.id}
-                            className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
-                            onClick={() => handleDocumentClick(doc)}
+                        <FolderArchive className="h-4 w-4" />
+                        <span>Overview</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="documents"
+                        className="flex items-center gap-2"
+                    >
+                        <FileBox className="h-4 w-4" />
+                        <span>Documents</span>
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Project Details */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Project Details</CardTitle>
+                                <CardDescription>
+                                    Basic information about your project
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">
+                                            Name:
+                                        </span>
+                                        <span className="font-medium">
+                                            {project?.name}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">
+                                            Status:
+                                        </span>
+                                        <Badge
+                                            variant="outline"
+                                            className={
+                                                project?.status === 'active'
+                                                    ? 'border-green-500 text-green-500'
+                                                    : 'border-gray-500 text-gray-500'
+                                            }
+                                        >
+                                            {project?.status}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">
+                                            Visibility:
+                                        </span>
+                                        <span className="font-medium">
+                                            {project?.visibility}
+                                        </span>
+                                    </div>
+                                    {project?.description && (
+                                        <div>
+                                            <span className="text-muted-foreground">
+                                                Description:
+                                            </span>
+                                            <p className="mt-1">
+                                                {project.description}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Project Members */}
+                        <ProjectMembers projectId={project?.id || ''} />
+                    </div>
+                </TabsContent>
+
+                {/* Documents Tab */}
+                <TabsContent value="documents" className="space-y-6">
+                    <div className="flex items-center space-x-2">
+                        <div className="flex w-full md:w-auto space-x-2">
+                            <Input
+                                type="text"
+                                placeholder="Search documents..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full md:w-64"
+                            />
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="default"
+                                        className="w-9 h-9"
+                                    >
+                                        <FolderArchive className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {['created_at', 'updated_at'].map(
+                                        (field) => (
+                                            <DropdownMenuItem
+                                                key={field}
+                                                onSelect={(e) =>
+                                                    e.preventDefault()
+                                                } // Prevent menu from closing
+                                                onClick={() => {
+                                                    setSortBy(
+                                                        field as
+                                                            | 'created_at'
+                                                            | 'updated_at',
+                                                    );
+                                                    setSortOrder((prev) =>
+                                                        prev === 'desc'
+                                                            ? 'asc'
+                                                            : 'desc',
+                                                    );
+                                                }}
+                                            >
+                                                <span
+                                                    className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                                        sortBy === field
+                                                            ? 'bg-primary'
+                                                            : 'bg-gray-200'
+                                                    }`}
+                                                ></span>
+                                                {field.replace('_', ' ')}
+                                                {sortBy === field &&
+                                                    (sortOrder === 'desc' ? (
+                                                        <ArrowUp className="ml-2 w-4 h-4 text-primary" />
+                                                    ) : (
+                                                        <ArrowDown className="ml-2 w-4 h-4 text-primary" />
+                                                    ))}
+                                            </DropdownMenuItem>
+                                        ),
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <Button
+                            variant="default"
+                            onClick={() => setShowCreateDocumentPanel(true)}
                         >
-                            <h3 className="font-medium truncate">{doc.name}</h3>
-                            {doc.description && (
-                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                    {doc.description}
-                                </p>
+                            Add Requirement Document
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredDocuments?.map((doc) => (
+                            <div
+                                key={doc.id}
+                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
+                                onClick={() => handleDocumentClick(doc)}
+                            >
+                                <h3 className="font-medium truncate">
+                                    {doc.name}
+                                </h3>
+                                {doc.description && (
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                        {doc.description}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                        {filteredDocuments?.length === 0 &&
+                            !documentsLoading && (
+                                <div className="col-span-full text-center py-8 text-muted-foreground">
+                                    No documents found
+                                </div>
                             )}
-                        </div>
-                    ))}
-                    {documents?.length === 0 && !isLoading && (
-                        <div className="col-span-full text-center py-8 text-muted-foreground">
-                            No documents found
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
 
-            {/* Project Management */}
-            <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Project Management</h2>
-                <ProjectMembers projectId={params.projectId} />
-            </div>
             {showCreateDocumentPanel && (
                 <CreatePanel
                     isOpen={true}

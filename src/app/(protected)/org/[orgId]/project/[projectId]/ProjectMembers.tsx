@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { MoreHorizontal, Users } from 'lucide-react';
+import { Filter, MoreHorizontal, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { getProjectMembers } from '@/lib/db/client/projects.client';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -50,6 +51,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     const [selectedRole, setSelectedRole] = useState<EProjectRole | null>(null);
     const [isRolePromptOpen, setIsRolePromptOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [roleFilters, setRoleFilters] = useState<EProjectRole[]>([]);
 
     const {
         data: members = [],
@@ -68,6 +71,19 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         if (a.role === 'owner') return -1;
         if (b.role === 'owner') return 1;
         return 0;
+    });
+
+    const filteredMembers = sortedMembers.filter((member) => {
+        const matchesSearch =
+            member.full_name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRoles =
+            roleFilters.length > 0
+                ? roleFilters.includes(member.role as EProjectRole)
+                : true;
+        return matchesSearch && matchesRoles;
     });
 
     const handleRemoveMember = async (memberId: string) => {
@@ -127,10 +143,64 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex flex-col gap-4 pb-0">
                 <div>
-                    <CardTitle className="text-xl">Members</CardTitle>
-                    <CardDescription>Manage project members</CardDescription>
+                    <CardTitle className="text-xl">Project Members</CardTitle>
+                    <CardDescription>
+                        Manage members of your project
+                    </CardDescription>
+                </div>
+                <div className="flex w-full md:w-auto space-x-2 pb-3">
+                    <Input
+                        type="text"
+                        placeholder="Search by name or email"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full md:w-64"
+                    />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="default" className="w-9 h-9">
+                                <Filter className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {[
+                                'admin',
+                                'maintainer',
+                                'editor',
+                                'viewer',
+                                'owner',
+                            ].map((role) => (
+                                <DropdownMenuItem
+                                    key={role}
+                                    onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                    onClick={() => {
+                                        setRoleFilters((prev) =>
+                                            prev.includes(role as EProjectRole)
+                                                ? prev.filter((r) => r !== role)
+                                                : [
+                                                      ...prev,
+                                                      role as EProjectRole,
+                                                  ],
+                                        );
+                                    }}
+                                >
+                                    <span
+                                        className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                            roleFilters.includes(
+                                                role as EProjectRole,
+                                            )
+                                                ? 'bg-primary'
+                                                : 'bg-gray-200'
+                                        }`}
+                                    ></span>
+                                    {role.charAt(0).toUpperCase() +
+                                        role.slice(1)}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </CardHeader>
             <CardContent>
@@ -157,9 +227,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                             </div>
                         ))}
                     </div>
-                ) : sortedMembers.length > 0 ? (
+                ) : filteredMembers.length > 0 ? (
                     <div className="space-y-3">
-                        {sortedMembers.map((member) => (
+                        {filteredMembers.map((member) => (
                             <div
                                 key={member.id}
                                 className="flex items-center justify-between"
@@ -240,7 +310,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
             {isRolePromptOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-black-300 dark:border-gray-700 rounded-lg">
                         <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
                             Change Role
                         </h3>
