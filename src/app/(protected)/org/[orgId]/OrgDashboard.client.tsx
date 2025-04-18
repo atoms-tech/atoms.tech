@@ -77,6 +77,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         string | null
     >(null);
 
+    const [isCanvasDialogOpen, setIsCanvasDialogOpen] = useState(false);
+    const [selectedCanvasProjectId, setSelectedCanvasProjectId] = useState<string | null>(null);
+
     const { data: documents } = useQuery({
         queryKey: ['documents', selectedProjectId],
         queryFn: async () => {
@@ -133,8 +136,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     };
 
     const handleGoToCanvas = () => {
-        if (props.orgId) {
-            window.location.href = `/org/${props.orgId}/canvas`;
+        setIsCanvasDialogOpen(true);
+    };
+
+    const handleStartCanvas = () => {
+        if (selectedCanvasProjectId) {
+            window.location.href = `/org/${props.orgId}/project/${selectedCanvasProjectId}/canvas`;
         }
     };
 
@@ -729,6 +736,59 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 }
                             >
                                 Start Analysis
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Canvas Dialog */}
+            {isCanvasDialogOpen && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
+                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                            Select a Project for Canvas
+                        </h3>
+                        <div className="space-y-4">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        {selectedCanvasProjectId
+                                            ? props.projects?.find(
+                                                  (p) => p.id === selectedCanvasProjectId,
+                                              )?.name
+                                            : 'Choose a project'}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    {props.projects?.map((project) => (
+                                        <DropdownMenuItem
+                                            key={project.id}
+                                            onClick={() => setSelectedCanvasProjectId(project.id)}
+                                        >
+                                            {project.name}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                            <Button
+                                variant="outline"
+                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                onClick={() => {
+                                    setIsCanvasDialogOpen(false);
+                                    setSelectedCanvasProjectId(null);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
+                                onClick={handleStartCanvas}
+                                disabled={!selectedCanvasProjectId}
+                            >
+                                Go to Canvas
                             </Button>
                         </div>
                     </div>
