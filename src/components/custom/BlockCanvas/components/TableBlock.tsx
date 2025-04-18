@@ -345,7 +345,12 @@ export const TableBlock: React.FC<BlockProps> = ({
         isNew: boolean,
     ) => {
         if (!userProfile?.id) return;
-        await saveRequirement(dynamicReq, isNew, userProfile.id);
+        await saveRequirement(
+            dynamicReq,
+            isNew,
+            userProfile.id,
+            userProfile.full_name || '',
+        );
         // Refresh requirements after save
         await refreshRequirements();
     };

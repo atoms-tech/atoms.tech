@@ -200,13 +200,29 @@ export const useRequirementActions = ({
         dynamicReq: DynamicRequirement,
         isNew: boolean,
         userId: string,
+        userName: string,
     ) => {
         try {
             // Create properties object and extract natural fields
             const { propertiesObj, naturalFields } =
                 await createPropertiesObjectFromDynamicReq(dynamicReq);
 
+            let analysis_history: RequirementAiAnalysis = {
+                descriptionHistory: [],
+            };
+
+            if (dynamicReq.ai_analysis) {
+                analysis_history = dynamicReq.ai_analysis;
+            }
+
+            analysis_history.descriptionHistory.push({
+                description: naturalFields.description || '',
+                createdAt: new Date().toISOString(),
+                createdBy: userName,
+            });
+
             const requirementData = {
+                ai_analysis: analysis_history,
                 block_id: blockId,
                 document_id: documentId,
                 properties: propertiesObj as unknown as Json, // Ensure properties is treated as Json

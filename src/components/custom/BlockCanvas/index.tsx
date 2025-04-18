@@ -224,7 +224,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                 (userRole || 'viewer') as keyof typeof rolePermissions
             ].includes(action);
         },
-        [userRole],
+        [userRole, rolePermissions],
     );
 
     const renderBlock = useCallback(
