@@ -30,7 +30,7 @@ export function FoldingCard({
     return (
         <Card
             className={cn(
-                'p-6 dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(75,85,99,1)] transition-transform hover:translate-x-[2px] hover:translate-y-[2px]',
+                'p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.75)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.75)] dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(75,85,99,1)] transition hover:translate-x-[2px] hover:translate-y-[2px]',
                 className,
             )}
             {...props}
