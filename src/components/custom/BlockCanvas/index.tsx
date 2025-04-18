@@ -3,12 +3,10 @@
 import {
     DndContext,
     DragEndEvent,
-    DragOverlay,
     DragStartEvent,
     KeyboardSensor,
     PointerSensor,
     closestCenter,
-    defaultDropAnimation,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
@@ -29,24 +27,33 @@ import {
     BlockCanvasProps,
     BlockType,
     BlockWithRequirements,
-    // Unused but might be needed in the future
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Property,
 } from '@/components/custom/BlockCanvas/types';
 import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useDocumentStore } from '@/lib/store/document.store';
+// Unused but might be needed in the future
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
 
-const dropAnimationConfig = {
-    ...defaultDropAnimation,
-    dragSourceOpacity: 0.5,
-};
-
 export function BlockCanvas({ documentId }: BlockCanvasProps) {
+    const rolePermissions = React.useMemo(
+        () =>
+            ({
+                owner: ['editBlock', 'deleteBlock', 'addBlock'],
+                admin: ['editBlock', 'deleteBlock', 'addBlock'],
+                maintainer: ['editBlock', 'deleteBlock', 'addBlock'],
+                editor: ['editBlock', 'deleteBlock', 'addBlock'],
+                viewer: [],
+            }) as Record<
+                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+                string[]
+            >,
+        [],
+    );
+
     const {
         blocks: originalBlocks,
         loading,
@@ -61,10 +68,40 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
     });
     const { reorderBlocks, isEditMode, setIsEditMode } = useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-    const [activeId, setActiveId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
     const params = useParams();
+
+    // Explicitly type userRole
+    const [userRole, setUserRole] = useState<
+        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer' | null
+    >(null);
+
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const projectId = params?.projectId || ''; // Extract project_id from the URL
+            if (!projectId || !userProfile?.id) return;
+
+            const { data, error } = await supabase
+                .from('project_members')
+                .select('role')
+                .eq(
+                    'project_id',
+                    Array.isArray(projectId) ? projectId[0] : projectId,
+                )
+                .eq('user_id', userProfile.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return;
+            }
+
+            setUserRole(data?.role || null);
+        };
+
+        fetchUserRole();
+    }, [params?.projectId, userProfile?.id]);
 
     // Use a ref to track if we're in the middle of adding a block
     // This helps prevent unnecessary re-renders
@@ -181,6 +218,15 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
         }),
     );
 
+    const canPerformAction = useCallback(
+        (action: string) => {
+            return rolePermissions[
+                (userRole || 'viewer') as keyof typeof rolePermissions
+            ].includes(action);
+        },
+        [userRole],
+    );
+
     const renderBlock = useCallback(
         (block: BlockWithRequirements) => {
             const isSelected = block.id === selectedBlockId;
@@ -190,13 +236,21 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                     key={block.id}
                     block={block}
                     _isSelected={isSelected}
-                    isEditMode={isEditMode}
+                    isEditMode={isEditMode && canPerformAction('editBlock')}
                     onSelect={() => setSelectedBlockId(block.id)}
-                    onUpdate={(content) => handleUpdateBlock(block.id, content)}
-                    onDelete={() => handleDeleteBlock(block.id)}
+                    onUpdate={(content) =>
+                        canPerformAction('editBlock') &&
+                        handleUpdateBlock(block.id, content)
+                    }
+                    onDelete={() =>
+                        canPerformAction('deleteBlock') &&
+                        handleDeleteBlock(block.id)
+                    }
                     onDoubleClick={() => {
-                        setSelectedBlockId(block.id);
-                        setIsEditMode(true);
+                        if (canPerformAction('editBlock')) {
+                            setSelectedBlockId(block.id);
+                            setIsEditMode(true);
+                        }
                     }}
                 />
             );
@@ -207,6 +261,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
             handleUpdateBlock,
             handleDeleteBlock,
             setIsEditMode,
+            canPerformAction,
         ],
     );
 
@@ -216,11 +271,10 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
     }, [enhancedBlocks, renderBlock]);
 
     const handleDragStart = (event: DragStartEvent) => {
-        setActiveId(event.active.id as string);
+        setSelectedBlockId(event.active.id as string);
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
-        setActiveId(null);
         const { active, over } = event;
 
         if (!over || active.id === over.id || !enhancedBlocks) {
@@ -279,11 +333,6 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
         );
     }
 
-    // Get active block with order property
-    const activeBlock = enhancedBlocks?.find(
-        (block: BlockWithRequirements) => block.id === activeId,
-    );
-
     return (
         <div className="relative min-h-[500px] space-y-4">
             <DndContext
@@ -302,66 +351,34 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                 >
                     <div className="space-y-4">{memoizedBlocks}</div>
                 </SortableContext>
-
-                <DragOverlay dropAnimation={dropAnimationConfig}>
-                    {activeId && activeBlock ? (
-                        <div className="opacity-100 w-full pointer-events-none">
-                            <SortableBlock
-                                block={activeBlock}
-                                _isSelected={false}
-                                isEditMode={isEditMode}
-                                onSelect={() => {}}
-                                onUpdate={() => {}}
-                                onDelete={() => {}}
-                            />
-                        </div>
-                    ) : null}
-                </DragOverlay>
             </DndContext>
-
-            <div className="flex gap-2 mt-4 z-10 relative">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                        // Set edit mode to true when creating a text block
-                        if (!isEditMode) {
-                            setIsEditMode(true);
-                        }
-                        // Create the text block and focus it
-                        handleAddBlock(BlockType.text, {
-                            format: 'markdown',
-                            text: '',
-                        })
-                            .then((newBlock) => {
-                                if (newBlock) {
-                                    setSelectedBlockId(newBlock.id);
-                                }
+            {canPerformAction('addBlock') && (
+                <div className="flex gap-2 mt-4 z-10 relative">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                            handleAddBlock(BlockType.text, {
+                                format: 'markdown',
+                                text: '',
                             })
-                            .catch((error) => {
-                                console.error(
-                                    'Failed to add text block:',
-                                    error,
-                                );
-                            });
-                    }}
-                >
-                    <Type className="h-4 w-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                        handleAddBlock(BlockType.table, {
-                            requirements: [],
-                        }).catch((error) => {
-                            console.error('Failed to add table block:', error);
-                        });
-                    }}
-                >
-                    <Table className="h-4 w-4" />
-                </Button>
-            </div>
+                        }
+                    >
+                        <Type className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                            handleAddBlock(BlockType.table, {
+                                requirements: [],
+                            })
+                        }
+                    >
+                        <Table className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

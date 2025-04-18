@@ -35,7 +35,7 @@ export default function SettingsSection({
                     opacity: isOpen ? 1 : 0,
                 }}
                 transition={{ duration: 0.3 }}
-                className="overflow-hidden mt-1"
+                className="overflow-hidden"
             >
                 <div className="flex items-start">
                     <div>
@@ -45,7 +45,7 @@ export default function SettingsSection({
                         <div className="mt-3 mb-3 text-sm">
                             {Children.map(children, (child) => (
                                 <div className="pl-4 flex items-center">
-                                    -&nbsp;&nbsp;{child}
+                                    {child}
                                 </div>
                             ))}
                         </div>

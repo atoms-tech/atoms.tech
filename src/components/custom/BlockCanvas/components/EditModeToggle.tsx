@@ -2,20 +2,68 @@
 
 import { motion } from 'framer-motion';
 import { Check, Edit2, Lock, Unlock } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import React, { memo } from 'react';
 
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
 import { useLayout } from '@/lib/providers/layout.provider';
+import { useUser } from '@/lib/providers/user.provider';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 
-// Create two versions of the toggle: a floating action button version and a toolbar version
+function useUserRole(userId: string) {
+    const params = useParams();
+    const projectId = params?.projectId || '';
+
+    if (!projectId) {
+        console.error('Project ID is missing from the URL.');
+        return async () => 'viewer';
+    }
+
+    const getUserRole = async (): Promise<string> => {
+        try {
+            const { data, error } = await supabase
+                .from('project_members')
+                .select('role')
+                .eq('user_id', userId)
+                .eq(
+                    'project_id',
+                    Array.isArray(projectId) ? projectId[0] : projectId,
+                )
+                .single();
+
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return 'viewer';
+            }
+
+            return data?.role || 'viewer';
+        } catch (err) {
+            console.error('Unexpected error fetching user role:', err);
+            return 'viewer';
+        }
+    };
+
+    return () => getUserRole();
+}
 
 // Floating action button version
 export const EditModeFloatingToggle = memo(() => {
     const { isEditMode, setIsEditMode } = useLayout();
+    const { user } = useUser(); // Fetch user using useUser()
+    const userId = user?.id || ''; // Ensure userId is extracted correctly
+
+    const getUserRole = useUserRole(userId);
+
+    const canPerformAction = async () => {
+        const userRole = await getUserRole();
+        return ['owner', 'admin', 'maintainer'].includes(userRole);
+    };
 
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
     };
+
+    if (!canPerformAction()) return null;
 
     return (
         <motion.div
@@ -41,10 +89,21 @@ export const EditModeFloatingToggle = memo(() => {
 // Toolbar version
 export const EditModeToggle = memo(() => {
     const { isEditMode, setIsEditMode } = useLayout();
+    const { user } = useUser(); // Fetch user using useUser()
+    const userId = user?.id || ''; // Ensure userId is extracted correctly
+
+    const getUserRole = useUserRole(userId);
+
+    const canPerformAction = async () => {
+        const userRole = await getUserRole();
+        return ['owner', 'admin', 'maintainer'].includes(userRole);
+    };
 
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
     };
+
+    if (!canPerformAction()) return null;
 
     return (
         <BaseToggle

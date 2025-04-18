@@ -1,9 +1,12 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
+import { useUser } from '@/lib/providers/user.provider';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
@@ -70,6 +73,69 @@ export function EditableTable<
 
     // Use the extracted custom hooks
     const { sortedData, handleSort } = useTableSort(data, sortKey);
+    const { user } = useUser();
+    const userId = user?.id || ''; // Ensure userId is extracted correctly
+    const params = useParams();
+    const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+
+    if (!projectId) {
+        console.error('Project ID is missing from the URL.');
+    }
+
+    if (!userId) {
+        console.error('User ID is missing from the user context.');
+    }
+
+    // Define rolePermissions with useMemo
+    const rolePermissions = React.useMemo(
+        () =>
+            ({
+                owner: ['editTable', 'deleteRow', 'addRow'],
+                admin: ['editTable', 'deleteRow', 'addRow'],
+                maintainer: ['editTable', 'deleteRow', 'addRow'],
+                editor: ['editTable', 'deleteRow', 'addRow'],
+                viewer: [],
+            }) as Record<
+                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+                string[]
+            >,
+        [],
+    );
+
+    const canPerformAction = useCallback(
+        async (action: string) => {
+            const getUserRole = async (): Promise<
+                keyof typeof rolePermissions
+            > => {
+                try {
+                    const { data, error } = await supabase
+                        .from('project_members')
+                        .select('role')
+                        .eq('user_id', userId) // Use userId from useUser
+                        .eq(
+                            'project_id',
+                            Array.isArray(projectId) ? projectId[0] : projectId,
+                        ) // Ensure projectId is a string
+                        .single();
+
+                    if (error) {
+                        console.error('Error fetching user role:', error);
+                        return 'viewer'; // Default to 'viewer' if there's an error
+                    }
+
+                    return data?.role || 'viewer'; // Default to 'viewer' if role is undefined
+                } catch (err) {
+                    console.error('Unexpected error fetching user role:', err);
+                    return 'viewer';
+                }
+            };
+
+            const userRole = await getUserRole();
+            console.log('User role:', userRole);
+            return rolePermissions[userRole].includes(action);
+        },
+        [userId, projectId, rolePermissions], // Updated dependencies
+    );
 
     // Effect to init edit data when entering edit mode
     useEffect(() => {
@@ -217,16 +283,25 @@ export function EditableTable<
 
     // Action handlers
     const handleCellChange = useCallback(
-        (itemId: string, accessor: keyof T, value: CellValue) => {
+        async (itemId: string, accessor: keyof T, value: CellValue) => {
+            const canEdit = await canPerformAction('editTable');
+            if (!canEdit) {
+                return;
+            }
             dispatch({
                 type: 'SET_CELL_VALUE',
                 payload: { itemId, accessor, value },
             });
         },
-        [],
+        [canPerformAction], // Updated dependency
     );
 
-    const handleAddNewRow = useCallback(() => {
+    const handleAddNewRow = useCallback(async () => {
+        const canAdd = await canPerformAction('addRow');
+        if (!canAdd) {
+            return;
+        }
+
         // Create empty row
         const newItem = columns.reduce((acc, col) => {
             switch (col.type) {
@@ -258,7 +333,7 @@ export function EditableTable<
             payload: { ...editingData, new: newItem },
         });
         dispatch({ type: 'START_ADD_ROW' });
-    }, [columns, editingData]);
+    }, [canPerformAction, columns, editingData]);
 
     const handleSaveNewRow = useCallback(async () => {
         const newItem = editingData['new'];
@@ -280,9 +355,17 @@ export function EditableTable<
         dispatch({ type: 'CANCEL_ADD_ROW' });
     }, []);
 
-    const handleDeleteClick = useCallback((item: T) => {
-        dispatch({ type: 'OPEN_DELETE_CONFIRM', payload: item });
-    }, []);
+    const handleDeleteClick = useCallback(
+        async (item: T) => {
+            const canDelete = await canPerformAction('deleteRow');
+            if (!canDelete) {
+                return;
+            }
+
+            dispatch({ type: 'OPEN_DELETE_CONFIRM', payload: item });
+        },
+        [canPerformAction], // Updated dependency
+    );
 
     const handleDeleteConfirm = useCallback(async () => {
         if (!itemToDelete || !onDelete) return;

@@ -14,7 +14,9 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useUser } from '@/lib/providers/user.provider';
 import { useDocumentStore } from '@/lib/store/document.store';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { cn } from '@/lib/utils';
 
 import { LayoutViewToggle } from './toggles/LayoutViewToggle';
@@ -30,6 +32,9 @@ const VerticalToolbar = () => {
 
     // Get edit mode state from document store
     const { isEditMode, setIsEditMode } = useDocumentStore();
+
+    const { user } = useUser();
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -57,7 +62,38 @@ const VerticalToolbar = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const projectId = pathname?.split('/')[4] || ''; // Extract project_id from the URL
+            if (!projectId || !user?.id) return;
+
+            const { data, error } = await supabase
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return;
+            }
+
+            setUserRole(data?.role || null);
+        };
+
+        fetchUserRole();
+    }, [pathname, user?.id]);
+
+    const canEdit = ['owner', 'admin', 'editor', 'maintainer'].includes(
+        userRole || '',
+    );
+
     const toggleEditMode = () => {
+        if (!canEdit) {
+            alert('You do not have permission to edit.');
+            return;
+        }
         setIsEditMode(!isEditMode);
     };
 
@@ -72,7 +108,7 @@ const VerticalToolbar = () => {
                     <Breadcrumb className={cn('ml-0', isTablet && 'ml-2')} />
                 </div>
                 <div className="flex items-center gap-2">
-                    {isDocumentPage && (
+                    {isDocumentPage && canEdit && (
                         <button
                             onClick={toggleEditMode}
                             className="p-2 rounded-md hover:bg-muted"
@@ -113,7 +149,7 @@ const VerticalToolbar = () => {
                 </div>
 
                 {/* Edit Mode Toggle - Only show on document pages */}
-                {isDocumentPage && (
+                {isDocumentPage && canEdit && (
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>

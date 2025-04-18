@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, FileBox, FolderArchive } from 'lucide-react';
+import { FileBox, FolderArchive, Trash } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -14,16 +14,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
 import { useProject } from '@/lib/providers/project.provider';
+import { useUser } from '@/lib/providers/user.provider';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 
 import ProjectMembers from './ProjectMembers';
@@ -50,14 +46,21 @@ export default function ProjectPage() {
     const { project } = useProject();
     const [activeTab, setActiveTab] = useState('documents');
     const [searchQuery, setSearchQuery] = useState('');
-    const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>(
-        null,
-    );
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
         useState(false);
-    const { data: documents, isLoading: documentsLoading } =
-        useProjectDocuments(project?.id || '');
+    const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
+        null,
+    );
+    const { user } = useUser();
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const {
+        data: documents,
+        isLoading: documentsLoading,
+        refetch,
+    } = useProjectDocuments(project?.id || '');
+
+    console.log(userRole, 'userRole');
 
     useEffect(() => {
         // Trigger refetch of users in ProjectMembers when the dashboard loads
@@ -69,19 +72,112 @@ export default function ProjectPage() {
         }
     }, []);
 
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const projectId = params?.projectId || ''; // Extract project_id from the URL
+            if (!projectId || !user?.id) return;
+
+            const { data, error } = await supabase
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return;
+            }
+
+            setUserRole(data?.role || null);
+        };
+
+        fetchUserRole();
+    }, [params?.projectId, user?.id]);
+
+    const canPerformAction = (action: string) => {
+        const rolePermissions = {
+            owner: [
+                'changeRole',
+                'removeMember',
+                'addDocument',
+                'viewDocument',
+                'deleteDocument',
+                'editDocument',
+            ],
+            admin: [
+                'removeMember',
+                'addDocument',
+                'viewDocument',
+                'deleteDocument',
+                'editDocument',
+            ],
+            maintainer: ['addDocument', 'viewDocument', 'editDocument'],
+            editor: ['addDocument', 'viewDocument', 'editDocument'],
+            viewer: ['viewDocument'],
+        };
+
+        return rolePermissions[
+            (userRole as keyof typeof rolePermissions) || 'viewer'
+        ].includes(action);
+    };
+
     const handleDocumentClick = (doc: Document) => {
+        if (!canPerformAction('viewDocument')) {
+            return; // Do nothing if the user does not have permission
+        }
         router.push(
-            `/org/${params.orgId}/project/${params.projectId}/documents/${doc.id}`,
+            `/org/${params?.orgId}/project/${params?.projectId}/documents/${doc.id}`,
         );
     };
 
-    const sortedDocuments = [...(documents || [])].sort((a, b) => {
-        if (!sortBy) return 0;
-        const dateA =
-            sortBy && a[sortBy] ? new Date(a[sortBy] as string).getTime() : 0;
-        const dateB =
-            sortBy && b[sortBy] ? new Date(b[sortBy] as string).getTime() : 0;
-        return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    const handleDeleteDocument = async () => {
+        if (!canPerformAction('deleteDocument')) {
+            return; // Do nothing if the user does not have permission
+        }
+
+        if (!documentToDelete) return;
+
+        try {
+            setIsDeleting(true);
+
+            // Delete requirements associated with the document
+            const { error: requirementsError } = await supabase
+                .from('requirements')
+                .delete()
+                .eq('document_id', documentToDelete.id);
+
+            if (requirementsError) {
+                console.error(
+                    'Error deleting requirements:',
+                    requirementsError,
+                );
+                throw requirementsError;
+            }
+
+            // Delete the document
+            const { error: documentError } = await supabase
+                .from('documents')
+                .delete()
+                .eq('id', documentToDelete.id);
+
+            if (documentError) {
+                console.error('Error deleting document:', documentError);
+                throw documentError;
+            }
+
+            // Refresh documents list
+            await refetch(); // Refetch documents to reflect changes
+            setDocumentToDelete(null);
+            setIsDeleting(false);
+        } catch (error) {
+            console.error('Error deleting document and requirements:', error);
+            setIsDeleting(false);
+        }
+    };
+
+    const sortedDocuments = [...(documents || [])].sort(() => {
+        return 0;
     });
 
     const filteredDocuments = sortedDocuments.filter((doc) =>
@@ -208,55 +304,16 @@ export default function ProjectPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full md:w-64"
                             />
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="default"
-                                        className="w-9 h-9"
-                                    >
-                                        <FolderArchive className="w-4 h-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {['created_at', 'updated_at'].map(
-                                        (field) => (
-                                            <DropdownMenuItem
-                                                key={field}
-                                                onSelect={(e) =>
-                                                    e.preventDefault()
-                                                } // Prevent menu from closing
-                                                onClick={() => {
-                                                    setSortBy(
-                                                        field as
-                                                            | 'created_at'
-                                                            | 'updated_at',
-                                                    );
-                                                    setSortOrder((prev) =>
-                                                        prev === 'desc'
-                                                            ? 'asc'
-                                                            : 'desc',
-                                                    );
-                                                }}
-                                            >
-                                                <span
-                                                    className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                        sortBy === field
-                                                            ? 'bg-primary'
-                                                            : 'bg-gray-200'
-                                                    }`}
-                                                ></span>
-                                                {field.replace('_', ' ')}
-                                                {sortBy === field &&
-                                                    (sortOrder === 'desc' ? (
-                                                        <ArrowUp className="ml-2 w-4 h-4 text-primary" />
-                                                    ) : (
-                                                        <ArrowDown className="ml-2 w-4 h-4 text-primary" />
-                                                    ))}
-                                            </DropdownMenuItem>
-                                        ),
-                                    )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {canPerformAction('addDocument') && (
+                                <Button
+                                    variant="default"
+                                    onClick={() =>
+                                        setShowCreateDocumentPanel(true)
+                                    }
+                                >
+                                    Add Requirement Document
+                                </Button>
+                            )}
                         </div>
                         <Button
                             variant="default"
@@ -268,7 +325,7 @@ export default function ProjectPage() {
                             variant="default"
                             onClick={() =>
                                 router.push(
-                                    `/org/${params.orgId}/project/${params.projectId}/testbed`,
+                                    `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
                                 )
                             }
                         >
@@ -279,16 +336,29 @@ export default function ProjectPage() {
                         {filteredDocuments?.map((doc) => (
                             <div
                                 key={doc.id}
-                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
-                                onClick={() => handleDocumentClick(doc)}
+                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors relative"
                             >
-                                <h3 className="font-medium truncate">
+                                <h3
+                                    className="font-medium truncate"
+                                    onClick={() => handleDocumentClick(doc)}
+                                >
                                     {doc.name}
                                 </h3>
                                 {doc.description && (
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    <p
+                                        className="text-sm text-muted-foreground line-clamp-2 mt-1"
+                                        onClick={() => handleDocumentClick(doc)}
+                                    >
                                         {doc.description}
                                     </p>
+                                )}
+                                {canPerformAction('deleteDocument') && (
+                                    <button
+                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-700"
+                                        onClick={() => setDocumentToDelete(doc)}
+                                    >
+                                        <Trash className="w-5 h-5" />
+                                    </button>
                                 )}
                             </div>
                         ))}
@@ -309,6 +379,42 @@ export default function ProjectPage() {
                     onClose={() => setShowCreateDocumentPanel(false)}
                     showTabs="document"
                 />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {documentToDelete && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
+                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                            Confirm Deletion
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Are you sure you want to delete the document{' '}
+                            <span className="font-medium">
+                                {documentToDelete.name}
+                            </span>
+                            ? This will also delete all requirements associated
+                            with this document.
+                        </p>
+                        <div className="flex justify-end space-x-2">
+                            <Button
+                                variant="outline"
+                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                onClick={() => setDocumentToDelete(null)}
+                                disabled={isDeleting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-red-500 text-white hover:bg-red-600"
+                                onClick={handleDeleteDocument}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

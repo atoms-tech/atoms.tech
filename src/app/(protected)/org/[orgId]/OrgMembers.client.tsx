@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Filter, MoreHorizontal, Users } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +54,22 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<EUserRoleType[]>([]);
 
+    // Define rolePermissions with explicit type
+    const rolePermissions: Record<
+        'owner' | 'super_admin' | 'admin' | 'member',
+        string[]
+    > = {
+        owner: ['assignToProject', 'changeRole', 'removeMember'],
+        super_admin: ['assignToProject', 'changeRole', 'removeMember'],
+        admin: ['assignToProject'],
+        member: [],
+    };
+
+    // Explicitly type userRole
+    const [userRole, setUserRole] = useState<
+        'owner' | 'super_admin' | 'admin' | 'member' | null
+    >(null);
+
     const {
         data: members = [],
         isLoading,
@@ -84,49 +100,59 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         enabled: !!params?.orgId,
     });
 
-    // Sort members to display the owner first
-    const sortedMembers = [...members].sort((a, b) => {
-        if (a.role === 'owner') return -1;
-        if (b.role === 'owner') return 1;
-        return 0;
-    }) as {
-        id: string;
-        role: EUserRoleType;
-        full_name?: string;
-        email?: string;
-    }[];
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const { data, error } = await supabase
+                .from('organization_members')
+                .select('role')
+                .eq('organization_id', params?.orgId || '')
+                .eq('user_id', user?.id || '')
+                .single();
 
-    const filteredMembers = sortedMembers.filter((member) => {
-        const matchesSearch =
-            member.full_name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesRoles =
-            roleFilters.length === 0 || roleFilters.includes(member.role);
-        return matchesSearch && matchesRoles;
-    });
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return;
+            }
 
-    const getRoleColor = (role: EUserRoleType) => {
-        switch (role) {
-            case 'owner':
-                return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-            case 'admin':
-                return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-            case 'member':
-                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-            case 'super_admin':
-                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-            default:
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
-        }
+            setUserRole(data?.role || null);
+        };
+
+        fetchUserRole();
+    }, [params?.orgId, user?.id]);
+
+    const canPerformAction = (action: string) => {
+        return rolePermissions[
+            (userRole as keyof typeof rolePermissions) || 'member'
+        ].includes(action);
     };
 
-    const isOwner = members.some(
-        (member) => member.id === user?.id && member.role === 'owner',
-    );
-
     const handleRemoveMember = async (memberId: string) => {
+        if (!canPerformAction('removeMember')) {
+            toast({
+                title: 'Error',
+                description: 'You do not have permission to remove members.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const targetMember = members.find((member) => member.id === memberId);
+
+        // Restrict super_admin from removing owner or other super_admins
+        if (
+            userRole === 'super_admin' &&
+            (targetMember?.role === 'owner' ||
+                targetMember?.role === 'super_admin')
+        ) {
+            toast({
+                title: 'Error',
+                description:
+                    'You cannot remove the owner or another super_admin.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         if (!user?.id) {
             toast({
                 title: 'Error',
@@ -168,10 +194,51 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     };
 
     const handleChangeRole = async () => {
+        if (!canPerformAction('changeRole')) {
+            toast({
+                title: 'Error',
+                description: 'You do not have permission to change roles.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         if (!activeMemberId || !params?.orgId || !selectedRole) {
             toast({
                 title: 'Error',
                 description: 'Invalid operation. Please select a role.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        const targetMember = members.find(
+            (member) => member.id === activeMemberId,
+        );
+
+        // Restrict super_admin from changing roles of owner or other super_admins
+        if (
+            userRole === 'super_admin' &&
+            (targetMember?.role === 'owner' ||
+                targetMember?.role === 'super_admin')
+        ) {
+            toast({
+                title: 'Error',
+                description:
+                    'You cannot change the role of an owner or another super_admin.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        // Restrict super_admin to only assign member or admin roles
+        if (
+            userRole === 'super_admin' &&
+            !['member', 'admin'].includes(selectedRole)
+        ) {
+            toast({
+                title: 'Error',
+                description: 'You can only assign roles of member or admin.',
                 variant: 'destructive',
             });
             return;
@@ -213,13 +280,22 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     };
 
     const handleAssignToProject = async () => {
+        if (!canPerformAction('assignToProject')) {
+            toast({
+                title: 'Error',
+                description:
+                    'You do not have permission to assign members to projects.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         if (!activeMemberId || !selectedProjectId || !assignRole) {
             setErrorMessage('Please select a project and role.');
             return;
         }
 
         try {
-            // Check if the user is already part of the project
             const {
                 data: existingMember,
                 error: checkError,
@@ -232,7 +308,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                 .single();
 
             if (checkError && status !== 406) {
-                // Only throw an error if it's not a 406 (Not Acceptable)
                 console.error('Error checking project membership:', checkError);
                 throw checkError;
             }
@@ -242,7 +317,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                 return;
             }
 
-            // Assign the user to the project
             await createProjectMember({
                 userId: activeMemberId,
                 projectId: selectedProjectId,
@@ -265,6 +339,28 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             setErrorMessage('Failed to assign user to project.');
         }
     };
+
+    // Ensure the current user is always at the top of the member list
+    const sortedMembers = [...members].sort((a, b) => {
+        if (a.id === user?.id) return -1;
+        if (b.id === user?.id) return 1;
+        if (a.role === 'owner') return -1;
+        if (b.role === 'owner') return 1;
+        return 0;
+    });
+
+    // Filter and search functionality
+    const filteredMembers = sortedMembers.filter((member) => {
+        const matchesSearch =
+            member.full_name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRoles =
+            roleFilters.length === 0 ||
+            roleFilters.includes(member.role as EUserRoleType);
+        return matchesSearch && matchesRoles;
+    });
 
     return (
         <Card className={className}>
@@ -294,7 +390,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 (role) => (
                                     <DropdownMenuItem
                                         key={role}
-                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                        onSelect={(e) => e.preventDefault()}
                                         onClick={() =>
                                             setRoleFilters((prev) =>
                                                 prev.includes(
@@ -372,59 +468,97 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 </div>
                                 <div className="flex items-center gap-0">
                                     <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as EUserRoleType)}`}
+                                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            member.role === 'owner'
+                                                ? 'bg-purple-100 text-purple-800'
+                                                : member.role === 'admin'
+                                                  ? 'bg-blue-100 text-blue-800'
+                                                  : member.role ===
+                                                      'super_admin'
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : 'bg-green-100 text-green-800'
+                                        }`}
                                     >
                                         {member.role}
                                     </span>
-                                    {isOwner && member.id !== user?.id && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setActiveMemberId(
-                                                            member.id,
-                                                        );
-                                                        setIsRolePromptOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                >
-                                                    Change role
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setActiveMemberId(
-                                                            member.id,
-                                                        );
-                                                        setIsAssignPromptOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                >
-                                                    Assign to Project
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        handleRemoveMember(
-                                                            member.id,
-                                                        );
-                                                    }}
-                                                    className="text-red-600"
-                                                >
-                                                    Remove
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+                                    {(canPerformAction('changeRole') ||
+                                        canPerformAction('assignToProject') ||
+                                        canPerformAction('removeMember')) &&
+                                        member.id !== user?.id && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    {canPerformAction(
+                                                        'changeRole',
+                                                    ) &&
+                                                        (userRole === 'owner' ||
+                                                            (userRole ===
+                                                                'super_admin' &&
+                                                                member.role !==
+                                                                    'owner' &&
+                                                                member.role !==
+                                                                    'super_admin')) && (
+                                                            <DropdownMenuItem
+                                                                onClick={() => {
+                                                                    setActiveMemberId(
+                                                                        member.id,
+                                                                    );
+                                                                    setIsRolePromptOpen(
+                                                                        true,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                Change role
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                    {canPerformAction(
+                                                        'assignToProject',
+                                                    ) && (
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                setActiveMemberId(
+                                                                    member.id,
+                                                                );
+                                                                setIsAssignPromptOpen(
+                                                                    true,
+                                                                );
+                                                            }}
+                                                        >
+                                                            Assign to Project
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {canPerformAction(
+                                                        'removeMember',
+                                                    ) &&
+                                                        (userRole === 'owner' ||
+                                                            (userRole ===
+                                                                'super_admin' &&
+                                                                member.role !==
+                                                                    'owner' &&
+                                                                member.role !==
+                                                                    'super_admin')) && (
+                                                            <DropdownMenuItem
+                                                                onClick={() =>
+                                                                    handleRemoveMember(
+                                                                        member.id,
+                                                                    )
+                                                                }
+                                                                className="text-red-600"
+                                                            >
+                                                                Remove
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                 </div>
                             </div>
                         ))}
@@ -465,25 +599,29 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        {['member', 'admin', 'super_admin'].map(
-                                            (role) => (
-                                                <DropdownMenuItem
-                                                    key={role}
-                                                    onClick={() =>
-                                                        setSelectedRole(
-                                                            role as EUserRoleType,
-                                                        )
-                                                    }
-                                                >
-                                                    {role === 'super_admin'
-                                                        ? 'Super Admin'
-                                                        : role
-                                                              .charAt(0)
-                                                              .toUpperCase() +
-                                                          role.slice(1)}
-                                                </DropdownMenuItem>
-                                            ),
-                                        )}
+                                        {[
+                                            'member',
+                                            'admin',
+                                            ...(userRole === 'owner'
+                                                ? ['super_admin']
+                                                : []),
+                                        ].map((role) => (
+                                            <DropdownMenuItem
+                                                key={role}
+                                                onClick={() =>
+                                                    setSelectedRole(
+                                                        role as EUserRoleType,
+                                                    )
+                                                }
+                                            >
+                                                {role === 'super_admin'
+                                                    ? 'Super Admin'
+                                                    : role
+                                                          .charAt(0)
+                                                          .toUpperCase() +
+                                                      role.slice(1)}
+                                            </DropdownMenuItem>
+                                        ))}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>

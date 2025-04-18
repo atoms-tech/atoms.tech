@@ -14,6 +14,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useAuth } from '@/hooks/useAuth';
 
 import { AddColumnDialog } from './AddColumnDialog';
 
@@ -58,8 +59,32 @@ export function TableControls<T extends Record<string, unknown>>({
     columns?: EditableColumn<T>[];
 }) {
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
+    const { userProfile } = useAuth();
 
-    if (!isVisible) return null;
+    // Define rolePermissions with explicit type
+    const rolePermissions: Record<
+        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+        string[]
+    > = {
+        owner: ['addColumn', 'addRow'],
+        admin: ['addColumn', 'addRow'],
+        maintainer: ['addColumn', 'addRow'],
+        editor: ['addRow'],
+        viewer: [],
+    };
+
+    // Explicitly type userRole
+    const userRole: keyof typeof rolePermissions =
+        (userProfile as { role?: keyof typeof rolePermissions })?.role ||
+        'viewer';
+
+    console.log('Project ID:', projectId); // Ensure projectId is logged for debugging
+
+    const canPerformAction = (action: string) => {
+        return rolePermissions[userRole].includes(action);
+    };
+
+    if (!isVisible || !canPerformAction('addRow')) return null;
 
     return (
         <>
@@ -93,7 +118,7 @@ export function TableControls<T extends Record<string, unknown>>({
                                 )}
                             </>
                         )}
-                        {onAddColumn && (
+                        {onAddColumn && canPerformAction('addColumn') && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button

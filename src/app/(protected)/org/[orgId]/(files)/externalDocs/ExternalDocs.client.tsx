@@ -1,6 +1,7 @@
 'use client';
 
-import { File, Trash, Upload } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { File, Grid, List, Trash, Upload } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -20,22 +21,23 @@ import {
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useOrganization } from '@/lib/providers/organization.provider';
+import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface ExternalDocsPageProps {
-    onTotalUsageUpdate?: (totalUsage: number) => void; // Make the prop optional
+    onTotalUsageUpdate?: (totalUsage: number) => void;
 }
 
 export default function ExternalDocsPage({
     onTotalUsageUpdate = () => {},
 }: ExternalDocsPageProps) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewMode] = useState<'list' | 'grid'>('grid');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [isUploading, setIsUploading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [sortOption, setSortOption] = useState('');
-    const [totalUsage, setTotalUsage] = useState(0); // Track total usage
-    const [errorMessage, setErrorMessage] = useState<string | null>(null); // Error message state
+    const [totalUsage, setTotalUsage] = useState(0);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const { theme } = useTheme();
     const uploadDocument = useUploadExternalDocument();
     const deleteDocument = useDeleteExternalDocument();
@@ -43,12 +45,37 @@ export default function ExternalDocsPage({
     const organization = organizationContext?.currentOrganization || null;
     const pathname = usePathname();
     const { toast } = useToast();
+    const { user } = useUser();
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     // Extract orgId from URL path
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
 
     // Use organization.id if available, otherwise fall back to path-based orgId
     const currentOrgId = organization?.id || pathOrgId;
+
+    // Fetch user role
+    useEffect(() => {
+        const fetchUserRole = async () => {
+            const { data, error } = await supabase
+                .from('organization_members')
+                .select('role')
+                .eq('organization_id', currentOrgId || '')
+                .eq('user_id', user?.id || '')
+                .single();
+
+            if (error) {
+                console.error('Error fetching user role:', error);
+                return;
+            }
+
+            setUserRole(data?.role || null);
+        };
+
+        if (currentOrgId) {
+            fetchUserRole();
+        }
+    }, [currentOrgId, user?.id]);
 
     // Only fetch documents if we have a valid orgId
     const { data, refetch } = useExternalDocumentsByOrg(
@@ -60,9 +87,8 @@ export default function ExternalDocsPage({
         const usage =
             data?.reduce((sum, file) => sum + (file.size || 0), 0) || 0;
         setTotalUsage(usage);
-        onTotalUsageUpdate(usage); // Safely call the callback
+        onTotalUsageUpdate(usage);
 
-        // Set error message if usage exceeds 1000 MB
         if (usage > 1000 * 1024 * 1024) {
             setErrorMessage(
                 'You have reached the storage cap of 1000 MB. Please delete some documents to upload more.',
@@ -107,7 +133,7 @@ export default function ExternalDocsPage({
                 description: 'File uploaded successfully!',
                 variant: 'default',
             });
-            refetch(); // Refresh the file list after upload
+            refetch();
         } catch (error) {
             console.error('Failed to upload document', error);
             toast({
@@ -135,7 +161,7 @@ export default function ExternalDocsPage({
                 documentId,
                 orgId: currentOrgId,
             });
-            refetch(); // Refresh the file list after deletion
+            refetch();
             toast({
                 title: 'Success',
                 description: 'File deleted successfully!',
@@ -173,18 +199,20 @@ export default function ExternalDocsPage({
 
         const filePath = `${currentOrgId}/${documentId}`;
 
-        // Get a public URL for the file from Supabase storage
         const { data: publicUrl } = supabase.storage
             .from('external_documents')
             .getPublicUrl(filePath);
 
-        // Open the file in a new tab
         if (publicUrl) {
             window.open(publicUrl.publicUrl, '_blank');
         } else {
             alert('Failed to get file URL. Please try again.');
         }
     };
+
+    const canManageDocuments = ['owner', 'super_admin', 'admin'].includes(
+        userRole || '',
+    );
 
     return (
         <div className="container p-6">
@@ -212,7 +240,7 @@ export default function ExternalDocsPage({
                             ].map((type) => (
                                 <DropdownMenuItem
                                     key={type}
-                                    onSelect={(e) => e.preventDefault()} // Prevent menu from closing
+                                    onSelect={(e) => e.preventDefault()}
                                     onClick={() =>
                                         setSortOption((prev) =>
                                             prev === type ? '' : type,
@@ -231,29 +259,76 @@ export default function ExternalDocsPage({
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    <input
-                        type="file"
-                        onChange={handleFileUpload}
-                        style={{ display: 'none' }}
-                        id="file-upload"
-                        accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
+                    {canManageDocuments && (
+                        <input
+                            type="file"
+                            onChange={handleFileUpload}
+                            style={{ display: 'none' }}
+                            id="file-upload"
+                            accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
+                        />
+                    )}
+                    {canManageDocuments && (
+                        <label htmlFor="file-upload">
+                            <Button
+                                variant="default"
+                                className="w-9 h-9"
+                                onClick={() =>
+                                    document
+                                        .getElementById('file-upload')
+                                        ?.click()
+                                }
+                                disabled={
+                                    !currentOrgId ||
+                                    isUploading ||
+                                    totalUsage > 1000 * 1024 * 1024
+                                }
+                            >
+                                <Upload className="w-4 h-4" />
+                            </Button>
+                        </label>
+                    )}
+                </div>
+                <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden">
+                    <motion.div
+                        className="absolute inset-0 bg-primary"
+                        layout
+                        transition={{
+                            type: 'spring',
+                            stiffness: 300,
+                            damping: 30,
+                        }}
+                        style={{
+                            left: viewMode === 'list' ? 0 : '50%',
+                            width: '50%',
+                        }}
                     />
-                    <label htmlFor="file-upload">
-                        <Button
-                            variant="default"
-                            className="w-9 h-9"
-                            onClick={() =>
-                                document.getElementById('file-upload')?.click()
-                            }
-                            disabled={
-                                !currentOrgId ||
-                                isUploading ||
-                                totalUsage > 1000 * 1024 * 1024
-                            }
-                        >
-                            <Upload className="w-4 h-4" />
-                        </Button>
-                    </label>
+                    <Button
+                        variant="link"
+                        className={`w-9 h-9 relative z-10 ${
+                            viewMode === 'list'
+                                ? 'text-white'
+                                : theme === 'dark'
+                                  ? 'text-white'
+                                  : 'text-black'
+                        }`}
+                        onClick={() => setViewMode('list')}
+                    >
+                        <List className="w-4 h-4" />
+                    </Button>
+                    <Button
+                        variant="link"
+                        className={`w-9 h-9 relative z-10 ${
+                            viewMode === 'grid'
+                                ? 'text-white'
+                                : theme === 'dark'
+                                  ? 'text-white'
+                                  : 'text-black'
+                        }`}
+                        onClick={() => setViewMode('grid')}
+                    >
+                        <Grid className="w-4 h-4" />
+                    </Button>
                 </div>
             </div>
 
@@ -321,18 +396,20 @@ export default function ExternalDocsPage({
                                                 </p>
                                             </div>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevent div click from triggering
-                                                handleFileDelete(file.id);
-                                            }}
-                                            className="text-red-500 hover:bg-background hover:text-red-700"
-                                            disabled={isDeleting}
-                                        >
-                                            <Trash className="w-4 h-4" />
-                                        </Button>
+                                        {canManageDocuments && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleFileDelete(file.id);
+                                                }}
+                                                className="text-red-500 hover:bg-background hover:text-red-700"
+                                                disabled={isDeleting}
+                                            >
+                                                <Trash className="w-4 h-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -347,24 +424,26 @@ export default function ExternalDocsPage({
                                 Please upload documents to share with your
                                 organization.
                             </p>
-                            <label htmlFor="file-upload">
-                                <Button
-                                    variant="default"
-                                    className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
-                                    onClick={() =>
-                                        document
-                                            .getElementById('file-upload')
-                                            ?.click()
-                                    }
-                                    disabled={
-                                        !currentOrgId ||
-                                        isUploading ||
-                                        totalUsage > 1000 * 1024 * 1024
-                                    }
-                                >
-                                    Upload Document
-                                </Button>
-                            </label>
+                            {canManageDocuments && (
+                                <label htmlFor="file-upload">
+                                    <Button
+                                        variant="default"
+                                        className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
+                                        onClick={() =>
+                                            document
+                                                .getElementById('file-upload')
+                                                ?.click()
+                                        }
+                                        disabled={
+                                            !currentOrgId ||
+                                            isUploading ||
+                                            totalUsage > 1000 * 1024 * 1024
+                                        }
+                                    >
+                                        Upload Document
+                                    </Button>
+                                </label>
+                            )}
                         </div>
                     )}
                 </>

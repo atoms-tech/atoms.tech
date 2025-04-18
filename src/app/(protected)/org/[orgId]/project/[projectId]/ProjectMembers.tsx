@@ -63,9 +63,26 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         queryFn: () => getProjectMembers(projectId),
     });
 
-    const isOwner = members.some(
-        (member) => member.id === user?.id && member.role === 'owner',
-    );
+    // Define rolePermissions with explicit type
+    const rolePermissions: Record<
+        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+        string[]
+    > = {
+        owner: ['changeRole', 'removeMember'],
+        admin: ['removeMember'],
+        maintainer: [],
+        editor: [],
+        viewer: [],
+    };
+
+    // Explicitly type userRole
+    const userRole: keyof typeof rolePermissions =
+        (members.find((member) => member.id === user?.id)
+            ?.role as keyof typeof rolePermissions) || 'viewer';
+
+    const canPerformAction = (action: string) => {
+        return rolePermissions[userRole].includes(action);
+    };
 
     const sortedMembers = [...members].sort((a, b) => {
         if (a.role === 'owner') return -1;
@@ -87,6 +104,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     });
 
     const handleRemoveMember = async (memberId: string) => {
+        if (!canPerformAction('removeMember')) {
+            setErrorMessage('You do not have permission to remove members.');
+            return;
+        }
+
         if (!user?.id) {
             setErrorMessage('User not authenticated.');
             return;
@@ -113,6 +135,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     };
 
     const handleChangeRole = async () => {
+        if (!canPerformAction('changeRole')) {
+            setErrorMessage('You do not have permission to change roles.');
+            return;
+        }
+
         if (!activeMemberId || !selectedRole) {
             setErrorMessage('Invalid operation. Please select a role.');
             return;
@@ -254,43 +281,48 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     >
                                         {member.role}
                                     </span>
-                                    {isOwner && member.role !== 'owner' && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0"
-                                                >
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        setActiveMemberId(
-                                                            member.id,
-                                                        );
-                                                        setIsRolePromptOpen(
-                                                            true,
-                                                        );
-                                                    }}
-                                                >
-                                                    Change role
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => {
-                                                        handleRemoveMember(
-                                                            member.id,
-                                                        );
-                                                    }}
-                                                    className="text-red-600"
-                                                >
-                                                    Remove
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+                                    {canPerformAction('changeRole') &&
+                                        member.role !== 'owner' && (
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() => {
+                                                            setActiveMemberId(
+                                                                member.id,
+                                                            );
+                                                            setIsRolePromptOpen(
+                                                                true,
+                                                            );
+                                                        }}
+                                                    >
+                                                        Change role
+                                                    </DropdownMenuItem>
+                                                    {canPerformAction(
+                                                        'removeMember',
+                                                    ) && (
+                                                        <DropdownMenuItem
+                                                            onClick={() => {
+                                                                handleRemoveMember(
+                                                                    member.id,
+                                                                );
+                                                            }}
+                                                            className="text-red-600"
+                                                        >
+                                                            Remove
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                 </div>
                             </div>
                         ))}
