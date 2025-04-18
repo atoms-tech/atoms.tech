@@ -270,9 +270,19 @@ export function DataTableRow<
                                                             </div>
                                                             <div className="flex-1">
                                                                 <div className="text-[10px] text-muted-foreground mb-1">
-                                                                    {
-                                                                        formattedDate
-                                                                    }
+                                                                    <span>
+                                                                        {
+                                                                            formattedDate
+                                                                        }
+                                                                    </span>
+                                                                    {historyItem.createdBy && (
+                                                                        <span className="ml-2 font-medium">
+                                                                            by{' '}
+                                                                            {
+                                                                                historyItem.createdBy
+                                                                            }
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-sm bg-muted/40 p-3 rounded-md">
                                                                     {

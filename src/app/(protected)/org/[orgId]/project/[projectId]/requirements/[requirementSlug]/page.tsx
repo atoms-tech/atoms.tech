@@ -4,8 +4,10 @@ import { useParams, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useUpdateRequirement } from '@/hooks/mutations/useRequirementMutations';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { useRequirement } from '@/hooks/queries/useRequirement';
 import { useGumloop } from '@/hooks/useGumloop';
+import { useUser } from '@/lib/providers/user.provider';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
@@ -52,8 +54,10 @@ export default function RequirementPage() {
         }
     }, [requirement]);
 
+    const { user } = useUser();
+    const { data: profile } = useProfile(user!.id);
     const updateRequirementWithHistory = async (newDescription: string) => {
-        if (!requirement) {
+        if (!requirement || !profile) {
             return;
         }
         setIsSaving(true);
@@ -79,6 +83,7 @@ export default function RequirementPage() {
                 analysis_history.descriptionHistory.push({
                     description: newDescription,
                     createdAt: new Date().toISOString(),
+                    createdBy: profile.full_name || '',
                 });
             }
             reqUpdate.ai_analysis = analysis_history;
