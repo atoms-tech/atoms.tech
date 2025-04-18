@@ -28,18 +28,7 @@ export function FoldingCard({
     const [isOpen, setIsOpen] = useState(defaultOpen);
 
     return (
-        <Card
-            className={cn(
-                `p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.75)]
-                hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.75)]
-                dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)]
-                dark:hover:shadow-[2px_2px_0px_0px_rgba(75,85,99,1)]
-                transition hover:translate-x-[2px] hover:translate-y-[2px]
-                cursor-pointer`,
-                className,
-            )}
-            {...props}
-        >
+        <Card className={cn(`p-6 cursor-pointer`, className)} {...props}>
             <button
                 className="flex items-center gap-4 w-full cursor-pointer"
                 onClick={() => setIsOpen(!isOpen)}
