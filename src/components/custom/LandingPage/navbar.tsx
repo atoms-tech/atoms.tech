@@ -51,18 +51,33 @@ export function Navbar() {
 
     const navLinks = [
         { href: '/#features', label: 'Features' },
-        { href: '/#how-it-works', label: 'How It Works' },
+        {
+            href: '/#how-it-works',
+            label: 'How It Works',
+            shortLabel: 'How It Works',
+        },
         { href: '/#industries', label: 'Industries' },
         { href: '/#contact', label: 'Contact' },
     ];
 
-    const NavLink = ({ href, label }: { href: string; label: string }) => (
+    const NavLink = ({
+        href,
+        label,
+        shortLabel,
+    }: {
+        href: string;
+        label: string;
+        shortLabel?: string;
+    }) => (
         <Link
             href={href}
-            className="relative group text-lg text-white hover:text-gray-300 transition-colors uppercase font-bold"
+            className="relative group text-lg text-white hover:text-gray-300 transition-colors uppercase font-bold whitespace-nowrap"
             onClick={() => setIsMenuOpen(false)}
         >
-            {label}
+            <span className="hidden md:inline lg:hidden">
+                {shortLabel || label}
+            </span>
+            <span className="inline md:hidden lg:inline">{label}</span>
             <div className="absolute w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
         </Link>
     );
@@ -160,16 +175,16 @@ export function Navbar() {
     }, []);
 
     return (
-        <header className="fixed top-0 left-0 right-0 min-h-16 px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
+        <header className="fixed top-0 left-0 right-0 min-h-16 px-4 sm:px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
             {/* Show full-screen loading overlay when navigating to dashboard */}
             {loadingStates.dashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-                    <div className="flex flex-col items-center space-y-4 text-center">
+                    <div className="flex flex-col items-center space-y-4 text-center px-4">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <h2 className="text-2xl font-bold tracking-tight">
+                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
                             Loading dashboard...
                         </h2>
-                        <p className="text-muted-foreground">
+                        <p className="text-sm sm:text-base text-muted-foreground">
                             We&apos;re preparing your organization workspace
                         </p>
                     </div>
@@ -178,28 +193,29 @@ export function Navbar() {
 
             <div className="relative">
                 <div className="container mx-auto flex justify-between items-center">
-                    <Link href="/" className="atoms-logo flex">
+                    <Link href="/" className="atoms-logo flex items-center">
                         <Image
-                            src="/atoms.png"
+                            src="/AtomsLogo.svg"
                             alt="Atoms logo"
-                            width={24}
-                            height={24}
-                            className="object-contain mx-2 w-auto h-auto sm:w-[28px] sm:h-[28px] md:w-[32px] md:h-[32px]"
+                            width={48}
+                            height={48}
+                            className="object-contain invert mx-1 sm:mx-2 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
+                            priority
                         />
-                        <span className="font-semibold text-base sm:text-lg md:text-xl">
+                        <span className="font-medium text-base sm:text-lg md:text-2xl tracking-tight">
                             ATOMS.TECH
                         </span>
                     </Link>
 
                     {/* Desktop Navigation */}
-                    <nav className="hidden md:flex space-x-4 lg:space-x-8 xl:space-x-16">
+                    <nav className="hidden lg:flex lg:space-x-8 xl:space-x-16">
                         {navLinks.map((link) => (
                             <NavLink key={link.href} {...link} />
                         ))}
                     </nav>
 
                     {/* Mobile Menu Button */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {isLoading ? (
                             <div className="h-9 w-24 bg-gray-700 animate-pulse rounded-md"></div>
                         ) : isAuthenticated ? (
@@ -207,10 +223,11 @@ export function Navbar() {
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex gap-2"
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex gap-2"
+                                        size="sm"
                                     >
-                                        <User size={18} />
-                                        <span className="max-w-32 truncate">
+                                        <User size={16} />
+                                        <span className="max-w-24 lg:max-w-32 truncate">
                                             {userProfile?.full_name ||
                                                 'Account'}
                                         </span>
@@ -226,6 +243,7 @@ export function Navbar() {
                                     <DropdownMenuItem
                                         onClick={handleDashboard}
                                         disabled={loadingStates.dashboard}
+                                        className="py-2"
                                     >
                                         {loadingStates.dashboard ? (
                                             <div className="flex items-center">
@@ -241,6 +259,7 @@ export function Navbar() {
                                     <DropdownMenuItem
                                         onClick={handleBilling}
                                         disabled={loadingStates.billing}
+                                        className="py-2"
                                     >
                                         {loadingStates.billing ? (
                                             <div className="flex items-center">
@@ -256,6 +275,7 @@ export function Navbar() {
                                     <DropdownMenuItem
                                         onClick={handleSignOut}
                                         disabled={isSigningOut}
+                                        className="py-2"
                                     >
                                         {isSigningOut ? (
                                             <div className="flex items-center">
@@ -273,9 +293,10 @@ export function Navbar() {
                         ) : (
                             <Button
                                 variant="outline"
-                                className="btn-secondary bg-black hover:bg-white hover:text-black hidden md:flex"
+                                className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex"
                                 onClick={handleSignIn}
                                 disabled={loadingStates.signIn}
+                                size="sm"
                             >
                                 {loadingStates.signIn ? (
                                     <div className="flex items-center gap-2">
@@ -288,7 +309,7 @@ export function Navbar() {
                             </Button>
                         )}
                         <button
-                            className="md:hidden text-white p-2 touch-manipulation"
+                            className="lg:hidden text-white p-1.5 sm:p-2 rounded-md hover:bg-white/10 transition-colors touch-manipulation"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
                         >
@@ -300,8 +321,8 @@ export function Navbar() {
                 {/* Mobile Navigation */}
                 {isMenuOpen && (
                     <div
-                        className="absolute top-full left-0 right-0 bg-black border-t border-white md:hidden
-                        animate-in slide-in-from-right duration-300 ease-in-out"
+                        className="absolute top-full left-0 right-0 bg-black border-t border-white lg:hidden
+                        animate-in slide-in-from-right duration-300 ease-in-out z-40 max-h-[calc(100vh-64px)] overflow-y-auto"
                     >
                         <nav className="flex flex-col space-y-4 p-4">
                             {navLinks.map((link) => (
@@ -311,7 +332,7 @@ export function Navbar() {
                                 <>
                                     <Button
                                         variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full mt-2"
                                         onClick={handleDashboard}
                                         disabled={loadingStates.dashboard}
                                     >
@@ -358,7 +379,7 @@ export function Navbar() {
                             ) : (
                                 <Button
                                     variant="outline"
-                                    className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
+                                    className="btn-secondary bg-black hover:bg-white hover:text-black w-full mt-2"
                                     onClick={handleSignIn}
                                     disabled={loadingStates.signIn}
                                 >

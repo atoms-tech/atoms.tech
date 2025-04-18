@@ -69,11 +69,11 @@
         --primary: 270 91% 60%; /* Bright electric blue */
         --primary-foreground: 0 0% 100%;
 
-        --secondary: 270 19% 27%;
+        --secondary: 270 0% 27%;
         --secondary-foreground: 266 40% 98%;
 
-        --muted: 270 19% 27%;
-        --muted-foreground: 215 20% 65%;
+        --muted: 216 15% 25%;
+        --muted-foreground: 266 0% 77%;
 
         --accent: 270 94% 68%; /* Brighter blue accent */
         --accent-foreground: 216 34% 17%;

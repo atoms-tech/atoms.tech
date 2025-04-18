@@ -1,6 +1,7 @@
 // app/page.tsx
 import { Contact } from '@/components/custom/LandingPage/contact';
 import { CTA } from '@/components/custom/LandingPage/cta';
+import { FeatureDemo } from '@/components/custom/LandingPage/feature-demo';
 import { Features } from '@/components/custom/LandingPage/features';
 import { Footer } from '@/components/custom/LandingPage/footer';
 import { GridBackground } from '@/components/custom/LandingPage/grid-background';
@@ -22,6 +23,9 @@ export default async function Home() {
                         <Hero />
                         <div className="section-divider">
                             <Features />
+                        </div>
+                        <div className="section-divider">
+                            <FeatureDemo />
                         </div>
                         <HowItWorks />
                         <TimeSavingEdge />

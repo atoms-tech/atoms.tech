@@ -172,7 +172,7 @@ function AppSidebar() {
                     <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-4">
                         <Link href="/" className="flex items-center gap-2">
                             <Image
-                                src="/atoms.png"
+                                src="/AtomsLogo.svg"
                                 alt="Atoms logo"
                                 width={20}
                                 height={20}
