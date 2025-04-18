@@ -8,7 +8,7 @@ import type {
     ExcalidrawImperativeAPI,
     ExcalidrawInitialDataState,
 } from '@excalidraw/excalidraw/types';
-import { Pencil, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -68,12 +68,14 @@ interface ExcalidrawWrapperProps {
     }) => void;
     diagramId?: string | null;
     onDiagramSaved?: (id: string) => void;
+    onDiagramNameChange?: (name: string) => void;
 }
 
 const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     onMounted,
     diagramId: externalDiagramId,
     onDiagramSaved,
+    onDiagramNameChange,
 }) => {
     const [diagramId, setDiagramId] = useState<string | null>(
         externalDiagramId || null,
@@ -88,7 +90,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     const [authError, setAuthError] = useState<string | null>(null);
     const [isSaveAsDialogOpen, setIsSaveAsDialogOpen] = useState(false);
     const [newDiagramName, setNewDiagramName] = useState('');
-    const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
         undefined,
@@ -166,6 +167,18 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 
                 if (error) {
                     console.error('Error loading diagram:', error);
+                    if (
+                        error.message.includes('multiple (or no) rows returned')
+                    ) {
+                        console.log(
+                            'No diagram found with ID:',
+                            id,
+                            '- treating as new diagram',
+                        );
+                        return false;
+                    }
+
+                    //handle it as a real error
                     setAuthError('Error loading diagram: ' + error.message);
                     return false;
                 }
@@ -635,64 +648,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         setNewDiagramName('');
     };
 
-    // Handle rename operation
-    const handleRename = async () => {
-        if (!diagramId || !newDiagramName.trim()) return;
-
-        console.log('Renaming diagram:', diagramId, newDiagramName.trim());
-
-        try {
-            // Store the trimmed name value
-            const trimmedName = newDiagramName.trim();
-
-            // Get current diagram state
-            if (excalidrawApiRef.current) {
-                // Get current diagram data
-                const elements = excalidrawApiRef.current.getSceneElements();
-                const appState = excalidrawApiRef.current.getAppState();
-                const files = excalidrawApiRef.current.getFiles();
-
-                // Use saveDiagram directly with the new name - one operation for everything
-                await saveDiagram(
-                    elements,
-                    appState,
-                    files,
-                    undefined,
-                    trimmedName,
-                    true,
-                );
-                console.log(
-                    'Diagram renamed and saved successfully with name:',
-                    trimmedName,
-                );
-            } else {
-                // Fallback if we can't get excalidraw state
-                const { error } = await supabase
-                    .from('excalidraw_diagrams')
-                    .update({ name: trimmedName })
-                    .eq('id', diagramId);
-
-                if (error) {
-                    console.error('Error renaming diagram:', error);
-                    return;
-                }
-
-                // Update local state
-                setDiagramName(trimmedName);
-                console.log(
-                    'Diagram renamed with name-only update:',
-                    trimmedName,
-                );
-            }
-
-            // Close dialog and reset input
-            setIsRenameDialogOpen(false);
-            setNewDiagramName('');
-        } catch (err) {
-            console.error('Error in handleRename:', err);
-        }
-    };
-
     // Debounced save function to avoid too many API calls
     const debouncedSave = useCallback(
         (
@@ -730,28 +685,20 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         };
     }, []);
 
+    // Notify parent component when diagram name changes
+    useEffect(() => {
+        if (onDiagramNameChange) {
+            onDiagramNameChange(diagramName);
+        }
+    }, [diagramName, onDiagramNameChange]);
+
     if (isLoading) {
         return <div>Loading...</div>;
     }
 
     return (
         <div className="h-full w-full min-h-[500px] relative">
-            <div className="absolute top-2.5 left-2.5 flex items-center gap-2.5 z-[1000]">
-                <div className="bg-white dark:bg-sidebar px-2.5 py-1 rounded border border-gray-200 dark:border-sidebar-foreground flex items-center gap-2">
-                    <span className="font-medium text-sm">{diagramName}</span>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                            setNewDiagramName(diagramName);
-                            setIsRenameDialogOpen(true);
-                        }}
-                        className="h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-sidebar-foreground"
-                    >
-                        <Pencil size={14} />
-                    </Button>
-                </div>
-
+            <div className="absolute top-2.5 right-2.5 flex items-center gap-2.5 z-[1000]">
                 <Button
                     variant="outline"
                     size="sm"
@@ -767,7 +714,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             </div>
 
             {lastSaved && (
-                <div className="absolute top-2.5 right-2.5 text-xs text-gray-400 dark:text-gray-400 z-[1000]">
+                <div className="absolute top-2.5 right-20 text-xs text-gray-400 dark:text-gray-400 z-[1000]">
                     Last saved: {lastSaved.toLocaleTimeString()}
                 </div>
             )}
@@ -792,40 +739,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     excalidrawApiRef.current = api;
                 }}
             />
-
-            {/* Rename Dialog */}
-            <Dialog
-                open={isRenameDialogOpen}
-                onOpenChange={setIsRenameDialogOpen}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Rename Diagram</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Input
-                            value={newDiagramName}
-                            onChange={(e) => setNewDiagramName(e.target.value)}
-                            placeholder="Diagram name"
-                            className="mb-4"
-                        />
-                        <div className="flex justify-end gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsRenameDialogOpen(false)}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleRename}
-                                disabled={!newDiagramName.trim()}
-                            >
-                                Rename
-                            </Button>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
 
             {/* Save As Dialog */}
             <Dialog

@@ -1,12 +1,21 @@
 'use client';
 
-import { ChevronDown, CircleAlert, Grid, PenTool } from 'lucide-react';
+import { ChevronDown, CircleAlert, Grid, PenTool, Pencil } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGumloop } from '@/hooks/useGumloop';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 const ExcalidrawWithClientOnly = dynamic(
     async () =>
@@ -56,6 +65,13 @@ export default function Draw() {
     const [pipelineRunId, setPipelineRunId] = useState<string>('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string>('');
+
+    // Diagram name management
+    const [currentDiagramName, setCurrentDiagramName] =
+        useState<string>('Untitled Diagram');
+    const [isRenameDialogOpen, setIsRenameDialogOpen] =
+        useState<boolean>(false);
+    const [newDiagramName, setNewDiagramName] = useState<string>('');
 
     // Read diagram ID and diagram prompt from URL on mount
     useEffect(() => {
@@ -347,6 +363,16 @@ export default function Draw() {
 
     // Handle creating a new diagram from gallery
     const handleNewDiagram = useCallback(() => {
+        // Remove "id" from the URL so ExcalidrawWrapper won't try to load it
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('id');
+        window.history.pushState({}, '', newUrl);
+
+        // Also remove the old localStorage key so ExcalidrawWrapper doesn't load it again
+        const projectId = window.location.pathname.split('/')[4];
+        const projectStorageKey = `lastExcalidrawDiagramId_${projectId}`;
+        localStorage.removeItem(projectStorageKey);
+
         setSelectedDiagramId(null);
         setActiveTab('editor');
         setInstanceKey(`new-diagram-${Date.now()}`);
@@ -371,10 +397,62 @@ export default function Draw() {
         }
     }, [activeTab, shouldRefreshGallery]);
 
+    // Handle rename diagram
+    const handleRenameDiagram = async () => {
+        if (!selectedDiagramId || !newDiagramName.trim()) return;
+
+        try {
+            const { error } = await supabase
+                .from('excalidraw_diagrams')
+                .update({ name: newDiagramName.trim() })
+                .eq('id', selectedDiagramId);
+
+            if (error) {
+                console.error('Error renaming diagram:', error);
+                return;
+            }
+
+            // Update local state
+            setCurrentDiagramName(newDiagramName.trim());
+
+            // Close dialog and reset input
+            setIsRenameDialogOpen(false);
+            setNewDiagramName('');
+        } catch (err) {
+            console.error('Error in handleRenameDiagram:', err);
+        }
+    };
+
+    // Handle diagram name changes from ExcalidrawWrapper
+    const handleDiagramNameChange = useCallback((name: string) => {
+        setCurrentDiagramName(name);
+    }, []);
+
     return (
         <div className="flex flex-col gap-4 p-5 h-full">
             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold">Diagrams</h1>
+                <div className="flex items-center gap-2">
+                    {activeTab === 'editor' && selectedDiagramId ? (
+                        <>
+                            <h1 className="text-2xl font-bold">
+                                {currentDiagramName}
+                            </h1>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-1"
+                                onClick={() => {
+                                    setNewDiagramName(currentDiagramName);
+                                    setIsRenameDialogOpen(true);
+                                }}
+                            >
+                                <Pencil size={16} />
+                            </Button>
+                        </>
+                    ) : (
+                        <h1 className="text-2xl font-bold">Diagrams</h1>
+                    )}
+                </div>
                 <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
@@ -412,6 +490,7 @@ export default function Draw() {
                             onMounted={handleExcalidrawMount}
                             diagramId={selectedDiagramId}
                             onDiagramSaved={handleDiagramSaved}
+                            onDiagramNameChange={handleDiagramNameChange}
                             key={instanceKey}
                         />
                     </div>
@@ -440,7 +519,7 @@ export default function Draw() {
                                             e.target.value as DiagramType,
                                         )
                                     }
-                                    className="w-full p-2.5 bg-white dark:bg-[#121212] border border-[#454545] appearance-none cursor-pointer"
+                                    className="w-full p-2.5 bg-white dark:bg-secondary rounded-none border appearance-none cursor-pointer"
                                 >
                                     <option value="flowchart">Flowchart</option>
                                     <option value="sequence">Sequence</option>
@@ -483,6 +562,40 @@ export default function Draw() {
                     </div>
                 </div>
             )}
+
+            {/* Rename Dialog */}
+            <Dialog
+                open={isRenameDialogOpen}
+                onOpenChange={setIsRenameDialogOpen}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Diagram</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            value={newDiagramName}
+                            onChange={(e) => setNewDiagramName(e.target.value)}
+                            placeholder="Diagram name"
+                            className="mb-4"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsRenameDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleRenameDiagram}
+                                disabled={!newDiagramName.trim()}
+                            >
+                                Rename
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
