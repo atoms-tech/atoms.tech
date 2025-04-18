@@ -63,6 +63,7 @@ interface RequirementFormProps {
     setIsReasoning: Dispatch<SetStateAction<boolean>>;
     isAnalysing: boolean;
     handleAnalyze: () => void;
+    isPersistent: boolean;
     handleSave: () => void;
     isSaving: boolean;
     missingReqError: string;
@@ -88,6 +89,7 @@ export function RequirementForm({
     setIsReasoning,
     isAnalysing,
     handleAnalyze,
+    isPersistent,
     handleSave,
     isSaving,
     missingReqError,
@@ -413,18 +415,20 @@ export function RequirementForm({
                         />
                     </div>
                     <div className="flex gap-4">
-                        <Button
-                            className="gap-2"
-                            onClick={handleSave}
-                            disabled={isSaving}
-                        >
-                            {isSaving ? (
-                                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
-                            {hasUnsavedChanges ? 'Save*' : 'Save'}
-                        </Button>
+                        {isPersistent && (
+                            <Button
+                                className="gap-2"
+                                onClick={handleSave}
+                                disabled={isSaving}
+                            >
+                                {isSaving ? (
+                                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                {hasUnsavedChanges ? 'Save*' : 'Save'}
+                            </Button>
+                        )}
                         <Button
                             className="gap-2"
                             onClick={handleAnalyze}

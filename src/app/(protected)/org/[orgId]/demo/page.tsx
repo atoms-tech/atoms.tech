@@ -206,6 +206,7 @@ export default function RequirementPage() {
                         setIsReasoning={setIsReasoning}
                         isAnalysing={isAnalysing}
                         handleAnalyze={handleAnalyze}
+                        isPersistent={false}
                         handleSave={() => {}}
                         isSaving={false}
                         missingReqError={missingReqError}
