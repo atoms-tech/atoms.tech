@@ -1,4 +1,4 @@
-import { Copy, Target } from 'lucide-react';
+import { Copy, Save, Target } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { FoldingCard } from '@/components/ui/folding-card';
@@ -13,7 +13,7 @@ interface EarsCardProps {
     earsPattern?: string;
     earsRequirement?: string;
     earsTemplate?: string;
-    onAccept: (text: string) => void;
+    onAccept: (text: string, autosave: boolean) => void;
 }
 
 export function EarsCard({
@@ -47,7 +47,27 @@ export function EarsCard({
                                     variant="ghost"
                                     onClick={() =>
                                         earsRequirement &&
-                                        onAccept(earsRequirement)
+                                        onAccept(earsRequirement, true)
+                                    }
+                                    disabled={!earsRequirement}
+                                >
+                                    <Save className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Accept</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        earsRequirement &&
+                                        onAccept(earsRequirement, false)
                                     }
                                     disabled={!earsRequirement}
                                 >

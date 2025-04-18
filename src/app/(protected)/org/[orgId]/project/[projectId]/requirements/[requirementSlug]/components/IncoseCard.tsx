@@ -1,4 +1,4 @@
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
 interface IncoseCardProps {
     incoseFormat?: string;
     incoseFeedback?: string;
-    onAccept: (text: string) => void;
+    onAccept: (text: string, autosave: boolean) => void;
 }
 
 export function IncoseCard({
@@ -45,7 +45,28 @@ export function IncoseCard({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
-                                        incoseFormat && onAccept(incoseFormat)
+                                        incoseFormat &&
+                                        onAccept(incoseFormat, true)
+                                    }
+                                    disabled={!incoseFormat}
+                                >
+                                    <Save className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Accept</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        incoseFormat &&
+                                        onAccept(incoseFormat, false)
                                     }
                                     disabled={!incoseFormat}
                                 >

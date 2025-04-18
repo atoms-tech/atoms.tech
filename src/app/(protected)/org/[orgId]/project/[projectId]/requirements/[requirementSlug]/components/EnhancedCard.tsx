@@ -1,4 +1,4 @@
-import { Copy, Wand } from 'lucide-react';
+import { Copy, Save, Wand } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,7 @@ interface EnhancedCardProps {
     enhancedReqEars?: string;
     enhancedReqIncose?: string;
     enhancedGeneralFeedback?: string;
-    onAccept: (text: string) => void;
+    onAccept: (text: string, autosave: boolean) => void;
 }
 
 export function EnhancedCard({
@@ -50,7 +50,27 @@ export function EnhancedCard({
                                     variant="ghost"
                                     onClick={() =>
                                         enhancedReqEars &&
-                                        onAccept(enhancedReqEars)
+                                        onAccept(enhancedReqEars, true)
+                                    }
+                                    disabled={!enhancedReqEars}
+                                >
+                                    <Save className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Accept</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        enhancedReqEars &&
+                                        onAccept(enhancedReqEars, false)
                                     }
                                     disabled={!enhancedReqEars}
                                 >
@@ -79,7 +99,27 @@ export function EnhancedCard({
                                     variant="ghost"
                                     onClick={() =>
                                         enhancedReqIncose &&
-                                        onAccept(enhancedReqIncose)
+                                        onAccept(enhancedReqIncose, true)
+                                    }
+                                    disabled={!enhancedReqIncose}
+                                >
+                                    <Save className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Accept</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        enhancedReqIncose &&
+                                        onAccept(enhancedReqIncose, false)
                                     }
                                     disabled={!enhancedReqIncose}
                                 >

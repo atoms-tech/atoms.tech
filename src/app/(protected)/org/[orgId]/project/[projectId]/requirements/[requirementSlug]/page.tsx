@@ -246,9 +246,19 @@ export default function RequirementPage() {
         setIsAnalysing(false);
     }, [analysisResponse]);
 
-    const handleAcceptChange = async (text: string | undefined) => {
+    // Create a ref for the textarea to focus it when needed
+    // const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleAcceptChange = async (
+        text: string | undefined,
+        autosave: boolean,
+    ) => {
         if (!text || !requirement) {
             return;
+        }
+        if (autosave) {
+            await updateRequirementWithHistory(text);
+            setReqText(text);
         }
         navigator.clipboard.writeText(text);
     };
