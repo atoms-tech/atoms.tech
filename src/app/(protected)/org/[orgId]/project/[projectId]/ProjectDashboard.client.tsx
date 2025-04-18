@@ -317,12 +317,6 @@ export default function ProjectPage() {
                         </div>
                         <Button
                             variant="default"
-                            onClick={() => setShowCreateDocumentPanel(true)}
-                        >
-                            Add Requirement Document
-                        </Button>
-                        <Button
-                            variant="default"
                             onClick={() =>
                                 router.push(
                                     `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
