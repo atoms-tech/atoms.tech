@@ -35,9 +35,6 @@ export default function RequirementPage() {
     const [systemName, setSystemName] = useState<string>('');
     const [objective, setObjective] = useState<string>('');
 
-    const [missingReqError, setMissingReqError] = useState<string>('');
-    const [missingFilesError, setMissingFilesError] = useState<string>('');
-
     const [selectedFiles, setSelectedFiles] = useState<{
         [key: string]: RegulationFile;
     }>({});
@@ -56,20 +53,7 @@ export default function RequirementPage() {
 
     const handleAnalyze = async () => {
         setAnalysisData(null);
-
-        // check if the requirement is empty
-        if (!reqText) {
-            setMissingReqError('Requirement text is required');
-            return;
-        }
-        // or if no files are uploaded
-        if (Object.keys(selectedFiles).length === 0) {
-            setMissingFilesError('At least one file is required');
-            return;
-        }
         console.log('Starting analysis pipeline...');
-        setMissingReqError('');
-        setMissingFilesError('');
         setIsAnalysing(true);
 
         try {
@@ -209,9 +193,9 @@ export default function RequirementPage() {
                         isPersistent={false}
                         handleSave={() => {}}
                         isSaving={false}
-                        missingReqError={missingReqError}
-                        missingFilesError={missingFilesError}
-                        setMissingFilesError={setMissingFilesError}
+                        missingReqError={''}
+                        missingFilesError={''}
+                        setMissingFilesError={() => {}}
                         // isUploading={isUploading}
                         // uploadButtonText={uploadButtonText}
                         // handleFileUpload={handleFileUpload}
