@@ -12,7 +12,7 @@ export function OriginalRequirementCard({
     originalRequirement,
 }: OriginalRequirementCardProps) {
     return (
-        <Card className="p-6">
+        <Card className="p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.75)] dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)]">
             <div className="flex items-start gap-4">
                 <div className="rounded-full bg-primary/10 p-3">
                     <Brain className="h-6 w-6 text-primary" />

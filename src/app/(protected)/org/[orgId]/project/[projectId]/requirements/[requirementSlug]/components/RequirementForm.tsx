@@ -393,7 +393,7 @@ export function RequirementForm({
     };
 
     return (
-        <Card className="p-6">
+        <Card className="p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.75)] dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)]">
             <h3 className="font-semibold mb-2">{requirement?.name}</h3>
             <textarea
                 className="w-full h-72 p-2 border rounded-md text-muted-foreground"
