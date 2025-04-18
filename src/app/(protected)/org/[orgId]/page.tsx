@@ -54,6 +54,10 @@ export default function OrgPage() {
         router.push(`/org/${params?.orgId}/externalDocs`);
     };
 
+    const handleDemoClick = () => {
+        router.push(`/org/${params?.orgId}/demo`);
+    };
+
     return (
         <LayoutView>
             <Suspense fallback={<OrgDashboardSkeleton />}>
@@ -67,6 +71,7 @@ export default function OrgPage() {
                     theme={theme}
                     onProjectClick={handleProjectClick}
                     onExternalDocsClick={handleExternalDocsClick}
+                    onDemoClick={handleDemoClick}
                     orgId={orgId}
                 />
             </Suspense>

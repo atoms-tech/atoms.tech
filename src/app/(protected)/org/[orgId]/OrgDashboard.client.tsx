@@ -40,6 +40,7 @@ interface OrgDashboardProps {
     theme: string | undefined;
     onProjectClick: (project: Project) => void;
     onExternalDocsClick: () => void;
+    onDemoClick: () => void;
     orgId: string;
 }
 
@@ -399,6 +400,14 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         >
                             Create Project
                         </Button>
+                        {props.organization?.type === 'personal' && (
+                            <Button
+                                className="bg-gradient-to-r from-blue-500 to-purple-600 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition"
+                                onClick={props.onDemoClick}
+                            >
+                                Try Demo
+                            </Button>
+                        )}
                     </div>
                     {props.projectsLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,8 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-import { useGumloop } from '@/hooks/useGumloop';
 
 import {
     ComplianceCard,
@@ -12,7 +11,8 @@ import {
     OriginalRequirementCard,
     RegulationFile,
     RequirementForm,
-} from './components';
+} from '@/app/(protected)/org/[orgId]/project/[projectId]/requirements/[requirementSlug]/components';
+import { useGumloop } from '@/hooks/useGumloop';
 
 interface AnalysisData {
     reqId: string;
@@ -30,6 +30,7 @@ interface AnalysisData {
 }
 
 export default function RequirementPage() {
+    const organizationId = usePathname().split('/')[2];
     const [reqText, setReqText] = useState<string>('');
     const [systemName, setSystemName] = useState<string>('');
     const [objective, setObjective] = useState<string>('');
@@ -49,7 +50,7 @@ export default function RequirementPage() {
         useState<string>('');
     const { data: analysisResponse } = getPipelineRun(
         analysisPipelineRunId,
-        '',
+        organizationId,
     );
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
@@ -192,6 +193,9 @@ export default function RequirementPage() {
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">Requirement</h2>
                     <RequirementForm
+                        organizationId={organizationId}
+                        requirement={{ id: '' }}
+                        origReqText=""
                         reqText={reqText || ''}
                         setReqText={setReqText}
                         systemName={systemName}
@@ -202,6 +206,8 @@ export default function RequirementPage() {
                         setIsReasoning={setIsReasoning}
                         isAnalysing={isAnalysing}
                         handleAnalyze={handleAnalyze}
+                        handleSave={() => {}}
+                        isSaving={false}
                         missingReqError={missingReqError}
                         missingFilesError={missingFilesError}
                         setMissingFilesError={setMissingFilesError}
