@@ -43,6 +43,39 @@ export function useRequirements(
 }
 
 /**
+ * Hook to fetch requirements by project ID.
+ * This will first get all document IDs for the project, then fetch all requirements for those documents.
+ */
+export function useProjectRequirements(projectId: string) {
+    return useQuery({
+        queryKey: [...queryKeys.requirements.root, 'byProject', projectId],
+        queryFn: async () => {
+            if (!projectId) return [];
+
+            // Get all requirements that belong to documents in this project
+            const { data, error } = await supabase
+                .from('requirements')
+                .select(
+                    `
+                    *,
+                    documents!inner (
+                        id,
+                        project_id
+                    )
+                `,
+                )
+                .eq('documents.project_id', projectId)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            return data as Requirement[];
+        },
+        enabled: !!projectId,
+    });
+}
+
+/**
  * Hook to fetch multiple requirements by their IDs
  */
 export function useRequirementsByIds(requirementIds: string[]) {

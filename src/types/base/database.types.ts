@@ -342,34 +342,35 @@ export type Database = {
                     diagram_data: Json | null;
                     id: string;
                     name: string | null;
-                    thumbnail_url: string | null;
                     organization_id: string | null;
                     project_id: string | null;
-                    updated_by: string | null;
+                    thumbnail_url: string | null;
                     updated_at: string | null;
+                    updated_by: string | null;
                 };
                 Insert: {
                     created_at?: string | null;
+                    created_by?: string | null;
                     diagram_data?: Json | null;
                     id?: string;
                     name?: string | null;
                     organization_id?: string | null;
                     project_id?: string | null;
                     thumbnail_url?: string | null;
-                    updated_by?: string | null;
                     updated_at?: string | null;
+                    updated_by?: string | null;
                 };
                 Update: {
                     created_at?: string | null;
+                    created_by?: string | null;
                     diagram_data?: Json | null;
                     id?: string;
                     name?: string | null;
+                    organization_id?: string | null;
+                    project_id?: string | null;
                     thumbnail_url?: string | null;
-                    organization_id?: string;
-                    project_id?: string;
-                    created_by?: string;
-                    updated_by?: string;
                     updated_at?: string | null;
+                    updated_by?: string | null;
                 };
                 Relationships: [];
             };
@@ -664,7 +665,6 @@ export type Database = {
                     avatar_url: string | null;
                     created_at: string | null;
                     current_organization_id: string | null;
-                    pinned_organization_id: string | null;
                     deleted_at: string | null;
                     deleted_by: string | null;
                     email: string;
@@ -675,6 +675,7 @@ export type Database = {
                     last_login_at: string | null;
                     login_count: number | null;
                     personal_organization_id: string | null;
+                    pinned_organization_id: string | null;
                     preferences: Json | null;
                     status: Database['public']['Enums']['user_status'] | null;
                     updated_at: string | null;
@@ -683,7 +684,6 @@ export type Database = {
                     avatar_url?: string | null;
                     created_at?: string | null;
                     current_organization_id?: string | null;
-                    pinned_organization_id: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email: string;
@@ -694,6 +694,7 @@ export type Database = {
                     last_login_at?: string | null;
                     login_count?: number | null;
                     personal_organization_id?: string | null;
+                    pinned_organization_id?: string | null;
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
@@ -702,7 +703,6 @@ export type Database = {
                     avatar_url?: string | null;
                     created_at?: string | null;
                     current_organization_id?: string | null;
-                    pinned_organization_id: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email?: string;
@@ -713,6 +713,7 @@ export type Database = {
                     last_login_at?: string | null;
                     login_count?: number | null;
                     personal_organization_id?: string | null;
+                    pinned_organization_id?: string | null;
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
@@ -995,6 +996,75 @@ export type Database = {
                     },
                 ];
             };
+            requirement_tests: {
+                Row: {
+                    created_at: string | null;
+                    defects: Json | null;
+                    evidence_artifacts: Json | null;
+                    executed_at: string | null;
+                    executed_by: string | null;
+                    execution_environment: string | null;
+                    execution_status: Database['public']['Enums']['execution_status'];
+                    execution_version: string | null;
+                    external_req_id: string | null;
+                    external_test_id: string | null;
+                    id: string;
+                    requirement_id: string;
+                    result_notes: string | null;
+                    test_id: string;
+                    updated_at: string | null;
+                };
+                Insert: {
+                    created_at?: string | null;
+                    defects?: Json | null;
+                    evidence_artifacts?: Json | null;
+                    executed_at?: string | null;
+                    executed_by?: string | null;
+                    execution_environment?: string | null;
+                    execution_status?: Database['public']['Enums']['execution_status'];
+                    execution_version?: string | null;
+                    external_req_id?: string | null;
+                    external_test_id?: string | null;
+                    id?: string;
+                    requirement_id: string;
+                    result_notes?: string | null;
+                    test_id: string;
+                    updated_at?: string | null;
+                };
+                Update: {
+                    created_at?: string | null;
+                    defects?: Json | null;
+                    evidence_artifacts?: Json | null;
+                    executed_at?: string | null;
+                    executed_by?: string | null;
+                    execution_environment?: string | null;
+                    execution_status?: Database['public']['Enums']['execution_status'];
+                    execution_version?: string | null;
+                    external_req_id?: string | null;
+                    external_test_id?: string | null;
+                    id?: string;
+                    requirement_id?: string;
+                    result_notes?: string | null;
+                    test_id?: string;
+                    updated_at?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'requirement_tests_requirement_id_fkey';
+                        columns: ['requirement_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirement_tests_test_id_fkey';
+                        columns: ['test_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'test_req';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             requirements: {
                 Row: {
                     ai_analysis: Json | null;
@@ -1018,6 +1088,7 @@ export type Database = {
                     properties: Json | null;
                     status: Database['public']['Enums']['requirement_status'];
                     tags: string[] | null;
+                    type: string | null;
                     updated_at: string | null;
                     updated_by: string | null;
                     version: number;
@@ -1044,6 +1115,7 @@ export type Database = {
                     properties?: Json | null;
                     status?: Database['public']['Enums']['requirement_status'];
                     tags?: string[] | null;
+                    type?: string | null;
                     updated_at?: string | null;
                     updated_by?: string | null;
                     version?: number;
@@ -1070,6 +1142,7 @@ export type Database = {
                     properties?: Json | null;
                     status?: Database['public']['Enums']['requirement_status'];
                     tags?: string[] | null;
+                    type?: string | null;
                     updated_at?: string | null;
                     updated_by?: string | null;
                     version?: number;
@@ -1150,6 +1223,92 @@ export type Database = {
                         columns: ['organization_id'];
                         isOneToOne: true;
                         referencedRelation: 'organizations';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            test_req: {
+                Row: {
+                    attachments: Json | null;
+                    category: string[] | null;
+                    created_at: string | null;
+                    created_by: string | null;
+                    description: string | null;
+                    estimated_duration: unknown | null;
+                    expected_results: string | null;
+                    id: string;
+                    is_active: boolean | null;
+                    method: Database['public']['Enums']['test_method'];
+                    preconditions: string | null;
+                    priority: Database['public']['Enums']['test_priority'];
+                    project_id: string | null;
+                    result: string | null;
+                    status: Database['public']['Enums']['test_status'];
+                    test_environment: string | null;
+                    test_id: string | null;
+                    test_steps: Json | null;
+                    test_type: Database['public']['Enums']['test_type'];
+                    title: string;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                    version: string | null;
+                };
+                Insert: {
+                    attachments?: Json | null;
+                    category?: string[] | null;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    description?: string | null;
+                    estimated_duration?: unknown | null;
+                    expected_results?: string | null;
+                    id?: string;
+                    is_active?: boolean | null;
+                    method?: Database['public']['Enums']['test_method'];
+                    preconditions?: string | null;
+                    priority?: Database['public']['Enums']['test_priority'];
+                    project_id?: string | null;
+                    result?: string | null;
+                    status?: Database['public']['Enums']['test_status'];
+                    test_environment?: string | null;
+                    test_id?: string | null;
+                    test_steps?: Json | null;
+                    test_type?: Database['public']['Enums']['test_type'];
+                    title: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    version?: string | null;
+                };
+                Update: {
+                    attachments?: Json | null;
+                    category?: string[] | null;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    description?: string | null;
+                    estimated_duration?: unknown | null;
+                    expected_results?: string | null;
+                    id?: string;
+                    is_active?: boolean | null;
+                    method?: Database['public']['Enums']['test_method'];
+                    preconditions?: string | null;
+                    priority?: Database['public']['Enums']['test_priority'];
+                    project_id?: string | null;
+                    result?: string | null;
+                    status?: Database['public']['Enums']['test_status'];
+                    test_environment?: string | null;
+                    test_id?: string | null;
+                    test_steps?: Json | null;
+                    test_type?: Database['public']['Enums']['test_type'];
+                    title?: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    version?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'test_req_project_id_fkey';
+                        columns: ['project_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'projects';
                         referencedColumns: ['id'];
                     },
                 ];
@@ -1702,6 +1861,13 @@ export type Database = {
             assignment_role: 'assignee' | 'reviewer' | 'approver';
             billing_plan: 'free' | 'pro' | 'enterprise';
             entity_type: 'document' | 'requirement';
+            execution_status:
+                | 'not_executed'
+                | 'in_progress'
+                | 'passed'
+                | 'failed'
+                | 'blocked'
+                | 'skipped';
             invitation_status: 'pending' | 'accepted' | 'rejected' | 'revoked';
             notification_type: 'invitation' | 'mention' | 'system';
             organization_type: 'personal' | 'team' | 'enterprise';
@@ -1744,6 +1910,24 @@ export type Database = {
                 | 'past_due'
                 | 'canceled'
                 | 'paused';
+            test_method: 'manual' | 'automated' | 'hybrid';
+            test_priority: 'critical' | 'high' | 'medium' | 'low';
+            test_status:
+                | 'draft'
+                | 'ready'
+                | 'in_progress'
+                | 'blocked'
+                | 'completed'
+                | 'obsolete';
+            test_type:
+                | 'unit'
+                | 'integration'
+                | 'system'
+                | 'acceptance'
+                | 'performance'
+                | 'security'
+                | 'usability'
+                | 'other';
             trace_link_type:
                 | 'derives_from'
                 | 'implements'
@@ -1873,6 +2057,14 @@ export const Constants = {
             assignment_role: ['assignee', 'reviewer', 'approver'],
             billing_plan: ['free', 'pro', 'enterprise'],
             entity_type: ['document', 'requirement'],
+            execution_status: [
+                'not_executed',
+                'in_progress',
+                'passed',
+                'failed',
+                'blocked',
+                'skipped',
+            ],
             invitation_status: ['pending', 'accepted', 'rejected', 'revoked'],
             notification_type: ['invitation', 'mention', 'system'],
             organization_type: ['personal', 'team', 'enterprise'],
@@ -1912,6 +2104,26 @@ export const Constants = {
                 'past_due',
                 'canceled',
                 'paused',
+            ],
+            test_method: ['manual', 'automated', 'hybrid'],
+            test_priority: ['critical', 'high', 'medium', 'low'],
+            test_status: [
+                'draft',
+                'ready',
+                'in_progress',
+                'blocked',
+                'completed',
+                'obsolete',
+            ],
+            test_type: [
+                'unit',
+                'integration',
+                'system',
+                'acceptance',
+                'performance',
+                'security',
+                'usability',
+                'other',
             ],
             trace_link_type: [
                 'derives_from',

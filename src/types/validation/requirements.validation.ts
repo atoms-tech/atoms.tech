@@ -51,6 +51,7 @@ export const RequirementSchema = z.object({
         'rejected',
     ]) as z.ZodType<ERequirementStatus>,
     tags: z.array(z.string()).nullable(),
+    type: z.string().nullable(),
     updated_at: z.string().nullable(),
     updated_by: z.string().nullable(),
     version: z.number(),

@@ -102,7 +102,7 @@ export const useBlockActions = ({
             order: getNewBlockOrder(),
             height: BLOCK_TEXT_DEFAULT_HEIGHT,
             type: BlockType.text.toString(),
-            content: { text: content || '<p></p>', format: 'default' } as Json,
+            content: { text: content || '', format: 'default' } as Json,
             position: getNewBlockOrder(), // Use position as required by Block type
             requirements: [], // Initialize with empty requirements array
             org_id: orgId, // Add the required org_id field
@@ -237,34 +237,73 @@ export const useBlockActions = ({
         }
 
         try {
+            // Create a temporary ID for optimistic updates
+            const tempId = uuidv4();
+            const position = blocks?.length || 0;
+            const blockName = `${type.toString().charAt(0).toUpperCase() + type.toString().slice(1)} Block`;
+
+            // Create a temporary block for immediate UI update
+            const tempBlock: BlockWithRequirements = {
+                id: tempId,
+                document_id: documentId,
+                order: position,
+                height: BLOCK_TEXT_DEFAULT_HEIGHT,
+                type: type.toString(),
+                content: content,
+                position: position,
+                requirements: [],
+                org_id: orgId,
+                name: blockName,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                deleted_at: null,
+                created_by: userProfile.id,
+                updated_by: userProfile.id,
+                deleted_by: null,
+                is_deleted: null,
+                version: 1,
+            };
+
+            // Update local state immediately for optimistic UI
+            setLocalBlocks((prevBlocks) => {
+                const updatedBlocks = [...(prevBlocks || []), tempBlock];
+                // Only update orders if needed, avoid unnecessary re-renders
+                return updatedBlocks.map((block, index) => ({
+                    ...block,
+                    order: index,
+                }));
+            });
+
+            // Then perform the actual server update
             console.log('Creating new block', { type, content });
             const createdBlock = await createBlockMutation.mutateAsync({
                 type,
                 content,
-                position: blocks?.length || 0,
+                position: position,
                 document_id: documentId,
                 created_by: userProfile.id,
                 updated_by: userProfile.id,
                 org_id: orgId,
-                name: `${type.toString().charAt(0).toUpperCase() + type.toString().slice(1)} Block`,
+                name: blockName,
             });
             console.log('Block created successfully', createdBlock);
 
-            // Update both document store and local state immediately
+            // Update the document store with the real block
             addBlock(createdBlock);
+
+            // Replace the temporary block with the real one
             setLocalBlocks((prevBlocks) => {
-                const newBlock: BlockWithRequirements = {
-                    ...createdBlock,
-                    requirements: [],
-                    order: (prevBlocks || []).length,
-                };
-                return [...(prevBlocks || []), newBlock].map(
-                    (block, index) => ({
-                        ...block,
-                        order: index,
-                    }),
+                return prevBlocks.map((block) =>
+                    block.id === tempId
+                        ? {
+                              ...createdBlock,
+                              requirements: [],
+                              order: block.order,
+                          }
+                        : block,
                 );
             });
+
             console.log('Local state updated with new block');
 
             // If it's a table block, create columns based on base properties

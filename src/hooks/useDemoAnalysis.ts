@@ -18,6 +18,8 @@ interface StartAnalysisParams {
     objective?: string;
     files?: File[];
     useRegulation?: boolean;
+    temperature?: string;
+    isReasoning?: boolean;
 }
 
 export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
@@ -34,6 +36,8 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
             objective,
             files,
             useRegulation,
+            temperature,
+            isReasoning,
         }) => {
             const formData = new FormData();
             files?.forEach((file) => {
@@ -46,6 +50,9 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
             if (objective) formData.append('objective', objective);
             if (useRegulation !== undefined)
                 formData.append('useRegulation', useRegulation.toString());
+            if (temperature) formData.append('temperature', temperature);
+            if (isReasoning !== undefined)
+                formData.append('isReasoning', isReasoning.toString());
 
             const response = await fetch('/demo/api', {
                 method: 'POST',

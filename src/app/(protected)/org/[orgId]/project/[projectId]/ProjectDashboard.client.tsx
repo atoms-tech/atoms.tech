@@ -48,7 +48,7 @@ export default function ProjectPage() {
     const router = useRouter();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState('documents');
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | null>(
         null,
@@ -105,7 +105,7 @@ export default function ProjectPage() {
 
             {/* Tabs Menu */}
             <Tabs
-                defaultValue="overview"
+                defaultValue="document"
                 value={activeTab}
                 onValueChange={setActiveTab}
                 className="w-full"
@@ -263,6 +263,16 @@ export default function ProjectPage() {
                             onClick={() => setShowCreateDocumentPanel(true)}
                         >
                             Add Requirement Document
+                        </Button>
+                        <Button
+                            variant="default"
+                            onClick={() =>
+                                router.push(
+                                    `/org/${params.orgId}/project/${params.projectId}/testbed`,
+                                )
+                            }
+                        >
+                            Access Testbed
                         </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

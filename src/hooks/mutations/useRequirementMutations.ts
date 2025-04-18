@@ -47,6 +47,7 @@ export function useCreateRequirement() {
                 properties: input.properties || {},
                 version: 1,
                 position: input.position,
+                type: input.type || null,
             };
 
             const { data: requirement, error: requirementError } =

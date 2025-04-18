@@ -32,13 +32,10 @@ export function EditableTable<
     isLoading = false,
     /* eslint-disable @typescript-eslint/no-unused-vars */
     emptyMessage = 'No items found.',
-    /* eslint-enable @typescript-eslint/no-unused-vars */
     showFilter = true,
     filterComponent,
     isEditMode = false,
-    /* eslint-disable @typescript-eslint/no-unused-vars */
     alwaysShowAddRow = false,
-    /* eslint-enable @typescript-eslint/no-unused-vars */
 }: EditableTableProps<T>) {
     // Initialize the state with useReducer
     const initialState: TableState<T> = {
@@ -382,13 +379,14 @@ export function EditableTable<
                             )}
 
                             {/* Add new row placeholder */}
-                            {!isAddingNew && (
-                                <AddRowPlaceholder
-                                    columns={columns}
-                                    onClick={handleAddNewRow}
-                                    isEditMode={localIsEditMode}
-                                />
-                            )}
+                            {!isAddingNew &&
+                                (localIsEditMode || alwaysShowAddRow) && (
+                                    <AddRowPlaceholder
+                                        columns={columns}
+                                        onClick={handleAddNewRow}
+                                        isEditMode={localIsEditMode}
+                                    />
+                                )}
                         </TableBody>
                     </Table>
                 </div>

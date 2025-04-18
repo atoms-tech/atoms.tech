@@ -393,7 +393,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             onSaveRequirement={handleSaveRequirement}
                             onDeleteRequirement={handleDeleteRequirement}
                             isEditMode={globalIsEditMode}
-                            alwaysShowAddRow={true}
+                            alwaysShowAddRow={globalIsEditMode}
                         />
                     )}
                 </div>

@@ -29,12 +29,19 @@ const customStyles = `
     outline: none !important;
   }
 
-  .ProseMirror p.is-empty::before {
+  /* Custom placeholder styles */
+  .empty-editor-placeholder {
+    position: absolute;
     color: #9ca3af;
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
     pointer-events: none;
+    user-select: none;
+    top: 0;
+    left: 0;
+    padding: 0.5em 0;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    height: 100%;
   }
 
   .ProseMirror .arrow-list {
@@ -218,7 +225,17 @@ export const TextBlock: React.FC<BlockProps> = ({
         },
         onUpdate: ({ editor }) => {
             if (!isEditMode) return;
-            const newContent = editor.getHTML();
+
+            // Check if editor is completely empty (only has an empty paragraph)
+            const isEmpty = editor.isEmpty;
+            let newContent = editor.getHTML();
+
+            // If editor is empty, set content to empty string instead of <p></p>
+            if (isEmpty || newContent === '<p></p>') {
+                newContent = '';
+            }
+
+            // Update local content immediately to trigger placeholder if needed
             setLocalContent(newContent);
         },
     });
@@ -227,28 +244,71 @@ export const TextBlock: React.FC<BlockProps> = ({
     React.useEffect(() => {
         if (editor) {
             editor.setEditable(Boolean(isEditMode));
+
+            // Focus the editor when entering edit mode
+            if (isEditMode && content?.text === '<p></p>') {
+                setTimeout(() => {
+                    editor.commands.focus();
+                }, 100);
+            }
         }
-    }, [isEditMode, editor]);
+    }, [isEditMode, editor, content?.text]);
 
     // Save content when exiting edit mode
     React.useEffect(() => {
         if (!isEditMode && localContent !== lastSavedContent.current) {
-            lastSavedContent.current = localContent;
+            // If content is empty or just empty paragraph tags, save as empty string
+            const contentToSave =
+                localContent === '' || localContent === '<p></p>'
+                    ? ''
+                    : localContent;
+
+            lastSavedContent.current = contentToSave;
             onUpdate({
-                text: localContent,
+                text: contentToSave,
                 format: content?.format || 'default',
             } as Json);
         }
     }, [isEditMode, localContent, content?.format, onUpdate]);
 
+    // Save content when editor loses focus
+    const handleBlur = React.useCallback(() => {
+        if (!editor || !isEditMode) return;
+
+        const editorContent = editor.getHTML();
+        if (editorContent !== lastSavedContent.current) {
+            lastSavedContent.current = editorContent;
+            onUpdate?.({ text: editorContent });
+        }
+    }, [editor, isEditMode, onUpdate]);
+
+    // Add blur handler to editor
+    React.useEffect(() => {
+        if (!editor) return;
+
+        editor.on('blur', handleBlur);
+        return () => {
+            editor.off('blur', handleBlur);
+        };
+    }, [editor, handleBlur]);
+
     // Sync external content changes only when not in edit mode
     React.useEffect(() => {
-        if (!editor || !content?.text || isEditMode) return;
+        if (!editor || isEditMode) return;
 
-        if (content.text !== lastSavedContent.current) {
-            lastSavedContent.current = content.text;
-            setLocalContent(content.text);
-            editor.commands.setContent(content.text);
+        // Handle empty content case
+        const textContent = content?.text || '';
+
+        if (textContent !== lastSavedContent.current) {
+            lastSavedContent.current = textContent;
+            setLocalContent(textContent);
+
+            // If content is empty, set empty paragraph that will show placeholder
+            if (textContent === '') {
+                editor.commands.clearContent();
+            } else {
+                editor.commands.setContent(textContent);
+            }
         }
     }, [content?.text, editor, isEditMode]);
 
@@ -297,28 +357,35 @@ export const TextBlock: React.FC<BlockProps> = ({
                         style={{
                             top: `${toolbarPosition.top}px`,
                             left: `${toolbarPosition.left}px`,
-                        }}
-                        onMouseDown={(e) => {
-                            // Prevent toolbar interactions from stealing focus
-                            e.preventDefault();
+                            pointerEvents: 'none', // Allow clicks to pass through the container
                         }}
                     >
                         <Toolbar
                             editor={editor}
-                            className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-1 transform -translate-y-full transition-all duration-200"
+                            className="bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border border-border p-1 transform -translate-y-full transition-all duration-200 pointer-events-auto" // Re-enable pointer events just for the toolbar itself
                         />
                     </div>
                 )}
                 <style>{customStyles}</style>
-                <EditorContent
-                    editor={editor}
-                    className="prose prose-sm dark:prose-invert max-w-none w-full focus:outline-none"
-                    onClick={() => {
-                        if (editor?.state.selection.empty) {
-                            setShowToolbar(false);
-                        }
-                    }}
-                />
+                <div className="relative min-h-[1.5em]">
+                    {/* Show placeholder for empty text blocks regardless of edit mode */}
+                    {(!localContent ||
+                        localContent === '' ||
+                        localContent === '<p></p>') && (
+                        <div className="empty-editor-placeholder">
+                            Enter text here...
+                        </div>
+                    )}
+                    <EditorContent
+                        editor={editor}
+                        className="prose prose-sm dark:prose-invert max-w-none w-full focus:outline-none"
+                        onClick={() => {
+                            if (editor?.state.selection.empty) {
+                                setShowToolbar(false);
+                            }
+                        }}
+                    />
+                </div>
             </div>
         </div>
     );
