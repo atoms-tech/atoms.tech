@@ -7,7 +7,7 @@ import LayoutView from '@/components/views/LayoutView';
 
 export default function DocumentPage() {
     const params = useParams();
-    const documentId = params.documentId as string;
+    const documentId = params?.documentId as string;
 
     return (
         <LayoutView>

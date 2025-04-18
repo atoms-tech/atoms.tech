@@ -126,9 +126,9 @@ export default function UserInvitations({
                 queryKey: queryKeys.organizations.list(),
             }); // Refresh the list of organizations
 
-            // Call the onAccept callback if provided
+            // Call the onAccept callback after the render cycle
             if (onAccept) {
-                onAccept();
+                setTimeout(() => onAccept(), 0);
             }
 
             // Navigate to the organization's dashboard page

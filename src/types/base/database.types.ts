@@ -664,6 +664,7 @@ export type Database = {
                     avatar_url: string | null;
                     created_at: string | null;
                     current_organization_id: string | null;
+                    pinned_organization_id: string | null;
                     deleted_at: string | null;
                     deleted_by: string | null;
                     email: string;
@@ -682,6 +683,7 @@ export type Database = {
                     avatar_url?: string | null;
                     created_at?: string | null;
                     current_organization_id?: string | null;
+                    pinned_organization_id: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email: string;
@@ -700,6 +702,7 @@ export type Database = {
                     avatar_url?: string | null;
                     created_at?: string | null;
                     current_organization_id?: string | null;
+                    pinned_organization_id: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email?: string;

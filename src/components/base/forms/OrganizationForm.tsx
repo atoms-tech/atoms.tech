@@ -79,12 +79,36 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
         setIsSubmitting(true);
 
         try {
+            // Ensure slug is unique
+            let uniqueSlug = values.slug;
+            let isUnique = false;
+            let attempt = 0;
+
+            while (!isUnique) {
+                const { data: existingOrg, error: slugError } = await supabase
+                    .from('organizations')
+                    .select('id')
+                    .eq('slug', uniqueSlug)
+                    .single();
+
+                if (slugError && slugError.code !== 'PGRST116') {
+                    throw slugError;
+                }
+
+                if (!existingOrg) {
+                    isUnique = true;
+                } else {
+                    attempt++;
+                    uniqueSlug = `${values.slug}-${attempt}`;
+                }
+            }
+
             // Create the organization
             const { data: orgData, error: orgError } = await supabase
                 .from('organizations')
                 .insert({
                     name: values.name,
-                    slug: values.slug,
+                    slug: uniqueSlug,
                     description: values.description || null,
                     created_by: user.id,
                     updated_by: user.id,
@@ -141,8 +165,8 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
         }
     };
 
-    // Auto-generate slug from name
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Auto-generate slug from name and ensure uniqueness
+    const handleNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const name = e.target.value;
         form.setValue('name', name);
 
@@ -152,7 +176,32 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
             .replace(/\s+/g, '-')
             .replace(/[^a-z0-9-]/g, '');
 
-        form.setValue('slug', slug);
+        // Check for uniqueness
+        let uniqueSlug = slug;
+        let isUnique = false;
+        let attempt = 0;
+
+        while (!isUnique) {
+            const { data: existingOrg, error: slugError } = await supabase
+                .from('organizations')
+                .select('id')
+                .eq('slug', uniqueSlug)
+                .single();
+
+            if (slugError && slugError.code !== 'PGRST116') {
+                console.error('Error checking slug uniqueness:', slugError);
+                break;
+            }
+
+            if (!existingOrg) {
+                isUnique = true;
+            } else {
+                attempt++;
+                uniqueSlug = `${slug}-${attempt}`;
+            }
+        }
+
+        form.setValue('slug', uniqueSlug);
     };
 
     return (

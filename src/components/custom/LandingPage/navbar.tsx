@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignOut } from '@/hooks/useSignOut';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import { GridBackground } from './grid-background';
 
@@ -30,7 +31,7 @@ export function Navbar() {
         signIn: false,
         billing: false,
     });
-    const [preferredOrgId, setPreferredOrgId] = useState<string | null>(null);
+    const [, setPreferredOrgId] = useState<string | null>(null);
 
     useEffect(() => {
         const cookieOrgId = cookies.get('preferred_org_id');
@@ -78,16 +79,65 @@ export function Navbar() {
         router.push('/login');
     };
 
-    const handleDashboard = useCallback(() => {
+    const handleDashboard = useCallback(async () => {
         setLoading('dashboard', true);
 
-        // If we have a preferred org, go directly there
-        if (preferredOrgId) {
-            router.push(`/org/${preferredOrgId}`);
-        } else {
-            router.push('/home');
+        try {
+            // Fetch the user's profile to get pinned_organization_id and personal_organization_id
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('pinned_organization_id, personal_organization_id')
+                .eq('id', userProfile?.id || '')
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                setLoading('dashboard', false);
+                return;
+            }
+
+            if (data) {
+                let targetOrgId = data.pinned_organization_id;
+
+                if (!targetOrgId && data.personal_organization_id) {
+                    // If no pinned organization, set it to personal_organization_id by default
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({
+                            pinned_organization_id:
+                                data.personal_organization_id,
+                        })
+                        .eq('id', userProfile?.id || '');
+
+                    if (!updateError) {
+                        targetOrgId = data.personal_organization_id;
+                    } else {
+                        console.error(
+                            'Error updating pinned organization:',
+                            updateError,
+                        );
+                        setLoading('dashboard', false);
+                        return;
+                    }
+                }
+
+                if (targetOrgId) {
+                    console.log(
+                        'Navigating to pinned organization:',
+                        targetOrgId,
+                    );
+                    router.push(`/org/${targetOrgId}`);
+                } else {
+                    console.log('No pinned or personal organization found');
+                    router.push('/home'); // Fallback to home if no organization is found
+                }
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
+        } finally {
+            setLoading('dashboard', false);
         }
-    }, [router, preferredOrgId, setLoading]);
+    }, [router, userProfile?.id, setLoading]);
 
     const handleBilling = () => {
         setLoading('billing', true);

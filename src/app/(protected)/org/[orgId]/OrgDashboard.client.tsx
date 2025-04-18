@@ -1,6 +1,15 @@
 'use client';
 
-import { Building, File, FileBox, FolderArchive, ListTodo } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+    Brain,
+    Building,
+    FileBox,
+    Folder,
+    FolderArchive,
+    ListTodo,
+    PenTool,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
@@ -23,11 +32,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
+import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
 
+import ExternalDocsPages from './(files)/externalDocs/ExternalDocs.client';
 import OrgInvitations from './OrgInvitations.client';
 
 interface OrgDashboardProps {
@@ -52,7 +63,62 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         null,
     );
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
+    const [totalUsage, setTotalUsage] = useState(0); // Track total usage
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
+
+    const [isAiAnalysisDialogOpen, setIsAiAnalysisDialogOpen] = useState(false);
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+        null,
+    );
+    const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
+        null,
+    );
+    const [selectedRequirementId, setSelectedRequirementId] = useState<
+        string | null
+    >(null);
+
+    const { data: documents } = useQuery({
+        queryKey: ['documents', selectedProjectId],
+        queryFn: async () => {
+            if (!selectedProjectId) return [];
+            const { data, error } = await supabase
+                .from('documents')
+                .select('id, name')
+                .eq('project_id', selectedProjectId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!selectedProjectId,
+    });
+
+    const { data: requirements } = useQuery({
+        queryKey: ['requirements', selectedDocumentId],
+        queryFn: async () => {
+            if (!selectedDocumentId) return [];
+            const { data, error } = await supabase
+                .from('requirements')
+                .select('id, name')
+                .eq('document_id', selectedDocumentId);
+            if (error) throw error;
+            return data || [];
+        },
+        enabled: !!selectedDocumentId,
+    });
+
+    // Fetch external documents to calculate total usage
+    const { data: externalDocuments } = useExternalDocumentsByOrg(
+        props.orgId || '',
+    );
+
+    useEffect(() => {
+        if (externalDocuments) {
+            const usage = externalDocuments.reduce(
+                (sum, file) => sum + (file.size || 0),
+                0,
+            );
+            setTotalUsage(usage);
+        }
+    }, [externalDocuments]);
 
     useEffect(() => {
         if (props.orgId) {
@@ -66,21 +132,19 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         setIsCreatePanelOpen(true);
     };
 
-    const openFile = async (documentId: string) => {
-        if (!props.orgId) {
-            alert('Organization ID is missing. Cannot open file.');
-            return;
+    const handleGoToCanvas = () => {
+        if (props.orgId) {
+            window.location.href = `/org/${props.orgId}/canvas`;
         }
+    };
 
-        const filePath = `${props.orgId}/${documentId}`;
-        const { data: publicUrl } = supabase.storage
-            .from('external_documents')
-            .getPublicUrl(filePath);
+    const handleGoToAiAnalysis = () => {
+        setIsAiAnalysisDialogOpen(true);
+    };
 
-        if (publicUrl) {
-            window.open(publicUrl.publicUrl, '_blank');
-        } else {
-            alert('Failed to get file URL. Please try again.');
+    const handleStartAnalysis = () => {
+        if (selectedProjectId && selectedRequirementId) {
+            window.location.href = `/org/${props.orgId}/project/${selectedProjectId}/requirements/${selectedRequirementId}`;
         }
     };
 
@@ -117,8 +181,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 <TabsList
                     className={`grid ${
                         props.organization?.type === 'enterprise'
-                            ? 'grid-cols-6'
-                            : 'grid-cols-5'
+                            ? 'grid-cols-4'
+                            : 'grid-cols-3'
                     } w-full`}
                 >
                     <TabsTrigger
@@ -140,21 +204,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         className="flex items-center gap-2"
                     >
                         <FileBox className="h-4 w-4" />
-                        <span>Documents</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="collections"
-                        className="flex items-center gap-2"
-                    >
-                        <FileBox className="h-4 w-4" />
-                        <span>Collections</span>
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="tasks"
-                        className="flex items-center gap-2"
-                    >
-                        <ListTodo className="h-4 w-4" />
-                        <span>Tasks</span>
+                        <span>Requirements Documents</span>
                     </TabsTrigger>
                     {props.organization?.type === 'enterprise' && (
                         <TabsTrigger
@@ -244,16 +294,16 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
-                                            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                            <div className="w-full bg-gray-200 h-2.5 dark:bg-gray-700">
                                                 <div
                                                     className="bg-primary h-2.5 rounded-full"
                                                     style={{
                                                         width: `${Math.min(
-                                                            ((props.organization
-                                                                ?.storage_used ||
-                                                                0) /
-                                                                1000) *
-                                                                100,
+                                                            (totalUsage /
+                                                                (1000 *
+                                                                    1024 *
+                                                                    1024)) *
+                                                                100, // Convert bytes to MB and calculate percentage
                                                             100,
                                                         )}%`,
                                                     }}
@@ -261,9 +311,11 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span>
-                                                    {props.organization
-                                                        ?.storage_used ||
-                                                        0}{' '}
+                                                    {(
+                                                        totalUsage /
+                                                        1024 /
+                                                        1024
+                                                    ).toFixed(2)}{' '}
                                                     MB used
                                                 </span>
                                                 <span>1000 MB total</span>
@@ -399,6 +451,23 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             onClick={handleCreateProject}
                         >
                             Create Project
+                            <Folder className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                            onClick={handleGoToCanvas}
+                        >
+                            Canvas
+                            <PenTool className="w-4 h-4" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                            onClick={handleGoToAiAnalysis}
+                        >
+                            AI Analysis
+                            <Brain className="w-4 h-4" />
                         </Button>
                         {props.organization?.type === 'personal' && (
                             <Button
@@ -517,130 +586,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
                 {/* Documents Tab */}
                 <TabsContent value="documents" className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">
-                            Organization Documents
-                        </h2>
-                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Upload Document
-                        </button>
-                    </div>
-
-                    {props.documentsLoading ? (
-                        <div className="text-center py-12 border rounded-lg">
-                            <FileBox className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
-                            <h3 className="mt-4 text-lg font-medium">
-                                Loading documents...
-                            </h3>
-                        </div>
-                    ) : props.externalDocuments?.length ? (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {props.externalDocuments
-                                    .sort((a, b) => {
-                                        const dateA = a.created_at
-                                            ? new Date(a.created_at).getTime()
-                                            : 0;
-                                        const dateB = b.created_at
-                                            ? new Date(b.created_at).getTime()
-                                            : 0;
-                                        return dateB - dateA;
-                                    })
-                                    .map((doc) => (
-                                        <Card
-                                            key={doc.id}
-                                            className={`border border-gray-300 ${
-                                                props.theme === 'dark'
-                                                    ? 'hover:bg-accent'
-                                                    : 'hover:bg-gray-200'
-                                            } cursor-pointer`}
-                                            onClick={() => openFile(doc.id)}
-                                        >
-                                            <div className="p-4 flex items-center">
-                                                <File className="w-4 h-4 mr-4" />
-                                                <div>
-                                                    <h3 className="text-sm font-semibold">
-                                                        {doc.name}
-                                                    </h3>
-                                                    <p className="text-xs text-gray-400">
-                                                        {doc.type}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    ))}
-                            </div>
-                            <div className="flex justify-end">
-                                <Button
-                                    variant="secondary"
-                                    onClick={props.onExternalDocsClick}
-                                >
-                                    Go to External Docs
-                                </Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="text-center py-12 border rounded-lg">
-                            <FileBox className="h-12 w-12 mx-auto text-muted-foreground" />
-                            <h3 className="mt-4 text-lg font-medium">
-                                No documents found
-                            </h3>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Upload documents to share with your organization
-                            </p>
-                            <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                                Upload Document
-                            </button>
-                        </div>
-                    )}
-                </TabsContent>
-
-                {/* Collections Tab */}
-                <TabsContent value="collections" className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">
-                            File Collections
-                        </h2>
-                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Create Collection
-                        </button>
-                    </div>
-
-                    <div className="text-center py-12 border rounded-lg">
-                        <FolderArchive className="h-12 w-12 mx-auto text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">
-                            No collections found
-                        </h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Create collections to organize your files
-                        </p>
-                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Create Collection
-                        </button>
-                    </div>
-                </TabsContent>
-
-                {/* Tasks Tab */}
-                <TabsContent value="tasks" className="space-y-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold">User Tasks</h2>
-                        <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Create Task
-                        </button>
-                    </div>
-
-                    <div className="text-center py-12 border rounded-lg">
-                        <ListTodo className="h-12 w-12 mx-auto text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-medium">
-                            No tasks found
-                        </h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Create tasks to track your work
-                        </p>
-                        <button className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium">
-                            Create Task
-                        </button>
-                    </div>
+                    <ExternalDocsPages />
                 </TabsContent>
 
                 <TabsContent value="invitations" className="space-y-6">
@@ -649,6 +595,145 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                     ) : null}
                 </TabsContent>
             </Tabs>
+
+            {/* AI Analysis Dialog */}
+            {isAiAnalysisDialogOpen && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
+                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
+                            Select Project, Document, and Requirement
+                        </h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                                    Select Project
+                                </label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline">
+                                            {selectedProjectId
+                                                ? props.projects?.find(
+                                                      (p) =>
+                                                          p.id ===
+                                                          selectedProjectId,
+                                                  )?.name
+                                                : 'Choose a project'}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        {props.projects?.map((project) => (
+                                            <DropdownMenuItem
+                                                key={project.id}
+                                                onClick={() => {
+                                                    setSelectedProjectId(
+                                                        project.id,
+                                                    );
+                                                    setSelectedDocumentId(null); // Reset document selection
+                                                    setSelectedRequirementId(
+                                                        null,
+                                                    ); // Reset requirement selection
+                                                }}
+                                            >
+                                                {project.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                                    Select Document
+                                </label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline">
+                                            {selectedDocumentId
+                                                ? documents?.find(
+                                                      (d) =>
+                                                          d.id ===
+                                                          selectedDocumentId,
+                                                  )?.name
+                                                : 'Choose a document'}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        {documents?.map((document) => (
+                                            <DropdownMenuItem
+                                                key={document.id}
+                                                onClick={() => {
+                                                    setSelectedDocumentId(
+                                                        document.id,
+                                                    );
+                                                    setSelectedRequirementId(
+                                                        null,
+                                                    ); // Reset requirement selection
+                                                }}
+                                            >
+                                                {document.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
+                                    Select Requirement
+                                </label>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline">
+                                            {selectedRequirementId
+                                                ? requirements?.find(
+                                                      (r) =>
+                                                          r.id ===
+                                                          selectedRequirementId,
+                                                  )?.name
+                                                : 'Choose a requirement'}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        {requirements?.map((requirement) => (
+                                            <DropdownMenuItem
+                                                key={requirement.id}
+                                                onClick={() =>
+                                                    setSelectedRequirementId(
+                                                        requirement.id,
+                                                    )
+                                                }
+                                            >
+                                                {requirement.name}
+                                            </DropdownMenuItem>
+                                        ))}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                        <div className="flex justify-end mt-4 space-x-2">
+                            <Button
+                                variant="outline"
+                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                onClick={() => {
+                                    setIsAiAnalysisDialogOpen(false);
+                                    setSelectedProjectId(null);
+                                    setSelectedDocumentId(null);
+                                    setSelectedRequirementId(null);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
+                                onClick={handleStartAnalysis}
+                                disabled={
+                                    !selectedProjectId || !selectedRequirementId
+                                }
+                            >
+                                Start Analysis
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <CreatePanel
                 isOpen={isCreatePanelOpen}
