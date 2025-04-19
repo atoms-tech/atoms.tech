@@ -73,7 +73,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             {/* Content wrapper */}
             <div
                 className={cn(
-                    'flex-1 p-4 md:p-6 lg:p-8 xl:p-16',
+                    'flex-1 md:pl-6 lg:pl-8 pt-16',
                     showHorizontalToolbar && 'pt-16', // Extra padding when horizontal toolbar is active
                 )}
             >

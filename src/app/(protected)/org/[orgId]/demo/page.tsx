@@ -172,7 +172,7 @@ export default function RequirementPage() {
     };
 
     return (
-        <div className="container mx-auto p-6">
+        <div className="container sm:p-6">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 <div className="space-y-4">
                     <h2 className="text-2xl font-bold mb-4">Requirement</h2>
