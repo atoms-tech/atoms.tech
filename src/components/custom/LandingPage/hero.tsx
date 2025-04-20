@@ -68,7 +68,7 @@ export function Hero() {
                         ORGANIZE LIKE EXCEL
                     </p>
                     <p className="text-xl sm:text-2xl md:text-3xl font-bold">
-                        LET AI ASSIST WITH REQUIREMENTS
+                        LET AI HANDLE PRECISION, COMPLIANCE, AND TRACEABILITY
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row justify-start items-start space-y-4 sm:space-y-0 sm:space-x-6">

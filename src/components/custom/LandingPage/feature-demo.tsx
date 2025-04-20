@@ -18,23 +18,21 @@ export function FeatureDemo({ className }: FeatureDemoProps) {
     const features = [
         {
             id: 'writing',
-            title: 'Writing Requirements',
-            description:
-                'Write requirements in a natural, human way with our intuitive interface.',
+            title: 'Write Requirements',
+            description: 'Type naturally; cells expand like a doc.',
             gifPath: '/WriteRequirement.gif',
         },
         {
             id: 'analysis',
-            title: 'AI Requirement Analysis',
-            description:
-                'Our AI analyzes your requirements for clarity, completeness, and coherence.',
+            title: 'Analyze Requirements',
+            description: 'AI rewrites, checks compliance, and grades clarity.',
             gifPath: '/Analysis.gif',
         },
         {
             id: 'diagram',
-            title: 'Requirement to Diagram',
+            title: 'Visualize Requirements',
             description:
-                'Automatically generate visual diagrams from your written requirements.',
+                'Generate an instant visual so connections are obvious.',
             gifPath: '/RequirementToDiagram.gif',
         },
     ];
@@ -95,6 +93,7 @@ export function FeatureDemo({ className }: FeatureDemoProps) {
                                     src={feature.gifPath}
                                     alt={feature.title}
                                     fill
+                                    unoptimized
                                     className="object-cover"
                                 />
                             </motion.div>

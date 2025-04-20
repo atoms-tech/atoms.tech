@@ -6,10 +6,8 @@ import { Features } from '@/components/custom/LandingPage/features';
 import { Footer } from '@/components/custom/LandingPage/footer';
 import { GridBackground } from '@/components/custom/LandingPage/grid-background';
 import { Hero } from '@/components/custom/LandingPage/hero';
-import { HowItWorks } from '@/components/custom/LandingPage/how-it-works';
 import { Industries } from '@/components/custom/LandingPage/industries';
 import { Navbar } from '@/components/custom/LandingPage/navbar';
-import { Testimonials } from '@/components/custom/LandingPage/testimonials';
 import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
 import { ProfilerWrapper } from '@/components/custom/ProfilerWrapper';
 
@@ -27,12 +25,10 @@ export default async function Home() {
                         <div className="section-divider">
                             <FeatureDemo />
                         </div>
-                        <HowItWorks />
                         <TimeSavingEdge />
                         <div className="section-divider">
                             <Industries />
                         </div>
-                        <Testimonials />
                         <div className="section-divider">
                             <CTA />
                         </div>

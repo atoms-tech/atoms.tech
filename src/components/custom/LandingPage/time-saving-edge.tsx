@@ -3,27 +3,27 @@ import { AlertTriangle, Clock, Share2, ShieldCheck } from 'lucide-react';
 const benefits = [
     {
         icon: Clock,
-        title: '50% FASTER REQUIREMENT UPDATES',
+        title: '50 % FASTER UPDATES',
         description:
-            'We handle the grunt work so you can focus on actual engineering.',
+            'AI drafts and edits in moments—keeping you focused on engineering.',
     },
     {
         icon: AlertTriangle,
-        title: 'FEWER ERRORS & OVERSIGHTS',
+        title: 'ERRORS CAUGHT UPFRONT',
         description:
-            'Catch duplicates, unit mismatches, and extraneous requirements before they derail a project.',
+            'Detect duplicates, unit mismatches, and conflicts early—saving millions and preventing downstream risks.',
     },
     {
         icon: ShieldCheck,
-        title: 'INSTANTLY MEET COMPLIANCE',
+        title: 'COMPLIANCE ON DAY ONE',
         description:
-            'Avoid the usual back-and-forth with your regulatory team—our AI cross-checks everything for you.',
+            'Auto cross-checks flag every regulation clause; skip the back-and-forth rewrites.',
     },
     {
         icon: Share2,
-        title: 'CLEANER HANDOFFS',
+        title: 'FRICTIONLESS HANDOFFS',
         description:
-            'A single source of truth makes it easy to share, review, and finalize across teams.',
+            'One live source of truth speeds reviews, sign-offs, and audit trails for the whole team.',
     },
 ];
 

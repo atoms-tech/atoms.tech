@@ -203,7 +203,7 @@ export function Navbar() {
                             priority
                         />
                         <span className="font-medium text-base sm:text-lg md:text-2xl tracking-tight">
-                            ATOMS.TECH
+                            ATOMS
                         </span>
                     </Link>
 

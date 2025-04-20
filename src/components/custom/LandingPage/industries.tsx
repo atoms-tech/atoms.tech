@@ -5,36 +5,36 @@ const industries = [
         name: 'AUTOMOTIVE',
         icon: Car,
         description:
-            'Electric vehicles, ADAS, or connected systems—trace it all.',
+            'Trace every requirement across the entire vehicle stack—from powertrain and braking to EV, ADAS, and connected-car systems.',
     },
     {
         name: 'HEALTHCARE',
         icon: Activity,
-        description: 'Medical devices with strict FDA/regulatory checks.',
+        description:
+            'Align medical devices with key standards—such as ISO 13485, ISO 14971, and IEC 62304.',
     },
     {
         name: 'AEROSPACE',
         icon: Rocket,
         description:
-            'Flight systems, avionics, and mission-critical processes.',
-    },
-    {
-        name: 'ROBOTICS',
-        icon: Cpu,
-        description:
-            'Multi-sensor, multi-component synergy for advanced automation.',
-    },
-    {
-        name: 'DoD',
-        icon: Shield,
-        description:
-            'High-stakes defense projects that demand bulletproof compliance.',
+            'Meet critical aviation regulations—such as DO-178C, DO-254, and ARP-4754A.',
     },
     {
         name: 'ENERGY',
         icon: Zap,
         description:
-            'Solar, oil & gas, wind—align with safety and environmental regs.',
+            'Hit safety & environmental regs across wind, solar, oil & gas, and large-scale energy storage.',
+    },
+    {
+        name: 'ROBOTICS',
+        icon: Cpu,
+        description:
+            'Synchronize multi-sensor autonomy with full traceability.',
+    },
+    {
+        name: 'DEFENSE / DoD',
+        icon: Shield,
+        description: 'Deliver bulletproof compliance for high-stakes programs.',
     },
 ];
 
@@ -47,7 +47,7 @@ export function Industries() {
             <div className="absolute top-0 left-0 w-full h-1 bg-black" />
             <div className="container mx-auto px-4">
                 <h2 className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] xl:text-[112px] font-black tracking-tighter text-black leading-none mb-16 md:mb-24">
-                    BUILT FOR COMPLEX SAFETY CRITICAL SYSTEMS
+                    BUILT FOR SAFETY-CRITICAL SYSTEMS
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 md:gap-16 lg:gap-24">
                     {industries.map((industry, index) => (

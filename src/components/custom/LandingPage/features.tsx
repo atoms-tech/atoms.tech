@@ -1,35 +1,48 @@
-import { Brain, FileCheck, FileText, GitMerge, Zap } from 'lucide-react';
+import {
+    Brain,
+    FileCheck,
+    FileText,
+    GitMerge,
+    TestTube,
+    Zap,
+} from 'lucide-react';
 
 const features = [
     {
         icon: FileText,
         title: 'TYPE LIKE A HUMAN',
         description:
-            "Write requirements as if you're scribbling in Word—minus the weird formatting quirks.",
+            'Draft requirements in a familiar editor—no clunky forms or modal hell.',
     },
     {
         icon: Brain,
-        title: 'AI THAT ACTUALLY HELPS',
+        title: 'AI REWRITES & CHECKS',
         description:
-            "Our AI's not here for show. It polishes your requirements, checks your grammar, and calls you out on nonsense.",
+            'One click to restructure text into industry formats (EARS, INCOSE) and flag missing details.',
     },
     {
         icon: FileCheck,
-        title: 'NO MORE LEGAL SURPRISES',
+        title: 'INSTANT COMPLIANCE CHECKS',
         description:
-            "Dump in your industry regs. We'll highlight every violation so you don't get blindsided by compliance lawyers.",
+            "Cross-reference every line against regulations so surprises don't surface at audit time.",
     },
     {
         icon: GitMerge,
         title: 'BYE-BYE EXCEL HELL',
         description:
-            'Visualize everything, see duplicates, and catch conflicts. Because you have better things to do than cross-referencing spreadsheets.',
+            'Visual traceability without monstrous spreadsheets—relationships update in real time.',
     },
     {
         icon: Zap,
-        title: 'SPEED. PERIOD.',
+        title: 'SNAPPY & LIGHTWEIGHT',
         description:
-            "Snappy load times. Instant updates. You won't be stuck twiddling your thumbs while some spinny wheel of death does its thing.",
+            'Loads fast, saves instantly, and stays smooth even with thousands of requirements.',
+    },
+    {
+        icon: TestTube,
+        title: 'ONE-CLICK TEST CASES',
+        description:
+            'Generate structured test cases directly from every requirement—no manual scripting.',
     },
 ];
 
