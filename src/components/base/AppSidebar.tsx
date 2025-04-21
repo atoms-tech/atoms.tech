@@ -185,14 +185,22 @@ function AppSidebar() {
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            <Link href="/home/user" className="block mb-0.5">
-                                <SidebarMenuItem className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary transition-colors">
-                                    <Home className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-xs font-medium">
-                                        Home
-                                    </span>
-                                </SidebarMenuItem>
-                            </Link>
+                            <SidebarMenuItem className="mb-0.5">
+                                <SidebarMenuButton asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start"
+                                        asChild
+                                    >
+                                        <Link href="/home/user">
+                                            <Home className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Home
+                                            </span>
+                                        </Link>
+                                    </Button>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
 
                             {primaryEnterpriseOrg && (
                                 <SidebarMenuItem className="mb-0.5">

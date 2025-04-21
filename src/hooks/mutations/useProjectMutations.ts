@@ -114,3 +114,110 @@ export function useCreateProjectMember() {
         },
     });
 }
+
+export type UpdateProjectInput = Partial<
+    Omit<
+        Project,
+        | 'id'
+        | 'created_at'
+        | 'updated_at'
+        | 'deleted_at'
+        | 'deleted_by'
+        | 'is_deleted'
+        | 'star_count'
+        | 'version'
+        | 'settings'
+        | 'tags'
+    >
+>;
+
+export function useUpdateProject(projectId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (input: UpdateProjectInput) => {
+            const { data: project, error: projectError } = await supabase
+                .from('projects')
+                .update({
+                    name: input.name,
+                    description: input.description,
+                    visibility: input.visibility,
+                    status: input.status,
+                    metadata: input.metadata,
+                    updated_by: input.updated_by,
+                })
+                .eq('id', projectId)
+                .select()
+                .single();
+
+            if (projectError) {
+                console.error('Failed to update project', projectError);
+                throw projectError;
+            }
+            if (!project) {
+                throw new Error('Failed to update project');
+            }
+
+            return project;
+        },
+        onSuccess: (data) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.list({}),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.byOrg(data.organization_id),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(data.id),
+            });
+        },
+    });
+}
+
+export function useDeleteProject() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            projectId,
+            userId,
+        }: {
+            projectId: string;
+            userId: string;
+        }) => {
+            const { data: project, error: projectError } = await supabase
+                .from('projects')
+                .update({
+                    is_deleted: true,
+                    deleted_at: new Date().toISOString(),
+                    deleted_by: userId,
+                })
+                .eq('id', projectId)
+                .select()
+                .single();
+
+            if (projectError) {
+                console.error('Failed to delete project', projectError);
+                throw projectError;
+            }
+            if (!project) {
+                throw new Error('Failed to delete project');
+            }
+
+            return project;
+        },
+        onSuccess: (data) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.list({}),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.byOrg(data.organization_id),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(data.id),
+            });
+        },
+    });
+}

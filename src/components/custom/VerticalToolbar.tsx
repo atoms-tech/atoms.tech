@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 
 import Breadcrumb from '@/components/custom/Breadcrumb';
 import { ThemeToggle } from '@/components/custom/toggles/ThemeToggle';
-import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import {
     Tooltip,
@@ -121,7 +120,6 @@ const VerticalToolbar = () => {
                         </button>
                     )}
                     <ThemeToggle />
-                    <ViewModeToggle />
                 </div>
             </div>
         );
@@ -143,9 +141,6 @@ const VerticalToolbar = () => {
                 </div>
                 <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <ThemeToggle />
-                </div>
-                <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
-                    <ViewModeToggle />
                 </div>
 
                 {/* Edit Mode Toggle - Only show on document pages */}

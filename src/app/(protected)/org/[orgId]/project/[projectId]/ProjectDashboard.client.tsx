@@ -1,10 +1,20 @@
 'use client';
 
-import { FileBox, FolderArchive, Trash } from 'lucide-react';
+import {
+    Beaker,
+    FileBox,
+    FolderArchive,
+    MoreVertical,
+    Pencil,
+    PlusCircle,
+    Trash,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import EditDocumentForm from '@/components/base/forms/EditDocumentForm';
+import EditProjectForm from '@/components/base/forms/EditProjectForm';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,8 +24,16 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/use-toast';
+import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
@@ -59,6 +77,10 @@ export default function ProjectPage() {
         isLoading: documentsLoading,
         refetch,
     } = useProjectDocuments(project?.id || '');
+    const [isEditing, setIsEditing] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const { mutateAsync: deleteProject } = useDeleteProject();
+    const [documentToEdit, setDocumentToEdit] = useState<Document | null>(null);
 
     console.log(userRole, 'userRole');
 
@@ -104,6 +126,8 @@ export default function ProjectPage() {
                 'viewDocument',
                 'deleteDocument',
                 'editDocument',
+                'editProject',
+                'deleteProject',
             ],
             admin: [
                 'removeMember',
@@ -111,6 +135,7 @@ export default function ProjectPage() {
                 'viewDocument',
                 'deleteDocument',
                 'editDocument',
+                'editProject',
             ],
             maintainer: ['addDocument', 'viewDocument', 'editDocument'],
             editor: ['addDocument', 'viewDocument', 'editDocument'],
@@ -129,6 +154,10 @@ export default function ProjectPage() {
         router.push(
             `/org/${params?.orgId}/project/${params?.projectId}/documents/${doc.id}`,
         );
+    };
+
+    const handleEditDocument = (doc: Document) => {
+        setDocumentToEdit(doc);
     };
 
     const handleDeleteDocument = async () => {
@@ -176,6 +205,33 @@ export default function ProjectPage() {
         }
     };
 
+    const handleDeleteProject = async () => {
+        if (!project || !user) return;
+
+        try {
+            await deleteProject({
+                projectId: project.id,
+                userId: user.id,
+            });
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: 'Project deleted successfully',
+            });
+
+            // Navigate back to organization dashboard
+            router.push(`/org/${params?.orgId}`);
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to delete project. Please try again.',
+            });
+        }
+    };
+
     const sortedDocuments = [...(documents || [])].sort(() => {
         return 0;
     });
@@ -219,7 +275,7 @@ export default function ProjectPage() {
                         className="flex items-center gap-2"
                     >
                         <FileBox className="h-4 w-4" />
-                        <span>Documents</span>
+                        <span>Requirements Documents</span>
                     </TabsTrigger>
                 </TabsList>
 
@@ -229,56 +285,87 @@ export default function ProjectPage() {
                         {/* Left Column */}
                         <div className="md:col-span-2 space-y-6">
                             <Card>
-                                <CardHeader>
-                                    <CardTitle>Project Details</CardTitle>
-                                    <CardDescription>
-                                        Basic information about your project
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Name:
-                                            </span>
-                                            <span className="font-medium">
-                                                {project?.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Status:
-                                            </span>
-                                            <Badge
+                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                    <div>
+                                        <CardTitle>Project Details</CardTitle>
+                                        <CardDescription>
+                                            Basic information about your project
+                                        </CardDescription>
+                                    </div>
+                                    {canPerformAction('editProject') &&
+                                        !isEditing && (
+                                            <Button
                                                 variant="outline"
-                                                className={
-                                                    project?.status === 'active'
-                                                        ? 'border-green-500 text-green-500'
-                                                        : 'border-gray-500 text-gray-500'
+                                                size="icon"
+                                                onClick={() =>
+                                                    setIsEditing(true)
                                                 }
                                             >
-                                                {project?.status}
-                                            </Badge>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">
-                                                Visibility:
-                                            </span>
-                                            <span className="font-medium">
-                                                {project?.visibility}
-                                            </span>
-                                        </div>
-                                        {project?.description && (
-                                            <div>
-                                                <span className="text-muted-foreground">
-                                                    Description:
-                                                </span>
-                                                <p className="mt-1">
-                                                    {project.description}
-                                                </p>
-                                            </div>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
                                         )}
-                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    {isEditing && project ? (
+                                        <EditProjectForm
+                                            project={project}
+                                            onSuccess={() =>
+                                                setIsEditing(false)
+                                            }
+                                            onCancel={() => setIsEditing(false)}
+                                            showDeleteConfirm={
+                                                showDeleteConfirm
+                                            }
+                                            setShowDeleteConfirm={
+                                                setShowDeleteConfirm
+                                            }
+                                        />
+                                    ) : (
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Name:
+                                                </span>
+                                                <span className="font-medium">
+                                                    {project?.name}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Status:
+                                                </span>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={
+                                                        project?.status ===
+                                                        'active'
+                                                            ? 'border-green-500 text-green-500'
+                                                            : 'border-gray-500 text-gray-500'
+                                                    }
+                                                >
+                                                    {project?.status}
+                                                </Badge>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                    Visibility:
+                                                </span>
+                                                <span className="font-medium">
+                                                    {project?.visibility}
+                                                </span>
+                                            </div>
+                                            {project?.description && (
+                                                <div>
+                                                    <span className="text-muted-foreground">
+                                                        Description:
+                                                    </span>
+                                                    <p className="mt-1">
+                                                        {project.description}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>
@@ -295,65 +382,106 @@ export default function ProjectPage() {
 
                 {/* Documents Tab */}
                 <TabsContent value="documents" className="space-y-6">
-                    <div className="flex items-center space-x-2">
-                        <div className="flex w-full md:w-auto space-x-2">
-                            <Input
-                                type="text"
-                                placeholder="Search documents..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full md:w-64"
-                            />
+                    <div className="flex items-center justify-between w-full gap-4">
+                        <Input
+                            type="text"
+                            placeholder="Search documents..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full max-w-xs"
+                        />
+                        <div className="flex items-center gap-2">
                             {canPerformAction('addDocument') && (
                                 <Button
-                                    variant="default"
+                                    variant="outline"
                                     onClick={() =>
                                         setShowCreateDocumentPanel(true)
                                     }
+                                    className="gap-2 transition-colors hover:bg-primary hover:text-primary-foreground"
                                 >
-                                    Add Requirement Document
+                                    <PlusCircle className="h-4 w-4" />
+                                    Add Requirement
                                 </Button>
                             )}
+                            <Button
+                                variant="default"
+                                onClick={() =>
+                                    router.push(
+                                        `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
+                                    )
+                                }
+                                className="gap-2"
+                            >
+                                <Beaker className="h-4 w-4" />
+                                Access Testbed
+                            </Button>
                         </div>
-                        <Button
-                            variant="default"
-                            onClick={() =>
-                                router.push(
-                                    `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
-                                )
-                            }
-                        >
-                            Access Testbed
-                        </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredDocuments?.map((doc) => (
                             <div
                                 key={doc.id}
-                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors relative"
+                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors relative group"
                             >
-                                <h3
-                                    className="font-medium truncate"
-                                    onClick={() => handleDocumentClick(doc)}
-                                >
-                                    {doc.name}
-                                </h3>
-                                {doc.description && (
-                                    <p
-                                        className="text-sm text-muted-foreground line-clamp-2 mt-1"
+                                <div className="flex justify-between items-start">
+                                    <div
+                                        className="flex-1 min-w-0"
                                         onClick={() => handleDocumentClick(doc)}
                                     >
-                                        {doc.description}
-                                    </p>
-                                )}
-                                {canPerformAction('deleteDocument') && (
-                                    <button
-                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-700"
-                                        onClick={() => setDocumentToDelete(doc)}
-                                    >
-                                        <Trash className="w-5 h-5" />
-                                    </button>
-                                )}
+                                        <h3 className="font-medium truncate">
+                                            {doc.name}
+                                        </h3>
+                                        {doc.description && (
+                                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                                {doc.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    {(canPerformAction('editDocument') ||
+                                        canPerformAction('deleteDocument')) && (
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+                                                >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {canPerformAction(
+                                                    'editDocument',
+                                                ) && (
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            handleEditDocument(
+                                                                doc,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Pencil className="h-4 w-4 mr-2" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {canPerformAction(
+                                                    'deleteDocument',
+                                                ) && (
+                                                    <DropdownMenuItem
+                                                        className="text-destructive"
+                                                        onClick={() =>
+                                                            setDocumentToDelete(
+                                                                doc,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Trash className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    )}
+                                </div>
                             </div>
                         ))}
                         {filteredDocuments?.length === 0 &&
@@ -375,32 +503,50 @@ export default function ProjectPage() {
                 />
             )}
 
-            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="mt-4 space-y-2">
+                    <p className="text-red-500">
+                        Are you sure you want to delete this project? This
+                        action cannot be undone.
+                    </p>
+                    <div className="flex space-x-2">
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteProject}
+                        >
+                            Delete Project
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowDeleteConfirm(false)}
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {documentToDelete && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
-                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
-                            Confirm Deletion
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            Are you sure you want to delete the document{' '}
-                            <span className="font-medium">
-                                {documentToDelete.name}
-                            </span>
-                            ? This will also delete all requirements associated
-                            with this document.
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-background p-6 rounded-lg max-w-md w-full">
+                        <h2 className="text-xl font-semibold mb-4">
+                            Delete Document
+                        </h2>
+                        <p>
+                            Are you sure you want to delete &ldquo;
+                            {documentToDelete.name}&rdquo;? This action cannot
+                            be undone.
                         </p>
-                        <div className="flex justify-end space-x-2">
+                        <div className="mt-4 flex justify-end space-x-2">
                             <Button
                                 variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
                                 onClick={() => setDocumentToDelete(null)}
                                 disabled={isDeleting}
                             >
                                 Cancel
                             </Button>
                             <Button
-                                className="bg-red-500 text-white hover:bg-red-600"
+                                variant="destructive"
                                 onClick={handleDeleteDocument}
                                 disabled={isDeleting}
                             >
@@ -409,6 +555,19 @@ export default function ProjectPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {documentToEdit && (
+                <EditDocumentForm
+                    document={documentToEdit}
+                    isOpen={true}
+                    onClose={() => setDocumentToEdit(null)}
+                    onDelete={() => {
+                        setDocumentToDelete(documentToEdit);
+                        setDocumentToEdit(null);
+                    }}
+                    canDelete={canPerformAction('deleteDocument')}
+                />
             )}
         </div>
     );

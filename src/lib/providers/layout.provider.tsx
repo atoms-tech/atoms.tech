@@ -23,7 +23,6 @@ export const BREAKPOINTS = {
 };
 
 // Comprehensive layout state type
-export type ViewMode = 'normal' | 'compact';
 export type LayoutViewMode = 'standard' | 'wide';
 export type SidebarState = 'expanded' | 'collapsed';
 
@@ -40,10 +39,6 @@ export interface LayoutState {
     isTablet: boolean;
     isDesktop: boolean;
     currentBreakpoint: keyof typeof BREAKPOINTS;
-
-    // View modes
-    viewMode: ViewMode;
-    setViewMode: (mode: ViewMode) => void;
 
     // Layout view (width)
     layoutViewMode: LayoutViewMode;
@@ -83,8 +78,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     const [currentBreakpoint, setCurrentBreakpoint] =
         useState<keyof typeof BREAKPOINTS>('lg');
 
-    // View modes
-    const [viewMode, setViewMode] = useState<ViewMode>('normal');
+    // Layout view (width)
     const [layoutViewMode, setLayoutViewMode] =
         useState<LayoutViewMode>('standard');
 
@@ -187,8 +181,6 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
             isTablet,
             isDesktop,
             currentBreakpoint,
-            viewMode,
-            setViewMode,
             layoutViewMode,
             setLayoutViewMode,
             isEditMode,
@@ -206,7 +198,6 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
             isTablet,
             isDesktop,
             currentBreakpoint,
-            viewMode,
             layoutViewMode,
             isEditMode,
             currentPath,

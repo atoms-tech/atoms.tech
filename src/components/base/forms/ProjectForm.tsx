@@ -29,7 +29,19 @@ import { useProjectStore } from '@/store/project.store';
 import { ProjectStatus, Visibility } from '@/types';
 
 const projectFormSchema = z.object({
-    name: z.string().min(1, 'Project name is required'),
+    name: z
+        .string()
+        .min(2, 'Project name must be at least 2 characters')
+        .max(50, 'Project name cannot exceed 50 characters')
+        .trim()
+        .refine(
+            (val) => val.length > 0,
+            'Project name cannot be empty or just spaces',
+        )
+        .refine(
+            (val) => /^[a-zA-Z0-9\s\-_]+$/.test(val),
+            'Project name can only contain letters, numbers, spaces, hyphens and underscores',
+        ),
     description: z.string().optional(),
     status: z.nativeEnum(ProjectStatus),
     visibility: z.nativeEnum(Visibility),
@@ -72,8 +84,9 @@ export default function ProjectForm({
         }
 
         try {
+            const trimmedName = data.name.trim();
             const project = await createProject({
-                name: data.name,
+                name: trimmedName,
                 status: data.status,
                 description: data.description || null,
                 visibility: data.visibility,
@@ -87,7 +100,7 @@ export default function ProjectForm({
                     source: 'web_app',
                     template_version: '1.0',
                 },
-                slug: data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                slug: trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                 created_by: userProfile.id,
                 updated_by: userProfile.id,
             });
