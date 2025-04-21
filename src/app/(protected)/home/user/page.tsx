@@ -25,8 +25,8 @@ import { useOrgInvitation } from '@/hooks/queries/useOrganization';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { useContextStore } from '@/lib/store/context.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser'; // Import Supabase client
+import { useContextStore } from '@/store/context.store';
 import { InvitationStatus, OrganizationType } from '@/types/base/enums.types';
 import { Organization } from '@/types/base/organizations.types';
 

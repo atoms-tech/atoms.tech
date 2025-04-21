@@ -9,8 +9,8 @@ import ThemeToggle from '@/components/custom/toggles/ThemeToggle';
 import { ViewModeToggle } from '@/components/custom/toggles/ViewModeToggle';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useLayout } from '@/lib/providers/layout.provider';
-import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
+import { useDocumentStore } from '@/store/document.store';
 
 interface HorizontalToolbarProps {
     className?: string;

@@ -14,6 +14,7 @@ import React from 'react';
 
 import { BlockProps } from '@/components/custom/BlockCanvas/types';
 import { cn } from '@/lib/utils';
+import { useDocumentStore } from '@/store/document.store';
 import { Json } from '@/types/base/database.types';
 
 import { Toolbar } from './FormatToolbar';
@@ -132,9 +133,7 @@ export const TextBlock: React.FC<BlockProps> = ({
     onUpdate,
     _isSelected,
     onSelect,
-    isEditMode,
     onDelete,
-    onDoubleClick,
     dragActivators,
 }) => {
     const content = block.content as { text?: string; format?: string };
@@ -148,6 +147,9 @@ export const TextBlock: React.FC<BlockProps> = ({
     });
     const editorRef = React.useRef<HTMLDivElement>(null);
     const lastSavedContent = React.useRef(content?.text || '<p></p>');
+
+    // Use the document store for edit mode state
+    const { isEditMode } = useDocumentStore();
 
     // Add click outside handler
     React.useEffect(() => {
@@ -271,9 +273,12 @@ export const TextBlock: React.FC<BlockProps> = ({
 
             lastSavedContent.current = contentToSave;
             onUpdate({
-                text: contentToSave,
-                format: content?.format || 'default',
-            } as Json);
+                content: {
+                    text: contentToSave,
+                    format: content?.format || 'default',
+                } as Json,
+                updated_at: new Date().toISOString(),
+            });
         }
     }, [isEditMode, localContent, content?.format, onUpdate]);
 
@@ -284,9 +289,15 @@ export const TextBlock: React.FC<BlockProps> = ({
         const editorContent = editor.getHTML();
         if (editorContent !== lastSavedContent.current) {
             lastSavedContent.current = editorContent;
-            onUpdate?.({ text: editorContent });
+            onUpdate({
+                content: {
+                    text: editorContent,
+                    format: content?.format || 'default',
+                } as Json,
+                updated_at: new Date().toISOString(),
+            });
         }
-    }, [editor, isEditMode, onUpdate]);
+    }, [editor, isEditMode, onUpdate, content?.format]);
 
     // Add blur handler to editor
     React.useEffect(() => {
@@ -351,10 +362,6 @@ export const TextBlock: React.FC<BlockProps> = ({
                     if (isEditMode && editor && editor.state.selection.empty) {
                         editor.commands.focus();
                     }
-                }}
-                onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    onDoubleClick?.();
                 }}
             >
                 {isEditMode && showToolbar && (

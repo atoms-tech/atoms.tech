@@ -15,9 +15,9 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useUser } from '@/lib/providers/user.provider';
-import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { cn } from '@/lib/utils';
+import { useDocumentStore } from '@/store/document.store';
 
 import { LayoutViewToggle } from './toggles/LayoutViewToggle';
 

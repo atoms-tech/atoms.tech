@@ -6,3 +6,4 @@ export * from './LoadingSkeleton';
 export * from './NewRowForm';
 export * from './TableControls';
 export * from './TableHeader';
+export * from './TanStackDataTableRow';

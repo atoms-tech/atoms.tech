@@ -15,8 +15,8 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
+import { useDocumentStore } from '@/store/document.store';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 interface DataTableRowProps<T> {

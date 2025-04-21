@@ -11,14 +11,10 @@ import {
     useDeleteBlock,
     useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
-import {
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    BLOCKS_GUTTER_SIZE,
-    BLOCK_TEXT_DEFAULT_HEIGHT,
-} from '@/lib/constants/blocks';
+import { BLOCK_TEXT_DEFAULT_HEIGHT } from '@/lib/constants/blocks';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { useDocumentStore } from '@/lib/store/document.store';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useDocumentStore } from '@/store/document.store';
 import { Json } from '@/types/base/database.types';
 
 export const useBlockActions = ({
@@ -27,8 +23,6 @@ export const useBlockActions = ({
     blocks,
     setLocalBlocks,
     orgId,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    projectId,
 }: UseBlockActionsProps) => {
     const createBlockMutation = useCreateBlock();
     const updateBlockMutation = useUpdateBlock();
@@ -49,11 +43,7 @@ export const useBlockActions = ({
         return blocks.filter((b) => b.order > order);
     };
 
-    const makeSpaceForBlock = (
-        targetOrder: number,
-        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-        makeLocalOnly: boolean = false,
-    ) => {
+    const makeSpaceForBlock = (targetOrder: number) => {
         const blocksBelow = getBlocksBelow(targetOrder);
         if (blocksBelow.length === 0) {
             return;
@@ -332,20 +322,27 @@ export const useBlockActions = ({
         }
     };
 
-    const handleUpdateBlock = async (blockId: string, updates: Json) => {
+    const handleUpdateBlock = async (
+        blockId: string,
+        updates: Partial<BlockWithRequirements>,
+    ) => {
         if (!userProfile?.id) {
             console.error('Cannot update block: User profile not found');
             throw new Error('User profile not found');
         }
 
         try {
+            // Separate content from other fields
+            const { content, ...otherFields } = updates;
+
             // Update local state first for optimistic updates
             setLocalBlocks((prevBlocks) =>
                 prevBlocks.map((block) =>
                     block.id === blockId
                         ? {
                               ...block,
-                              content: updates,
+                              ...(content ? { content } : {}),
+                              ...otherFields,
                               updated_by: userProfile.id,
                               updated_at: new Date().toISOString(),
                           }
@@ -356,7 +353,8 @@ export const useBlockActions = ({
             // Then update the server
             await updateBlockMutation.mutateAsync({
                 id: blockId,
-                content: updates,
+                ...(content ? { content } : {}),
+                ...otherFields,
                 updated_by: userProfile.id,
             });
         } catch (error) {

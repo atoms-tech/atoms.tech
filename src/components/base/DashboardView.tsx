@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { useSettingsStore } from '@/lib/store/settings.store';
+import { useSettingsStore } from '@/store/settings.store';
 
 import { MonospaceGrid } from './MonospaceGrid';
 import { MonospaceTable } from './MonospaceTable';

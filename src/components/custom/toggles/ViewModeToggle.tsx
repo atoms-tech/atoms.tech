@@ -9,7 +9,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useSettingsStore } from '@/lib/store/settings.store';
+import { useSettingsStore } from '@/store/settings.store';
 
 export function ViewModeToggle() {
     const { viewMode, setViewMode } = useSettingsStore();

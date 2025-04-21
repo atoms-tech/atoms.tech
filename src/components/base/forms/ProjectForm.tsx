@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
-import { useProjectStore } from '@/lib/store/project.store';
+import { useProjectStore } from '@/store/project.store';
 import { ProjectStatus, Visibility } from '@/types';
 
 const projectFormSchema = z.object({

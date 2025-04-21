@@ -32,13 +32,16 @@ import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/lib/providers/organization.provider';
-import { useDocumentStore } from '@/lib/store/document.store';
 // Unused but might be needed in the future
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
 
-export function BlockCanvas({ documentId }: BlockCanvasProps) {
+export function BlockCanvas({
+    documentId,
+    _useTanStackTables = false,
+}: BlockCanvasProps) {
     const rolePermissions = React.useMemo(
         () =>
             ({
@@ -66,7 +69,7 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, isEditMode, setIsEditMode } = useDocumentStore();
+    const { reorderBlocks, setUseTanStackTables } = useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
@@ -236,7 +239,6 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                     key={block.id}
                     block={block}
                     _isSelected={isSelected}
-                    isEditMode={isEditMode && canPerformAction('editBlock')}
                     onSelect={() => setSelectedBlockId(block.id)}
                     onUpdate={(content) =>
                         canPerformAction('editBlock') &&
@@ -246,21 +248,13 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
                         canPerformAction('deleteBlock') &&
                         handleDeleteBlock(block.id)
                     }
-                    onDoubleClick={() => {
-                        if (canPerformAction('editBlock')) {
-                            setSelectedBlockId(block.id);
-                            setIsEditMode(true);
-                        }
-                    }}
                 />
             );
         },
         [
             selectedBlockId,
-            isEditMode,
             handleUpdateBlock,
             handleDeleteBlock,
-            setIsEditMode,
             canPerformAction,
         ],
     );
@@ -307,6 +301,11 @@ export function BlockCanvas({ documentId }: BlockCanvasProps) {
             handleReorder(newBlocks);
         }
     };
+
+    // Set the useTanStackTables flag in the document store when it changes
+    useEffect(() => {
+        setUseTanStackTables(_useTanStackTables);
+    }, [_useTanStackTables, setUseTanStackTables]);
 
     // Don't render blocks until they're loaded
     if (loading) {

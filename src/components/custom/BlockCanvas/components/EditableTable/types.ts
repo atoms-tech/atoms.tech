@@ -72,8 +72,9 @@ export interface EditableTableProps<
     columns: EditableColumn<T>[];
     onSave?: (item: T, isNew: boolean) => Promise<void>;
     onDelete?: (item: T) => Promise<void>;
+    onPostSave?: () => Promise<void>; // Callback to refresh data after a save operation
     isLoading?: boolean;
-    emptyMessage?: string;
+    _emptyMessage?: string;
     showFilter?: boolean;
     filterComponent?: React.ReactNode;
     isEditMode?: boolean;

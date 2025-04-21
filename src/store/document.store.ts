@@ -10,6 +10,7 @@ interface DocumentState {
     blocks: Block[];
     selectedBlockId: string | null;
     isEditMode: boolean;
+    useTanStackTables: boolean;
 
     // Document actions
     setCurrentDocument: (document: Document | null) => void;
@@ -23,6 +24,9 @@ interface DocumentState {
     reorderBlocks: (blocks: Block[]) => void;
     setSelectedBlock: (blockId: string | null) => void;
     setIsEditMode: (isEditMode: boolean) => void;
+
+    // Table implementation
+    setUseTanStackTables: (useTanStackTables: boolean) => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -30,6 +34,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     blocks: [],
     selectedBlockId: null,
     isEditMode: false,
+    useTanStackTables: false,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),
@@ -103,4 +108,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     setSelectedBlock: (blockId) => set({ selectedBlockId: blockId }),
 
     setIsEditMode: (isEditMode) => set({ isEditMode }),
+
+    // Table implementation
+    setUseTanStackTables: (useTanStackTables) => set({ useTanStackTables }),
 }));

@@ -16,8 +16,6 @@ export const SortableBlock: React.FC<BlockProps> = ({
     onSelect,
     onUpdate,
     onDelete,
-    isEditMode,
-    onDoubleClick,
     properties,
 }) => {
     const {
@@ -63,7 +61,6 @@ export const SortableBlock: React.FC<BlockProps> = ({
                 ],
                 !isDragging && 'cursor-default',
             )}
-            onDoubleClick={onDoubleClick}
         >
             {block.type === 'text' && (
                 <TextBlock
@@ -71,9 +68,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                     onUpdate={onUpdate}
                     _isSelected={_isSelected}
                     onSelect={onSelect}
-                    isEditMode={isEditMode}
                     onDelete={onDelete}
-                    onDoubleClick={onDoubleClick}
                     dragActivators={listeners}
                 />
             )}
@@ -83,9 +78,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                     onUpdate={onUpdate}
                     _isSelected={_isSelected}
                     onSelect={onSelect}
-                    isEditMode={isEditMode}
                     onDelete={onDelete}
-                    onDoubleClick={onDoubleClick}
                     properties={properties}
                     dragActivators={listeners}
                 />

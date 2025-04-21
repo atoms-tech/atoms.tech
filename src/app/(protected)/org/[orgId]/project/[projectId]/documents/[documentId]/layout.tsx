@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { useDocument } from '@/hooks/queries/useDocument';
-import { useDocumentStore } from '@/lib/store/document.store';
+import { useDocumentStore } from '@/store/document.store';
 
 export default function DocumentLayout({
     children,

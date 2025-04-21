@@ -10,6 +10,8 @@ import React, {
     useState,
 } from 'react';
 
+import { useDocumentStore } from '@/store/document.store';
+
 // Define comprehensive viewport breakpoints
 export const BREAKPOINTS = {
     xs: 480,
@@ -86,8 +88,8 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     const [layoutViewMode, setLayoutViewMode] =
         useState<LayoutViewMode>('standard');
 
-    // Edit mode
-    const [isEditMode, setIsEditMode] = useState(false);
+    // Get edit mode from document store
+    const { isEditMode, setIsEditMode } = useDocumentStore();
 
     // Navigation state
     const [currentPath, setCurrentPath] = useState('');
@@ -210,6 +212,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
             currentPath,
             documentName,
             isDocumentPage,
+            setIsEditMode,
         ],
     );
 

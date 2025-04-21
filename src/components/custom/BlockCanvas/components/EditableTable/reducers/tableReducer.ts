@@ -1,7 +1,6 @@
 import { CellValue } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 
 export interface TableState<T> {
-    localIsEditMode: boolean;
     editingData: Record<string, T>;
     isAddingNew: boolean;
     sortKey: string | null;
@@ -14,7 +13,6 @@ export interface TableState<T> {
 }
 
 export type TableAction<T> =
-    | { type: 'SET_EDIT_MODE'; payload: boolean }
     | {
           type: 'SET_SORT';
           payload: { key: string | null; order: 'asc' | 'desc' };
@@ -24,6 +22,10 @@ export type TableAction<T> =
     | {
           type: 'SET_CELL_VALUE';
           payload: { itemId: string; accessor: keyof T; value: CellValue };
+      }
+    | {
+          type: 'UPDATE_EDITING_DATA';
+          payload: { rowId: string; columnId: string; value: CellValue };
       }
     | { type: 'OPEN_DELETE_CONFIRM'; payload: T }
     | { type: 'CLOSE_DELETE_CONFIRM' }
@@ -41,16 +43,16 @@ export type TableAction<T> =
     | {
           type: 'SET_SELECTED_CELL';
           payload: { row: number; col: number } | null;
-      };
+      }
+    | { type: 'SET_ITEM_TO_DELETE'; payload: T | null }
+    | { type: 'SET_DELETE_CONFIRM_OPEN'; payload: boolean }
+    | { type: 'SET_IS_ADDING_NEW'; payload: boolean };
 
 export function tableReducer<T>(
     state: TableState<T>,
     action: TableAction<T>,
 ): TableState<T> {
     switch (action.type) {
-        case 'SET_EDIT_MODE':
-            return { ...state, localIsEditMode: action.payload };
-
         case 'SET_SORT':
             return {
                 ...state,
@@ -79,6 +81,39 @@ export function tableReducer<T>(
                         [action.payload.accessor]: action.payload.value,
                     },
                 },
+            };
+
+        case 'UPDATE_EDITING_DATA':
+            const { rowId, columnId, value } = action.payload;
+            return {
+                ...state,
+                editingData: {
+                    ...state.editingData,
+                    [rowId]: {
+                        ...state.editingData[rowId],
+                        [columnId]: value,
+                    } as T,
+                },
+            };
+
+        case 'SET_ITEM_TO_DELETE':
+            return {
+                ...state,
+                itemToDelete: action.payload,
+                deleteConfirmOpen: action.payload !== null,
+            };
+
+        case 'SET_DELETE_CONFIRM_OPEN':
+            return {
+                ...state,
+                deleteConfirmOpen: action.payload,
+                itemToDelete: action.payload ? state.itemToDelete : null,
+            };
+
+        case 'SET_IS_ADDING_NEW':
+            return {
+                ...state,
+                isAddingNew: action.payload,
             };
 
         case 'OPEN_DELETE_CONFIRM':
@@ -138,7 +173,6 @@ export function tableReducer<T>(
                 editingData: {},
                 isAddingNew: false,
                 editingTimeouts: {},
-                localIsEditMode: false,
                 selectedCell: null,
             };
 

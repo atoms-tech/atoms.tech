@@ -1,6 +1,5 @@
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
-import { Json } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
 import { Profile } from '@/types/base/profiles.types';
 import { Requirement } from '@/types/base/requirements.types';
@@ -38,6 +37,7 @@ export interface BlockContent {
 
 export interface BlockCanvasProps {
     documentId: string;
+    _useTanStackTables?: boolean;
 }
 
 export interface BlockWithRequirements extends Block {
@@ -58,10 +58,8 @@ export interface BlockProps {
     block: BlockWithRequirements;
     _isSelected?: boolean;
     onSelect?: (blockId: string) => void;
-    onUpdate: (content: Json) => void;
+    onUpdate: (updates: Partial<BlockWithRequirements>) => void;
     onDelete?: () => void;
-    isEditMode?: boolean;
-    onDoubleClick?: () => void;
     properties?: Property[];
     dragActivators?: SyntheticListenerMap;
 }

@@ -10,8 +10,8 @@ import {
     useRequirementActions,
 } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import {
-    BlockProps /* eslint-disable-next-line @typescript-eslint/no-unused-vars */,
-    Column,
+    BlockProps,
+    BlockWithRequirements,
     Property,
     PropertyType,
 } from '@/components/custom/BlockCanvas/types';
@@ -24,8 +24,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/lib/providers/organization.provider';
-import { useDocumentStore } from '@/lib/store/document.store';
 import { cn } from '@/lib/utils';
+import { useDocumentStore } from '@/store/document.store';
 import { Requirement } from '@/types/base/requirements.types';
 
 import { AddColumnDialog } from './EditableTable/components/AddColumnDialog';
@@ -203,7 +203,6 @@ const TableHeader: React.FC<{
 
 export const TableBlock: React.FC<BlockProps> = ({
     block,
-    isEditMode: _isEditMode,
     onUpdate,
     onDelete,
     dragActivators,
@@ -227,7 +226,7 @@ export const TableBlock: React.FC<BlockProps> = ({
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
     // Use the document store for edit mode state
-    const { isEditMode: globalIsEditMode } = useDocumentStore();
+    const { isEditMode, useTanStackTables } = useDocumentStore();
 
     // Initialize requirement actions with properties
     const {
@@ -249,18 +248,17 @@ export const TableBlock: React.FC<BlockProps> = ({
         setBlockName(newName);
         onUpdate({
             name: newName,
-            content: block.content, // Preserve existing content
             updated_by: userProfile?.id || null,
             updated_at: new Date().toISOString(),
-        });
+        } as Partial<BlockWithRequirements>);
     };
 
     // Fetch fresh requirements when exiting edit mode
     useEffect(() => {
-        if (!globalIsEditMode) {
+        if (!isEditMode) {
             refreshRequirements();
         }
-    }, [globalIsEditMode, refreshRequirements]);
+    }, [isEditMode, refreshRequirements]);
 
     // Get table columns from block columns
     const getColumnsFromProperties = useCallback(() => {
@@ -369,12 +367,28 @@ export const TableBlock: React.FC<BlockProps> = ({
         }
     }, [onDelete]);
 
+    // Use isEditMode directly from the document store
+    const TableContent = () => {
+        return (
+            <TableBlockContent
+                dynamicRequirements={dynamicRequirements}
+                columns={columns}
+                onSaveRequirement={handleSaveRequirement}
+                onDeleteRequirement={handleDeleteRequirement}
+                refreshRequirements={refreshRequirements}
+                isEditMode={isEditMode}
+                alwaysShowAddRow={isEditMode}
+                useTanStackTables={useTanStackTables}
+            />
+        );
+    };
+
     return (
         <div className="w-full max-w-full bg-background border-b rounded-lg overflow-hidden">
             <div className="flex flex-col w-full max-w-full min-w-0">
                 <TableHeader
                     name={blockName}
-                    isEditMode={globalIsEditMode}
+                    isEditMode={isEditMode}
                     onNameChange={handleNameChange}
                     onAddColumn={handleAddColumn}
                     _onAddRow={handleAddRow}
@@ -382,7 +396,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     dragActivators={dragActivators}
                     orgId={currentOrganization?.id || ''}
                     projectId={projectId}
-                    documentId={block.document_id || undefined}
+                    documentId={params.documentId as string}
                 />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
                     {!block.columns ? (
@@ -392,14 +406,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             error={null}
                         />
                     ) : (
-                        <TableBlockContent
-                            dynamicRequirements={dynamicRequirements}
-                            columns={columns}
-                            onSaveRequirement={handleSaveRequirement}
-                            onDeleteRequirement={handleDeleteRequirement}
-                            isEditMode={globalIsEditMode}
-                            alwaysShowAddRow={globalIsEditMode}
-                        />
+                        <TableContent />
                     )}
                 </div>
             </div>
@@ -412,7 +419,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                 }}
                 orgId={currentOrganization?.id || ''}
                 projectId={projectId}
-                documentId={block.document_id || undefined}
+                documentId={params.documentId as string}
             />
         </div>
     );

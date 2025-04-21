@@ -182,8 +182,57 @@ export const useDocumentRealtime = ({
                     table: 'requirements',
                     filter: `document_id=eq.${documentId}`,
                 },
-                () => {
-                    fetchBlocks();
+                (payload) => {
+                    if (payload.eventType === 'UPDATE') {
+                        setBlocks((prevBlocks) => {
+                            if (!prevBlocks) return prevBlocks;
+                            return prevBlocks.map((block) => {
+                                if (block.id === payload.new.block_id) {
+                                    return {
+                                        ...block,
+                                        requirements: block.requirements.map(
+                                            (req) =>
+                                                req.id === payload.new.id
+                                                    ? (payload.new as Requirement)
+                                                    : req,
+                                        ),
+                                    };
+                                }
+                                return block;
+                            });
+                        });
+                    } else if (payload.eventType === 'INSERT') {
+                        setBlocks((prevBlocks) => {
+                            if (!prevBlocks) return prevBlocks;
+                            return prevBlocks.map((block) => {
+                                if (block.id === payload.new.block_id) {
+                                    return {
+                                        ...block,
+                                        requirements: [
+                                            ...block.requirements,
+                                            payload.new as Requirement,
+                                        ],
+                                    };
+                                }
+                                return block;
+                            });
+                        });
+                    } else if (payload.eventType === 'DELETE') {
+                        setBlocks((prevBlocks) => {
+                            if (!prevBlocks) return prevBlocks;
+                            return prevBlocks.map((block) => {
+                                if (block.id === payload.old.block_id) {
+                                    return {
+                                        ...block,
+                                        requirements: block.requirements.filter(
+                                            (req) => req.id !== payload.old.id,
+                                        ),
+                                    };
+                                }
+                                return block;
+                            });
+                        });
+                    }
                 },
             )
             .subscribe();

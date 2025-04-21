@@ -20,13 +20,12 @@ export function useAuth() {
 
             if (error) {
                 console.error('Error fetching user profile:', error);
-                alert('Error fetching user profile. Please try again.');
                 throw error;
             }
             setUserProfile(profile);
         } catch (error) {
             console.error('Error fetching user profile:', error);
-            alert('An unexpected error occurred. Please try again.');
+            setUserProfile(null);
         }
     };
 
@@ -34,24 +33,30 @@ export function useAuth() {
         const checkUser = async () => {
             try {
                 const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                setIsAuthenticated(!!user);
-                if (user) {
-                    await fetchUserProfile(user.id);
+                    data: { session },
+                    error,
+                } = await supabase.auth.getSession();
+
+                if (error) {
+                    throw error;
+                }
+
+                setIsAuthenticated(!!session);
+                if (session?.user) {
+                    await fetchUserProfile(session.user.id);
+                } else {
+                    setUserProfile(null);
                 }
             } catch (error) {
+                console.error('Error checking auth session:', error);
                 setIsAuthenticated(false);
                 setUserProfile(null);
-                console.error('Error fetching user profile:', error);
-                alert('An unexpected error occurred. Please try again.');
-                throw error;
             } finally {
                 setIsLoading(false);
             }
         };
 
-        // Check initial user state
+        // Check initial session state
         checkUser();
 
         // Listen for auth state changes
@@ -75,6 +80,7 @@ export function useAuth() {
         try {
             await supabase.auth.signOut();
             setUserProfile(null);
+            setIsAuthenticated(false);
             router.push('/login');
         } catch (error) {
             console.error('Error signing out:', error);

@@ -77,13 +77,32 @@ jobs:
             - name: Install dependencies
               run: bun install
 
+            - name: Check Prettier version
+              run: bun prettier --version
+
+            - name: Debug Prettier configuration
+              run: |
+                echo "Prettier configuration files:"
+                find . -maxdepth 2 -name ".prettier*" -type f -exec echo {} \; -exec cat {} \;
+                echo "\n"
+
+            - name: Run prettier check first (without writing)
+              run: bun prettier src --check
+
             - name: Run prettier
               run: bun prettier src --write
 
             - name: Check for changes
               run: |
-                  if ! git diff --quiet; then
-                    git diff --name-only
-                    echo "Prettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
-                    exit 1
-                  fi
+                if ! git diff --quiet; then
+                  echo "=== FILES THAT NEED FORMATTING ==="
+                  git diff --name-only
+                  echo "\n=== DETAILED CHANGES ==="
+                  git diff --color
+                  echo "\n=== LINE ENDING CHECK ==="
+                  git diff | grep -E '[\+\-]$' || echo "No line ending issues detected"
+                  echo "\nPrettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
+                  exit 1
+                else
+                  echo "No formatting changes detected."
+                fi

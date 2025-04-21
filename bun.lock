@@ -44,6 +44,7 @@
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
         "framer-motion": "^11.18.2",
+        "immer": "^10.1.1",
         "loadash": "^1.0.0",
         "lodash": "^4.17.21",
         "lodash.debounce": "^4.0.8",
@@ -1130,6 +1131,8 @@
     "ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 
     "image-blob-reduce": ["image-blob-reduce@3.0.1", "", { "dependencies": { "pica": "^7.1.0" } }, "sha512-/VmmWgIryG/wcn4TVrV7cC4mlfUC/oyiKIfSg5eVM3Ten/c1c34RJhMYKCWTnoSMHSqXLt3tsrBR4Q2HInvN+Q=="],
+
+    "immer": ["immer@10.1.1", "", {}, "sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw=="],
 
     "immutable": ["immutable@4.3.7", "", {}, "sha512-1hqclzwYwjRDFLjcFxOM5AYkkG0rpFPpr1RLPMEuGczoS7YA8gLhy8SWXYRAA/XwfEHpfo3cw5JGioS32fnMRw=="],
 

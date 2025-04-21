@@ -1,5 +1,13 @@
 'use client';
 
+// EditableTable Component
+// Features:
+// - Editable table for Requirements and other data
+// - Auto-save on blur (when clicking outside the table)
+// - Auto-save when exiting edit mode
+// - Keyboard navigation for cells
+// - Role-based permissions
+// - Sort, filter, and add/delete rows
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
@@ -32,9 +40,9 @@ export function EditableTable<
     columns,
     onSave,
     onDelete,
+    onPostSave,
     isLoading = false,
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    emptyMessage = 'No items found.',
+    _emptyMessage = 'No items found.',
     showFilter = true,
     filterComponent,
     isEditMode = false,
@@ -42,7 +50,6 @@ export function EditableTable<
 }: EditableTableProps<T>) {
     // Initialize the state with useReducer
     const initialState: TableState<T> = {
-        localIsEditMode: isEditMode,
         editingData: {},
         isAddingNew: false,
         sortKey: null,
@@ -56,7 +63,6 @@ export function EditableTable<
 
     const [state, dispatch] = useReducer(tableReducer, initialState);
     const {
-        localIsEditMode,
         editingData,
         isAddingNew,
         sortKey,
@@ -77,6 +83,73 @@ export function EditableTable<
     const userId = user?.id || ''; // Ensure userId is extracted correctly
     const params = useParams();
     const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+
+    // Create a ref to track the table wrapper
+    const tableRef = React.useRef<HTMLDivElement>(null);
+
+    // Function to save pending changes
+    const savePendingChanges = useCallback(async () => {
+        if (!onSave || !editingData) return;
+
+        try {
+            // Get all modified items
+            const modifiedItems = Object.entries(editingData).filter(
+                ([id, item]) => {
+                    // Skip new items as they're handled separately
+                    if (id === 'new') return false;
+
+                    // Find original item
+                    const originalItem = data.find((d) => d.id === id);
+                    if (!originalItem) return false;
+
+                    // Check if any values have changed
+                    return Object.keys(item).some(
+                        (key) => item[key] !== originalItem[key],
+                    );
+                },
+            );
+
+            // Only proceed if there are actually modified items
+            if (modifiedItems.length === 0) return;
+
+            console.log(`Saving ${modifiedItems.length} modified items...`);
+
+            // Save all modified items
+            for (const [_id, item] of modifiedItems) {
+                try {
+                    await onSave(item, false);
+                    console.log('Saved changes for item:', _id);
+                } catch (error) {
+                    console.error(`Failed to save item ${_id}:`, error);
+                    // Continue with other items even if one fails
+                }
+            }
+
+            // Call onPostSave after successfully saving all items to refresh data
+            if (onPostSave) {
+                await onPostSave();
+            }
+        } catch (error) {
+            console.error('Error in savePendingChanges:', error);
+        }
+    }, [editingData, onSave, data, onPostSave]);
+
+    // Handle blur events on the table wrapper
+    // This is triggered when focus moves outside the table
+    const handleTableBlur = useCallback(
+        (e: React.FocusEvent<HTMLDivElement>) => {
+            // Check if focus is moving outside the table
+            if (
+                isEditMode &&
+                tableRef.current &&
+                !tableRef.current.contains(e.relatedTarget as Node)
+            ) {
+                console.log('Focus leaving table, auto-saving changes...');
+                savePendingChanges();
+            }
+        },
+        [isEditMode, savePendingChanges],
+    );
 
     if (!projectId) {
         console.error('Project ID is missing from the URL.');
@@ -139,66 +212,34 @@ export function EditableTable<
 
     // Effect to init edit data when entering edit mode
     useEffect(() => {
-        if (isEditMode !== localIsEditMode) {
-            dispatch({ type: 'SET_EDIT_MODE', payload: isEditMode });
-
-            if (isEditMode && data.length > 0) {
-                const initialEditData = data.reduce(
-                    (acc, item) => {
-                        if (item.id) {
-                            acc[item.id as string] = { ...item };
-                        }
-                        return acc;
-                    },
-                    {} as Record<string, T>,
-                );
-                dispatch({
-                    type: 'SET_INITIAL_EDIT_DATA',
-                    payload: initialEditData,
-                });
-            } else if (!isEditMode) {
-                dispatch({ type: 'RESET_EDIT_STATE' });
-            }
+        if (isEditMode && data.length > 0) {
+            const initialEditData = data.reduce(
+                (acc, item) => {
+                    if (item.id) {
+                        acc[item.id as string] = { ...item };
+                    }
+                    return acc;
+                },
+                {} as Record<string, T>,
+            );
+            dispatch({
+                type: 'SET_INITIAL_EDIT_DATA',
+                payload: initialEditData,
+            });
+        } else if (!isEditMode) {
+            dispatch({ type: 'RESET_EDIT_STATE' });
         }
-    }, [isEditMode, localIsEditMode, data]);
+    }, [isEditMode, data]);
 
     // Effect to save all changes when exiting edit mode
+    // This serves as a fallback to the blur handler
     useEffect(() => {
-        const saveChanges = async () => {
-            if (!onSave || !editingData) return;
-
-            // Get all modified items
-            const modifiedItems = Object.entries(editingData).filter(
-                ([id, item]) => {
-                    // Skip new items as they're handled separately
-                    if (id === 'new') return false;
-
-                    // Find original item
-                    const originalItem = data.find((d) => d.id === id);
-                    if (!originalItem) return false;
-
-                    // Check if any values have changed
-                    return Object.keys(item).some(
-                        (key) => item[key] !== originalItem[key],
-                    );
-                },
-            );
-
-            // Save all modified items
-            for (const [_id, item] of modifiedItems) {
-                try {
-                    await onSave(item, false);
-                } catch (error) {
-                    console.error('Failed to save:', error);
-                }
-            }
-        };
-
         // If we're exiting edit mode and there are changes, save them
-        if (!isEditMode && localIsEditMode) {
-            saveChanges();
+        if (!isEditMode) {
+            console.log('Exiting edit mode, saving any pending changes...');
+            savePendingChanges();
         }
-    }, [isEditMode, localIsEditMode, editingData, onSave, data]);
+    }, [isEditMode, savePendingChanges]);
 
     // Clean up timeouts on unmount
     useEffect(() => {
@@ -210,7 +251,7 @@ export function EditableTable<
     // Handle keyboard navigation
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
-            if (!selectedCell || !sortedData.length || !localIsEditMode) return;
+            if (!selectedCell || !sortedData.length || !isEditMode) return;
 
             const maxRow = sortedData.length - 1;
             const maxCol = columns.length - 1;
@@ -240,62 +281,57 @@ export function EditableTable<
                 payload: { row: newRow, col: newCol },
             });
         },
-        [selectedCell, sortedData.length, columns.length, localIsEditMode],
+        [selectedCell, sortedData.length, columns.length, isEditMode],
     );
 
     // Reset selected cell when exiting edit mode
     useEffect(() => {
-        if (!localIsEditMode) {
+        if (!isEditMode) {
             dispatch({
                 type: 'SET_SELECTED_CELL',
                 payload: null,
             });
         }
-    }, [localIsEditMode]);
+    }, [isEditMode]);
 
     // Add keyboard event listener
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, [handleKeyDown]);
 
-    // Handle clicking outside the table
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (!selectedCell) return;
-
-            // Check if the click is inside the table
-            const tableElement = document.querySelector(
-                '[data-table-container]',
-            );
-            if (tableElement && !tableElement.contains(e.target as Node)) {
-                dispatch({
-                    type: 'SET_SELECTED_CELL',
-                    payload: null,
-                });
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () =>
-            document.removeEventListener('mousedown', handleClickOutside);
-    }, [selectedCell]);
-
-    // Action handlers
+    // Handle cell change
     const handleCellChange = useCallback(
-        async (itemId: string, accessor: keyof T, value: CellValue) => {
-            const canEdit = await canPerformAction('editTable');
-            if (!canEdit) {
-                return;
-            }
+        async (rowId: string, columnId: string, newValue: CellValue) => {
+            if (!isEditMode) return;
+
+            const item = editingData[rowId] || data.find((d) => d.id === rowId);
+            if (!item) return;
+
+            // Update the item in the state
             dispatch({
-                type: 'SET_CELL_VALUE',
-                payload: { itemId, accessor, value },
+                type: 'UPDATE_EDITING_DATA',
+                payload: {
+                    rowId,
+                    columnId,
+                    value: newValue,
+                },
             });
         },
-        [canPerformAction], // Updated dependency
+        [isEditMode, editingData, data],
     );
 
+    // Add a type adapter for onCellChange
+    const typeSafeHandleCellChange = useCallback(
+        (itemId: string, accessor: keyof T, value: CellValue) => {
+            handleCellChange(itemId, accessor as string, value);
+        },
+        [handleCellChange],
+    );
+
+    // Action handlers
     const handleAddNewRow = useCallback(async () => {
         const canAdd = await canPerformAction('addRow');
         if (!canAdd) {
@@ -344,12 +380,17 @@ export function EditableTable<
             const { id: _tempId, ...itemWithoutId } = newItem;
             await onSave(itemWithoutId as T, true);
 
+            // Call onPostSave after successfully saving to refresh data
+            if (onPostSave) {
+                await onPostSave();
+            }
+
             // Clear editing state after successful save
             dispatch({ type: 'CANCEL_ADD_ROW' });
         } catch (error) {
             console.error('Failed to save new row:', error);
         }
-    }, [editingData, onSave]);
+    }, [editingData, onSave, onPostSave]);
 
     const handleCancelNewRow = useCallback(() => {
         dispatch({ type: 'CANCEL_ADD_ROW' });
@@ -401,9 +442,9 @@ export function EditableTable<
                     columns={columns}
                     showFilter={showFilter}
                     onNewRow={handleAddNewRow}
-                    onEnterEditMode={() =>
-                        dispatch({ type: 'SET_EDIT_MODE', payload: true })
-                    }
+                    onEnterEditMode={() => {
+                        /* No-op - edit mode is controlled elsewhere */
+                    }}
                     isVisible={true}
                     orgId=""
                 />
@@ -411,6 +452,9 @@ export function EditableTable<
             <div
                 className="relative w-full overflow-x-auto brutalist-scrollbar"
                 style={{ maxWidth: '100%' }}
+                ref={tableRef}
+                onBlur={handleTableBlur}
+                tabIndex={-1}
             >
                 <div
                     style={{
@@ -425,7 +469,7 @@ export function EditableTable<
                             sortKey={sortKey}
                             sortOrder={sortOrder}
                             onSort={handleSort}
-                            isEditMode={localIsEditMode}
+                            isEditMode={isEditMode}
                         />
                         <TableBody>
                             {/* Existing rows */}
@@ -434,9 +478,9 @@ export function EditableTable<
                                     key={item.id}
                                     item={item}
                                     columns={columns}
-                                    isEditing={localIsEditMode && !isAddingNew}
+                                    isEditing={isEditMode && !isAddingNew}
                                     editingData={editingData}
-                                    onCellChange={handleCellChange}
+                                    onCellChange={typeSafeHandleCellChange}
                                     onDelete={handleDeleteClick}
                                     onHoverCell={handleHoverCell}
                                     rowIndex={rowIndex}
@@ -455,7 +499,7 @@ export function EditableTable<
                                 <NewRowForm
                                     columns={columns}
                                     editingData={editingData}
-                                    onCellChange={handleCellChange}
+                                    onCellChange={typeSafeHandleCellChange}
                                     onSave={handleSaveNewRow}
                                     onCancel={handleCancelNewRow}
                                 />
@@ -463,11 +507,11 @@ export function EditableTable<
 
                             {/* Add new row placeholder */}
                             {!isAddingNew &&
-                                (localIsEditMode || alwaysShowAddRow) && (
+                                (isEditMode || alwaysShowAddRow) && (
                                     <AddRowPlaceholder
                                         columns={columns}
                                         onClick={handleAddNewRow}
-                                        isEditMode={localIsEditMode}
+                                        isEditMode={isEditMode}
                                     />
                                 )}
                         </TableBody>

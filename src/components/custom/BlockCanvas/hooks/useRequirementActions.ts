@@ -12,6 +12,7 @@ import { Json } from '@/types/base/database.types';
 import {
     ERequirementPriority,
     ERequirementStatus,
+    RequirementStatus,
     RequirementFormat as _RequirementFormat,
     RequirementLevel as _RequirementLevel,
 } from '@/types/base/enums.types';
@@ -188,11 +189,32 @@ export const useRequirementActions = ({
     };
 
     // Helper function to convert display values back to enum values
-    const _parseDisplayValueToEnum = (displayValue: string): string => {
-        if (!displayValue) return '';
+    const _parseDisplayValueToEnum = (
+        displayValue: string,
+    ): ERequirementStatus => {
+        if (!displayValue) return RequirementStatus.draft;
 
-        // Convert "In Progress" -> "in_progress"
-        return displayValue.toLowerCase().replace(/\s+/g, '_');
+        // First, normalize the input by converting to lowercase and replacing spaces with underscores
+        const normalizedValue = displayValue.toLowerCase().replace(/\s+/g, '_');
+
+        // Map of common variations to correct enum values
+        const statusMap: Record<string, ERequirementStatus> = {
+            archive: RequirementStatus.archived,
+            archival: RequirementStatus.archived,
+            active: RequirementStatus.active,
+            archived: RequirementStatus.archived,
+            draft: RequirementStatus.draft,
+            deleted: RequirementStatus.deleted,
+            in_review: RequirementStatus.in_review,
+            review: RequirementStatus.in_review,
+            in_progress: RequirementStatus.in_progress,
+            progress: RequirementStatus.in_progress,
+            approved: RequirementStatus.approved,
+            rejected: RequirementStatus.rejected,
+        };
+
+        // Return the mapped value if it exists, otherwise return draft as default
+        return statusMap[normalizedValue] || RequirementStatus.draft;
     };
 
     // Save a requirement
@@ -207,19 +229,51 @@ export const useRequirementActions = ({
             const { propertiesObj, naturalFields } =
                 await createPropertiesObjectFromDynamicReq(dynamicReq);
 
+            // Initialize with an empty history object
             let analysis_history: RequirementAiAnalysis = {
                 descriptionHistory: [],
             };
 
+            // Handle possible undefined or null ai_analysis
             if (dynamicReq.ai_analysis) {
-                analysis_history = dynamicReq.ai_analysis;
+                try {
+                    // Clone the analysis_history to avoid mutation issues
+                    analysis_history = JSON.parse(
+                        JSON.stringify(dynamicReq.ai_analysis),
+                    );
+
+                    // Ensure descriptionHistory is always an array even after cloning
+                    if (!analysis_history?.descriptionHistory) {
+                        analysis_history = {
+                            descriptionHistory: [],
+                        };
+                    }
+                } catch (e) {
+                    // If parsing fails, fall back to the default empty history
+                    console.error('Error parsing ai_analysis:', e);
+                    analysis_history = {
+                        descriptionHistory: [],
+                    };
+                }
             }
 
+            // Safely push the new history item (analysis_history is guaranteed to be non-null at this point)
             analysis_history.descriptionHistory.push({
                 description: naturalFields.description || '',
                 createdAt: new Date().toISOString(),
-                createdBy: userName,
+                createdBy: userName || 'Unknown',
             });
+
+            // Validate and normalize the status value if it exists
+            let status: ERequirementStatus | undefined;
+            if (naturalFields?.status) {
+                status = _parseDisplayValueToEnum(naturalFields.status);
+
+                // Validate that the status is a valid enum value
+                if (!Object.values(RequirementStatus).includes(status)) {
+                    throw new Error(`Invalid status value: ${status}`);
+                }
+            }
 
             const requirementData = {
                 ai_analysis: analysis_history,
@@ -235,9 +289,7 @@ export const useRequirementActions = ({
                 ...(naturalFields?.external_id && {
                     external_id: naturalFields.external_id,
                 }),
-                ...(naturalFields?.status && {
-                    status: naturalFields.status as ERequirementStatus,
-                }),
+                ...(status && { status }),
                 ...(naturalFields?.priority && {
                     priority: naturalFields.priority as ERequirementPriority,
                 }),
@@ -249,14 +301,16 @@ export const useRequirementActions = ({
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    // Ensure ai_analysis is properly initialized
                     ai_analysis: {
                         descriptionHistory: [
                             {
                                 description: naturalFields?.description || '',
                                 createdAt: new Date().toISOString(),
+                                createdBy: userName || 'Unknown',
                             },
                         ],
-                    } as RequirementAiAnalysis,
+                    },
                 };
 
                 const { data, error } = await supabase
