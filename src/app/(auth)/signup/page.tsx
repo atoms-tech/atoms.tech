@@ -82,12 +82,12 @@ function SignupForm() {
             {/* Background overlay */}
             <div className="pointer-events-none absolute inset-0 bg-black opacity-80" />
             {/* Card container */}
-            <Card className="w-full max-w-md bg-background shadow-sm dark:shadow-lg relative z-10">
+            <Card className="w-full max-w-md bg-background dark:bg-black/40 backdrop-blur-md shadow-sm dark:shadow-lg relative z-10">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
                         Create your account
                     </CardTitle>
-                    <CardDescription className="text-center text-gray-500 dark:text-gray-400">
+                    <CardDescription className="text-center text-gray-500 dark:text-muted-foreground">
                         Sign up to get started
                     </CardDescription>
                 </CardHeader>
@@ -156,7 +156,7 @@ function SignupForm() {
                     </form>
                 </CardContent>
                 <CardFooter>
-                    <p className="text-center w-full text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-center w-full text-sm text-gray-600 dark:text-muted-foreground">
                         Already have an account?{' '}
                         <Link
                             href="/login"

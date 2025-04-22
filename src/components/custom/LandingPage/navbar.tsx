@@ -177,7 +177,7 @@ export function Navbar() {
     }, []);
 
     return (
-        <header className="fixed top-0 left-0 right-0 min-h-16 px-4 sm:px-6 py-3 bg-black text-white border-b border-1px border-white z-50">
+        <header className="fixed top-0 left-0 right-0 min-h-16 px-4 sm:px-6 py-3 bg-black/90 backdrop-blur-md text-white border-b border-1px border-white z-50">
             {/* Show full-screen loading overlay when navigating to dashboard */}
             {loadingStates.dashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">

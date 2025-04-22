@@ -32,11 +32,11 @@ export default function ConfirmEmailMessage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-center text-gray-600 dark:text-gray-300 mt-2">
+                    <p className="text-center text-gray-600 dark:text-muted-foreground mt-2">
                         {message ||
                             'Please check your email and click the confirmation link to complete your registration.'}
                     </p>
-                    <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                    <p className="text-center text-sm text-gray-500 dark:text-muted-foreground mt-4">
                         If you don&apos;t see the email, check your spam folder.
                     </p>
                 </CardContent>

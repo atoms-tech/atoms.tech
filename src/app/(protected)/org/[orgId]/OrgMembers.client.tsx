@@ -629,7 +629,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                         <div className="flex justify-end mt-4 space-x-2">
                             <Button
                                 variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
                                 onClick={() => {
                                     setIsRolePromptOpen(false);
                                     setSelectedRole(null);
@@ -740,7 +740,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                         <div className="flex justify-end mt-4 space-x-2">
                             <Button
                                 variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
                                 onClick={() => {
                                     setIsAssignPromptOpen(false);
                                     setSelectedProjectId(null);

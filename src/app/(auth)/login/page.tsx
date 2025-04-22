@@ -55,14 +55,14 @@ function LoginForm() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[url('/../../../nodesbackground.jpg')] bg-cover bg-center bg-black px-4 py-12 relative">
+        <div className="min-h-screen flex items-center justify-center bg-[url('/../../../nodesbackground.jpg')] bg-cover bg-center px-4 py-12 relative">
             <div className="pointer-events-none absolute inset-0 bg-black opacity-80" />
-            <Card className="w-full max-w-md bg-background shadow-sm dark:shadow-lg relative z-10">
+            <Card className="w-full max-w-md dark:bg-black/40 backdrop-blur-md shadow-sm dark:shadow-lg relative z-10">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
                         Welcome back
                     </CardTitle>
-                    <CardDescription className="text-center text-gray-500 dark:text-gray-400">
+                    <CardDescription className="text-center text-gray-500 dark:text-muted-foreground">
                         Sign in to your account to continue
                     </CardDescription>
                 </CardHeader>
@@ -119,10 +119,10 @@ function LoginForm() {
 
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
-                            <Separator className="w-full bg-gray-200 dark:bg-gray-700" />
+                            <Separator className="w-full bg-gray-200 dark:bg-muted" />
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-background text-gray-500 dark:text-gray-400">
+                            <span className="px-2 bg-background text-gray-500 dark:text-muted-foreground">
                                 Or continue with
                             </span>
                         </div>
