@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Building, Folder, Pin, Plus, Sparkles, Users } from 'lucide-react'; // Import Pin icon
+import { Building, Folder, Pin, Plus, Users } from 'lucide-react'; // Import Pin icon
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -244,9 +244,10 @@ export default function UserDashboard() {
             const matchesSearch = org.name
                 .toLowerCase()
                 .includes(searchTerm.toLowerCase());
-            if (activeTab === 'all') return matchesSearch;
-            if (activeTab === 'personal')
-                return matchesSearch && org.type === OrganizationType.personal;
+            if (activeTab === 'all')
+                return (
+                    matchesSearch && org.type === OrganizationType.enterprise
+                );
             if (activeTab === 'enterprise')
                 return (
                     matchesSearch && org.type === OrganizationType.enterprise
@@ -263,9 +264,6 @@ export default function UserDashboard() {
     );
 
     // Get counts for each organization type
-    const personalCount = sortedOrganizations.filter(
-        (org) => org.type === OrganizationType.personal,
-    ).length;
     const enterpriseCount = sortedOrganizations.filter(
         (org) => org.type === OrganizationType.enterprise,
     ).length;
@@ -307,8 +305,8 @@ export default function UserDashboard() {
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Welcome to your dashboard. You have access to{' '}
-                            {sortedOrganizations.length} organization
-                            {sortedOrganizations.length !== 1 ? 's' : ''}.
+                            {enterpriseCount + teamCount} organization
+                            {enterpriseCount + teamCount !== 1 ? 's' : ''}.
                         </p>
                     </div>
                     <motion.div
@@ -342,7 +340,7 @@ export default function UserDashboard() {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-3xl font-bold text-blue-700">
-                                    {sortedOrganizations.length}
+                                    {enterpriseCount + teamCount}
                                 </div>
                                 <p className="text-sm text-blue-600 mt-1">
                                     Total workspaces
@@ -355,28 +353,6 @@ export default function UserDashboard() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
-                    >
-                        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200 h-full">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-lg text-yellow-700">
-                                    Playgrounds
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-3xl font-bold text-yellow-700">
-                                    {personalCount}
-                                </div>
-                                <p className="text-sm text-yellow-600 mt-1">
-                                    Personal spaces
-                                </p>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3, delay: 0.3 }}
                     >
                         <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 h-full">
                             <CardHeader className="pb-2">
@@ -425,12 +401,9 @@ export default function UserDashboard() {
                         onValueChange={setActiveTab}
                         className="w-full md:w-auto"
                     >
-                        <TabsList className="grid grid-cols-5 w-full md:w-auto">
+                        <TabsList className="grid grid-cols-4 w-full md:w-auto">
                             <TabsTrigger value="all">
-                                All ({sortedOrganizations.length})
-                            </TabsTrigger>
-                            <TabsTrigger value="personal">
-                                Playgrounds ({personalCount})
+                                All ({enterpriseCount})
                             </TabsTrigger>
                             <TabsTrigger value="enterprise">
                                 Enterprise ({enterpriseCount})
@@ -505,10 +478,7 @@ export default function UserDashboard() {
                                                     </CardTitle>
                                                 </div>
                                                 {org.type ===
-                                                OrganizationType.personal ? (
-                                                    <Sparkles className="h-5 w-5 text-yellow-500" />
-                                                ) : org.type ===
-                                                  OrganizationType.enterprise ? (
+                                                OrganizationType.enterprise ? (
                                                     <Building className="h-5 w-5 text-blue-500" />
                                                 ) : (
                                                     <Users className="h-5 w-5 text-green-500" />
@@ -540,12 +510,9 @@ export default function UserDashboard() {
                                             </Badge>
                                             <Badge variant="secondary">
                                                 {org.type ===
-                                                OrganizationType.personal
-                                                    ? 'Playground'
-                                                    : org.type ===
-                                                        OrganizationType.enterprise
-                                                      ? 'Enterprise'
-                                                      : 'Team'}
+                                                OrganizationType.enterprise
+                                                    ? 'Enterprise'
+                                                    : 'Team'}
                                             </Badge>
                                         </CardFooter>
                                     </Card>
