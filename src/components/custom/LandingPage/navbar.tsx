@@ -53,32 +53,17 @@ export function Navbar() {
 
     const navLinks = [
         { href: '/#features', label: 'Features' },
-        {
-            href: '/#how-it-works',
-            label: 'How It Works',
-            shortLabel: 'How It Works',
-        },
         { href: '/#industries', label: 'Industries' },
         { href: '/#contact', label: 'Contact' },
     ];
 
-    const NavLink = ({
-        href,
-        label,
-        shortLabel,
-    }: {
-        href: string;
-        label: string;
-        shortLabel?: string;
-    }) => (
+    const NavLink = ({ href, label }: { href: string; label: string }) => (
         <Link
             href={href}
             className="relative group text-lg text-white hover:text-gray-300 transition-colors uppercase font-bold whitespace-nowrap"
             onClick={() => setIsMenuOpen(false)}
         >
-            <span className="hidden md:inline lg:hidden">
-                {shortLabel || label}
-            </span>
+            <span className="hidden md:inline lg:hidden">{label}</span>
             <span className="inline md:hidden lg:inline">{label}</span>
             <div className="absolute w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
         </Link>
