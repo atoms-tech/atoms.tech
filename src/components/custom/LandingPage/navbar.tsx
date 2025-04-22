@@ -244,7 +244,7 @@ export function Navbar() {
                     {/* Mobile Menu Button */}
                     <div className="flex items-center gap-2 sm:gap-4">
                         {isLoading ? (
-                            <div className="h-50px w-75px bg-muted animate-pulse"></div>
+                            <div className="h-9 w-24 bg-muted animate-pulse"></div>
                         ) : isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
