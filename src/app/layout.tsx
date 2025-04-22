@@ -34,10 +34,10 @@ export default function RootLayout({
         <GlobalErrorBoundary>
             <html lang="en" suppressHydrationWarning>
                 <head>
-                    <script
+                    {/* <script
                         src="https://unpkg.com/react-scan/dist/auto.global.js"
                         async
-                    />
+                    /> */}
                 </head>
                 <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
