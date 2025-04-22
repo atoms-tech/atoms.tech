@@ -162,8 +162,7 @@ export function Navbar() {
     }, []);
 
     return (
-        <header className="fixed top-0 left-0 right-0 h-16 bg-black/90 backdrop-blur-md text-white border-b border-1px border-white z-50">
-            {/* Show full-screen loading overlay when navigating to dashboard */}
+        <>
             {loadingStates.dashboard && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
                     <div className="flex flex-col items-center space-y-4 text-center px-4">
@@ -177,226 +176,143 @@ export function Navbar() {
                     </div>
                 </div>
             )}
+            <header className="fixed top-0 left-0 right-0 h-16 bg-black/90 backdrop-blur-md text-white border-b border-1px border-white z-50">
+                {/* Show full-screen loading overlay when navigating to dashboard */}
 
-            <div className="relative h-full">
-                <div className="container mx-auto flex justify-between items-center h-full">
-                    <Link
-                        href="/"
-                        className="atoms-logo flex items-center group justify-center"
-                        onMouseEnter={() => {
-                            setIsAnimating(true);
-                            if (videoRef.current) {
-                                videoRef.current.currentTime = 0;
-                                videoRef.current.play();
-                            }
-                        }}
-                    >
-                        <div className="flex items-center justify-center relative mx-1 sm:mx-2 h-10 w-10">
-                            <Image
-                                src="/AtomsLogo.svg"
-                                alt="Atoms logo"
-                                width={32}
-                                height={32}
-                                className={`object-contain invert absolute transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
-                                priority
-                            />
-                            <video
-                                ref={videoRef}
-                                className={`atoms-logo-video object-contain absolute transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
-                                width={32}
-                                height={32}
-                                playsInline
-                                preload="auto"
-                                muted
-                                aria-label="Atoms logo animation"
-                                src="/AtomsAnimation.mp4"
-                                poster="/AtomsLogo.svg"
-                                onEnded={() => setIsAnimating(false)}
-                            />
-                        </div>
-                        <span className="font-medium text-base sm:text-lg md:text-2xl tracking-tight">
-                            ATOMS
-                        </span>
-                    </Link>
-
-                    {/* Desktop Navigation */}
-                    <nav className="hidden lg:flex lg:space-x-8 xl:space-x-16">
-                        {navLinks.map((link) => (
-                            <NavLink key={link.href} {...link} />
-                        ))}
-                    </nav>
-
-                    {/* Mobile Menu Button */}
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        {isLoading ? (
-                            <div className="h-9 w-24 bg-muted animate-pulse"></div>
-                        ) : isAuthenticated ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex gap-2"
-                                        size="sm"
-                                    >
-                                        <User size={16} />
-                                        <span className="max-w-24 lg:max-w-32 truncate">
-                                            {userProfile?.full_name ||
-                                                'Account'}
-                                        </span>
-                                        {loadingStates.dashboard && (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        )}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="w-[200px]"
-                                >
-                                    <DropdownMenuItem
-                                        onClick={handleDashboard}
-                                        disabled={loadingStates.dashboard}
-                                        className="py-2"
-                                    >
-                                        {loadingStates.dashboard ? (
-                                            <div className="flex items-center">
-                                                <span className="mr-2">
-                                                    Dashboard
-                                                </span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'Dashboard'
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={handleBilling}
-                                        disabled={loadingStates.billing}
-                                        className="py-2"
-                                    >
-                                        {loadingStates.billing ? (
-                                            <div className="flex items-center">
-                                                <span className="mr-2">
-                                                    Billing
-                                                </span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'Billing'
-                                        )}
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={handleSignOut}
-                                        disabled={isSigningOut}
-                                        className="py-2"
-                                    >
-                                        {isSigningOut ? (
-                                            <div className="flex items-center">
-                                                <span className="mr-2">
-                                                    Signing out
-                                                </span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'Sign Out'
-                                        )}
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex"
-                                onClick={handleSignIn}
-                                disabled={loadingStates.signIn}
-                                size="sm"
-                            >
-                                {loadingStates.signIn ? (
-                                    <div className="flex items-center gap-2">
-                                        <span>SIGNING IN</span>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    </div>
-                                ) : (
-                                    'SIGN IN'
-                                )}
-                            </Button>
-                        )}
-                        <button
-                            className="lg:hidden text-white p-1.5 sm:p-2 hover:bg-white/10 transition-colors touch-manipulation"
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+                <div className="relative h-full">
+                    <div className="container mx-auto flex justify-between items-center h-full">
+                        <Link
+                            href="/"
+                            className="atoms-logo flex items-center group justify-center"
+                            onMouseEnter={() => {
+                                setIsAnimating(true);
+                                if (videoRef.current) {
+                                    videoRef.current.currentTime = 0;
+                                    videoRef.current.play();
+                                }
+                            }}
                         >
-                            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
-                </div>
+                            <div className="flex items-center justify-center relative mx-1 sm:mx-2 h-10 w-10">
+                                <Image
+                                    src="/AtomsLogo.svg"
+                                    alt="Atoms logo"
+                                    width={32}
+                                    height={32}
+                                    className={`object-contain invert absolute transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+                                    priority
+                                />
+                                <video
+                                    ref={videoRef}
+                                    className={`atoms-logo-video object-contain absolute transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
+                                    width={32}
+                                    height={32}
+                                    playsInline
+                                    preload="auto"
+                                    muted
+                                    aria-label="Atoms logo animation"
+                                    src="/AtomsAnimation.mp4"
+                                    poster="/AtomsLogo.svg"
+                                    onEnded={() => setIsAnimating(false)}
+                                />
+                            </div>
+                            <span className="font-medium text-base sm:text-lg md:text-2xl tracking-tight">
+                                ATOMS
+                            </span>
+                        </Link>
 
-                {/* Mobile Navigation */}
-                {isMenuOpen && (
-                    <div
-                        className="absolute top-full left-0 right-0 bg-black border-t border-white lg:hidden
-                        animate-in slide-in-from-right duration-300 ease-in-out z-40 max-h-[calc(100vh-64px)] overflow-y-auto"
-                    >
-                        <nav className="flex flex-col space-y-4 p-4">
+                        {/* Desktop Navigation */}
+                        <nav className="hidden lg:flex lg:space-x-8 xl:space-x-16">
                             {navLinks.map((link) => (
                                 <NavLink key={link.href} {...link} />
                             ))}
-                            {isAuthenticated ? (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full mt-2"
-                                        onClick={handleDashboard}
-                                        disabled={loadingStates.dashboard}
-                                    >
-                                        {loadingStates.dashboard ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span>LOADING</span>
+                        </nav>
+
+                        {/* Mobile Menu Button */}
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            {isLoading ? (
+                                <div className="h-9 w-24 bg-muted animate-pulse"></div>
+                            ) : isAuthenticated ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex gap-2"
+                                            size="sm"
+                                        >
+                                            <User size={16} />
+                                            <span className="max-w-24 lg:max-w-32 truncate">
+                                                {userProfile?.full_name ||
+                                                    'Account'}
+                                            </span>
+                                            {loadingStates.dashboard && (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'DASHBOARD'
-                                        )}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
-                                        onClick={handleBilling}
-                                        disabled={loadingStates.billing}
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        align="end"
+                                        className="w-[200px]"
                                     >
-                                        {loadingStates.billing ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span>LOADING</span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'BILLING'
-                                        )}
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
-                                        onClick={handleSignOut}
-                                        disabled={isSigningOut}
-                                    >
-                                        {isSigningOut ? (
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span>SIGNING OUT</span>
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            </div>
-                                        ) : (
-                                            'SIGN OUT'
-                                        )}
-                                    </Button>
-                                </>
+                                        <DropdownMenuItem
+                                            onClick={handleDashboard}
+                                            disabled={loadingStates.dashboard}
+                                            className="py-2"
+                                        >
+                                            {loadingStates.dashboard ? (
+                                                <div className="flex items-center">
+                                                    <span className="mr-2">
+                                                        Dashboard
+                                                    </span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'Dashboard'
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={handleBilling}
+                                            disabled={loadingStates.billing}
+                                            className="py-2"
+                                        >
+                                            {loadingStates.billing ? (
+                                                <div className="flex items-center">
+                                                    <span className="mr-2">
+                                                        Billing
+                                                    </span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'Billing'
+                                            )}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={handleSignOut}
+                                            disabled={isSigningOut}
+                                            className="py-2"
+                                        >
+                                            {isSigningOut ? (
+                                                <div className="flex items-center">
+                                                    <span className="mr-2">
+                                                        Signing out
+                                                    </span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'Sign Out'
+                                            )}
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             ) : (
                                 <Button
                                     variant="outline"
-                                    className="btn-secondary bg-black hover:bg-white hover:text-black w-full px-0 py-0 pt-0 pb-0"
+                                    className="btn-secondary bg-black hover:bg-white hover:text-black hidden lg:flex"
                                     onClick={handleSignIn}
                                     disabled={loadingStates.signIn}
+                                    size="sm"
                                 >
                                     {loadingStates.signIn ? (
-                                        <div className="flex items-center justify-center gap-2">
+                                        <div className="flex items-center gap-2">
                                             <span>SIGNING IN</span>
                                             <Loader2 className="h-4 w-4 animate-spin" />
                                         </div>
@@ -405,11 +321,103 @@ export function Navbar() {
                                     )}
                                 </Button>
                             )}
-                        </nav>
+                            <button
+                                className="lg:hidden text-white p-1.5 sm:p-2 hover:bg-white/10 transition-colors touch-manipulation"
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                aria-label={
+                                    isMenuOpen ? 'Close menu' : 'Open menu'
+                                }
+                            >
+                                {isMenuOpen ? (
+                                    <X size={24} />
+                                ) : (
+                                    <Menu size={24} />
+                                )}
+                            </button>
+                        </div>
                     </div>
-                )}
-                <GridBackground />
-            </div>
-        </header>
+
+                    {/* Mobile Navigation */}
+                    {isMenuOpen && (
+                        <div
+                            className="absolute top-full left-0 right-0 bg-black border-t border-white lg:hidden
+                        animate-in slide-in-from-right duration-300 ease-in-out z-40 max-h-[calc(100vh-64px)] overflow-y-auto"
+                        >
+                            <nav className="flex flex-col space-y-4 p-4">
+                                {navLinks.map((link) => (
+                                    <NavLink key={link.href} {...link} />
+                                ))}
+                                {isAuthenticated ? (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            className="btn-secondary bg-black hover:bg-white hover:text-black w-full mt-2"
+                                            onClick={handleDashboard}
+                                            disabled={loadingStates.dashboard}
+                                        >
+                                            {loadingStates.dashboard ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span>LOADING</span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'DASHBOARD'
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
+                                            onClick={handleBilling}
+                                            disabled={loadingStates.billing}
+                                        >
+                                            {loadingStates.billing ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span>LOADING</span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'BILLING'
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="btn-secondary bg-black hover:bg-white hover:text-black w-full"
+                                            onClick={handleSignOut}
+                                            disabled={isSigningOut}
+                                        >
+                                            {isSigningOut ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <span>SIGNING OUT</span>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                </div>
+                                            ) : (
+                                                'SIGN OUT'
+                                            )}
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        variant="outline"
+                                        className="btn-secondary bg-black hover:bg-white hover:text-black w-full px-0 py-0 pt-0 pb-0"
+                                        onClick={handleSignIn}
+                                        disabled={loadingStates.signIn}
+                                    >
+                                        {loadingStates.signIn ? (
+                                            <div className="flex items-center justify-center gap-2">
+                                                <span>SIGNING IN</span>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : (
+                                            'SIGN IN'
+                                        )}
+                                    </Button>
+                                )}
+                            </nav>
+                        </div>
+                    )}
+                    <GridBackground />
+                </div>
+            </header>
+        </>
     );
 }
