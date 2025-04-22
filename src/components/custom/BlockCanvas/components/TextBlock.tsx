@@ -352,10 +352,7 @@ export const TextBlock: React.FC<BlockProps> = ({
             )}
             <div
                 ref={editorRef}
-                className={cn(
-                    'relative w-full',
-                    isEditMode && 'ring-1 ring-purple-300/50 ring-offset-0',
-                )}
+                className={cn('relative w-full')}
                 onClick={(e) => {
                     e.stopPropagation();
                     onSelect?.(block.id);

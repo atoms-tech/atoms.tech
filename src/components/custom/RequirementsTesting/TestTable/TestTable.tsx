@@ -5,8 +5,8 @@ import debounce from 'lodash/debounce';
 import { Search } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 
-import { TestReq } from '@/components/custom/TestBed/types';
-import { useProjectTestCases } from '@/components/custom/TestBed/useTestReq';
+import { useProjectTestCases } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
+import { TestReq } from '@/components/custom/RequirementsTesting/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';

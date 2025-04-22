@@ -16,8 +16,8 @@ import {
 import { ArrowDown, ArrowUp, ArrowUpDown, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 
-import { TestReq } from '@/components/custom/TestBed/types';
-import { useLinkedRequirementsCount } from '@/components/custom/TestBed/useTestReq';
+import { useLinkedRequirementsCount } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
+import { TestReq } from '@/components/custom/RequirementsTesting/types';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,

@@ -61,6 +61,8 @@ export const queryKeys = {
             [...queryKeys.documents.detail(documentId), 'properties'] as const,
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'properties'] as const,
+        byOrg: (orgId: string) =>
+            [...queryKeys.organizations.detail(orgId), 'properties'] as const,
     },
 
     projects: {

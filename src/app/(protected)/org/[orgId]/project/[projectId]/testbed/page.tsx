@@ -4,9 +4,9 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
-import TraceabilityMatrixView from '@/components/custom/TestBed/TestMatrix';
-import TestCaseView from '@/components/custom/TestBed/TestTable';
-import { useCreateTestReq } from '@/components/custom/TestBed/useTestReq';
+import TraceabilityMatrixView from '@/components/custom/RequirementsTesting/TestMatrix/components/TestMatrix';
+import TestCaseView from '@/components/custom/RequirementsTesting/TestTable/TestTable';
+import { useCreateTestReq } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
@@ -236,6 +236,37 @@ export default function TestBed() {
                                 </div>
                             </div>
 
+                            <div>
+                                <label className="block text-sm mb-2 text-muted-foreground">
+                                    Method
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        className="w-full p-2 border-b border-border bg-transparent focus:border-accent transition-colors outline-none appearance-none
+                                                 dark:border-border dark:text-foreground dark:focus:border-accent"
+                                        value={newTestData.method}
+                                        onChange={(e) =>
+                                            setNewTestData({
+                                                ...newTestData,
+                                                method: e.target
+                                                    .value as Database['public']['Enums']['test_method'],
+                                            })
+                                        }
+                                    >
+                                        <option value="manual">Manual</option>
+                                        <option value="automated">
+                                            Automated
+                                        </option>
+                                        <option value="matrix">
+                                            Test Matrix
+                                        </option>
+                                    </select>
+                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm mb-2 text-muted-foreground">
                                     Priority

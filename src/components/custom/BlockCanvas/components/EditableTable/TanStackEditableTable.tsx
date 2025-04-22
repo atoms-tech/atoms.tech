@@ -609,16 +609,6 @@ export function TanStackEditableTable<
             {showFilter && (
                 <TableControls
                     filterComponent={filterComponent}
-                    sortKey={sorting.length > 0 ? sorting[0].id : null}
-                    sortOrder={
-                        sorting.length > 0
-                            ? sorting[0].desc
-                                ? 'desc'
-                                : 'asc'
-                            : 'asc'
-                    }
-                    onSort={handleSort as (key: keyof T) => void}
-                    columns={columns}
                     showFilter={showFilter}
                     onNewRow={handleAddNewRow}
                     onEnterEditMode={() => {
@@ -626,6 +616,8 @@ export function TanStackEditableTable<
                     }}
                     isVisible={true}
                     orgId=""
+                    projectId=""
+                    documentId=""
                 />
             )}
             <div

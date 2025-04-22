@@ -33,12 +33,12 @@ export default function RootLayout({
     return (
         <GlobalErrorBoundary>
             <html lang="en" suppressHydrationWarning>
-                {/* <head>
-                    <script 
+                <head>
+                    <script
                         src="https://unpkg.com/react-scan/dist/auto.global.js"
                         async
                     />
-                </head> */}
+                </head>
                 <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
                 >

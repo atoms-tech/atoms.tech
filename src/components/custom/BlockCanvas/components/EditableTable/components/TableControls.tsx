@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Columns, FilterIcon, Plus } from 'lucide-react';
 import { useState } from 'react';
 
+import { AddColumnDialog } from '@/components/custom/BlockCanvas/components/EditableTable/components/AddColumnDialog';
 import {
     EditableColumn,
     EditableColumnType,
@@ -16,8 +17,6 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 
-import { AddColumnDialog } from './AddColumnDialog';
-
 export interface TableControlsProps<T = unknown> {
     showFilter: boolean;
     filterComponent?: React.ReactNode;
@@ -28,15 +27,19 @@ export interface TableControlsProps<T = unknown> {
         propertyConfig: PropertyConfig,
         defaultValue: string,
     ) => void;
+    onAddColumnFromProperty?: (
+        propertyId: string,
+        defaultValue: string,
+    ) => void;
     onEnterEditMode: () => void;
     isVisible: boolean;
     orgId: string;
     projectId?: string;
     documentId?: string;
-    sortKey: string | null;
-    sortOrder: 'asc' | 'desc';
-    onSort: (key: keyof T) => void;
-    columns: EditableColumn<T>[];
+    sortKey?: string | null;
+    sortOrder?: 'asc' | 'desc';
+    onSort?: (key: keyof T) => void;
+    columns?: EditableColumn<T>[];
 }
 
 export function TableControls<T extends Record<string, unknown>>({
@@ -44,6 +47,7 @@ export function TableControls<T extends Record<string, unknown>>({
     filterComponent,
     onNewRow,
     onAddColumn,
+    onAddColumnFromProperty,
     onEnterEditMode,
     isVisible,
     orgId,
@@ -52,12 +56,7 @@ export function TableControls<T extends Record<string, unknown>>({
 }: Omit<
     TableControlsProps<T>,
     'sortKey' | 'sortOrder' | 'onSort' | 'columns'
-> & {
-    sortKey?: string | null;
-    sortOrder?: 'asc' | 'desc';
-    onSort?: (key: keyof T) => void;
-    columns?: EditableColumn<T>[];
-}) {
+>) {
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
     const { userProfile } = useAuth();
 
@@ -161,6 +160,7 @@ export function TableControls<T extends Record<string, unknown>>({
                     isOpen={isAddColumnOpen}
                     onClose={() => setIsAddColumnOpen(false)}
                     onSave={onAddColumn}
+                    onSaveFromProperty={onAddColumnFromProperty}
                     orgId={orgId}
                     projectId={projectId}
                     documentId={documentId}

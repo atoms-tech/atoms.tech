@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
     EditableColumnType,
     PropertyConfig,
     PropertyScope,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
+import { Property } from '@/components/custom/BlockCanvas/types';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -18,6 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useOrganizationProperties } from '@/hooks/queries/useProperties';
 
 interface AddColumnDialogProps {
     isOpen: boolean;
@@ -28,35 +30,70 @@ interface AddColumnDialogProps {
         propertyConfig: PropertyConfig,
         defaultValue: string,
     ) => void;
+    onSaveFromProperty?: (propertyId: string, defaultValue: string) => void;
     orgId: string;
     projectId?: string;
     documentId?: string;
+    availableProperties?: Property[];
 }
 
 export function AddColumnDialog({
     isOpen,
     onClose,
     onSave,
+    onSaveFromProperty,
     orgId,
     projectId,
     documentId,
+    availableProperties: initialProperties,
 }: AddColumnDialogProps) {
+    const [activeTab, setActiveTab] = useState<'new' | 'existing'>('new');
     const [columnName, setColumnName] = useState('');
     const [columnType, setColumnType] = useState<EditableColumnType>('text');
-    const [scope, setScope] = useState<PropertyScope[]>(['document']);
-    const [isBase, setIsBase] = useState(false);
-    const [defaultValue, setDefaultValue] = useState('');
     const [options, setOptions] = useState('');
+    const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
 
-    const handleSave = () => {
+    // Use React Query to fetch and cache properties
+    const { data: properties, isLoading: isLoadingProperties } =
+        useOrganizationProperties(orgId, isOpen && activeTab === 'existing');
+
+    // Memoize availableProperties to prevent unnecessary recalculations
+    const availableProperties = useMemo(
+        () => initialProperties || properties || [],
+        [initialProperties, properties],
+    );
+
+    // Default values for fields removed from UI
+    const defaultScope: PropertyScope[] = ['document'];
+    const defaultIsBase = false;
+    const defaultValue = '';
+
+    // Reset form when dialog opens
+    useEffect(() => {
+        if (isOpen) {
+            setColumnName('');
+            setColumnType('text');
+            setOptions('');
+            setActiveTab('new');
+
+            // Set the first property as selected if there are any
+            if (availableProperties.length > 0) {
+                setSelectedPropertyId(availableProperties[0].id);
+            }
+        }
+    }, [isOpen, availableProperties]);
+
+    const handleSaveNewProperty = () => {
         const propertyConfig: PropertyConfig = {
-            scope,
-            is_base: isBase,
+            scope: defaultScope,
+            is_base: defaultIsBase,
             org_id: orgId,
             ...(projectId &&
-                scope.includes('project') && { project_id: projectId }),
+                defaultScope.includes('project') && { project_id: projectId }),
             ...(documentId &&
-                scope.includes('document') && { document_id: documentId }),
+                defaultScope.includes('document') && {
+                    document_id: documentId,
+                }),
             ...(['select', 'multi_select'].includes(columnType) &&
                 options && {
                     options: options.split(',').map((opt) => opt.trim()),
@@ -67,141 +104,164 @@ export function AddColumnDialog({
         onClose();
     };
 
+    const handleSaveExistingProperty = () => {
+        if (!onSaveFromProperty || !selectedPropertyId) return;
+
+        onSaveFromProperty(selectedPropertyId, defaultValue);
+        onClose();
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Add New Column</DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                            Name
-                        </Label>
-                        <Input
-                            id="name"
-                            value={columnName}
-                            onChange={(e) => setColumnName(e.target.value)}
-                            className="col-span-3"
-                        />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="type" className="text-right">
-                            Type
-                        </Label>
-                        <select
-                            id="type"
-                            value={columnType}
-                            onChange={(e) =>
-                                setColumnType(
-                                    e.target.value as EditableColumnType,
-                                )
-                            }
-                            className="col-span-3"
+
+                <Tabs
+                    value={activeTab}
+                    onValueChange={(value) =>
+                        setActiveTab(value as 'new' | 'existing')
+                    }
+                >
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="new">
+                            Create New Property
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="existing"
+                            disabled={!onSaveFromProperty}
                         >
-                            <option value="text">Text</option>
-                            <option value="select">Select</option>
-                            <option value="multi_select">Multi Select</option>
-                            <option value="number">Number</option>
-                            <option value="date">Date</option>
-                        </select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Scope</Label>
-                        <div className="col-span-3 space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="org"
-                                    checked={scope.includes('org')}
-                                    onChange={(event) => {
-                                        setScope((prev) =>
-                                            event.target.checked
-                                                ? [...prev, 'org']
-                                                : prev.filter(
-                                                      (s) => s !== 'org',
-                                                  ),
-                                        );
-                                    }}
+                            Use Existing Property
+                        </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="new">
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">
+                                    Name
+                                </Label>
+                                <Input
+                                    id="name"
+                                    value={columnName}
+                                    onChange={(e) =>
+                                        setColumnName(e.target.value)
+                                    }
+                                    className="col-span-3"
                                 />
-                                <Label htmlFor="org">Organization</Label>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="project"
-                                    checked={scope.includes('project')}
-                                    onChange={(event) => {
-                                        setScope((prev) =>
-                                            event.target.checked
-                                                ? [...prev, 'project']
-                                                : prev.filter(
-                                                      (s) => s !== 'project',
-                                                  ),
-                                        );
-                                    }}
-                                />
-                                <Label htmlFor="project">Project</Label>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="type" className="text-right">
+                                    Type
+                                </Label>
+                                <select
+                                    id="type"
+                                    value={columnType}
+                                    onChange={(e) =>
+                                        setColumnType(
+                                            e.target
+                                                .value as EditableColumnType,
+                                        )
+                                    }
+                                    className="col-span-3 h-10 px-3 py-2 rounded-md border border-input"
+                                >
+                                    <option value="text">Text</option>
+                                    <option value="select">Select</option>
+                                    <option value="multi_select">
+                                        Multi Select
+                                    </option>
+                                    <option value="number">Number</option>
+                                    <option value="date">Date</option>
+                                </select>
                             </div>
-                            <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="document"
-                                    checked={scope.includes('document')}
-                                    onChange={(event) => {
-                                        setScope((prev) =>
-                                            event.target.checked
-                                                ? [...prev, 'document']
-                                                : prev.filter(
-                                                      (s) => s !== 'document',
-                                                  ),
-                                        );
-                                    }}
-                                />
-                                <Label htmlFor="document">Document</Label>
-                            </div>
+                            {['select', 'multi_select'].includes(
+                                columnType,
+                            ) && (
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="options"
+                                        className="text-right"
+                                    >
+                                        Options
+                                    </Label>
+                                    <Input
+                                        id="options"
+                                        value={options}
+                                        onChange={(e) =>
+                                            setOptions(e.target.value)
+                                        }
+                                        placeholder="Option1, Option2, Option3"
+                                        className="col-span-3"
+                                    />
+                                </div>
+                            )}
                         </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label className="text-right">Base Property</Label>
-                        <div className="col-span-3">
-                            <Checkbox
-                                id="base"
-                                checked={isBase}
-                                onChange={(event) =>
-                                    setIsBase(event.target.checked)
+                        <DialogFooter>
+                            <Button
+                                type="submit"
+                                onClick={handleSaveNewProperty}
+                                disabled={!columnName}
+                            >
+                                Add Column
+                            </Button>
+                        </DialogFooter>
+                    </TabsContent>
+
+                    <TabsContent value="existing">
+                        {isLoadingProperties ? (
+                            <div className="py-8 text-center">
+                                Loading available properties...
+                            </div>
+                        ) : availableProperties.length === 0 ? (
+                            <div className="py-8 text-center">
+                                No properties available
+                            </div>
+                        ) : (
+                            <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                    <Label
+                                        htmlFor="existingProperty"
+                                        className="text-right"
+                                    >
+                                        Property
+                                    </Label>
+                                    <select
+                                        id="existingProperty"
+                                        value={selectedPropertyId}
+                                        onChange={(e) =>
+                                            setSelectedPropertyId(
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="col-span-3 h-10 px-3 py-2 rounded-md border border-input"
+                                    >
+                                        {availableProperties.map((property) => (
+                                            <option
+                                                key={property.id}
+                                                value={property.id}
+                                            >
+                                                {property.name} (
+                                                {property.property_type})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+                        <DialogFooter>
+                            <Button
+                                type="submit"
+                                onClick={handleSaveExistingProperty}
+                                disabled={
+                                    !selectedPropertyId || !onSaveFromProperty
                                 }
-                            />
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="default" className="text-right">
-                            Default Value
-                        </Label>
-                        <Input
-                            id="default"
-                            value={defaultValue}
-                            onChange={(e) => setDefaultValue(e.target.value)}
-                            className="col-span-3"
-                        />
-                    </div>
-                    {['select', 'multi_select'].includes(columnType) && (
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="options" className="text-right">
-                                Options
-                            </Label>
-                            <Input
-                                id="options"
-                                value={options}
-                                onChange={(e) => setOptions(e.target.value)}
-                                placeholder="Option1, Option2, Option3"
-                                className="col-span-3"
-                            />
-                        </div>
-                    )}
-                </div>
-                <DialogFooter>
-                    <Button type="submit" onClick={handleSave}>
-                        Add Column
-                    </Button>
-                </DialogFooter>
+                            >
+                                Add Column
+                            </Button>
+                        </DialogFooter>
+                    </TabsContent>
+                </Tabs>
             </DialogContent>
         </Dialog>
     );

@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { RequirementTest, TestReq } from '@/components/custom/TestBed/types';
+import {
+    RequirementTest,
+    TestReq,
+} from '@/components/custom/RequirementsTesting/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';

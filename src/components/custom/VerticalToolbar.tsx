@@ -99,7 +99,7 @@ const VerticalToolbar = () => {
     if (isMobile || isTablet) {
         // Mobile and tablet layout - horizontal toolbar at the top
         return (
-            <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-background backdrop-blur-sm">
+            <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-2 bg-background backdrop-blur-sm">
                 <div className="flex items-center gap-2">
                     <SidebarTrigger
                         className={cn('h-5 w-5', isTablet && 'ml-2')}
@@ -131,7 +131,7 @@ const VerticalToolbar = () => {
             {/* Floating toolbar buttons */}
             <div
                 className={cn(
-                    'fixed top-0 z-40 flex flex-col gap-2 pt-4 w-auto',
+                    'fixed top-0 z-30 flex flex-col gap-2 pt-4 w-auto',
                     'transition-all duration-200 ease-linear',
                     state === 'expanded' ? 'left-[14.25rem]' : 'left-0',
                 )}
@@ -180,7 +180,7 @@ const VerticalToolbar = () => {
             {/* Horizontal breadcrumb bar */}
             <div
                 className={cn(
-                    'fixed top-0 right-0 z-40 h-10 flex items-center bg-background/80 backdrop-blur-sm transition-all duration-200 ease-linear',
+                    'fixed top-0 right-0 z-30 h-10 flex items-center bg-background/80 backdrop-blur-sm transition-all duration-200 ease-linear',
                     state === 'expanded'
                         ? 'left-[calc(14.25rem+2.5rem)]'
                         : 'left-10',

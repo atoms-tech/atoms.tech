@@ -1,6 +1,6 @@
 'use client';
 
-import { FilterIcon, GripVertical, MoreVertical, Plus } from 'lucide-react';
+import { GripVertical, MoreVertical, Plus } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -22,6 +22,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,10 @@ const TableHeader: React.FC<{
         propertyConfig: PropertyConfig,
         defaultValue: string,
     ) => void;
+    onAddColumnFromProperty?: (
+        propertyId: string,
+        defaultValue: string,
+    ) => void;
     _onAddRow: () => void;
     onDelete: () => void;
     dragActivators?: React.ComponentProps<typeof Button>;
@@ -69,6 +74,7 @@ const TableHeader: React.FC<{
     isEditMode,
     onNameChange,
     onAddColumn,
+    onAddColumnFromProperty,
     _onAddRow,
     onDelete,
     dragActivators,
@@ -76,111 +82,99 @@ const TableHeader: React.FC<{
     projectId,
     documentId,
 }) => {
-    const [isHovered, setIsHovered] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [localName, setLocalName] = useState(name);
+    const [inputValue, setInputValue] = useState(name);
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
-    useEffect(() => {
-        setLocalName(name);
-    }, [name]);
-
     const handleBlur = () => {
-        setIsEditing(false);
-        if (localName !== name) {
-            onNameChange(localName);
+        if (isEditing) {
+            setIsEditing(false);
+            if (inputValue.trim() !== name) {
+                onNameChange(inputValue);
+            }
         }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            e.preventDefault();
-            handleBlur();
+            setIsEditing(false);
+            onNameChange(inputValue);
         } else if (e.key === 'Escape') {
             setIsEditing(false);
-            setLocalName(name);
+            setInputValue(name);
         }
     };
 
     return (
         <>
-            <div
-                className="flex items-center justify-between px-2 py-1 border-b bg-background w-full sticky top-0 z-10 min-w-0"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                    {isEditMode && (
+            <div className="flex items-center justify-between px-4 py-2 border-b bg-background">
+                <div className="flex items-center gap-2">
+                    {dragActivators && (
                         <Button
                             variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 cursor-grab active:cursor-grabbing"
+                            size="sm"
+                            className="h-8 w-8 p-0 cursor-grab active:cursor-grabbing"
                             {...dragActivators}
                         >
-                            <GripVertical className="w-4 h-4 text-gray-400" />
+                            <GripVertical className="h-4 w-4" />
+                            <span className="sr-only">Drag to reorder</span>
                         </Button>
                     )}
                     {isEditMode && isEditing ? (
-                        <input
-                            type="text"
-                            value={localName}
-                            onChange={(e) => setLocalName(e.target.value)}
+                        <Input
+                            value={inputValue}
+                            onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>,
+                            ) => setInputValue(e.target.value)}
                             onBlur={handleBlur}
                             onKeyDown={handleKeyDown}
-                            className="text-sm font-medium px-1 rounded max-w-[200px] bg-gray-100 outline-none border-none"
+                            className="max-w-[300px] h-9"
                             autoFocus
                         />
                     ) : (
-                        <span
+                        <h3
                             className={cn(
-                                'text-sm font-medium px-1 rounded truncate max-w-[200px]',
-                                isEditMode && 'hover:bg-gray-100 cursor-text',
+                                'text-lg font-semibold',
+                                isEditMode && 'cursor-pointer',
                             )}
                             onClick={() => isEditMode && setIsEditing(true)}
                         >
-                            {localName}
-                        </span>
+                            {name}
+                        </h3>
                     )}
                 </div>
-                <div
-                    className={cn(
-                        'flex items-center gap-1 flex-shrink-0 opacity-0 transition-opacity duration-200',
-                        (isHovered || isEditMode) && 'opacity-100',
+                <div className="flex items-center gap-2">
+                    {isEditMode && (
+                        <>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setIsAddColumnOpen(true)}
+                            >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Column
+                            </Button>
+                        </>
                     )}
-                >
-                    <Button variant="ghost" size="sm" className="h-7 px-2">
-                        <FilterIcon className="w-4 h-4" />
-                        <span className="ml-1 hidden sm:inline">Filter</span>
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => isEditMode && setIsAddColumnOpen(true)}
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span className="ml-1 hidden sm:inline">Column</span>
-                    </Button>
-                    {/* <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => isEditMode && _onAddRow()}>
-                        <Plus className="w-4 h-4" />
-                        <span className="ml-1 hidden sm:inline">Row</span>
-                    </Button> */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 px-2"
+                                className="h-8 w-8 p-0"
                             >
-                                <MoreVertical className="w-4 h-4" />
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                                onClick={onDelete}
-                                disabled={!isEditMode}
+                                onClick={() => setIsAddColumnOpen(true)}
                             >
-                                Delete Block
+                                Add Column
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={onDelete}>
+                                Delete Table
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
@@ -189,10 +183,8 @@ const TableHeader: React.FC<{
             <AddColumnDialog
                 isOpen={isAddColumnOpen}
                 onClose={() => setIsAddColumnOpen(false)}
-                onSave={(name, type, config, defaultValue) => {
-                    onAddColumn(name, type, config, defaultValue);
-                    setIsAddColumnOpen(false);
-                }}
+                onSave={onAddColumn}
+                onSaveFromProperty={onAddColumnFromProperty}
                 orgId={orgId}
                 projectId={projectId}
                 documentId={documentId}
@@ -210,11 +202,12 @@ export const TableBlock: React.FC<BlockProps> = ({
     const { userProfile } = useAuth();
     const params = useParams();
     const { currentOrganization } = useOrganization();
-    const { createColumn } = useColumnActions({
-        orgId: currentOrganization?.id || '',
-        projectId: params.projectId as string,
-        documentId: params.documentId as string,
-    });
+    const { createPropertyAndColumn, createColumnFromProperty } =
+        useColumnActions({
+            orgId: currentOrganization?.id || '',
+            projectId: params.projectId as string,
+            documentId: params.documentId as string,
+        });
     const projectId = params?.projectId as string;
 
     const [_selectedRequirement, _setSelectedRequirement] =
@@ -302,7 +295,7 @@ export const TableBlock: React.FC<BlockProps> = ({
     // Get requirements in dynamic format
     const dynamicRequirements = getDynamicRequirements();
 
-    // Handle adding a new column
+    // Handle adding a new column with a new property
     const handleAddColumn = async (
         name: string,
         type: EditableColumnType,
@@ -313,7 +306,7 @@ export const TableBlock: React.FC<BlockProps> = ({
 
         try {
             // Create property and column in the database
-            await createColumn(
+            await createPropertyAndColumn(
                 name,
                 type,
                 propertyConfig,
@@ -322,16 +315,33 @@ export const TableBlock: React.FC<BlockProps> = ({
                 userProfile.id,
             );
 
-            // No need to update block directly as createColumn handles everything:
-            // 1. Creates property
-            // 2. Creates column
-            // 3. Updates requirements with new property
-            // 4. Invalidates queries to refresh data
-
             // After column creation, we just need to refresh requirements
             await refreshRequirements();
         } catch (error) {
             console.error('Error adding column:', error);
+        }
+    };
+
+    // Handle adding a column from an existing property
+    const handleAddColumnFromProperty = async (
+        propertyId: string,
+        defaultValue: string,
+    ) => {
+        if (!userProfile?.id) return;
+
+        try {
+            // Create column using an existing property
+            await createColumnFromProperty(
+                propertyId,
+                defaultValue,
+                block.id,
+                userProfile.id,
+            );
+
+            // After column creation, refresh requirements
+            await refreshRequirements();
+        } catch (error) {
+            console.error('Error adding column from property:', error);
         }
     };
 
@@ -391,6 +401,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     isEditMode={isEditMode}
                     onNameChange={handleNameChange}
                     onAddColumn={handleAddColumn}
+                    onAddColumnFromProperty={handleAddColumnFromProperty}
                     _onAddRow={handleAddRow}
                     onDelete={handleBlockDelete}
                     dragActivators={dragActivators}
@@ -413,10 +424,8 @@ export const TableBlock: React.FC<BlockProps> = ({
             <AddColumnDialog
                 isOpen={isAddColumnOpen}
                 onClose={() => setIsAddColumnOpen(false)}
-                onSave={(name, type, config, defaultValue) => {
-                    handleAddColumn(name, type, config, defaultValue);
-                    setIsAddColumnOpen(false);
-                }}
+                onSave={handleAddColumn}
+                onSaveFromProperty={handleAddColumnFromProperty}
                 orgId={currentOrganization?.id || ''}
                 projectId={projectId}
                 documentId={params.documentId as string}

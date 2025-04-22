@@ -55,7 +55,7 @@ export const useRequirementActions = ({
                 .eq('block_id', blockId)
                 .eq('document_id', documentId)
                 .eq('is_deleted', false)
-                .order('created_at', { ascending: false });
+                .order('position', { ascending: true });
 
             if (error) throw error;
             if (!requirements) return;
@@ -217,6 +217,27 @@ export const useRequirementActions = ({
         return statusMap[normalizedValue] || RequirementStatus.draft;
     };
 
+    const getLastPosition = async (): Promise<number> => {
+        try {
+            const { data: requirements, error } = await supabase
+                .from('requirements')
+                .select('position')
+                .eq('block_id', blockId)
+                .eq('document_id', documentId)
+                .eq('is_deleted', false)
+                .order('position', { ascending: false })
+                .limit(1);
+
+            if (error) throw error;
+            if (!requirements || requirements.length === 0) return 0;
+
+            return (requirements[0].position || 0) + 1;
+        } catch (error) {
+            console.error('Error getting last position:', error);
+            return 0;
+        }
+    };
+
     // Save a requirement
     const saveRequirement = async (
         dynamicReq: DynamicRequirement,
@@ -297,10 +318,14 @@ export const useRequirementActions = ({
 
             let savedRequirement: Requirement;
             if (isNew) {
+                // Get the last position for new requirements
+                const position = await getLastPosition();
+
                 const newRequirementData = {
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    position, // Add the position field
                     // Ensure ai_analysis is properly initialized
                     ai_analysis: {
                         descriptionHistory: [
@@ -327,10 +352,15 @@ export const useRequirementActions = ({
                 setLocalRequirements((prev) => [...prev, savedRequirement]);
             } else {
                 // For updates, only include fields that have values to avoid nullifying existing data
-                const updateData = {
+                const updateData: Partial<Requirement> = {
                     ...requirementData,
                     updated_at: new Date().toISOString(),
                 };
+
+                // If position is provided in the dynamic requirement, include it in the update
+                if ('position' in dynamicReq) {
+                    updateData.position = dynamicReq.position as number;
+                }
 
                 const { data, error } = await supabase
                     .from('requirements')

@@ -1227,6 +1227,53 @@ export type Database = {
                     },
                 ];
             };
+            test_matrix_views: {
+                Row: {
+                    configuration: Json;
+                    created_at: string | null;
+                    created_by: string;
+                    id: string;
+                    is_active: boolean | null;
+                    is_default: boolean | null;
+                    name: string;
+                    project_id: string;
+                    updated_at: string | null;
+                    updated_by: string;
+                };
+                Insert: {
+                    configuration?: Json;
+                    created_at?: string | null;
+                    created_by: string;
+                    id?: string;
+                    is_active?: boolean | null;
+                    is_default?: boolean | null;
+                    name: string;
+                    project_id: string;
+                    updated_at?: string | null;
+                    updated_by: string;
+                };
+                Update: {
+                    configuration?: Json;
+                    created_at?: string | null;
+                    created_by?: string;
+                    id?: string;
+                    is_active?: boolean | null;
+                    is_default?: boolean | null;
+                    name?: string;
+                    project_id?: string;
+                    updated_at?: string | null;
+                    updated_by?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'test_matrix_views_project_id_fkey';
+                        columns: ['project_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'projects';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             test_req: {
                 Row: {
                     attachments: Json | null;

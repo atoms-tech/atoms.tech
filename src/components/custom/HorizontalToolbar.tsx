@@ -30,7 +30,7 @@ const HorizontalToolbar = memo(({ className }: HorizontalToolbarProps) => {
     return (
         <div
             className={cn(
-                'fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 bg-background/80 backdrop-blur-sm border-b border-border/40',
+                'fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-2 bg-background/80 backdrop-blur-sm border-b border-border/40',
                 className,
             )}
         >
