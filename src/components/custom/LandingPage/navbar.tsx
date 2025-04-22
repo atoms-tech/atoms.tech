@@ -5,7 +5,7 @@ import { useCookies } from 'next-client-cookies';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +32,8 @@ export function Navbar() {
         billing: false,
     });
     const [, setPreferredOrgId] = useState<string | null>(null);
+    const [isAnimating, setIsAnimating] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
         const cookieOrgId = cookies.get('preferred_org_id');
@@ -193,15 +195,40 @@ export function Navbar() {
 
             <div className="relative">
                 <div className="container mx-auto flex justify-between items-center">
-                    <Link href="/" className="atoms-logo flex items-center">
-                        <Image
-                            src="/AtomsLogo.svg"
-                            alt="Atoms logo"
-                            width={48}
-                            height={48}
-                            className="object-contain invert mx-1 sm:mx-2 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10"
-                            priority
-                        />
+                    <Link
+                        href="/"
+                        className="atoms-logo flex items-center group"
+                        onMouseEnter={() => {
+                            setIsAnimating(true);
+                            if (videoRef.current) {
+                                videoRef.current.currentTime = 0;
+                                videoRef.current.play();
+                            }
+                        }}
+                    >
+                        <div className="relative mx-1 sm:mx-2 h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10">
+                            <Image
+                                src="/AtomsLogo.svg"
+                                alt="Atoms logo"
+                                width={48}
+                                height={48}
+                                className={`object-contain invert absolute transition-opacity duration-300 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+                                priority
+                            />
+                            <video
+                                ref={videoRef}
+                                className={`atoms-logo-video object-contain absolute transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}
+                                width={48}
+                                height={48}
+                                playsInline
+                                preload="auto"
+                                muted
+                                aria-label="Atoms logo animation"
+                                src="/AtomsAnimation.mp4"
+                                poster="/AtomsLogo.svg"
+                                onEnded={() => setIsAnimating(false)}
+                            />
+                        </div>
                         <span className="font-medium text-base sm:text-lg md:text-2xl tracking-tight">
                             ATOMS
                         </span>
