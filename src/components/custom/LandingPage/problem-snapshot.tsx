@@ -19,17 +19,17 @@ export function ProblemSnapshot({
                     STREAMLINE YOUR REQUIREMENTS PROCESS
                 </h2>
                 <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="overflow-hidden border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900">
+                    <Card className="overflow-hidden bg-red-950/20 border-red-900">
                         <CardContent className="p-6">
                             <div className="flex items-start gap-4">
-                                <div className="mt-1 rounded-full bg-red-100 p-2 dark:bg-red-900/30">
-                                    <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                <div className="mt-1 rounded-full p-2 bg-red-900/30">
+                                    <AlertTriangle className="h-5 w-5 text-red-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-semibold text-red-700 dark:text-red-400 mb-2">
+                                    <h3 className="text-lg font-semibold text-red-400 mb-2">
                                         The Pain
                                     </h3>
-                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                    <p className="text-gray-300 leading-relaxed">
                                         {painPoint}
                                     </p>
                                 </div>
@@ -40,14 +40,14 @@ export function ProblemSnapshot({
                     <Card className="overflow-hidden border-[#9B51E0] bg-[#9B51E0]/10 dark:bg-[#9B51E0]/10 dark:border-[#9B51E0]">
                         <CardContent className="p-6">
                             <div className="flex items-start gap-4">
-                                <div className="mt-1 rounded-full bg-[#9B51E0]/20 p-2 dark:bg-[#9B51E0]/30">
-                                    <CheckCircle className="h-5 w-5 text-[#9B51E0] dark:text-[#9B51E0]" />
+                                <div className="mt-1 rounded-full p-2 bg-[#9B51E0]/30">
+                                    <CheckCircle className="h-5 w-5 text-[#9B51E0] text-[#9B51E0]" />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-[#9B51E0] dark:text-[#9B51E0] mb-2">
                                         The Fix
                                     </h3>
-                                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                                    <p className="text-gray-300 leading-relaxed">
                                         {solution}
                                     </p>
                                 </div>

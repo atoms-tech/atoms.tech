@@ -20,15 +20,14 @@ export default async function Home() {
                     <Navbar />
                     <main className="space-y-64">
                         <Hero />
-                        <div className="section-divider"></div>
-                        <div className="section-divider">
-                            <Features />
-                        </div>
                         <div className="section-divider">
                             <ProblemSnapshot
                                 painPoint="Writing compliant requirements is slow, error‑prone—and bogged down by bloated legacy tools."
                                 solution="A Word‑simple, spreadsheet‑smart workspace with built‑in AI that cuts effort by 50%—checking compliance, sharpening language, and keeping everything traceable."
                             />
+                        </div>
+                        <div className="section-divider">
+                            <Features />
                         </div>
                         <div className="section-divider">
                             <FeatureDemo />
