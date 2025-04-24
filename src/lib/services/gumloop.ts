@@ -218,7 +218,7 @@ export class GumloopService {
             if (fileNames?.length) {
                 fileNames.forEach((fileName) => {
                     pipelineInputs.push({
-                        input_name: 'file_name',
+                        input_name: 'Regulation_Document_Name',
                         value: fileName,
                     });
                 });
