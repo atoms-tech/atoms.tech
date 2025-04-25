@@ -2,7 +2,7 @@
 
 import { ChevronDown, CircleAlert, Grid, PenTool, Pencil } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,6 @@ type DiagramType = 'flowchart' | 'sequence' | 'class';
 export default function Draw() {
     // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
     const organizationId = usePathname().split('/')[2];
-    const searchParams = useSearchParams();
     const [prompt, setPrompt] = useState('');
     const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
     const [excalidrawApi, setExcalidrawApi] = useState<{
@@ -73,51 +72,15 @@ export default function Draw() {
         useState<boolean>(false);
     const [newDiagramName, setNewDiagramName] = useState<string>('');
 
-    // Read diagram ID and diagram prompt from URL on mount
+    // On mount, check sessionStorage for pending diagram prompt
     useEffect(() => {
-        const urlDiagramId = searchParams.get('id');
-        const diagramPromptFromUrl = searchParams.get('diagramPrompt');
-
-        // Set prompt from URL if present
-        if (diagramPromptFromUrl) {
-            console.log('Found diagram prompt in URL:', diagramPromptFromUrl);
-            setPrompt(decodeURIComponent(diagramPromptFromUrl));
-            // Mark that we've seen a URL prompt, but don't auto-generate yet
-            // We'll handle auto-generation in a separate effect when excalidrawApi is ready
-            hasProcessedUrlPrompt.current = false;
-        } else {
-            // No diagram prompt in URL - reset flag
-            hasProcessedUrlPrompt.current = true;
+        if (typeof window === 'undefined') return;
+        const pendingPrompt = sessionStorage.getItem('pendingDiagramPrompt');
+        if (pendingPrompt) {
+            setPrompt(pendingPrompt);
+            sessionStorage.removeItem('pendingDiagramPrompt');
         }
-
-        // Handle diagram ID loading/creation
-        if (urlDiagramId) {
-            console.log('Found diagram ID in URL:', urlDiagramId);
-            setSelectedDiagramId(urlDiagramId);
-            setInstanceKey(`diagram-${urlDiagramId}`);
-        } else {
-            const projectId = window.location.pathname.split('/')[4];
-            const projectStorageKey = `lastExcalidrawDiagramId_${projectId}`;
-            const lastDiagramId = localStorage.getItem(projectStorageKey);
-
-            if (lastDiagramId) {
-                console.log(
-                    'Found last used diagram ID in localStorage:',
-                    lastDiagramId,
-                );
-                setSelectedDiagramId(lastDiagramId);
-                setInstanceKey(`diagram-${lastDiagramId}`);
-
-                const newUrl = new URL(window.location.href);
-                if (!newUrl.searchParams.has('id')) {
-                    // Only set if ID is not already in URL
-                    newUrl.searchParams.set('id', lastDiagramId);
-                    window.history.pushState({}, '', newUrl);
-                }
-            }
-            // ExcalidrawWrapper handles new diagram creation if no ID
-        }
-    }, [searchParams]); // Rerun when searchParams change
+    }, []);
 
     // Handle tab changes
     useEffect(() => {
@@ -213,50 +176,20 @@ export default function Draw() {
         pipelineRunId,
     ]);
 
-    // Separate auto-generation from manual generation
-    // This effect only handles auto-generation from URL parameters
+    // Auto-generate diagram if prompt is set from sessionStorage
     useEffect(() => {
-        const diagramPromptFromUrl = searchParams.get('diagramPrompt');
-
-        // Only auto-generate when:
-        // 1. We have a URL prompt that hasn't been processed
-        // 2. ExcalidrawApi is initialized
-        // 3. We're not already generating
-        // 4. We have a prompt value set
         if (
-            diagramPromptFromUrl &&
+            prompt &&
             !hasProcessedUrlPrompt.current &&
             excalidrawApi &&
             !isGenerating &&
-            !pipelineRunId &&
-            prompt
+            !pipelineRunId
         ) {
-            console.log(
-                'Auto-generating diagram from URL prompt (one-time)...',
-            );
-            // Mark that we've handled this URL prompt
             hasProcessedUrlPrompt.current = true;
-
-            // Not a manual generation
             isManualGeneration.current = false;
-
-            // Call generate
             handleGenerate();
-
-            // Remove the diagramPrompt parameter from the URL
-            // to prevent regeneration on refresh
-            const newUrl = new URL(window.location.href);
-            newUrl.searchParams.delete('diagramPrompt');
-            window.history.replaceState({}, '', newUrl);
         }
-    }, [
-        excalidrawApi,
-        prompt,
-        searchParams,
-        handleGenerate,
-        isGenerating,
-        pipelineRunId,
-    ]);
+    }, [excalidrawApi, prompt, handleGenerate, isGenerating, pipelineRunId]);
 
     // Handle the pipeline response
     useEffect(() => {

@@ -80,9 +80,10 @@ export function DataTableRow<
         // Use the property name (column header/accessor) for the description.
         // Update 'Description' if your property is named differently.
         const description = String(item['Description'] || '');
-        router.push(
-            `/org/${orgId}/project/${projectId}/canvas?diagramPrompt=${encodeURIComponent(description)}`,
-        );
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('pendingDiagramPrompt', description);
+        }
+        router.push(`/org/${orgId}/project/${projectId}/canvas`);
     };
 
     return (
