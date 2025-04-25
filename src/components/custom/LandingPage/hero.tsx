@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function Hero() {
     const router = useRouter();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, userProfile } = useAuth();
     const [loadingStates, setLoadingStates] = useState({
         getStarted: false,
         tryDemo: false,
@@ -33,7 +33,15 @@ export function Hero() {
 
     const handleTryDemo = () => {
         setLoading('tryDemo', true);
-        router.push('/demo');
+        if (!isAuthenticated) {
+            router.push('/login');
+            return;
+        }
+        // Try to use the user's personal org, otherwise fallback to default demo org
+        const orgId =
+            userProfile?.personal_organization_id ||
+            'ef53ba82-f2fc-46f5-8b51-9c54db9690f3';
+        router.push(`/org/${orgId}/demo`);
     };
 
     return (

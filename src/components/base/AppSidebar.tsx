@@ -172,10 +172,10 @@ function AppSidebar() {
                     <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-4">
                         <Link href="/" className="flex items-center gap-2">
                             <Image
-                                src="/AtomsLogo.svg"
+                                src="/atom.png"
                                 alt="Atoms logo"
-                                width={20}
-                                height={20}
+                                width={32}
+                                height={32}
                                 className="object-contain dark:invert"
                             />
                             <span className="font-semibold text-base">

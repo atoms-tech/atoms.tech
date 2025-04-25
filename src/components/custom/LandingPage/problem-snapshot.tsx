@@ -19,7 +19,7 @@ export function ProblemSnapshot({
                     STREAMLINE YOUR REQUIREMENTS PROCESS
                 </h2>
                 <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="overflow-hidden bg-red-950/20 border-red-900">
+                    <Card className="overflow-hidden bg-red-950/20 dark:bg-red-950/20 border-red-900 dark:border-red-900">
                         <CardContent className="p-6">
                             <div className="flex items-start gap-4">
                                 <div className="mt-1 rounded-full p-2 bg-red-900/30">
