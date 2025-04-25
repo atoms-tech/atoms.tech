@@ -69,6 +69,12 @@ export class ChunkrService {
                 expires_in,
                 high_resolution,
                 ocr_strategy,
+                llm_processing: {
+                    model_id: 'gemini-flash-2.5',
+                    fallback_strategy: {
+                        Model: 'gpt-4.1',
+                    },
+                },
             };
 
             console.log('Making API request to start OCR task');
