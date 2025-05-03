@@ -220,8 +220,11 @@ export class GumloopService {
         if (
             !customPipelineInputs &&
             pipelineType &&
-            (pipelineType === 'file-processing' ||
-                pipelineType === 'requirement-analysis')
+            [
+                'file-processing',
+                'requirement-analysis',
+                'requirement-analysis-reasoning',
+            ].includes(pipelineType)
         ) {
             if (fileNames?.length) {
                 fileNames.forEach((fileName) => {
