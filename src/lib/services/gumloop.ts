@@ -6,6 +6,8 @@ const GUMLOOP_FILE_CONVERT_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
 const GUMLOOP_REQ_ANALYSIS_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
+    process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID;
 const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
 
@@ -14,6 +16,8 @@ for (const [key, value] of Object.entries({
     USER_ID,
     GUMLOOP_FILE_CONVERT_FLOW_ID,
     GUMLOOP_REQ_ANALYSIS_FLOW_ID,
+    GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+    GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
 })) {
     if (!value) {
         throw new Error(
@@ -25,6 +29,7 @@ for (const [key, value] of Object.entries({
 type PipelineType =
     | 'file-processing'
     | 'requirement-analysis'
+    | 'requirement-analysis-reasoning'
     | 'text-to-mermaid';
 
 interface PipelineInput {
@@ -184,6 +189,9 @@ export class GumloopService {
                     break;
                 case 'requirement-analysis':
                     pipeline_id = GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+                    break;
+                case 'requirement-analysis-reasoning':
+                    pipeline_id = GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID;
                     break;
                 case 'text-to-mermaid':
                     pipeline_id = GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;

@@ -140,7 +140,9 @@ export default function RequirementPage() {
 
         try {
             const { run_id } = await startPipeline({
-                pipelineType: 'requirement-analysis',
+                pipelineType: isReasoning
+                    ? 'requirement-analysis-reasoning'
+                    : 'requirement-analysis',
                 requirement: reqText,
                 systemName: systemName,
                 objective: objective,

@@ -14,6 +14,8 @@ env:
     NEXT_PUBLIC_GUMLOOP_USER_ID: foo
     NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID: foo
     NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID: foo
+    NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID: foo
+    NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID: foo
     NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
     NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example
     NEXT_PUBLIC_CHUNKR_API_KEY: foo
@@ -82,9 +84,9 @@ jobs:
 
             - name: Debug Prettier configuration
               run: |
-                echo "Prettier configuration files:"
-                find . -maxdepth 2 -name ".prettier*" -type f -exec echo {} \; -exec cat {} \;
-                echo "\n"
+                  echo "Prettier configuration files:"
+                  find . -maxdepth 2 -name ".prettier*" -type f -exec echo {} \; -exec cat {} \;
+                  echo "\n"
 
             - name: Run prettier check first (without writing)
               run: bun prettier src --check
@@ -94,15 +96,15 @@ jobs:
 
             - name: Check for changes
               run: |
-                if ! git diff --quiet; then
-                  echo "=== FILES THAT NEED FORMATTING ==="
-                  git diff --name-only
-                  echo "\n=== DETAILED CHANGES ==="
-                  git diff --color
-                  echo "\n=== LINE ENDING CHECK ==="
-                  git diff | grep -E '[\+\-]$' || echo "No line ending issues detected"
-                  echo "\nPrettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
-                  exit 1
-                else
-                  echo "No formatting changes detected."
-                fi
+                  if ! git diff --quiet; then
+                    echo "=== FILES THAT NEED FORMATTING ==="
+                    git diff --name-only
+                    echo "\n=== DETAILED CHANGES ==="
+                    git diff --color
+                    echo "\n=== LINE ENDING CHECK ==="
+                    git diff | grep -E '[\+\-]$' || echo "No line ending issues detected"
+                    echo "\nPrettier detected unformatted files. Please run 'bun prettier src --write' and commit changes."
+                    exit 1
+                  else
+                    echo "No formatting changes detected."
+                  fi
