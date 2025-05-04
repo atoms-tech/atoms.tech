@@ -2,7 +2,7 @@
 
 import { Table } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
     BlockCanvas,
@@ -15,6 +15,64 @@ export default function DocumentPage() {
     const params = useParams();
     const documentId = params?.documentId as string;
     const [useTanStackTable, setUseTanStackTable] = useState(false);
+
+    //scroll to requirement if requirementId is in sessionStorage
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        //get requirementId from sessionStorage
+        const requirementId = sessionStorage.getItem('jumpToRequirementId');
+        console.log(
+            'Checking sessionStorage for requirementId:',
+            requirementId,
+        );
+
+        if (requirementId) {
+            const timeout = setTimeout(() => {
+                console.log(
+                    'Attempting to find element with ID:',
+                    `requirement-${requirementId}`,
+                );
+                const element = document.getElementById(
+                    `requirement-${requirementId}`,
+                );
+
+                if (element) {
+                    //clear the requirementId from sessionStorage only after finding the element
+                    sessionStorage.removeItem('jumpToRequirementId');
+                    console.log(
+                        'Element found, cleared sessionStorage, scrolling to it',
+                    );
+
+                    //scroll to element
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+
+                    setTimeout(() => {
+                        console.log('Adding highlight class');
+                        element.style.backgroundColor =
+                            'rgba(153, 59, 246, 0.3)';
+                        element.classList.add('highlight-requirement');
+
+                        setTimeout(() => {
+                            console.log('Removing highlight');
+                            element.style.backgroundColor = '';
+                            element.classList.remove('highlight-requirement');
+                        }, 3000);
+                    }, 100);
+                } else {
+                    console.log(
+                        'Element not found for requirementId:',
+                        requirementId,
+                    );
+                }
+            }, 1500);
+
+            return () => clearTimeout(timeout);
+        }
+    }, []);
 
     return (
         <LayoutView>

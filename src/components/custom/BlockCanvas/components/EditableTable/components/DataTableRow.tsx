@@ -98,6 +98,8 @@ export function DataTableRow<
                     !isEditing && 'cursor-pointer',
                 )}
                 onClick={isEditing ? undefined : handleRowClick}
+                id={`requirement-${item.id}`}
+                data-requirement-id={item.id}
             >
                 {columns.map((column, colIndex) => (
                     <TableCell

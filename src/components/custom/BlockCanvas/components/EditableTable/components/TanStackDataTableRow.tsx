@@ -101,6 +101,8 @@ function TanStackDataTableRowComponent<
                 'font-mono hover:bg-muted/50',
                 !isEditMode && 'cursor-pointer',
             )}
+            id={`requirement-${row.original.id}`}
+            data-requirement-id={row.original.id}
         >
             {row.getVisibleCells().map((cell) => (
                 <MemoizedCell
