@@ -21,7 +21,7 @@ import {
 } from '@excalidraw/excalidraw';
 import { parseMermaidToExcalidraw } from '@excalidraw/mermaid-to-excalidraw';
 import { useTheme } from 'next-themes';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
@@ -69,13 +69,39 @@ interface ExcalidrawWrapperProps {
     diagramId?: string | null;
     onDiagramSaved?: (id: string) => void;
     onDiagramNameChange?: (name: string) => void;
+    onDiagramIdChange?: (id: string | null) => void;
+    pendingRequirementId?: string | null;
+    pendingDocumentId?: string | null;
 }
+
+// Utility to add requirementId and documentId to elements
+function addRequirementIdToElements<T extends ExcalidrawElement>(
+    elements: readonly T[] | T[],
+    requirementId: string | null,
+    documentId: string | null = null,
+): T[] {
+    if (!requirementId) return elements as T[];
+    return elements.map((el) => ({
+        ...el,
+        requirementId,
+        documentId: documentId || undefined,
+    })) as T[];
+}
+
+// Update the ElementWithRequirementProps to be a proper type
+type ElementWithRequirementProps = ExcalidrawElement & {
+    requirementId?: string;
+    documentId?: string;
+};
 
 const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     onMounted,
     diagramId: externalDiagramId,
     onDiagramSaved,
     onDiagramNameChange,
+    onDiagramIdChange,
+    pendingRequirementId,
+    pendingDocumentId,
 }) => {
     const [diagramId, setDiagramId] = useState<string | null>(
         externalDiagramId || null,
@@ -112,6 +138,17 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     const { user } = useUser();
     const organizationId = usePathname().split('/')[2];
     const projectId = usePathname().split('/')[4];
+    const router = useRouter();
+
+    // Tooltip state for selected requirement-linked element
+    const [linkTooltip, setLinkTooltip] = useState<{
+        x: number;
+        y: number;
+        requirementId: string;
+        documentId?: string;
+    } | null>(null);
+    // Keep track of previously selected element to prevent update loops
+    const prevSelectedElementRef = useRef<string | null>(null);
 
     // Function to generate a thumbnail of the current diagram
     const generateThumbnail = useCallback(
@@ -329,104 +366,147 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             });
         }
 
+        console.log('created new diagram');
+
         setIsLoading(false);
     }, [projectId, isDarkMode]);
 
-    // Function to add mermaid diagram to canvas
-    const addMermaidDiagram = async (mermaidSyntax: string) => {
-        try {
-            const { elements: skeletonElements } =
-                await parseMermaidToExcalidraw(mermaidSyntax);
+    // Move the function definition to a useCallback
+    const addMermaidDiagram = useCallback(
+        async (mermaidSyntax: string) => {
+            try {
+                const { elements: skeletonElements } =
+                    await parseMermaidToExcalidraw(mermaidSyntax);
 
-            let excalidrawElements =
-                convertToExcalidrawElements(skeletonElements);
+                let excalidrawElements =
+                    convertToExcalidrawElements(skeletonElements);
 
-            if (excalidrawApiRef.current) {
-                const currentElements =
-                    excalidrawApiRef.current.getSceneElements();
-
-                // Calculate bounding boxes
-                const getBoundingBox = (
-                    elements: readonly ExcalidrawElement[],
-                ) => {
-                    if (!elements.length) return null;
-                    let minX = Infinity,
-                        minY = Infinity,
-                        maxX = -Infinity,
-                        maxY = -Infinity;
-                    for (const el of elements) {
-                        if (el.isDeleted) continue;
-                        minX = Math.min(minX, el.x);
-                        minY = Math.min(minY, el.y);
-                        maxX = Math.max(maxX, el.x + (el.width || 0));
-                        maxY = Math.max(maxY, el.y + (el.height || 0));
-                    }
-                    return {
-                        minX,
-                        minY,
-                        maxX,
-                        maxY,
-                        width: maxX - minX,
-                        height: maxY - minY,
-                    };
-                };
-
-                const existingBox = getBoundingBox(currentElements);
-                const newBox = getBoundingBox(excalidrawElements);
-
-                // Find non-overlapping position
-                let offsetX = 0,
-                    offsetY = 0;
-                if (existingBox && newBox) {
-                    const margin = 80;
-                    offsetX = existingBox.maxX - newBox.minX + margin;
-                    offsetY = 0;
-                }
-
-                //Offset new elements
-                if (offsetX !== 0 || offsetY !== 0) {
-                    excalidrawElements = excalidrawElements.map((el) => ({
-                        ...el,
-                        x: el.x + offsetX,
-                        y: el.y + offsetY,
-                    }));
-                }
-
-                // Collect new element IDs for selection
-                const newElementIds = excalidrawElements.map((el) => el.id);
-                const selectedElementIds = Object.fromEntries(
-                    newElementIds.map((id) => [id, true as const]),
-                );
-
-                excalidrawApiRef.current.updateScene({
-                    elements: [...currentElements, ...excalidrawElements],
-                    appState: {
-                        // preserve theme and other appState, but set selection
-                        ...(excalidrawApiRef.current.getAppState?.() || {}),
-                        selectedElementIds,
-                    },
-                });
-
-                //scroll to new content
-                setTimeout(() => {
-                    excalidrawApiRef.current?.scrollToContent(
-                        excalidrawElements,
-                        { fitToContent: true, animate: true, duration: 600 },
+                // Attach requirementId if present (for requirement→diagram flow)
+                console.log('Before check');
+                if (pendingRequirementId) {
+                    console.log(
+                        'pendingrequirementId was present',
+                        pendingRequirementId,
                     );
-                }, 50);
+                    excalidrawElements = addRequirementIdToElements(
+                        excalidrawElements as unknown as ExcalidrawElement[],
+                        pendingRequirementId,
+                        pendingDocumentId,
+                    ) as unknown as typeof excalidrawElements;
+                    console.log(
+                        '[Excalidraw] requirementId attached to mermaid elements',
+                        {
+                            pendingRequirementId,
+                            documentId: pendingDocumentId,
+                            elementCount: excalidrawElements.length,
+                            elements: excalidrawElements,
+                        },
+                    );
+                }
+
+                if (excalidrawApiRef.current) {
+                    const currentElements =
+                        excalidrawApiRef.current.getSceneElements();
+
+                    // Calculate bounding boxes
+                    const getBoundingBox = (
+                        elements: readonly ExcalidrawElement[],
+                    ) => {
+                        if (!elements.length) return null;
+                        let minX = Infinity,
+                            minY = Infinity,
+                            maxX = -Infinity,
+                            maxY = -Infinity;
+                        for (const el of elements) {
+                            if (el.isDeleted) continue;
+                            minX = Math.min(minX, el.x);
+                            minY = Math.min(minY, el.y);
+                            maxX = Math.max(maxX, el.x + (el.width || 0));
+                            maxY = Math.max(maxY, el.y + (el.height || 0));
+                        }
+                        return {
+                            minX,
+                            minY,
+                            maxX,
+                            maxY,
+                            width: maxX - minX,
+                            height: maxY - minY,
+                        };
+                    };
+
+                    const existingBox = getBoundingBox(currentElements);
+                    const newBox = getBoundingBox(excalidrawElements);
+
+                    // Find non-overlapping position
+                    let offsetX = 0,
+                        offsetY = 0;
+                    if (existingBox && newBox) {
+                        //place to the right
+                        const margin = 80;
+                        offsetX = existingBox.maxX - newBox.minX + margin;
+                        offsetY = 0;
+                    } else if (!existingBox && newBox) {
+                        //center the new diagram at (0,0)
+                        const centerX = newBox.minX + newBox.width / 2;
+                        const centerY = newBox.minY + newBox.height / 2;
+                        offsetX = -centerX;
+                        offsetY = -centerY;
+                    }
+
+                    //Offset new elements
+                    if (offsetX !== 0 || offsetY !== 0) {
+                        excalidrawElements = excalidrawElements.map((el) => ({
+                            ...el,
+                            x: el.x + offsetX,
+                            y: el.y + offsetY,
+                        }));
+                    }
+
+                    // Collect new element IDs for selection
+                    const newElementIds = excalidrawElements.map((el) => el.id);
+                    const selectedElementIds = Object.fromEntries(
+                        newElementIds.map((id) => [id, true as const]),
+                    );
+
+                    excalidrawApiRef.current.updateScene({
+                        elements: [...currentElements, ...excalidrawElements],
+                        appState: {
+                            // preserve theme and other appState, but set selection
+                            ...(excalidrawApiRef.current.getAppState?.() || {}),
+                            selectedElementIds,
+                        },
+                    });
+
+                    //scroll to new content
+                    setTimeout(() => {
+                        excalidrawApiRef.current?.scrollToContent(
+                            excalidrawElements,
+                            {
+                                fitToContent: true,
+                                animate: true,
+                                duration: 600,
+                            },
+                        );
+                    }, 50);
+                }
+            } catch (error) {
+                console.error('Error converting mermaid to excalidraw:', error);
+                throw error;
             }
-        } catch (error) {
-            console.error('Error converting mermaid to excalidraw:', error);
-            throw error;
-        }
-    };
+        },
+        [pendingRequirementId, pendingDocumentId, excalidrawApiRef],
+    );
 
     // Expose the addMermaidDiagram function to parent
     useEffect(() => {
         if (onMounted) {
+            console.log(
+                'onMounted called, pendingRequirementId:',
+                pendingRequirementId,
+            );
             onMounted({ addMermaidDiagram });
         }
-    }, [onMounted]);
+    }, [onMounted, pendingRequirementId, addMermaidDiagram]);
 
     // Watch for external diagramId changes
     useEffect(() => {
@@ -523,6 +603,8 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         externalDiagramId,
         loadDiagram,
         createNewDiagram,
+        pendingRequirementId,
+        pendingDocumentId,
     ]);
 
     const hasChanges = useCallback(
@@ -731,6 +813,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         [saveDiagram],
     );
 
+    // Modify handleChange to update tooltip and position it over the element
     const handleChange = useCallback(
         (
             elements: readonly ExcalidrawElement[],
@@ -738,6 +821,52 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             files: BinaryFiles,
         ) => {
             debouncedSave(elements, appState, files);
+
+            // Determine if a single element with requirementId is selected
+            const selectedIds = Object.keys(appState.selectedElementIds || {});
+            if (selectedIds.length === 1 && excalidrawApiRef.current) {
+                const selectedId = selectedIds[0];
+                // Only process if this is a new selection
+                if (prevSelectedElementRef.current !== selectedId) {
+                    prevSelectedElementRef.current = selectedId;
+
+                    const selEl = elements.find((el) => el.id === selectedId);
+                    const reqId = (selEl as ElementWithRequirementProps)
+                        ?.requirementId;
+                    const docId = (selEl as ElementWithRequirementProps)
+                        ?.documentId;
+
+                    if (selEl && reqId) {
+                        // Position tooltip above the element
+                        const zoom = appState.zoom.value;
+                        const { scrollX, scrollY } = appState;
+
+                        // Calculate element's center position in screen coordinates
+                        const elementCenterX = selEl.x + (selEl.width || 0) / 2;
+                        const elementCenterY = selEl.y - 10; // Position above the element
+
+                        // Convert to screen coordinates
+                        const screenX = (elementCenterX + scrollX) * zoom;
+                        const screenY = (elementCenterY + scrollY) * zoom;
+
+                        setLinkTooltip({
+                            x: screenX,
+                            y: screenY,
+                            requirementId: reqId,
+                            documentId: docId,
+                        });
+                    } else {
+                        setLinkTooltip(null);
+                    }
+                }
+            } else if (
+                selectedIds.length === 0 &&
+                prevSelectedElementRef.current !== null
+            ) {
+                // Clear selection tracking and tooltip when nothing is selected
+                prevSelectedElementRef.current = null;
+                setLinkTooltip(null);
+            }
         },
         [debouncedSave],
     );
@@ -757,6 +886,13 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             onDiagramNameChange(diagramName);
         }
     }, [diagramName, onDiagramNameChange]);
+
+    // Whenever diagramId changes, notify parent
+    useEffect(() => {
+        if (onDiagramIdChange) {
+            onDiagramIdChange(diagramId);
+        }
+    }, [diagramId, onDiagramIdChange]);
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -847,6 +983,24 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Tooltip for requirement link */}
+            {linkTooltip && (
+                <div
+                    className="absolute z-[1001] px-2 py-1 bg-primary text-white text-xs rounded shadow cursor-pointer transform -translate-x-1/2"
+                    style={{
+                        left: linkTooltip.x,
+                        top: linkTooltip.y,
+                    }}
+                    onClick={() => {
+                        router.push(
+                            `/org/${organizationId}/project/${projectId}/documents/${linkTooltip.documentId}`,
+                        );
+                    }}
+                >
+                    Jump to Requirement
+                </div>
+            )}
         </div>
     );
 };

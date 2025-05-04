@@ -72,13 +72,47 @@ export default function Draw() {
         useState<boolean>(false);
     const [newDiagramName, setNewDiagramName] = useState<string>('');
 
-    // On mount, check sessionStorage for pending diagram prompt
+    // Add state for pending requirementId
+    const [pendingRequirementId, setPendingRequirementId] = useState<
+        string | null
+    >(null);
+
+    // Add state for pending documentId
+    const [pendingDocumentId, setPendingDocumentId] = useState<string | null>(
+        null,
+    );
+
+    // On mount, check sessionStorage for pending diagram prompt and requirementId
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const pendingPrompt = sessionStorage.getItem('pendingDiagramPrompt');
+        const pendingReqId = sessionStorage.getItem(
+            'pendingDiagramRequirementId',
+        );
+        const pendingDocId = sessionStorage.getItem('pendingDiagramDocumentId');
+
+        console.log('[Canvas] Reading sessionStorage:', {
+            pendingPrompt: pendingPrompt
+                ? pendingPrompt.substring(0, 20) + '...'
+                : null,
+            pendingReqId,
+            pendingDocId,
+        });
+
         if (pendingPrompt) {
             setPrompt(pendingPrompt);
             sessionStorage.removeItem('pendingDiagramPrompt');
+        }
+        // Read requirementId
+        if (pendingReqId) {
+            setPendingRequirementId(pendingReqId);
+            sessionStorage.removeItem('pendingDiagramRequirementId');
+        }
+        // Read documentId
+        if (pendingDocId) {
+            console.log('[Canvas] Reading documentId:', pendingDocId);
+            setPendingDocumentId(pendingDocId);
+            sessionStorage.removeItem('pendingDiagramDocumentId');
         }
     }, []);
 
@@ -424,7 +458,10 @@ export default function Draw() {
                             diagramId={selectedDiagramId}
                             onDiagramSaved={handleDiagramSaved}
                             onDiagramNameChange={handleDiagramNameChange}
-                            key={instanceKey}
+                            onDiagramIdChange={setSelectedDiagramId}
+                            key={`pendingReq-${pendingRequirementId}-${instanceKey}`}
+                            pendingRequirementId={pendingRequirementId}
+                            pendingDocumentId={pendingDocumentId}
                         />
                     </div>
                     <div className="flex-shrink-0 flex flex-col gap-2.5 p-5 bg-gray-100 dark:bg-sidebar rounded-lg h-fit">
