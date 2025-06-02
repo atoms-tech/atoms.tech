@@ -355,52 +355,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     )}
                                 </CardContent>
                             </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Storage Usage</CardTitle>
-                                    <CardDescription>
-                                        Current storage utilization
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    {props.orgLoading ? (
-                                        <div className="animate-pulse space-y-2">
-                                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                                            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            <div className="w-full bg-gray-200 h-2.5 dark:bg-gray-700">
-                                                <div
-                                                    className="bg-primary h-2.5 rounded-full"
-                                                    style={{
-                                                        width: `${Math.min(
-                                                            (totalUsage /
-                                                                (1000 *
-                                                                    1024 *
-                                                                    1024)) *
-                                                                100, // Convert bytes to MB and calculate percentage
-                                                            100,
-                                                        )}%`,
-                                                    }}
-                                                ></div>
-                                            </div>
-                                            <div className="flex justify-between text-sm">
-                                                <span>
-                                                    {(
-                                                        totalUsage /
-                                                        1024 /
-                                                        1024
-                                                    ).toFixed(2)}{' '}
-                                                    MB used
-                                                </span>
-                                                <span>1000 MB total</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
                         </div>
 
                         {/* Right Column */}
