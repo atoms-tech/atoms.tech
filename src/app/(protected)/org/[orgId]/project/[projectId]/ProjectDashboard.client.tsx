@@ -400,7 +400,7 @@ export default function ProjectPage() {
                                     className="gap-2 transition-colors hover:bg-primary hover:text-primary-foreground"
                                 >
                                     <PlusCircle className="h-4 w-4" />
-                                    Add Requirement
+                                    New Requirement Document
                                 </Button>
                             )}
                             <Button
