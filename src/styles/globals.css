@@ -4,55 +4,55 @@
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
+        --background: 0 0% 100%; /* pure white */
+        --foreground: 220 8% 20%; /* deep neutral gray */
 
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
+        --card: 0 0% 100%; /* white */
+        --card-foreground: 220 8% 20%;
 
         --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 3.9%;
+        --popover-foreground: 220 8% 20%;
 
-        /* Electric blue accent colors */
-        --primary: 270 91% 60%; /* Bright electric blue */
-        --primary-foreground: 0 0% 100%;
+        /* Coda-like neutral accent colors */
+        --primary: 220 8% 20%; /* deep neutral gray (for buttons, etc) */
+        --primary-foreground: 0 0% 100%; /* white */
 
-        --secondary: 270 32% 91%;
-        --secondary-foreground: 270 34% 17%;
+        --secondary: 220 13% 95%; /* very light gray */
+        --secondary-foreground: 220 8% 20%; /* deep neutral gray */
 
-        --muted: 270 32% 91%;
-        --muted-foreground: 270 16% 47%;
+        --muted: 220 13% 95%; /* very light gray */
+        --muted-foreground: 220 8% 50%; /* medium gray */
 
-        --accent: 270 91% 60%; /* Matching primary blue */
-        --accent-foreground: 0 0% 100%;
+        --accent: 220 13% 85%; /* light gray for hover, etc */
+        --accent-foreground: 220 8% 20%;
 
         --destructive: 0 84% 60%;
         --destructive-foreground: 210 40% 98%;
 
         /* Neutral colors */
-        --border: 270 34% 17%;
-        --input: 270 32% 91%;
-        --ring: 270 91% 60%; /* Electric blue ring */
+        --border: 220 8% 80%;
+        --input: 220 13% 90%;
+        --ring: 220 8% 20%; /* deep neutral gray */
 
-        /* Chart colors - Blue monotone */
-        --chart-1: 217 91% 60%; /* Primary electric blue */
-        --chart-2: 213 94% 68%; /* Lighter blue */
-        --chart-3: 224 76% 48%; /* Darker blue */
-        --chart-4: 213 97% 87%; /* Very light blue */
-        --chart-5: 217 91% 60%; /* Match primary */
+        /* Chart colors - blue/gray monotone */
+        --chart-1: 220 8% 20%; /* deep gray */
+        --chart-2: 220 13% 60%; /* medium gray */
+        --chart-3: 220 13% 85%; /* light gray */
+        --chart-4: 220 13% 95%; /* very light gray */
+        --chart-5: 0 0% 100%; /* white */
 
         --radius: 0rem;
 
         --grid-size: 40px;
-        --grid-color: rgba(255, 255, 255, 0.05);
+        --grid-color: rgba(0, 0, 0, 0.03);
         --sidebar-background: 0 0% 98%;
-        --sidebar-foreground: 240 5.3% 26.1%;
-        --sidebar-primary: 240 5.9% 10%;
+        --sidebar-foreground: 220 8% 20%;
+        --sidebar-primary: 220 8% 20%;
         --sidebar-primary-foreground: 0 0% 98%;
-        --sidebar-accent: 240 4.8% 95.9%;
-        --sidebar-accent-foreground: 240 5.9% 10%;
-        --sidebar-border: 220 13% 91%;
-        --sidebar-ring: 217.2 91.2% 59.8%;
+        --sidebar-accent: 220 13% 95%;
+        --sidebar-accent-foreground: 220 8% 20%;
+        --sidebar-border: 220 8% 80%;
+        --sidebar-ring: 220 8% 20%;
 
         font-family:
             var(--font-geist-sans),

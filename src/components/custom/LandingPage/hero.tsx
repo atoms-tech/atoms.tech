@@ -81,7 +81,7 @@ export function Hero() {
                 </div>
                 <div className="flex flex-col sm:flex-row justify-start items-start space-y-4 sm:space-y-0 sm:space-x-6">
                     <Button
-                        className="btn-primary w-full sm:w-auto"
+                        className="w-full sm:w-auto bg-[#7C3AED] text-white hover:bg-[#6D28D9]"
                         onClick={handleGetStarted}
                         disabled={loadingStates.getStarted}
                     >

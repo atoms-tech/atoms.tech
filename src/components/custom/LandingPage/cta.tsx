@@ -13,7 +13,7 @@ export function CTA() {
                     SOFTWARE CRUMBLE UNDER ITS OWN WEIGHT.
                 </p>
                 <div className="flex flex-col md:flex-row justify-start space-y-8 md:space-y-0 md:space-x-12">
-                    <Button variant="default" className="">
+                    <Button className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]">
                         SCHEDULE A DEMO
                     </Button>
                 </div>
