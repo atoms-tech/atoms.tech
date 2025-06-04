@@ -317,7 +317,7 @@ export default function UserDashboard() {
                     >
                         <Button
                             size="lg"
-                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                            className="bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary)/.9)] shadow-md dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700"
                             onClick={handleCreateOrganization}
                         >
                             <Plus className="h-4 w-4 mr-2" />
@@ -353,9 +353,9 @@ export default function UserDashboard() {
                         <Input
                             type="text"
                             placeholder="Search organizations..."
-                            value={searchTerm || ''} // Ensure value is always a string
+                            value={searchTerm || ''}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full md:w-64"
+                            className="w-full md:w-64 border border-gray-400"
                         />
                     </div>
                 </div>
