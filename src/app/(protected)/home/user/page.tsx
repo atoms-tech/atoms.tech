@@ -411,7 +411,7 @@ export default function UserDashboard() {
                                                 </div>
                                                 {org.type ===
                                                 OrganizationType.enterprise ? (
-                                                    <Building className="h-5 w-5 text-blue-500" />
+                                                    <Building className="h-5 w-5 text-gray-400 dark:text-blue-500" />
                                                 ) : (
                                                     <Users className="h-5 w-5 text-green-500" />
                                                 )}
@@ -427,19 +427,6 @@ export default function UserDashboard() {
                                             </p>
                                         </CardContent>
                                         <CardFooter className="flex justify-between pt-0">
-                                            <Badge
-                                                variant="outline"
-                                                className={
-                                                    org.status === 'active'
-                                                        ? 'border-green-500 text-green-500'
-                                                        : org.status ===
-                                                            'inactive'
-                                                          ? 'border-gray-500 text-gray-500'
-                                                          : 'border-yellow-500 text-yellow-500'
-                                                }
-                                            >
-                                                {org.status}
-                                            </Badge>
                                             <Badge variant="secondary">
                                                 {org.type ===
                                                 OrganizationType.enterprise
