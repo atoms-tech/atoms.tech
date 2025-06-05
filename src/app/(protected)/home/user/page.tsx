@@ -148,7 +148,7 @@ export default function UserDashboard() {
                 const { data: profileData, error: profileError } =
                     await supabase
                         .from('profiles')
-                        .select('id')
+                        .select('id, pinned_organization_id')
                         .eq('email', user?.email || '')
                         .single();
 
@@ -157,14 +157,17 @@ export default function UserDashboard() {
                     return;
                 }
 
-                // Update the pinned organization ID for the user
+                // 고정 해제: 이미 고정된 조직을 다시 클릭하면 null로 업데이트
+                const newPinnedOrgId =
+                    pinnedOrgId === orgId ? null : orgId;
+
                 const { error: updateError } = await supabase
                     .from('profiles')
-                    .update({ pinned_organization_id: orgId })
+                    .update({ pinned_organization_id: newPinnedOrgId })
                     .eq('id', profileData.id);
 
                 if (!updateError) {
-                    setPinnedOrgId(orgId);
+                    setPinnedOrgId(newPinnedOrgId);
                 } else {
                     console.error(
                         'Error updating pinned organization:',
@@ -175,7 +178,7 @@ export default function UserDashboard() {
                 console.error('Unexpected error:', err);
             }
         },
-        [user?.email],
+        [user?.email, pinnedOrgId],
     );
 
     // Ensure the pinned organization is displayed first
@@ -381,28 +384,22 @@ export default function UserDashboard() {
                                     variants={itemVariants}
                                 >
                                     <Card
-                                        className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2 ${
-                                            org.id === pinnedOrgId
-                                                ? 'border-primary'
-                                                : 'hover:border-primary/20'
-                                        }`}
+                                        className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2`}
                                         onClick={() => handleRowClick(org)}
                                     >
                                         <CardHeader className="pb-3">
                                             <div className="flex justify-between items-start">
                                                 <div className="flex items-center space-x-2">
                                                     <Pin
-                                                        className={`h-5 w-5 cursor-pointer ${
-                                                            org.id ===
-                                                            pinnedOrgId
-                                                                ? 'text-primary'
-                                                                : 'text-muted-foreground'
-                                                        }`}
+                                                        className="h-5 w-5 cursor-pointer"
                                                         onClick={(e) => {
-                                                            e.stopPropagation(); // Prevent triggering card click
-                                                            handlePinOrganization(
-                                                                org.id,
-                                                            );
+                                                            e.stopPropagation();
+                                                            handlePinOrganization(org.id);
+                                                        }}
+                                                        style={{
+                                                            fill: org.id === pinnedOrgId ? 'hsl(var(--border))' : 'none',
+                                                            stroke: org.id === pinnedOrgId ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))',
+                                                            strokeWidth: 2,
                                                         }}
                                                     />
                                                     <CardTitle className="text-lg font-semibold">
