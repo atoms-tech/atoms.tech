@@ -158,8 +158,7 @@ export default function UserDashboard() {
                 }
 
                 // 고정 해제: 이미 고정된 조직을 다시 클릭하면 null로 업데이트
-                const newPinnedOrgId =
-                    pinnedOrgId === orgId ? null : orgId;
+                const newPinnedOrgId = pinnedOrgId === orgId ? null : orgId;
 
                 const { error: updateError } = await supabase
                     .from('profiles')
@@ -394,11 +393,21 @@ export default function UserDashboard() {
                                                         className="h-5 w-5 cursor-pointer"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handlePinOrganization(org.id);
+                                                            handlePinOrganization(
+                                                                org.id,
+                                                            );
                                                         }}
                                                         style={{
-                                                            fill: org.id === pinnedOrgId ? 'hsl(var(--border))' : 'none',
-                                                            stroke: org.id === pinnedOrgId ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))',
+                                                            fill:
+                                                                org.id ===
+                                                                pinnedOrgId
+                                                                    ? 'hsl(var(--border))'
+                                                                    : 'none',
+                                                            stroke:
+                                                                org.id ===
+                                                                pinnedOrgId
+                                                                    ? 'hsl(var(--border))'
+                                                                    : 'hsl(var(--muted-foreground))',
                                                             strokeWidth: 2,
                                                         }}
                                                     />

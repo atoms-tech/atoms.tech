@@ -12,7 +12,10 @@ export function Contact() {
                     <h2 className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] xl:text-[96px] font-black leading-none text-white">
                         CONTACT
                     </h2>
-                    <p className="text-2xl xl:text-3xl font-bold xl:absolute xl:left-1/2 xl:transform xl:-translate-x-1/2" style={{ color: '#7C3AED' }}>
+                    <p
+                        className="text-2xl xl:text-3xl font-bold xl:absolute xl:left-1/2 xl:transform xl:-translate-x-1/2"
+                        style={{ color: '#7C3AED' }}
+                    >
                         hello@atoms.tech
                     </p>
                 </div>
