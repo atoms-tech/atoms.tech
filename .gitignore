@@ -45,4 +45,10 @@ next-env.d.ts
 .cursorrules
 .cursor/
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
 bun.lock
