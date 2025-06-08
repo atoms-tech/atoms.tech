@@ -181,7 +181,16 @@ describe('SlashCommandRegistry', () => {
 
     test('should provide registry statistics', () => {
         registry.registerMany(mockCommands);
-        
+
+    });
+
+    test('getStats() returns zero and empty categories when registry is empty', () => {
+        const emptyRegistry = new SlashCommandRegistry();
+        const stats = emptyRegistry.getStats();
+        expect(stats.totalCommands).toBe(0);
+        expect(stats.categories).toEqual({});
+    });
+
         const stats = registry.getStats();
         expect(stats.totalCommands).toBe(mockCommands.length);
         expect(stats.categories.formatting).toBe(2);
