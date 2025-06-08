@@ -110,6 +110,10 @@ describe('SlashCommandRegistry', () => {
     test('should search commands by name', () => {
         registry.registerMany(mockCommands);
 
+        const results = registry.search('bold');
+        expect(results).toHaveLength(1);
+        expect(results[0].command.id).toBe('test-bold');
+        expect(results[0].relevance).toBeGreaterThan(0);
     });
 
     test('should filter commands by isAvailable callback in search', () => {
@@ -137,10 +141,6 @@ describe('SlashCommandRegistry', () => {
         expect(results.some(cmd => cmd.id === 'unavailable')).toBe(false);
         expect(availableCommand.isAvailable).toHaveBeenCalledWith(context);
         expect(unavailableCommand.isAvailable).toHaveBeenCalledWith(context);
-        const results = registry.search('bold');
-        expect(results).toHaveLength(1);
-        expect(results[0].command.id).toBe('test-bold');
-        expect(results[0].relevance).toBeGreaterThan(0);
     });
 
     test('should search commands by keywords', () => {
@@ -212,6 +212,10 @@ describe('SlashCommandRegistry', () => {
     test('should provide registry statistics', () => {
         registry.registerMany(mockCommands);
 
+        const stats = registry.getStats();
+        expect(stats.totalCommands).toBe(mockCommands.length);
+        expect(stats.categories.formatting).toBe(2);
+        expect(stats.categories.utility).toBe(1);
     });
 
     test('getStats() returns zero and empty categories when registry is empty', () => {
@@ -219,12 +223,6 @@ describe('SlashCommandRegistry', () => {
         const stats = emptyRegistry.getStats();
         expect(stats.totalCommands).toBe(0);
         expect(stats.categories).toEqual({});
-    });
-
-        const stats = registry.getStats();
-        expect(stats.totalCommands).toBe(mockCommands.length);
-        expect(stats.categories.formatting).toBe(2);
-        expect(stats.categories.utility).toBe(1);
     });
 });
 

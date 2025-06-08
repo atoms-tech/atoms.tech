@@ -151,7 +151,7 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
             ) {
                 // Create a range at the caret position
                 const start = input.selectionStart;
-                const end = input.selectionEnd;
+                const _end = input.selectionEnd;
                 // Create a dummy span to measure caret position
                 const div = document.createElement('div');
                 const style = window.getComputedStyle(input);
@@ -172,7 +172,7 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
 
                 document.body.appendChild(div);
                 const spanRect = span.getBoundingClientRect();
-                const inputRect = input.getBoundingClientRect();
+                const _inputRect = input.getBoundingClientRect();
                 // Calculate caret position relative to input
                 const x = spanRect.left;
                 const y = spanRect.bottom;
@@ -305,7 +305,7 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
             default:
                 return false;
         }
-    }, [state.isOpen, state.commands.length, state.selectedIndex]);
+    }, [state.isOpen, state.commands.length, state.selectedIndex, executeSelectedCommand, closeAutocomplete]);
 
     /**
      * Execute the currently selected command
@@ -357,6 +357,7 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
         editor,
         inputRef,
         onCommandExecuted,
+        closeAutocomplete,
     ]);
 
     /**
