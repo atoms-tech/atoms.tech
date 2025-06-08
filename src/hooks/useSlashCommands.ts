@@ -143,9 +143,49 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
 
         if (inputRef?.current) {
             const input = inputRef.current;
+
+            // Try to use caret position for dropdown placement
+            if (
+                (input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) &&
+                typeof input.selectionStart === 'number'
+            ) {
+                // Create a range at the caret position
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                // Create a dummy span to measure caret position
+                const div = document.createElement('div');
+                const style = window.getComputedStyle(input);
+                for (const prop of style) {
+                    div.style.setProperty(prop, style.getPropertyValue(prop));
+                }
+                div.style.position = 'absolute';
+                div.style.visibility = 'hidden';
+                div.style.whiteSpace = 'pre-wrap';
+                div.style.wordWrap = 'break-word';
+                div.style.width = input.offsetWidth + 'px';
+                div.textContent = input.value.substring(0, start);
+
+                const span = document.createElement('span');
+                // Insert a zero-width non-breaking space so the span is visible
+                span.textContent = '\u200b';
+                div.appendChild(span);
+
+                document.body.appendChild(div);
+                const spanRect = span.getBoundingClientRect();
+                const inputRect = input.getBoundingClientRect();
+                // Calculate caret position relative to input
+                const x = spanRect.left;
+                const y = spanRect.bottom;
+                document.body.removeChild(div);
+
+                return {
+                    x,
+                    y,
+                };
+            }
+
+            // Fallback: For input elements, position at the bottom left
             const rect = input.getBoundingClientRect();
-            
-            // For input elements, position at the bottom left
             return {
                 x: rect.left,
                 y: rect.bottom,
