@@ -109,7 +109,34 @@ describe('SlashCommandRegistry', () => {
 
     test('should search commands by name', () => {
         registry.registerMany(mockCommands);
-        
+
+    });
+
+    test('should filter commands by isAvailable callback in search', () => {
+        const availableCommand: SlashCommand = {
+            id: 'available',
+            name: 'Available Command',
+            description: 'This command is available',
+            execute: jest.fn(),
+            isAvailable: jest.fn(() => true),
+        };
+        const unavailableCommand: SlashCommand = {
+            id: 'unavailable',
+            name: 'Unavailable Command',
+            description: 'This command is unavailable',
+            execute: jest.fn(),
+            isAvailable: jest.fn(() => false),
+        };
+        registry.register(availableCommand);
+        registry.register(unavailableCommand);
+
+        const context = {}; // Provide any context needed for isAvailable
+        const results = registry.search('Command', context);
+
+        expect(results.some(cmd => cmd.id === 'available')).toBe(true);
+        expect(results.some(cmd => cmd.id === 'unavailable')).toBe(false);
+        expect(availableCommand.isAvailable).toHaveBeenCalledWith(context);
+        expect(unavailableCommand.isAvailable).toHaveBeenCalledWith(context);
         const results = registry.search('bold');
         expect(results).toHaveLength(1);
         expect(results[0].command.id).toBe('test-bold');
