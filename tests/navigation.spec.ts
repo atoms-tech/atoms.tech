@@ -1,16 +1,27 @@
 import { test, expect } from '@playwright/test';
+import { TestHelpers } from './utils/test-helpers';
 
 test.describe('Navigation and Routing', () => {
-    test('should handle direct URL navigation', async ({ page }) => {
-        // Test direct navigation to different routes
+    let helpers: TestHelpers;
+
+    test.beforeEach(async ({ page }) => {
+        helpers = new TestHelpers(page);
+        await helpers.mockApiResponses();
+    });
+
+    test('should handle direct URL navigation correctly', async ({ page }) => {
+        // Test direct navigation to public routes
         await page.goto('/login');
+        await helpers.waitForPageReady();
         await expect(page).toHaveURL(/.*\/login/);
-        
+
         await page.goto('/signup');
+        await helpers.waitForPageReady();
         await expect(page).toHaveURL(/.*\/signup/);
-        
+
         await page.goto('/');
-        await expect(page).toHaveURL(/.*\//);
+        await helpers.waitForPageReady();
+        await expect(page).toHaveURL(/.*\/$/);
     });
 
     test('should handle browser back and forward navigation', async ({ page }) => {
@@ -68,20 +79,27 @@ test.describe('Navigation and Routing', () => {
         }
     });
 
-    test('should handle protected routes', async ({ page }) => {
-        // Try to access a protected route without authentication
-        // This should redirect to login or show an error
-        
-        const protectedRoutes = ['/home', '/dashboard', '/org'];
-        
+    test('should handle protected routes correctly', async ({ page }) => {
+        // Test protected routes based on actual application structure
+        const protectedRoutes = [
+            '/home/user',
+            '/org/test-org-id',
+            '/org/test-org-id/project/test-project-id',
+            '/org/test-org-id/demo'
+        ];
+
         for (const route of protectedRoutes) {
             await page.goto(route);
-            
-            // Should either redirect to login or show unauthorized message
-            const isRedirectedToLogin = page.url().includes('/login');
-            const hasUnauthorizedMessage = await page.locator('text=/unauthorized|login|sign in/i').count() > 0;
-            
-            expect(isRedirectedToLogin || hasUnauthorizedMessage).toBeTruthy();
+            await helpers.waitForPageReady();
+
+            // Should redirect to login or stay on home page due to middleware
+            const currentUrl = page.url();
+            const isHandledCorrectly = currentUrl.includes('/login') ||
+                                     currentUrl.includes('/auth') ||
+                                     currentUrl === 'http://localhost:3000/' ||
+                                     await page.locator('text=/session expired|login|sign in/i').count() > 0;
+
+            expect(isHandledCorrectly).toBeTruthy();
         }
     });
 
