@@ -167,16 +167,46 @@ describe('SlashCommandRegistry', () => {
         expect(results.length).toBeLessThanOrEqual(1);
     });
 
-    test('should calculate relevance scores correctly', () => {
-        registry.registerMany(mockCommands);
-        
-        const results = registry.search('bold');
-        const exactMatch = results.find(r => r.command.name.toLowerCase() === 'bold');
-        const partialMatch = results.find(r => r.command.name.toLowerCase().includes('bold'));
-        
-        if (exactMatch && partialMatch && exactMatch !== partialMatch) {
-            expect(exactMatch.relevance).toBeGreaterThan(partialMatch.relevance);
-        }
+    test('should calculate relevance scores correctly for different match types', () => {
+        // Targeted mock commands for each match type
+        const targetedCommands = [
+            { name: 'bold', description: 'Make text bold', execute: jest.fn() }, // exact
+            { name: 'bolden', description: 'Emphasize text', execute: jest.fn() }, // prefix
+            { name: 'embolden', description: 'Highlight text', execute: jest.fn() }, // substring
+            { name: 'italic', description: 'Make text italic', execute: jest.fn() }, // unrelated
+        ] as SlashCommand[];
+
+        registry.registerMany(targetedCommands);
+
+        // Exact match
+        let results = registry.search('bold');
+        const exact = results.find(r => r.command.name === 'bold');
+        const prefix = results.find(r => r.command.name === 'bolden');
+        const substring = results.find(r => r.command.name === 'embolden');
+
+        expect(exact).toBeDefined();
+        expect(prefix).toBeDefined();
+        expect(substring).toBeDefined();
+
+        // Assert relevance order: exact > prefix > substring
+        expect(exact!.relevance).toBeGreaterThan(prefix!.relevance);
+        expect(prefix!.relevance).toBeGreaterThan(substring!.relevance);
+
+        // Prefix match
+        results = registry.search('bolden');
+        const prefixExact = results.find(r => r.command.name === 'bolden');
+        const prefixSubstring = results.find(r => r.command.name === 'embolden');
+
+        expect(prefixExact).toBeDefined();
+        expect(prefixSubstring).toBeDefined();
+        expect(prefixExact!.relevance).toBeGreaterThan(prefixSubstring!.relevance);
+
+        // Substring match only
+        results = registry.search('mbold');
+        const onlySubstring = results.find(r => r.command.name === 'embolden');
+        expect(onlySubstring).toBeDefined();
+        // Should be the only match
+        expect(results.length).toBe(1);
     });
 
     test('should provide registry statistics', () => {
