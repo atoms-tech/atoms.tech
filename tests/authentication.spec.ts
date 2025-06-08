@@ -1,34 +1,51 @@
 import { test, expect } from '@playwright/test';
+import { TestHelpers } from './utils/test-helpers';
 
 test.describe('Authentication Flow', () => {
+    let helpers: TestHelpers;
+
+    test.beforeEach(async ({ page }) => {
+        helpers = new TestHelpers(page);
+        await helpers.mockApiResponses();
+    });
+
     test('should navigate to login page', async ({ page }) => {
         await page.goto('/');
-        
-        // Look for login/sign in button or link
-        const loginButton = page.locator('a[href*="/login"], button:has-text("Sign in"), a:has-text("Sign in")');
-        
+        await helpers.waitForPageReady();
+
+        // Look for login/sign in button based on navbar implementation
+        const loginButton = page.locator('button:has-text("Sign in"), a:has-text("Sign in")');
+
         if (await loginButton.count() > 0) {
             await loginButton.first().click();
             await expect(page).toHaveURL(/.*\/login/);
         } else {
             // Direct navigation if no button found
             await page.goto('/login');
+            await expect(page).toHaveURL(/.*\/login/);
         }
-        
-        await expect(page).toHaveURL(/.*\/login/);
     });
 
-    test('should display login form elements', async ({ page }) => {
+    test('should display login form elements correctly', async ({ page }) => {
         await page.goto('/login');
-        
-        // Check for email input
-        await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible();
-        
+        await helpers.waitForPageReady();
+
+        // Check for email input based on actual form implementation
+        const emailInput = page.locator('input[name="email"]');
+        await expect(emailInput).toBeVisible();
+        await expect(emailInput).toHaveAttribute('type', 'email');
+        await expect(emailInput).toHaveAttribute('required');
+
         // Check for password input
-        await expect(page.locator('input[type="password"], input[name="password"]')).toBeVisible();
-        
+        const passwordInput = page.locator('input[name="password"]');
+        await expect(passwordInput).toBeVisible();
+        await expect(passwordInput).toHaveAttribute('type', 'password');
+        await expect(passwordInput).toHaveAttribute('required');
+
         // Check for submit button
-        await expect(page.locator('button[type="submit"], button:has-text("Sign in"), button:has-text("Login")')).toBeVisible();
+        const submitButton = page.locator('button[type="submit"]');
+        await expect(submitButton).toBeVisible();
+        await expect(submitButton).toBeEnabled();
     });
 
     test('should show validation errors for empty form', async ({ page }) => {
@@ -64,33 +81,59 @@ test.describe('Authentication Flow', () => {
         }
     });
 
-    test('should display signup form elements', async ({ page }) => {
+    test('should display signup form elements correctly', async ({ page }) => {
         await page.goto('/signup');
-        
+        await helpers.waitForPageReady();
+
+        // Check for first name input based on actual signup implementation
+        const firstNameInput = page.locator('input[name="firstName"]');
+        await expect(firstNameInput).toBeVisible();
+        await expect(firstNameInput).toHaveAttribute('required');
+
+        // Check for last name input
+        const lastNameInput = page.locator('input[name="lastName"]');
+        await expect(lastNameInput).toBeVisible();
+        await expect(lastNameInput).toHaveAttribute('required');
+
         // Check for email input
-        await expect(page.locator('input[type="email"], input[name="email"]')).toBeVisible();
-        
+        const emailInput = page.locator('input[name="email"]');
+        await expect(emailInput).toBeVisible();
+        await expect(emailInput).toHaveAttribute('type', 'email');
+        await expect(emailInput).toHaveAttribute('required');
+
         // Check for password input
-        await expect(page.locator('input[type="password"], input[name="password"]')).toBeVisible();
-        
+        const passwordInput = page.locator('input[name="password"]');
+        await expect(passwordInput).toBeVisible();
+        await expect(passwordInput).toHaveAttribute('type', 'password');
+        await expect(passwordInput).toHaveAttribute('required');
+
         // Check for submit button
-        await expect(page.locator('button[type="submit"], button:has-text("Sign up"), button:has-text("Register")')).toBeVisible();
+        const submitButton = page.locator('button[type="submit"]');
+        await expect(submitButton).toBeVisible();
+        await expect(submitButton).toContainText(/Sign up/i);
     });
 
     test('should have OAuth login options', async ({ page }) => {
         await page.goto('/login');
-        
-        // Check for Google OAuth button
-        const googleButton = page.locator('button:has-text("Google"), a:has-text("Google")');
-        if (await googleButton.count() > 0) {
-            await expect(googleButton.first()).toBeVisible();
-        }
-        
+        await helpers.waitForPageReady();
+
+        // Check for Google OAuth button based on actual implementation
+        const googleButton = page.locator('button:has-text("Google")');
+        await expect(googleButton).toBeVisible();
+        await expect(googleButton).toBeEnabled();
+
         // Check for GitHub OAuth button
-        const githubButton = page.locator('button:has-text("GitHub"), a:has-text("GitHub")');
-        if (await githubButton.count() > 0) {
-            await expect(githubButton.first()).toBeVisible();
-        }
+        const githubButton = page.locator('button:has-text("GitHub")');
+        await expect(githubButton).toBeVisible();
+        await expect(githubButton).toBeEnabled();
+
+        // Check for proper icons in OAuth buttons
+        await expect(googleButton.locator('svg')).toBeVisible();
+        await expect(githubButton.locator('svg')).toBeVisible();
+
+        // Verify OAuth buttons have outline variant styling
+        await expect(googleButton).toHaveClass(/outline/);
+        await expect(githubButton).toHaveClass(/outline/);
     });
 
     test('should handle form interactions properly', async ({ page }) => {
