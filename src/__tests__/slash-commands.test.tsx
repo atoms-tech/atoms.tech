@@ -231,6 +231,27 @@ describe('SlashCommandRegistry', () => {
 describe('SlashCommandInput', () => {
     const user = userEvent.setup();
 
+    test('does not trigger autocomplete or keyboard navigation when disableSlashCommands is true', async () => {
+        // Render the component with disableSlashCommands set to true
+        render(
+            <SlashCommandInput disableSlashCommands={true} />
+        );
+
+        // Find the input (assuming it has a role of textbox)
+        const input = screen.getByRole('textbox');
+
+        // Type a slash
+        await user.type(input, '/');
+
+        // Assert that autocomplete is not shown
+        // (Assume autocomplete menu has a role of 'listbox' or a test id)
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+        // Try keyboard navigation (e.g., ArrowDown)
+        await user.keyboard('{ArrowDown}');
+        // There should still be no autocomplete menu
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
     function renderWithProvider(component: React.ReactElement) {
         return render(
             <SlashCommandProvider>
