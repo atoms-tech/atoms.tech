@@ -33,7 +33,7 @@ export function useSlashCommands(options: UseSlashCommandsOptions = {}): UseSlas
     });
 
     const slashPositionRef = useRef<number>(-1);
-    const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+    const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     /**
      * Get current cursor position
