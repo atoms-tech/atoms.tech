@@ -130,7 +130,7 @@ export const TextBlockWithSlashCommands: React.FC<BlockProps> = ({
         onUpdate: ({ editor }) => {
             if (!isEditMode) return;
 
-            const isEmpty = editor.isEmpty;
+            const {isEmpty} = editor;
             let newContent = editor.getHTML();
 
             if (isEmpty || newContent === '<p></p>') {
