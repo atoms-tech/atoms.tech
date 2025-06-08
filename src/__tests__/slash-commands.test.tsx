@@ -66,6 +66,30 @@ describe('SlashCommandRegistry', () => {
         registry = new SlashCommandRegistry();
     });
 
+    it('should warn when registering a duplicate command ID', () => {
+        const command: SlashCommand = {
+            id: 'duplicate',
+            name: 'Duplicate',
+            description: 'A duplicate command',
+            execute: jest.fn(),
+        };
+
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        registry.register(command);
+        registry.register(command); // Attempt to register the same command again
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('Duplicate command ID'),
+            expect.stringContaining('duplicate')
+        );
+
+        warnSpy.mockRestore();
+    });
+    beforeEach(() => {
+        registry = new SlashCommandRegistry();
+    });
+
     test('should register and retrieve commands', () => {
         const command = mockCommands[0];
         registry.register(command);
