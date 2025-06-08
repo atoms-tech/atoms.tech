@@ -117,7 +117,7 @@ export const TextBlockWithSlashCommands: React.FC<BlockProps> = ({
             const editorElement = editorRef.current;
             if (!editorElement) return;
 
-            const view = editor.view;
+            const {view} = editor;
             const start = view.coordsAtPos(from);
             const editorRect = editorElement.getBoundingClientRect();
 
