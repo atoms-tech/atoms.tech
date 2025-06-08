@@ -309,6 +309,25 @@ describe('SlashCommandInput', () => {
         expect(selectedItem).toBeInTheDocument();
     });
 
+    test('should close autocomplete on input blur', async () => {
+        renderWithProvider(<TestComponent />);
+        const input = screen.getByRole('textbox');
+
+        // Open autocomplete by typing "/"
+        fireEvent.change(input, { target: { value: '/' } });
+
+        // Wait for the autocomplete listbox to appear
+        const listbox = await screen.findByRole('listbox');
+        expect(listbox).toBeInTheDocument();
+
+        // Simulate blur event on the input
+        fireEvent.blur(input);
+
+        // Wait for the autocomplete listbox to be removed
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        });
+    });
     test('should close autocomplete on escape', async () => {
         renderWithProvider(<TestComponent />);
         
