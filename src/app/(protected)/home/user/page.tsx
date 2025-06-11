@@ -157,7 +157,7 @@ export default function UserDashboard() {
                     return;
                 }
 
-                // 고정 해제: 이미 고정된 조직을 다시 클릭하면 null로 업데이트
+                // Unpin: If the already pinned organization is clicked again, update to null
                 const newPinnedOrgId = pinnedOrgId === orgId ? null : orgId;
 
                 const { error: updateError } = await supabase
