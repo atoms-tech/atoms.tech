@@ -1,0 +1,145 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "multipleMethods": true,
+          "httpMethod": [
+            "POST"
+          ],
+          "path": "agent_webhook",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          0,
+          0
+        ],
+        "id": "494f9b24-940f-4c14-a0a3-40c363086b65",
+        "name": "Webhook",
+        "webhookId": "3ba97027-8ffa-4258-b325-83fa8cf09024"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Here is the conversation between you and user.\n{{ $json.user_conversation_history }}\n\nThrough this answer this user's current question.\n{{ $json.current_user_content }}",
+          "hasOutputParser": true,
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          440,
+          0
+        ],
+        "id": "3fc6e6d3-484a-4c02-b9ba-a2bef73511b3",
+        "name": "AI Agent",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-2.5-flash-preview-04-17-thinking",
+          "options": {
+            "maxOutputTokens": 2048,
+            "temperature": 0.3,
+            "topP": 0.9
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          440,
+          220
+        ],
+        "id": "7cecb26a-5404-4ed6-acad-bbe7c0567bfd",
+        "name": "Google Gemini Chat Model",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "NvCtJOA0rSMuNBnB",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.output) }}\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.3,
+        "position": [
+          820,
+          0
+        ],
+        "id": "99b4a7d0-8985-4572-a1c6-bec6c524e15f",
+        "name": "Respond to Webhook",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// This script will process each item from the input.\n// For each item, it will extract conversation history content and the current user message,\n// then format it into a new JSON object.\n\nconst allResults = [];\n\nfor (const item of $input.all()) {\n  // Initialize variables to store extracted content\n  let combinedConversationHistory = \"\";\n  let currentUserMessage = \"\";\n\n  // Check if body and conversationHistory exist and is an array\n  if (item.json.body && item.json.body.conversationHistory && Array.isArray(item.json.body.conversationHistory)) {\n    // Map over conversationHistory to get all 'content' fields\n    // and join them into a single string, separated by newlines for readability.\n    // You can change '\\n' to any other separator or an empty string if you prefer.\n    combinedConversationHistory = item.json.body.conversationHistory\n      .map(historyItem => historyItem.content)\n      .join('\\n');\n  }\n\n  // Check if body and message exist\n  if (item.json.body && typeof item.json.body.message === 'string') {\n    currentUserMessage = item.json.body.message;\n  }\n\n  // Create the new JSON structure\n  const newJsonOutput = {\n    user_conversation_history: combinedConversationHistory,\n    current_user_content: currentUserMessage\n  };\n\n  // Add the newly structured JSON to our results array\n  allResults.push({ json: newJsonOutput }); // n8n expects items to have a 'json' property\n}\n\n// Return the array of new JSON objects\nreturn allResults;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          220,
+          0
+        ],
+        "id": "c89c409c-402f-4899-a7f7-d65fe086bcec",
+        "name": "Code1"
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Code1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Gemini Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Code1": {
+        "main": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "2d2b6c68ebaac87da4ee6e930f60aa5893932f41d2fd67edd543222b8ff72364"
+    }
+  }
