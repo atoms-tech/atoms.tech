@@ -79,7 +79,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     }
   }, []);
 
-  // 음성 입력 시작/중지 함수
+  // Function to start/stop voice input
   const toggleVoiceInput = () => {
     if (!speechSupported) return;
     if (isListening) {

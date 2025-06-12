@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   // Call Python Whisper to transcribe the audio
   return new Promise((resolve) => {
     const python = spawn('python', [
-      '-m', 'whisper', tempFilePath, '--model', 'base', '--language', 'ko', '--fp16', 'False', '--output_format', 'json', '--output_dir', tempDir
+      '-m', 'whisper', tempFilePath, '--model', 'base', '--language', 'en', '--fp16', 'False', '--output_format', 'json', '--output_dir', tempDir
     ]);
 
     let stderr = '';
