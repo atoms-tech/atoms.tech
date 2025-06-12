@@ -4,12 +4,11 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import React from 'react';
 
 import LayoutManager from '@/components/base/LayoutManager';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { AgentInterface } from '@/components/custom/AgentChat/AgentInterface';
+import { AgentInterface } from '@/components/custom/AgentChat';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserProjectsServer } from '@/lib/db/server';
