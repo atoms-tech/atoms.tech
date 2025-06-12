@@ -32,12 +32,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   onSettingsClick,
 }) => {
   const [message, setMessage] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
 
   const { messages, addMessage, isConnected, connectionStatus, sendToN8n, n8nWebhookUrl } = useAgentStore();
 
@@ -54,66 +54,47 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     adjustTextareaHeight();
   }, [message]);
 
-  // Voice recording functionality
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
+  // Web Speech API initialization
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = 'en-US'; // Set to English
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
+      recognitionRef.current.onstart = () => setIsListening(true);
+      recognitionRef.current.onresult = (event: any) => {
+        const lastResultIndex = event.results.length - 1;
+        const transcript = event.results[lastResultIndex][0].transcript;
+        if (event.results[lastResultIndex].isFinal) {
+          setMessage(prev => prev + (prev ? ' ' : '') + transcript);
         }
       };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        await processVoiceInput(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Error starting recording:', error);
+      recognitionRef.current.onerror = () => setIsListening(false);
+      recognitionRef.current.onend = () => setIsListening(false);
+      setSpeechSupported(true);
+    } else {
+      setSpeechSupported(false);
     }
-  };
+  }, []);
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const processVoiceInput = async (audioBlob: Blob) => {
-    try {
-      setIsLoading(true);
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.wav');
-
-      const response = await fetch('/api/chat/voice/transcribe', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (response.ok) {
-        const { transcript } = await response.json();
-        setMessage(transcript);
-        textareaRef.current?.focus();
+  // 음성 입력 시작/중지 함수
+  const toggleVoiceInput = () => {
+    if (!speechSupported) return;
+    if (isListening) {
+      recognitionRef.current?.stop();
+    } else {
+      try {
+        recognitionRef.current?.start();
+      } catch (error) {
+        setIsListening(false);
       }
-    } catch (error) {
-      console.error('Error processing voice input:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleSendMessage = async () => {
     if (!message.trim() || isLoading) return;
-
     const userMessage: Message = {
       id: Date.now().toString(),
       content: message.trim(),
@@ -121,17 +102,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
       timestamp: new Date(),
       type: 'text',
     };
-
     addMessage(userMessage);
     const currentMessage = message;
     setMessage('');
-
     try {
       setIsLoading(true);
-      
       let reply: string;
-      
-      // Try N8N first if configured, fallback to local AI chat
       if (n8nWebhookUrl && isConnected) {
         try {
           const n8nResponse = await sendToN8n({
@@ -142,34 +118,20 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           });
           reply = n8nResponse.reply || n8nResponse.message || 'N8N workflow completed successfully.';
         } catch (n8nError) {
-          console.warn('N8N request failed, falling back to local AI:', n8nError);
-          // Fallback to local AI
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: currentMessage,
-              conversationHistory: messages.slice(-10),
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: currentMessage, conversationHistory: messages.slice(-10) }),
           });
           const data = await response.json();
           reply = data.reply;
         }
       } else {
-        // Use local AI chat
         const response = await fetch('/api/ai/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: currentMessage,
-            conversationHistory: messages.slice(-10),
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: currentMessage, conversationHistory: messages.slice(-10) }),
         });
-        
         if (response.ok) {
           const data = await response.json();
           reply = data.reply;
@@ -177,7 +139,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           throw new Error('API request failed');
         }
       }
-
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: reply,
@@ -187,7 +148,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
       };
       addMessage(assistantMessage);
     } catch (error) {
-      console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: 'Sorry, I encountered an error while processing your request. Please try again.',
@@ -217,7 +177,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           onClick={onClose}
         />
       )}
-
       {/* Panel */}
       <div
         className={cn(
@@ -271,7 +230,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             </Button>
           </div>
         </div>
-
         {/* Messages */}
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
@@ -319,7 +277,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             )}
           </div>
         </ScrollArea>
-
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card">
           <div className="flex gap-2">
@@ -336,12 +293,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
               <Button
                 type="button"
                 size="icon"
-                variant={isRecording ? 'destructive' : 'ghost'}
-                className="absolute right-2 top-2 h-8 w-8"
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={isLoading}
+                variant={isListening ? 'destructive' : 'ghost'}
+                className="absolute right-6 top-2 h-8 w-8"
+                onClick={toggleVoiceInput}
+                disabled={isLoading || !speechSupported}
               >
-                {isRecording ? (
+                {isListening ? (
                   <MicOff className="h-4 w-4" />
                 ) : (
                   <Mic className="h-4 w-4" />
@@ -357,9 +314,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            {isRecording
-              ? 'Recording... Click microphone to stop'
-              : 'Click microphone to start voice input'}
+            {speechSupported
+              ? isListening
+                ? 'Listening... Click the microphone again to stop.'
+                : 'Click the microphone to start voice input.'
+              : 'This browser does not support speech recognition.'}
           </p>
         </div>
       </div>
