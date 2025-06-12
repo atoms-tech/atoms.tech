@@ -123,14 +123,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     try {
       setIsLoading(true);
       let reply: string;
-      
-      console.log('Sending message:', currentMessage);
-      console.log('N8N Webhook URL:', n8nWebhookUrl);
-      console.log('Is Connected:', isConnected);
-      console.log('Connection Status:', connectionStatus);
-      
+      // Send to N8N if configured, otherwise use local AI
       if (n8nWebhookUrl) {
-        console.log('Attempting to send to N8N...');
         try {
           const n8nResponse = await sendToN8n({
             type: 'chat',
@@ -138,7 +132,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             conversationHistory: messages,
             timestamp: new Date().toISOString(),
           });
-          console.log('N8N Response:', n8nResponse);
           // Try different possible response fields from N8N
           reply = n8nResponse.reply || 
                   n8nResponse.message || 
@@ -150,7 +143,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                   JSON.stringify(n8nResponse) || 
                   'N8N workflow completed successfully.';
         } catch (n8nError) {
-          console.error('N8N Error, falling back to local AI:', n8nError);
+          // If N8N fails, fall back to local AI
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -160,7 +153,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           reply = data.reply;
         }
       } else {
-        console.log('Using local AI (N8N not configured or not connected)');
+        // Use local AI if N8N is not configured
         const response = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

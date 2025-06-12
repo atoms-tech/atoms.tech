@@ -52,3 +52,6 @@ next-env.d.ts
 /playwright/.cache/
 
 bun.lock
+
+# n8n agent
+agent.json
