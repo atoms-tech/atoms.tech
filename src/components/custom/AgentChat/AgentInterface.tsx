@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { AgentPanel } from './AgentPanel';
 import { AgentToggle } from './AgentToggle';
 import { AgentSettings } from './AgentSettings';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useAgentStore } from './hooks/useAgentStore';
 
 interface AgentInterfaceProps {
@@ -65,6 +65,7 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
       {/* Settings Dialog */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogTitle>Agent Settings</DialogTitle>
           <AgentSettings onClose={() => setIsSettingsOpen(false)} />
         </DialogContent>
       </Dialog>
