@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAgentStore } from './hooks/useAgentStore';
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
 interface Message {
   id: string;
@@ -38,6 +39,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   const [speechSupported, setSpeechSupported] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const { messages, addMessage, isConnected, connectionStatus, sendToN8n, n8nWebhookUrl } = useAgentStore();
 
@@ -53,6 +56,18 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   useEffect(() => {
     adjustTextareaHeight();
   }, [message]);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   // Web Speech API initialization
   useEffect(() => {
@@ -120,7 +135,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           const n8nResponse = await sendToN8n({
             type: 'chat',
             message: currentMessage,
-            conversationHistory: messages.slice(-10),
+            conversationHistory: messages,
             timestamp: new Date().toISOString(),
           });
           console.log('N8N Response:', n8nResponse);
@@ -251,50 +266,53 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         </div>
         {/* Messages */}
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">Start a conversation with the AI agent</p>
-                <p className="text-xs mt-1">Type a message or use voice input</p>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={cn(
-                    'flex gap-3',
-                    msg.role === 'user' ? 'justify-end' : 'justify-start'
-                  )}
-                >
-                  <Card
+          <ScrollAreaPrimitive.Viewport ref={scrollAreaRef} className="h-full w-full rounded-[inherit]">
+            <div className="space-y-4">
+              {messages.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-sm">Start a conversation with the AI agent</p>
+                  <p className="text-xs mt-1">Type a message or use voice input</p>
+                </div>
+              ) : (
+                messages.map((msg, idx) => (
+                  <div
+                    key={msg.id}
+                    ref={idx === messages.length - 1 ? lastMessageRef : undefined}
                     className={cn(
-                      'max-w-[80%] p-3',
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground'
+                      'flex gap-3',
+                      msg.role === 'user' ? 'justify-end' : 'justify-start'
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {msg.timestamp.toLocaleTimeString()}
-                      {msg.type === 'voice' && ' 🎤'}
-                    </p>
+                    <Card
+                      className={cn(
+                        'max-w-[80%] p-3',
+                        msg.role === 'user'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {msg.timestamp.toLocaleTimeString()}
+                        {msg.type === 'voice' && ' 🎤'}
+                      </p>
+                    </Card>
+                  </div>
+                ))
+              )}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <Card className="bg-muted text-muted-foreground p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <p className="text-sm">AI is thinking...</p>
+                    </div>
                   </Card>
                 </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="flex justify-start">
-                <Card className="bg-muted text-muted-foreground p-3">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-                    <p className="text-sm">AI is thinking...</p>
-                  </div>
-                </Card>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </ScrollAreaPrimitive.Viewport>
         </ScrollArea>
         {/* Input Area */}
         <div className="p-4 border-t border-border bg-card">

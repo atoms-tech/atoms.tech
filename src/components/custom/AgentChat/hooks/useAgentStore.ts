@@ -133,6 +133,7 @@ export const useAgentStore = create<AgentStore>()(
       },
     }),
     {
+      // Persist the store to the browser's localStorage
       name: 'agent-store',
       partialize: (state) => ({
         messages: state.messages.map(msg => ({
