@@ -22,79 +22,26 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
     const { orgName, projectName, documentName } =
         useBreadcrumbData(pathSegments);
 
-    const getBreadcrumbs = () => {
-        // Handle the new URL structure
-        if (
-            pathSegments[0] === 'org' &&
-            pathSegments[1] === 'project' &&
-            pathSegments.length >= 3
-        ) {
-            // New structure: /org/[orgId]/project/[projectId]/...
-            const section = pathSegments[3];
+    const breadcrumbs: string[] = [];
 
-            if (pathSegments.length >= 4) {
-                if (section === 'documents' && documentName) {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Documents',
-                        documentName,
-                    ];
-                } else if (section === 'requirements') {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Requirements',
-                        pathSegments[4],
-                    ];
-                }
-            }
-
-            return [orgName || 'Organization', projectName || 'Project'];
+    for (let i = 0; i < pathSegments.length; i++) {
+        switch (pathSegments[i]) {
+            case 'org':
+                i++;
+                breadcrumbs.push(orgName || 'Undefined Organization Name');
+                break;
+            case 'project':
+                i++;
+                breadcrumbs.push(projectName || 'Undefined Project Name');
+                break;
+            case 'documents':
+                i++;
+                breadcrumbs.push(documentName || 'Undefined Document Name');
+                break;
+            default:
+                breadcrumbs.push(pathSegments[i].charAt(0).toUpperCase() + pathSegments[i].slice(1));
         }
-
-        // Handle the old URL structure
-        if (pathSegments.length >= 3) {
-            const section = pathSegments[3];
-
-            if (pathSegments[2] === 'externalDocs') {
-                return [orgName || 'Organization', 'External Docs'];
-            }
-
-            if (pathSegments.length >= 4) {
-                if (section === 'documents' && documentName) {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Documents',
-                        documentName,
-                    ];
-                } else if (section === 'requirements') {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Requirements',
-                        pathSegments[4],
-                    ];
-                }
-            }
-
-            return [orgName || 'Organization', projectName || 'Project'];
-        }
-
-        // Default case - just show the path segments with proper formatting
-        return pathSegments.map((segment, index) => {
-            if (segment === 'org') return 'Organization';
-            if (segment === 'project') return 'Project';
-            if (index === 1 && pathSegments[0] === 'org')
-                return orgName || 'Organization';
-            if (index === 2 && pathSegments[1] === 'project')
-                return projectName || 'Project';
-            return segment.charAt(0).toUpperCase() + segment.slice(1);
-        });
-    };
-
-    const breadcrumbs = getBreadcrumbs();
+    }
 
     return (
         <div
