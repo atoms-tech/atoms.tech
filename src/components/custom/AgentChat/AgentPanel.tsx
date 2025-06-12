@@ -108,7 +108,14 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     try {
       setIsLoading(true);
       let reply: string;
-      if (n8nWebhookUrl && isConnected) {
+      
+      console.log('Sending message:', currentMessage);
+      console.log('N8N Webhook URL:', n8nWebhookUrl);
+      console.log('Is Connected:', isConnected);
+      console.log('Connection Status:', connectionStatus);
+      
+      if (n8nWebhookUrl) {
+        console.log('Attempting to send to N8N...');
         try {
           const n8nResponse = await sendToN8n({
             type: 'chat',
@@ -116,8 +123,19 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             conversationHistory: messages.slice(-10),
             timestamp: new Date().toISOString(),
           });
-          reply = n8nResponse.reply || n8nResponse.message || 'N8N workflow completed successfully.';
+          console.log('N8N Response:', n8nResponse);
+          // Try different possible response fields from N8N
+          reply = n8nResponse.reply || 
+                  n8nResponse.message || 
+                  n8nResponse.output || 
+                  n8nResponse.response ||
+                  (n8nResponse.data && n8nResponse.data.output) ||
+                  (n8nResponse.data && n8nResponse.data.reply) ||
+                  (n8nResponse.data && n8nResponse.data.message) ||
+                  JSON.stringify(n8nResponse) || 
+                  'N8N workflow completed successfully.';
         } catch (n8nError) {
+          console.error('N8N Error, falling back to local AI:', n8nError);
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -127,6 +145,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
           reply = data.reply;
         }
       } else {
+        console.log('Using local AI (N8N not configured or not connected)');
         const response = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

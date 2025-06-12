@@ -72,7 +72,7 @@ export const useAgentStore = create<AgentStore>()(
       setN8nConfig: (webhookUrl: string, apiKey: string) =>
         set({ n8nWebhookUrl: webhookUrl, n8nApiKey: apiKey }),
       
-      // N8N Integration methods (future implementation)
+      // N8N Integration methods (using server-side proxy to avoid CORS)
       sendToN8n: async (data: any) => {
         const { n8nWebhookUrl, n8nApiKey } = get();
         
@@ -83,21 +83,21 @@ export const useAgentStore = create<AgentStore>()(
         try {
           set({ connectionStatus: 'connecting' });
           
-          const response = await fetch(n8nWebhookUrl, {
+          // Use our server-side proxy to avoid CORS issues
+          const response = await fetch('/api/n8n-proxy', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              ...(n8nApiKey && { 'Authorization': `Bearer ${n8nApiKey}` }),
             },
             body: JSON.stringify({
-              timestamp: new Date().toISOString(),
-              source: 'atoms-tech-agent',
+              webhookUrl: n8nWebhookUrl,
               ...data,
             }),
           });
           
           if (!response.ok) {
-            throw new Error(`N8N request failed: ${response.statusText}`);
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Request failed: ${response.statusText}`);
           }
           
           set({ connectionStatus: 'connected' });
