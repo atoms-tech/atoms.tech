@@ -4,11 +4,12 @@ import { HydrationBoundary, dehydrate } from '@tanstack/react-query';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import React from 'react';
 
 import LayoutManager from '@/components/base/LayoutManager';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { AgentInterface } from '@/components/custom/AgentChat';
+import { AgentInterface } from '@/components/custom/AgentChat/AgentInterface';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserProjectsServer } from '@/lib/db/server';
@@ -59,13 +60,18 @@ export default async function ProtectedLayout({
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <UserProvider initialUser={user} initialProfile={profile}>
                     <OrganizationProvider initialOrganizations={organizations}>
-                        <LayoutManager>
-                            <Suspense fallback={<RootLayoutSkeleton />}>
-                                {children}
-                            </Suspense>
-                            {/* AI Agent Interface - Available on all protected pages */}
-                            <AgentInterface autoInit={false} />
-                        </LayoutManager>
+                        <div className="flex h-screen w-full">
+                            {/* Main Content */}
+                            <div className="flex-1 relative">
+                                <LayoutManager>
+                                    <Suspense fallback={<RootLayoutSkeleton />}>
+                                        {children}
+                                    </Suspense>
+                                </LayoutManager>
+                                {/* Agent Interface (client component) */}
+                                <AgentInterface />
+                            </div>
+                        </div>
                     </OrganizationProvider>
                 </UserProvider>
             </HydrationBoundary>
