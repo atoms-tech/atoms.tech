@@ -97,14 +97,22 @@ export const useAgentStore = create<AgentStore>()(
           
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || `Request failed: ${response.statusText}`);
+            // Handle specific N8N errors with user-friendly messages
+            if (errorData.code === 404 && errorData.message?.includes('webhook')) {
+              throw new Error('We are currently experiencing connection issues with our server. Please try again in a few moments.');
+            }
+            throw new Error('We are having trouble connecting to our server. Please try again later.');
           }
           
           set({ connectionStatus: 'connected' });
           return await response.json();
         } catch (error) {
           set({ connectionStatus: 'error' });
-          throw error;
+          // Ensure we always throw a user-friendly error
+          if (error instanceof Error) {
+            throw new Error(error.message);
+          }
+          throw new Error('We are having trouble connecting to our server. Please try again later.');
         }
       },
       
