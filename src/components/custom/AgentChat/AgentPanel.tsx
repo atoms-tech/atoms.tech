@@ -38,6 +38,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [showPinGuide, setShowPinGuide] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -55,6 +56,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     currentOrgId,
     currentProjectId,
     currentDocumentId,
+    currentPinnedOrganizationId,
     setUserContext
   } = useAgentStore();
 
@@ -70,6 +72,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
       });
     }
   }, [userProfile, setUserContext]);
+
+  // Remove guide message if pinned organization is set
+  useEffect(() => {
+    if (showPinGuide && currentPinnedOrganizationId) {
+      setShowPinGuide(false);
+    }
+  }, [currentPinnedOrganizationId, showPinGuide]);
 
   // Auto-resize textarea
   const adjustTextareaHeight = () => {
@@ -136,6 +145,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   };
 
   const handleSendMessage = async () => {
+    // Check for pinned organization before sending
+    if (!currentPinnedOrganizationId) {
+      setShowPinGuide(true);
+      return;
+    }
     if (!message.trim() || isLoading) return;
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -298,6 +312,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         <ScrollArea className="flex-1 p-4">
           <ScrollAreaPrimitive.Viewport ref={scrollAreaRef} className="h-full w-full rounded-[inherit]">
             <div className="space-y-4">
+              {showPinGuide && (
+                <div className="flex justify-center">
+                  <Card className="bg-yellow-100 dark:bg-red-900 text-yellow-900 dark:text-red-100 p-3 border border-yellow-300 dark:border-red-700">
+                    <p className="text-sm">Please pin an organization in your profile settings before using the agent. After pinning, try sending your message again.</p>
+                  </Card>
+                </div>
+              )}
               {messages.length === 0 ? (
                 <div className="text-center text-muted-foreground py-8">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -318,8 +339,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                       className={cn(
                         'max-w-[80%] p-3',
                         msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
+                          ? 'bg-primary text-primary-foreground dark:bg-blue-900 dark:text-blue-100'
+                          : 'bg-muted text-muted-foreground dark:bg-gray-800 dark:text-gray-200'
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
