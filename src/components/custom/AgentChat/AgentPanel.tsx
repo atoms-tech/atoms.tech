@@ -314,7 +314,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             <div className="space-y-4">
               {showPinGuide && (
                 <div className="flex justify-center">
-                  <Card className="bg-yellow-100 dark:bg-red-900 text-yellow-900 dark:text-red-100 p-3 border border-yellow-300 dark:border-red-700">
+                  <Card className="bg-yellow-100 text-yellow-900 p-3 border border-yellow-300">
                     <p className="text-sm">Please pin an organization in your profile settings before using the agent. After pinning, try sending your message again.</p>
                   </Card>
                 </div>
@@ -339,8 +339,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                       className={cn(
                         'max-w-[80%] p-3',
                         msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground dark:bg-blue-900 dark:text-blue-100'
-                          : 'bg-muted text-muted-foreground dark:bg-gray-800 dark:text-gray-200'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
