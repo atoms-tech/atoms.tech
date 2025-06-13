@@ -65,7 +65,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     if (userProfile) {
       setUserContext({
         userId: userProfile.id,
-        orgId: userProfile.current_organization_id || ''
+        orgId: userProfile.current_organization_id || '',
+        pinnedOrganizationId: userProfile.pinned_organization_id || ''
       });
     }
   }, [userProfile, setUserContext]);

@@ -30,6 +30,7 @@ interface AgentStore {
   currentDocumentId?: string;
   currentUserId?: string;
   currentOrgId?: string;
+  currentPinnedOrganizationId?: string;
   
   // Actions
   setIsOpen: (isOpen: boolean) => void;
@@ -46,6 +47,7 @@ interface AgentStore {
     documentId?: string;
     userId?: string;
     orgId?: string;
+    pinnedOrganizationId?: string;
   }) => void;
   
   // N8N Integration methods
@@ -53,10 +55,13 @@ interface AgentStore {
   initializeConnection: () => Promise<void>;
 }
 
-// Add type definitions for secure user context
+// Add pinnedOrganizationId to SecureUserContext
+type PinnedOrganizationId = string | undefined;
+
 interface SecureUserContext {
   userId: string;
   orgId: string;
+  pinnedOrganizationId?: string;
   projectId?: string;
   documentId?: string;
   timestamp: string;
@@ -80,6 +85,7 @@ export const useAgentStore = create<AgentStore>()(
       messages: [],
       isConnected: false,
       connectionStatus: 'disconnected',
+      currentPinnedOrganizationId: undefined,
       
       // Actions
       setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -106,12 +112,13 @@ export const useAgentStore = create<AgentStore>()(
         currentProjectId: context.projectId,
         currentDocumentId: context.documentId,
         currentUserId: context.userId,
-        currentOrgId: context.orgId
+        currentOrgId: context.orgId,
+        currentPinnedOrganizationId: context.pinnedOrganizationId,
       }),
       
       // N8N Integration methods
       sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
-        const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId } = get();
+        const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId, currentPinnedOrganizationId } = get();
         
         if (!n8nWebhookUrl) {
           throw new Error('N8N webhook URL not configured');
@@ -131,6 +138,7 @@ export const useAgentStore = create<AgentStore>()(
           const secureContext: SecureUserContext = {
             userId: isTestConnection ? 'test-connection' : currentUserId!,
             orgId: isTestConnection ? 'test-org' : currentOrgId!,
+            pinnedOrganizationId: currentPinnedOrganizationId,
             timestamp: new Date().toISOString(),
             sessionToken: n8nApiKey || '', // Use API key as session token
           };
