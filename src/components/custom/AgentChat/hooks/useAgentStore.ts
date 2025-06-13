@@ -21,9 +21,15 @@ interface AgentStore {
   isConnected: boolean;
   connectionStatus: 'connected' | 'disconnected' | 'connecting' | 'error';
   
-  // N8N Integration (future)
+  // N8N Integration
   n8nWebhookUrl?: string;
   n8nApiKey?: string;
+  
+  // User Context
+  currentProjectId?: string;
+  currentDocumentId?: string;
+  currentUserId?: string;
+  currentOrgId?: string;
   
   // Actions
   setIsOpen: (isOpen: boolean) => void;
@@ -35,8 +41,14 @@ interface AgentStore {
   
   setConnectionStatus: (status: AgentStore['connectionStatus']) => void;
   setN8nConfig: (webhookUrl: string, apiKey: string) => void;
+  setUserContext: (context: {
+    projectId?: string;
+    documentId?: string;
+    userId?: string;
+    orgId?: string;
+  }) => void;
   
-  // N8N Integration methods (prepared for future use)
+  // N8N Integration methods
   sendToN8n: (data: any) => Promise<any>;
   initializeConnection: () => Promise<void>;
 }
@@ -71,10 +83,17 @@ export const useAgentStore = create<AgentStore>()(
       
       setN8nConfig: (webhookUrl: string, apiKey: string) =>
         set({ n8nWebhookUrl: webhookUrl, n8nApiKey: apiKey }),
+
+      setUserContext: (context) => set({
+        currentProjectId: context.projectId,
+        currentDocumentId: context.documentId,
+        currentUserId: context.userId,
+        currentOrgId: context.orgId
+      }),
       
-      // N8N Integration methods (using server-side proxy to avoid CORS)
+      // N8N Integration methods
       sendToN8n: async (data: any) => {
-        const { n8nWebhookUrl, n8nApiKey } = get();
+        const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId } = get();
         
         if (!n8nWebhookUrl) {
           throw new Error('N8N webhook URL not configured');
@@ -82,6 +101,17 @@ export const useAgentStore = create<AgentStore>()(
         
         try {
           set({ connectionStatus: 'connecting' });
+          
+          // Include user context in the request
+          const requestData = {
+            ...data,
+            context: {
+              projectId: currentProjectId,
+              documentId: currentDocumentId,
+              userId: currentUserId,
+              orgId: currentOrgId
+            }
+          };
           
           // Use our server-side proxy to avoid CORS issues
           const response = await fetch('/api/n8n-proxy', {
@@ -91,7 +121,7 @@ export const useAgentStore = create<AgentStore>()(
             },
             body: JSON.stringify({
               webhookUrl: n8nWebhookUrl,
-              ...data,
+              ...requestData,
             }),
           });
           
