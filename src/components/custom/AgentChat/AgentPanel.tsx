@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAgentStore } from './hooks/useAgentStore';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Message {
   id: string;
@@ -42,7 +43,32 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
-  const { messages, addMessage, isConnected, connectionStatus, sendToN8n, n8nWebhookUrl } = useAgentStore();
+  const {
+    messages,
+    addMessage,
+    clearMessages,
+    isConnected,
+    connectionStatus,
+    sendToN8n,
+    n8nWebhookUrl,
+    currentUserId,
+    currentOrgId,
+    currentProjectId,
+    currentDocumentId,
+    setUserContext
+  } = useAgentStore();
+
+  const { userProfile } = useAuth();
+
+  // Set user context when component mounts
+  useEffect(() => {
+    if (userProfile) {
+      setUserContext({
+        userId: userProfile.id,
+        orgId: userProfile.current_organization_id || ''
+      });
+    }
+  }, [userProfile, setUserContext]);
 
   // Auto-resize textarea
   const adjustTextareaHeight = () => {
@@ -143,11 +169,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                   JSON.stringify(n8nResponse) || 
                   'N8N workflow completed successfully.';
         } catch (n8nError) {
+          console.error('N8N error:', n8nError);
           // If N8N fails, fall back to local AI
           const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: currentMessage, conversationHistory: messages.slice(-10) }),
+            body: JSON.stringify({ 
+              message: currentMessage, 
+              conversationHistory: messages.slice(-10),
+              context: {
+                userId: currentUserId,
+                orgId: currentOrgId,
+                projectId: currentProjectId,
+                documentId: currentDocumentId
+              }
+            }),
           });
           const data = await response.json();
           reply = data.reply;

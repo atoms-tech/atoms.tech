@@ -53,6 +53,24 @@ interface AgentStore {
   initializeConnection: () => Promise<void>;
 }
 
+// Add type definitions for secure user context
+interface SecureUserContext {
+  userId: string;
+  orgId: string;
+  projectId?: string;
+  documentId?: string;
+  timestamp: string;
+  sessionToken: string;
+}
+
+interface N8nRequestData {
+  type: string;
+  message: string;
+  conversationHistory: any[];
+  timestamp: string;
+  secureContext: SecureUserContext;
+}
+
 export const useAgentStore = create<AgentStore>()(
   persist(
     (set, get) => ({
@@ -92,25 +110,45 @@ export const useAgentStore = create<AgentStore>()(
       }),
       
       // N8N Integration methods
-      sendToN8n: async (data: any) => {
+      sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
         const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId } = get();
         
         if (!n8nWebhookUrl) {
           throw new Error('N8N webhook URL not configured');
         }
+
+        // Skip user context validation for test connections
+        const isTestConnection = data.type === 'ping';
+        
+        if (!isTestConnection && (!currentUserId || !currentOrgId)) {
+          throw new Error('User context is required');
+        }
         
         try {
           set({ connectionStatus: 'connecting' });
           
-          // Include user context in the request
-          const requestData = {
-            ...data,
-            context: {
-              projectId: currentProjectId,
-              documentId: currentDocumentId,
-              userId: currentUserId,
-              orgId: currentOrgId
+          // Create secure context with only necessary information
+          const secureContext: SecureUserContext = {
+            userId: isTestConnection ? 'test-connection' : currentUserId!,
+            orgId: isTestConnection ? 'test-org' : currentOrgId!,
+            timestamp: new Date().toISOString(),
+            sessionToken: n8nApiKey || '', // Use API key as session token
+          };
+
+          // Only include optional context if available and not a test connection
+          if (!isTestConnection) {
+            if (currentProjectId) {
+              secureContext.projectId = currentProjectId;
             }
+            if (currentDocumentId) {
+              secureContext.documentId = currentDocumentId;
+            }
+          }
+          
+          // Include secure user context in the request
+          const requestData: N8nRequestData = {
+            ...data,
+            secureContext
           };
           
           // Use our server-side proxy to avoid CORS issues
@@ -118,6 +156,7 @@ export const useAgentStore = create<AgentStore>()(
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-Secure-Context': Buffer.from(JSON.stringify(secureContext)).toString('base64')
             },
             body: JSON.stringify({
               webhookUrl: n8nWebhookUrl,
@@ -138,11 +177,7 @@ export const useAgentStore = create<AgentStore>()(
           return await response.json();
         } catch (error) {
           set({ connectionStatus: 'error' });
-          // Ensure we always throw a user-friendly error
-          if (error instanceof Error) {
-            throw new Error(error.message);
-          }
-          throw new Error('We are having trouble connecting to our server. Please try again later.');
+          throw error;
         }
       },
       
