@@ -31,6 +31,7 @@ import {
 const formSchema = z.object({
     name: z
         .string()
+        .trim()
         .min(2, {
             message: 'Organization name must be at least 2 characters.',
         })
@@ -51,6 +52,7 @@ const formSchema = z.object({
         }),
     description: z
         .string()
+        .trim()
         .max(512, { message: 'Description must be 512 characters or fewer.' })
         .optional(),
 });
