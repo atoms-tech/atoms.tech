@@ -214,7 +214,11 @@ export default function EditProjectForm({
                                     </FormControl>
                                     <SelectContent>
                                         {Object.values(ProjectStatus)
-                                            .filter((status) => status !== ProjectStatus.deleted) // Disable changing status to deleted, let the delete button handle that.
+                                            .filter(
+                                                (status) =>
+                                                    status !==
+                                                    ProjectStatus.deleted,
+                                            ) // Disable changing status to deleted, let the delete button handle that.
                                             .map((status) => (
                                                 <SelectItem
                                                     key={status}
@@ -222,8 +226,7 @@ export default function EditProjectForm({
                                                 >
                                                     {status}
                                                 </SelectItem>
-                                            ),
-                                        )}
+                                            ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

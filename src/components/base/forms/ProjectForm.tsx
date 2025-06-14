@@ -88,7 +88,7 @@ export default function ProjectForm({
 
             // Ensure that slug starts and ends with alphanumeric to pass db constraint.
             let slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-            
+
             if (!/^[a-z0-9]/.test(slug)) {
                 slug = 'p' + slug;
             }

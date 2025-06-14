@@ -46,8 +46,9 @@ const formSchema = z.object({
         .max(63, {
             message: 'Slug name must be at most 63 characters.',
         })
-        .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, { // Can't have '-' on ends. In line with db schema. 
-            message: 
+        .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, {
+            // Can't have '-' on ends. In line with db schema.
+            message:
                 'Slug can only contain lowercase letters, numbers, and hyphens (not at the beginning or end).',
         }),
     description: z
@@ -147,7 +148,9 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
 
             if (orgError || !orgData) {
                 //throw new Error(orgError?.message || 'Insert returned no data');
-                throw new Error(`Failed to create org, Supabase insert error: '${orgError?.message || 'Insert returned no data'}`);
+                throw new Error(
+                    `Failed to create org, Supabase insert error: '${orgError?.message || 'Insert returned no data'}`,
+                );
             }
 
             // Create base organization properties
@@ -271,7 +274,8 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                                 />
                             </FormControl>
                             <FormDescription>
-                                Describe what your organization does. ({form.watch('description')?.length || 0}/512)
+                                Describe what your organization does. (
+                                {form.watch('description')?.length || 0}/512)
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
