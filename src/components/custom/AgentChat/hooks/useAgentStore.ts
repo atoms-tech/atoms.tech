@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useUser } from '@/lib/providers/user.provider';
 
 interface Message {
   id: string;
@@ -31,6 +32,7 @@ interface AgentStore {
   currentUserId?: string;
   currentOrgId?: string;
   currentPinnedOrganizationId?: string;
+  currentUsername: string | null;
   
   // Actions
   setIsOpen: (isOpen: boolean) => void;
@@ -48,6 +50,7 @@ interface AgentStore {
     userId?: string;
     orgId?: string;
     pinnedOrganizationId?: string;
+    username?: string;
   }) => void;
   
   // N8N Integration methods
@@ -66,6 +69,7 @@ interface SecureUserContext {
   documentId?: string;
   timestamp: string;
   sessionToken: string;
+  username?: string;
 }
 
 interface N8nRequestData {
@@ -86,6 +90,7 @@ export const useAgentStore = create<AgentStore>()(
       isConnected: false,
       connectionStatus: 'disconnected',
       currentPinnedOrganizationId: undefined,
+      currentUsername: null,
       
       // Actions
       setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -114,11 +119,12 @@ export const useAgentStore = create<AgentStore>()(
         currentUserId: context.userId,
         currentOrgId: context.orgId,
         currentPinnedOrganizationId: context.pinnedOrganizationId,
+        currentUsername: context.username || null,
       }),
       
       // N8N Integration methods
       sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
-        const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId, currentPinnedOrganizationId } = get();
+        const { n8nWebhookUrl, n8nApiKey, currentProjectId, currentDocumentId, currentUserId, currentOrgId, currentPinnedOrganizationId, currentUsername } = get();
         
         if (!n8nWebhookUrl) {
           throw new Error('N8N webhook URL not configured');
@@ -140,7 +146,8 @@ export const useAgentStore = create<AgentStore>()(
             orgId: isTestConnection ? 'test-org' : currentOrgId!,
             pinnedOrganizationId: currentPinnedOrganizationId,
             timestamp: new Date().toISOString(),
-            sessionToken: n8nApiKey || '', // Use API key as session token
+            sessionToken: n8nApiKey || '',
+            username: isTestConnection ? 'test-user' : (currentUsername || '')
           };
 
           // Only include optional context if available and not a test connection

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAgentStore } from './hooks/useAgentStore';
+import { useUser } from '@/lib/providers/user.provider';
 
 interface AgentSettingsProps {
   onClose?: () => void;
@@ -21,17 +22,31 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     connectionStatus,
     setN8nConfig, 
     initializeConnection,
-    clearMessages 
+    clearMessages,
+    setUserContext,
+    currentOrgId,
+    currentPinnedOrganizationId
   } = useAgentStore();
+  const { user, profile } = useUser();
 
   const [webhookUrl, setWebhookUrl] = useState(n8nWebhookUrl || '');
   const [apiKey, setApiKey] = useState(n8nApiKey || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
-    setIsSaving(true);
     try {
+      setLoading(true);
+      
+      // Set user context including username
+      setUserContext({
+        userId: user?.id,
+        orgId: currentOrgId,
+        pinnedOrganizationId: currentPinnedOrganizationId,
+        username: profile?.full_name || user?.email?.split('@')[0]
+      });
+      
       setN8nConfig(webhookUrl, apiKey);
       // Auto-test connection after saving
       if (webhookUrl) {
@@ -40,6 +55,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     } catch (error) {
       console.error('Error saving configuration:', error);
     } finally {
+      setLoading(false);
       setIsSaving(false);
     }
   };
