@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { X, MessageSquare, Mic, MicOff, Send, Minimize2, Maximize2, Settings } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -339,11 +340,32 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                       className={cn(
                         'max-w-[80%] p-3',
                         msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
+                          ? 'bg-primary text-primary-foreground dark:bg-primary dark:text-primary-foreground'
+                          : 'bg-secondary text-secondary-foreground dark:bg-slate-800 dark:text-slate-100 border-border'
                       )}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === 'user' ? (
+                        // User message - regular font
+                        <div className="text-sm">
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      ) : (
+                        // Agent message - different font family and markdown support
+                        <div className="text-sm font-mono prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown 
+                            components={{
+                              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              em: ({ children }) => <em className="italic">{children}</em>,
+                              ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                              li: ({ children }) => <li className="mb-1">{children}</li>,
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+                      )}
                       <p className="text-xs opacity-70 mt-1">
                         {msg.timestamp.toLocaleTimeString()}
                         {msg.type === 'voice' && ' 🎤'}
@@ -354,8 +376,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
               )}
               {isLoading && (
                 <div className="flex justify-start">
-                  <Card className="bg-muted text-muted-foreground p-3">
-                    <div className="flex items-center gap-2">
+                  <Card className="bg-secondary text-secondary-foreground dark:bg-slate-800 dark:text-slate-100 border-border p-3">
+                    <div className="flex items-center gap-2 font-mono">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
                       <p className="text-sm">AI is thinking...</p>
                     </div>
