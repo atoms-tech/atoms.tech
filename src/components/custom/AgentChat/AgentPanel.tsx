@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAgentStore } from './hooks/useAgentStore';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 import { useAuth } from '@/hooks/useAuth';
+import { useUser } from '@/lib/providers/user.provider';
 
 interface Message {
   id: string;
@@ -63,18 +64,19 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     setUserContext
   } = useAgentStore();
 
-  const { userProfile } = useAuth();
+  const { user, profile } = useUser();
 
   // Set user context when component mounts
   useEffect(() => {
-    if (userProfile) {
+    if (user && profile) {
       setUserContext({
-        userId: userProfile.id,
-        orgId: userProfile.current_organization_id || '',
-        pinnedOrganizationId: userProfile.pinned_organization_id || ''
+        userId: user.id,
+        orgId: profile.current_organization_id || '',
+        pinnedOrganizationId: profile.pinned_organization_id || '',
+        username: profile.full_name || user.email?.split('@')[0] || ''
       });
     }
-  }, [userProfile, setUserContext]);
+  }, [user, profile, setUserContext]);
 
   // Remove guide message if pinned organization is set
   useEffect(() => {
