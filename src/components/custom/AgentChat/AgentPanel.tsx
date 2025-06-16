@@ -582,7 +582,7 @@ ${'='.repeat(50)}
                 onChange={(e) => setMessage((e.target as HTMLTextAreaElement).value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-                className="min-h-[48px] max-h-[200px] resize-none pr-12 rounded-xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                className="min-h-[48px] max-h-[200px] resize-none pr-10 rounded-xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                 disabled={isLoading}
               />
               <Button
@@ -590,7 +590,7 @@ ${'='.repeat(50)}
                 size="icon"
                 variant={isListening ? 'destructive' : 'ghost'}
                 className={cn(
-                  "absolute right-3 top-2 h-8 w-8 rounded-lg transition-colors",
+                  "absolute right-6 top-2 h-8 w-8 rounded-lg transition-colors",
                   isListening 
                     ? "bg-red-500 hover:bg-red-600 text-white"
                     : "hover:bg-slate-100 dark:hover:bg-slate-600"
