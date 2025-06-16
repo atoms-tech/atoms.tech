@@ -57,7 +57,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
             'group cursor-pointer bg-gradient-to-br from-slate-700 to-slate-800/95 dark:from-slate-100 dark:to-slate-200/90 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-600/80 dark:border-slate-300/80',
             'hover:shadow-3xl hover:scale-105 transition-all duration-300 ease-out',
             'hover:from-slate-600 hover:to-slate-700 hover:border-blue-400/90 dark:hover:from-slate-200 dark:hover:to-slate-100 dark:hover:border-blue-400/80',
-            'min-w-[150px] overflow-hidden'
+            'min-w-[100px] overflow-hidden'
           )}
         >
           {/* Header with Avatar and Status */}
