@@ -70,7 +70,7 @@ export default function UserDashboard() {
 
     // Fetch organizations and update safeOrganizations
     useEffect(() => {
-        const fetchOrganizations = async () => {
+        const fetchOrganizations = () => {
             const organizations =
                 (queryClient.getQueryData(
                     queryKeys.organizations.byMembership(user?.id || ''),
@@ -84,7 +84,10 @@ export default function UserDashboard() {
 
         // Refetch organizations whenever the query is invalidated
         const unsubscribe = queryClient.getQueryCache().subscribe(() => {
-            fetchOrganizations();
+            // Use setTimeout to defer the state update to avoid updating during render
+            setTimeout(() => {
+                fetchOrganizations();
+            }, 0);
         });
 
         return () => {
