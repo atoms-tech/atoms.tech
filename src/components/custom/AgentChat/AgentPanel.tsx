@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, MessageSquare, Mic, MicOff, Send, Minimize2, Maximize2, Settings, Download, FileText } from 'lucide-react';
+import { X, MessageSquare, Mic, MicOff, Send, Settings, Download, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 }) => {
   const [message, setMessage] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [showPinGuide, setShowPinGuide] = useState(false);
@@ -423,7 +423,7 @@ ${'='.repeat(50)}
         className={cn(
           'fixed right-0 top-0 h-full bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl z-50 transition-all duration-300 ease-out flex flex-col',
           isOpen ? 'translate-x-0' : 'translate-x-full',
-          isMinimized ? 'w-80' : 'w-[450px] md:w-[500px] lg:w-[550px]'
+'w-[450px] md:w-[500px] lg:w-[550px]'
         )}
       >
         {/* Header */}
@@ -433,7 +433,7 @@ ${'='.repeat(50)}
               <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">AI Assistant</h2>
+              <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">AI Agent</h2>
               <Badge
                 variant={isConnected ? 'default' : 'secondary'}
                 className={cn(
@@ -468,28 +468,16 @@ ${'='.repeat(50)}
             >
               <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
             </Button>
-            {onSettingsClick && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onSettingsClick}
-                className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            >
-              {isMinimized ? (
-                <Maximize2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-              ) : (
-                <Minimize2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                          {onSettingsClick && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onSettingsClick}
+                  className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                </Button>
               )}
-            </Button>
             <Button
               variant="ghost"
               size="icon"
