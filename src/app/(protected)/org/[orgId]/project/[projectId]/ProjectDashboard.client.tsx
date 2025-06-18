@@ -456,12 +456,12 @@ export default function ProjectPage() {
                         </div>
                     </div>
                     <div className="space-y-4">
-                        {/* Documents List View */}
-                        <div className="space-y-3">
+                        {/* Documents Grid View */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                             {filteredDocuments?.map((doc) => (
                                 <div
                                     key={doc.id}
-                                    className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative"
+                                    className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
                                     style={{
                                         boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
                                     }}
@@ -469,157 +469,130 @@ export default function ProjectPage() {
                                     {/* Document paper effect shadow */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
                                     
-                                    <div className="flex items-center p-6 gap-5 relative z-10">
-                                        {/* Document Icon with stacked paper effect */}
-                                        <div className="flex-shrink-0">
-                                            <div className="relative">
-                                                {/* Back papers for stack effect */}
-                                                <div className="absolute top-1 left-1 w-12 h-14 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg opacity-50"></div>
-                                                <div className="absolute top-0.5 left-0.5 w-12 h-14 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-600 dark:to-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg opacity-70"></div>
-                                                
-                                                {/* Main document */}
-                                                <div className="relative w-12 h-14 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-lg flex items-center justify-center shadow-sm">
-                                                    <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                    <div className="flex flex-col h-full p-3 relative z-10">
+                                        {/* Header with Icon and Actions */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            {/* Document Icon */}
+                                            <div className="flex-shrink-0">
+                                                <div className="relative">
+                                                    {/* Back papers for stack effect */}
+                                                    <div className="absolute top-0.5 left-0.5 w-6 h-7 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm opacity-50"></div>
                                                     
-                                                    {/* Folded corner effect */}
-                                                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-lg transform rotate-0"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Document Info */}
-                                        <div
-                                            className="flex-1 min-w-0 cursor-pointer"
-                                            onClick={() => handleDocumentClick(doc)}
-                                        >
-                                            <div className="flex items-start justify-between">
-                                                <div className="min-w-0 flex-1">
-                                                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors truncate mb-1">
-                                                        {doc.name}
-                                                    </h3>
-                                                    {doc.description && (
-                                                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3 leading-relaxed">
-                                                            {doc.description}
-                                                        </p>
-                                                    )}
-                                                    
-                                                    {/* Document Metadata */}
-                                                    <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <Clock className="h-3.5 w-3.5" />
-                                                            <span className="font-medium">
-                                                                Modified {doc.updated_at ? 
-                                                                    new Date(doc.updated_at).toLocaleDateString('en-US', {
-                                                                        month: 'short',
-                                                                        day: 'numeric',
-                                                                        year: 'numeric'
-                                                                    }) 
-                                                                    : doc.created_at ?
-                                                                    new Date(doc.created_at).toLocaleDateString('en-US', {
-                                                                        month: 'short',
-                                                                        day: 'numeric',
-                                                                        year: 'numeric'
-                                                                    })
-                                                                    : 'N/A'
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <User className="h-3.5 w-3.5" />
-                                                            <span>
-                                                                {doc.updated_by ? (
-                                                                    <>by <UserInfo userId={doc.updated_by} /></>
-                                                                ) : doc.created_by ? (
-                                                                    <>by <UserInfo userId={doc.created_by} /></>
-                                                                ) : (
-                                                                    `Requirements Document ${doc.version ? `v${doc.version}` : ''}`
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className={`w-2 h-2 rounded-full ${
-                                                                doc.is_deleted 
-                                                                    ? 'bg-red-500' 
-                                                                    : 'bg-green-500'
-                                                            }`}></div>
-                                                            <span className={`font-medium ${
-                                                                doc.is_deleted 
-                                                                    ? 'text-red-600 dark:text-red-400' 
-                                                                    : 'text-green-600 dark:text-green-400'
-                                                            }`}>
-                                                                {doc.is_deleted ? 'Archived' : 'Active'}
-                                                            </span>
-                                                        </div>
-                                                        {doc.tags && doc.tags.length > 0 && (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span>•</span>
-                                                                <span className="text-primary font-medium">
-                                                                    {doc.tags.slice(0, 2).join(', ')}
-                                                                    {doc.tags.length > 2 && ` +${doc.tags.length - 2}`}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {doc.created_at && doc.created_at !== doc.updated_at && (
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span>•</span>
-                                                                <span>
-                                                                    Created {new Date(doc.created_at).toLocaleDateString('en-US', {
-                                                                        month: 'short',
-                                                                        day: 'numeric',
-                                                                        year: 'numeric'
-                                                                    })}
-                                                                </span>
-                                                            </div>
-                                                        )}
+                                                    {/* Main document */}
+                                                    <div className="relative w-6 h-7 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-sm flex items-center justify-center shadow-sm">
+                                                        <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                                                        
+                                                        {/* Folded corner effect */}
+                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-md transform rotate-0"></div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Actions Menu */}
-                                        {(canPerformAction('editDocument') ||
-                                            canPerformAction('deleteDocument')) && (
-                                            <div className="flex-shrink-0">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-9 w-9 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                                        >
-                                                            <MoreVertical className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-44">
-                                                        {canPerformAction('editDocument') && (
+                                            {/* Actions Menu */}
+                                            {(canPerformAction('editDocument') ||
+                                                canPerformAction('deleteDocument')) && (
+                                                <div className="flex-shrink-0">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                            >
+                                                                <MoreVertical className="h-3 w-3" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-44">
+                                                            {canPerformAction('editDocument') && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleEditDocument(doc)}
+                                                                    className="gap-3 py-2.5"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                    Edit Document
+                                                                </DropdownMenuItem>
+                                                            )}
                                                             <DropdownMenuItem
-                                                                onClick={() => handleEditDocument(doc)}
+                                                                onClick={() => handleDocumentClick(doc)}
                                                                 className="gap-3 py-2.5"
                                                             >
-                                                                <Pencil className="h-4 w-4" />
-                                                                Edit Document
+                                                                <Download className="h-4 w-4" />
+                                                                Open Document
                                                             </DropdownMenuItem>
-                                                        )}
-                                                        <DropdownMenuItem
-                                                            onClick={() => handleDocumentClick(doc)}
-                                                            className="gap-3 py-2.5"
-                                                        >
-                                                            <Download className="h-4 w-4" />
-                                                            Open Document
-                                                        </DropdownMenuItem>
-                                                        {canPerformAction('deleteDocument') && (
-                                                            <DropdownMenuItem
-                                                                className="text-destructive gap-3 py-2.5"
-                                                                onClick={() => setDocumentToDelete(doc)}
-                                                            >
-                                                                <Trash className="h-4 w-4" />
-                                                                Delete Document
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                            {canPerformAction('deleteDocument') && (
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive gap-3 py-2.5"
+                                                                    onClick={() => setDocumentToDelete(doc)}
+                                                                >
+                                                                    <Trash className="h-4 w-4" />
+                                                                    Delete Document
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Document Info - Clickable Area */}
+                                        <div
+                                            className="flex-1 cursor-pointer flex flex-col"
+                                            onClick={() => handleDocumentClick(doc)}
+                                        >
+                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2 leading-tight">
+                                                {doc.name}
+                                            </h3>
+                                            
+                                            {doc.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
+                                                    {doc.description}
+                                                </p>
+                                            )}
+                                            
+                                            {/* Document Metadata - Bottom */}
+                                            <div className="mt-auto space-y-1">
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Clock className="h-3 w-3 flex-shrink-0" />
+                                                    <span className="truncate">
+                                                        {doc.updated_at ? 
+                                                            new Date(doc.updated_at).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric'
+                                                            }) 
+                                                            : doc.created_at ?
+                                                            new Date(doc.created_at).toLocaleDateString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric'
+                                                            })
+                                                            : 'N/A'
+                                                        }
+                                                    </span>
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <div className={`w-2 h-2 rounded-full ${
+                                                            doc.is_deleted 
+                                                                ? 'bg-red-500' 
+                                                                : 'bg-green-500'
+                                                        }`}></div>
+                                                        <span className={`text-xs font-medium ${
+                                                            doc.is_deleted 
+                                                                ? 'text-red-600 dark:text-red-400' 
+                                                                : 'text-green-600 dark:text-green-400'
+                                                        }`}>
+                                                            {doc.is_deleted ? 'Archived' : 'Active'}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {doc.tags && doc.tags.length > 0 && (
+                                                        <div className="text-xs text-primary font-medium truncate">
+                                                            +{doc.tags.length}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
