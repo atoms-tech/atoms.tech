@@ -63,7 +63,7 @@ export default function ProjectPage() {
     const searchParams = useSearchParams();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-    
+
     // Get current tab from URL params, default to 'overview' if not present
     const currentTabFromUrl = searchParams.get('currentTab') || 'overview';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);

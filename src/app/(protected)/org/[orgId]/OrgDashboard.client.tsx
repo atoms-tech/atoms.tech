@@ -60,7 +60,7 @@ interface OrgDashboardProps {
 export default function OrgDashboard(props: OrgDashboardProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     // Get current tab from URL params, default to 'overview' if not present
     const currentTabFromUrl = searchParams.get('currentTab') || 'overview';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);

@@ -56,11 +56,11 @@ export default function UserDashboard() {
     );
 
     const [searchTerm, setSearchTerm] = useState(''); // Ensure the initial state is an empty string
-    
+
     // Get current tab from URL params, default to 'all' if not present
     const currentTabFromUrl = searchParams.get('currentTab') || 'all';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
-    
+
     const [greeting, setGreeting] = useState('');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [createPanelType, setCreatePanelType] = useState<
