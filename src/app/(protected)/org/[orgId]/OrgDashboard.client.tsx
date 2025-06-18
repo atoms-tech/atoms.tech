@@ -10,6 +10,7 @@ import {
     ListTodo,
     PenTool,
 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
@@ -57,7 +58,12 @@ interface OrgDashboardProps {
 }
 
 export default function OrgDashboard(props: OrgDashboardProps) {
-    const [activeTab, setActiveTab] = useState('projects');
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // Get current tab from URL params, default to 'overview' if not present
+    const currentTabFromUrl = searchParams.get('currentTab') || 'overview';
+    const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [visibilityFilter, setVisibilityFilter] = useState<string | null>(
@@ -222,6 +228,22 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         ].includes(action);
     };
 
+    // Update URL when tab changes
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams);
+        params.set('currentTab', newTab);
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Sync tab state with URL params when they change
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('currentTab');
+        if (tabFromUrl && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams, activeTab]);
+
     return (
         <div className="container mx-auto p-6 space-y-6">
             {/* Organization Header */}
@@ -247,9 +269,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
             {/* Main Dashboard Tabs */}
             <Tabs
-                defaultValue="projects"
+                defaultValue={currentTabFromUrl}
                 value={activeTab}
-                onValueChange={setActiveTab}
+                onValueChange={handleTabChange}
                 className="w-full"
             >
                 <TabsList

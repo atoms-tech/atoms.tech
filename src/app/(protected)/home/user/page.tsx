@@ -3,7 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Building, Folder, Pin, Plus, Users } from 'lucide-react'; // Import Pin icon
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import UserInvitations from '@/app/(protected)/user/components/UserInvitations.client'; // Import UserInvitations
@@ -33,6 +33,7 @@ import { Organization } from '@/types/base/organizations.types';
 export default function UserDashboard() {
     const { user, profile } = useUser();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { setCurrentUserId } = useContextStore();
     const { setCurrentOrganization } = useOrganization();
     const { data: allInvitations } = useOrgInvitation(user?.email || '');
@@ -55,7 +56,11 @@ export default function UserDashboard() {
     );
 
     const [searchTerm, setSearchTerm] = useState(''); // Ensure the initial state is an empty string
-    const [activeTab, setActiveTab] = useState('all');
+    
+    // Get current tab from URL params, default to 'all' if not present
+    const currentTabFromUrl = searchParams.get('currentTab') || 'all';
+    const [activeTab, setActiveTab] = useState(currentTabFromUrl);
+    
     const [greeting, setGreeting] = useState('');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [createPanelType, setCreatePanelType] = useState<
@@ -291,6 +296,22 @@ export default function UserDashboard() {
         show: { y: 0, opacity: 1 },
     };
 
+    // Update URL when tab changes
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams);
+        params.set('currentTab', newTab);
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Sync tab state with URL params when they change
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('currentTab');
+        if (tabFromUrl && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams, activeTab]);
+
     return (
         <LayoutView>
             <div className="container mx-auto p-6">
@@ -330,9 +351,9 @@ export default function UserDashboard() {
 
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                     <Tabs
-                        defaultValue="all"
+                        defaultValue={currentTabFromUrl}
                         value={activeTab}
-                        onValueChange={setActiveTab}
+                        onValueChange={handleTabChange}
                         className="w-full md:w-auto"
                     >
                         <TabsList className="grid grid-cols-4 w-full md:w-auto">
