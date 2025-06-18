@@ -61,8 +61,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    // Get current tab from URL params, default to 'overview' if not present
-    const currentTabFromUrl = searchParams.get('currentTab') || 'overview';
+    // Get current tab from URL params, default to 'projects' if not present
+    const currentTabFromUrl = searchParams.get('currentTab') || 'projects';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
