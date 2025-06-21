@@ -84,7 +84,7 @@ const VerticalToolbar = () => {
         fetchUserRole();
     }, [pathname, user?.id]);
 
-    const canEdit = ['owner', 'admin', 'editor', 'maintainer'].includes(
+    const canEdit = ['owner', 'editor',].includes(
         userRole || '',
     );
 

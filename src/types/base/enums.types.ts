@@ -56,8 +56,6 @@ export const PricingPlanInterval = {
 export type EProjectRole = Database['public']['Enums']['project_role'];
 export const ProjectRole = {
     owner: 'owner',
-    admin: 'admin',
-    maintainer: 'maintainer',
     editor: 'editor',
     viewer: 'viewer',
 } as const;
@@ -150,7 +148,6 @@ export const UserRoleType = {
     member: 'member',
     admin: 'admin',
     owner: 'owner',
-    super_admin: 'super_admin',
 } as const;
 
 export type EUserStatus = Database['public']['Enums']['user_status'];

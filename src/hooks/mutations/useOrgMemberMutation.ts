@@ -105,7 +105,7 @@ export function useSetOrgMemberRole() {
         }: {
             userId: string;
             orgId: string;
-            role: 'member' | 'admin' | 'owner' | 'super_admin';
+            role: 'member' | 'admin' | 'owner';
         }) => {
             // Update the role of the user in the organization_members table
             const { error } = await supabase

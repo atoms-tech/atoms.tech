@@ -56,18 +56,17 @@ export default function OrgMembers({ className }: OrgMembersProps) {
 
     // Define rolePermissions with explicit type
     const rolePermissions: Record<
-        'owner' | 'super_admin' | 'admin' | 'member',
+        'owner' | 'admin' | 'member',
         string[]
     > = {
         owner: ['assignToProject', 'changeRole', 'removeMember'],
-        super_admin: ['assignToProject', 'changeRole', 'removeMember'],
         admin: ['assignToProject'],
         member: [],
     };
 
     // Explicitly type userRole
     const [userRole, setUserRole] = useState<
-        'owner' | 'super_admin' | 'admin' | 'member' | null
+        'owner' | 'admin' | 'member' | null
     >(null);
 
     const {
@@ -136,23 +135,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             return;
         }
 
-        const targetMember = members.find((member) => member.id === memberId);
-
-        // Restrict super_admin from removing owner or other super_admins
-        if (
-            userRole === 'super_admin' &&
-            (targetMember?.role === 'owner' ||
-                targetMember?.role === 'super_admin')
-        ) {
-            toast({
-                title: 'Error',
-                description:
-                    'You cannot remove the owner or another super_admin.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
         if (!user?.id) {
             toast({
                 title: 'Error',
@@ -207,38 +189,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             toast({
                 title: 'Error',
                 description: 'Invalid operation. Please select a role.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        const targetMember = members.find(
-            (member) => member.id === activeMemberId,
-        );
-
-        // Restrict super_admin from changing roles of owner or other super_admins
-        if (
-            userRole === 'super_admin' &&
-            (targetMember?.role === 'owner' ||
-                targetMember?.role === 'super_admin')
-        ) {
-            toast({
-                title: 'Error',
-                description:
-                    'You cannot change the role of an owner or another super_admin.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        // Restrict super_admin to only assign member or admin roles
-        if (
-            userRole === 'super_admin' &&
-            !['member', 'admin'].includes(selectedRole)
-        ) {
-            toast({
-                title: 'Error',
-                description: 'You can only assign roles of member or admin.',
                 variant: 'destructive',
             });
             return;
@@ -386,7 +336,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {['owner', 'admin', 'member', 'super_admin'].map(
+                            {['owner', 'admin', 'member'].map(
                                 (role) => (
                                     <DropdownMenuItem
                                         key={role}
@@ -415,10 +365,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                     : 'bg-gray-200'
                                             }`}
                                         ></span>
-                                        {role === 'super_admin'
-                                            ? 'Super Admin'
-                                            : role.charAt(0).toUpperCase() +
-                                              role.slice(1)}
+                                        {role.charAt(0).toUpperCase() + role.slice(1)}
                                     </DropdownMenuItem>
                                 ),
                             )}
@@ -473,10 +420,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                 ? 'bg-purple-100 text-purple-800'
                                                 : member.role === 'admin'
                                                   ? 'bg-blue-100 text-blue-800'
-                                                  : member.role ===
-                                                      'super_admin'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-green-100 text-green-800'
+                                                  : 'bg-green-100 text-green-800'
                                         }`}
                                     >
                                         {member.role}
@@ -499,13 +443,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                     {canPerformAction(
                                                         'changeRole',
                                                     ) &&
-                                                        (userRole === 'owner' ||
-                                                            (userRole ===
-                                                                'super_admin' &&
-                                                                member.role !==
-                                                                    'owner' &&
-                                                                member.role !==
-                                                                    'super_admin')) && (
+                                                        (userRole === 'owner') && (
                                                             <DropdownMenuItem
                                                                 onClick={() => {
                                                                     setActiveMemberId(
@@ -538,13 +476,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                     {canPerformAction(
                                                         'removeMember',
                                                     ) &&
-                                                        (userRole === 'owner' ||
-                                                            (userRole ===
-                                                                'super_admin' &&
-                                                                member.role !==
-                                                                    'owner' &&
-                                                                member.role !==
-                                                                    'super_admin')) && (
+                                                        (userRole === 'owner') && (
                                                             <DropdownMenuItem
                                                                 onClick={() =>
                                                                     handleRemoveMember(
@@ -602,9 +534,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                         {[
                                             'member',
                                             'admin',
-                                            ...(userRole === 'owner'
-                                                ? ['super_admin']
-                                                : []),
                                         ].map((role) => (
                                             <DropdownMenuItem
                                                 key={role}
@@ -614,12 +543,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                     )
                                                 }
                                             >
-                                                {role === 'super_admin'
-                                                    ? 'Super Admin'
-                                                    : role
-                                                          .charAt(0)
-                                                          .toUpperCase() +
-                                                      role.slice(1)}
+                                                {role.charAt(0).toUpperCase() + role.slice(1)}
                                             </DropdownMenuItem>
                                         ))}
                                     </DropdownMenuContent>
@@ -716,8 +640,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         {[
-                                            'admin',
-                                            'maintainer',
                                             'editor',
                                             'viewer',
                                         ].map((role) => (

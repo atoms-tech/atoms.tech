@@ -129,15 +129,6 @@ export default function ProjectPage() {
                 'editProject',
                 'deleteProject',
             ],
-            admin: [
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-            ],
-            maintainer: ['addDocument', 'viewDocument', 'editDocument'],
             editor: ['addDocument', 'viewDocument', 'editDocument'],
             viewer: ['viewDocument'],
         };

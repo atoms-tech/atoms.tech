@@ -87,7 +87,7 @@ export function useCreateProjectMember() {
         }: {
             userId: string;
             projectId: string;
-            role: 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
+            role: 'owner' | 'editor' | 'viewer';
             orgId: string; // Add orgId to the parameters
         }) => {
             const { data, error } = await supabase

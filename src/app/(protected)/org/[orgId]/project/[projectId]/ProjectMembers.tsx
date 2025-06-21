@@ -30,10 +30,6 @@ interface ProjectMembersProps {
 
 const getRoleColor = (role: EProjectRole) => {
     switch (role) {
-        case 'admin':
-            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-        case 'maintainer':
-            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
         case 'editor':
             return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
         case 'viewer':
@@ -65,12 +61,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
     // Define rolePermissions with explicit type
     const rolePermissions: Record<
-        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+        'owner' | 'editor' | 'viewer',
         string[]
     > = {
         owner: ['changeRole', 'removeMember'],
-        admin: ['removeMember'],
-        maintainer: [],
         editor: [],
         viewer: [],
     };
@@ -193,8 +187,6 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             {[
-                                'admin',
-                                'maintainer',
                                 'editor',
                                 'viewer',
                                 'owner',
@@ -364,8 +356,6 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         {[
-                                            'admin',
-                                            'maintainer',
                                             'editor',
                                             'viewer',
                                         ].map((role) => (

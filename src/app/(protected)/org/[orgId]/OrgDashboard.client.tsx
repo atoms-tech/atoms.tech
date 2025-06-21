@@ -194,17 +194,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 'viewProjects',
                 'viewDocs',
             ],
-            super_admin: [
-                'assignToProject',
-                'changeRole',
-                'uploadDeleteDocs',
-                'invitePeople',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
             admin: [
                 'assignToProject',
                 'uploadDeleteDocs',

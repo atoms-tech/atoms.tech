@@ -1921,8 +1921,6 @@ export type Database = {
             pricing_plan_interval: 'none' | 'month' | 'year';
             project_role:
                 | 'owner'
-                | 'admin'
-                | 'maintainer'
                 | 'editor'
                 | 'viewer';
             project_status: 'active' | 'archived' | 'draft' | 'deleted';
@@ -1983,7 +1981,7 @@ export type Database = {
                 | 'is_related_to'
                 | 'parent_of'
                 | 'child_of';
-            user_role_type: 'member' | 'admin' | 'owner' | 'super_admin';
+            user_role_type: 'member' | 'admin' | 'owner';
             user_status: 'active' | 'inactive';
             visibility: 'private' | 'team' | 'organization' | 'public';
         };
@@ -2116,7 +2114,7 @@ export const Constants = {
             notification_type: ['invitation', 'mention', 'system'],
             organization_type: ['personal', 'team', 'enterprise'],
             pricing_plan_interval: ['none', 'month', 'year'],
-            project_role: ['owner', 'admin', 'maintainer', 'editor', 'viewer'],
+            project_role: ['owner', 'editor', 'viewer'],
             project_status: ['active', 'archived', 'draft', 'deleted'],
             property_type: [
                 'text',
@@ -2181,7 +2179,7 @@ export const Constants = {
                 'parent_of',
                 'child_of',
             ],
-            user_role_type: ['member', 'admin', 'owner', 'super_admin'],
+            user_role_type: ['member', 'admin', 'owner'],
             user_status: ['active', 'inactive'],
             visibility: ['private', 'team', 'organization', 'public'],
         },

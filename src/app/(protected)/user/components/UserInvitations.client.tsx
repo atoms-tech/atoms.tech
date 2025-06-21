@@ -87,7 +87,6 @@ export default function UserInvitations({
                     | 'member'
                     | 'admin'
                     | 'owner'
-                    | 'super_admin'
                     | undefined,
                 status: 'active',
                 last_active_at: new Date().toISOString(),

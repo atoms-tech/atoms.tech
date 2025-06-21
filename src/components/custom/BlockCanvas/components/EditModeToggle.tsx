@@ -56,7 +56,7 @@ export const EditModeFloatingToggle = memo(() => {
 
     const canPerformAction = async () => {
         const userRole = await getUserRole();
-        return ['owner', 'admin', 'maintainer'].includes(userRole);
+        return ['owner'].includes(userRole);
     };
 
     const toggleEditMode = () => {
@@ -96,7 +96,7 @@ export const EditModeToggle = memo(() => {
 
     const canPerformAction = async () => {
         const userRole = await getUserRole();
-        return ['owner', 'admin', 'maintainer'].includes(userRole);
+        return ['owner'].includes(userRole);
     };
 
     const toggleEditMode = () => {

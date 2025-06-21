@@ -210,7 +210,7 @@ export default function ExternalDocsPage({
         }
     };
 
-    const canManageDocuments = ['owner', 'super_admin', 'admin'].includes(
+    const canManageDocuments = ['owner', 'admin'].includes(
         userRole || '',
     );
 

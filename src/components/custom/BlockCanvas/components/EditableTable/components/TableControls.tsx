@@ -62,12 +62,10 @@ export function TableControls<T extends Record<string, unknown>>({
 
     // Define rolePermissions with explicit type
     const rolePermissions: Record<
-        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+        'owner' | 'editor' | 'viewer',
         string[]
     > = {
         owner: ['addColumn', 'addRow'],
-        admin: ['addColumn', 'addRow'],
-        maintainer: ['addColumn', 'addRow'],
         editor: ['addRow'],
         viewer: [],
     };
