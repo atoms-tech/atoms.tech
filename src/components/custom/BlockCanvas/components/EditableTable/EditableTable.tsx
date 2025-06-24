@@ -47,6 +47,7 @@ export function EditableTable<
     filterComponent,
     isEditMode = false,
     alwaysShowAddRow = false,
+    customNewRowInitializer,
 }: EditableTableProps<T>) {
     // Initialize the state with useReducer
     const initialState: TableState<T> = {
@@ -338,38 +339,46 @@ export function EditableTable<
             return;
         }
 
-        // Create empty row
-        const newItem = columns.reduce((acc, col) => {
-            switch (col.type) {
-                case 'select':
-                    acc[col.accessor as keyof T] = null as T[keyof T];
-                    break;
-                case 'multi_select':
-                    acc[col.accessor as keyof T] = [] as unknown as T[keyof T];
-                    break;
-                case 'text':
-                    acc[col.accessor as keyof T] = '' as T[keyof T];
-                    break;
-                case 'number':
-                    acc[col.accessor as keyof T] = null as T[keyof T];
-                    break;
-                case 'date':
-                    acc[col.accessor as keyof T] = null as T[keyof T];
-                    break;
-                default:
-                    acc[col.accessor as keyof T] = null as T[keyof T];
-            }
-            return acc;
-        }, {} as T);
+        let newItem: T;
 
-        newItem.id = 'new';
+        // Use custom initializer if provided, otherwise use default logic
+        if (customNewRowInitializer) {
+            newItem = await customNewRowInitializer(columns);
+        } else {
+            // Create empty row with default logic
+            newItem = columns.reduce((acc, col) => {
+                switch (col.type) {
+                    case 'select':
+                        acc[col.accessor as keyof T] = null as T[keyof T];
+                        break;
+                    case 'multi_select':
+                        acc[col.accessor as keyof T] =
+                            [] as unknown as T[keyof T];
+                        break;
+                    case 'text':
+                        acc[col.accessor as keyof T] = '' as T[keyof T];
+                        break;
+                    case 'number':
+                        acc[col.accessor as keyof T] = null as T[keyof T];
+                        break;
+                    case 'date':
+                        acc[col.accessor as keyof T] = null as T[keyof T];
+                        break;
+                    default:
+                        acc[col.accessor as keyof T] = null as T[keyof T];
+                }
+                return acc;
+            }, {} as T);
+
+            newItem.id = 'new';
+        }
 
         dispatch({
             type: 'SET_INITIAL_EDIT_DATA',
             payload: { ...editingData, new: newItem },
         });
         dispatch({ type: 'START_ADD_ROW' });
-    }, [canPerformAction, columns, editingData]);
+    }, [canPerformAction, columns, editingData, customNewRowInitializer]);
 
     const handleSaveNewRow = useCallback(async () => {
         const newItem = editingData['new'];

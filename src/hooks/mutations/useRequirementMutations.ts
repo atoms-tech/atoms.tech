@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Requirement } from '@/types';
 import { TablesInsert } from '@/types/base/database.types';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
+import { generateNextReqId } from '@/utils/reqIdGenerator';
 
 export type CreateRequirementInput = Omit<
     Requirement,
@@ -28,6 +29,12 @@ export function useCreateRequirement() {
         mutationFn: async (input: CreateRequirementInput) => {
             console.log('Creating requirement', input);
 
+            // Generate the next available REQ-ID
+            const external_id = await generateNextReqId(
+                input.block_id,
+                input.document_id,
+            );
+
             const insertData: TablesInsert<'requirements'> = {
                 block_id: input.block_id,
                 document_id: input.document_id,
@@ -35,7 +42,7 @@ export function useCreateRequirement() {
                 ai_analysis: input.ai_analysis,
                 description: input.description,
                 enchanced_requirement: input.enchanced_requirement,
-                external_id: 'REQ-001',
+                external_id,
                 format: input.format,
                 level: input.level,
                 original_requirement: input.original_requirement,

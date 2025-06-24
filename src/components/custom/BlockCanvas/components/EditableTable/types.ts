@@ -79,6 +79,7 @@ export interface EditableTableProps<
     filterComponent?: React.ReactNode;
     isEditMode?: boolean;
     alwaysShowAddRow?: boolean; // Always show the "Add New Row" row, even when there are no items
+    customNewRowInitializer?: (columns: EditableColumn<T>[]) => Promise<T>; // Custom function to initialize new rows
 }
 
 export interface TableSideMenuProps {

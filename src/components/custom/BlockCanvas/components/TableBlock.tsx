@@ -389,6 +389,8 @@ export const TableBlock: React.FC<BlockProps> = ({
                 isEditMode={isEditMode}
                 alwaysShowAddRow={isEditMode}
                 useTanStackTables={useTanStackTables}
+                blockId={block.id}
+                documentId={block.document_id}
             />
         );
     };
