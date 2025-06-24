@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/lib/providers/user.provider';
+import DiagramElementLinkingSystem from '@/components/diagram/DiagramElementLinkingSystem';
 
 const LAST_DIAGRAM_ID_KEY = 'lastExcalidrawDiagramId';
 
@@ -827,6 +828,50 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         [saveDiagram],
     );
 
+    // Handle right-click events for element linking
+    const handlePointerDown = useCallback((
+        activeTool: AppState["activeTool"],
+        pointerDownState: any,
+        event: React.PointerEvent<HTMLElement>
+    ) => {
+        // Check if this is a right-click
+        if (event.button === 2) {
+            event.preventDefault();
+
+            // Get the element at the pointer position
+            if (excalidrawApiRef.current) {
+                const elements = excalidrawApiRef.current.getSceneElements();
+                const appState = excalidrawApiRef.current.getAppState();
+
+                // Convert screen coordinates to canvas coordinates
+                const canvasX = (event.clientX - appState.scrollX) / appState.zoom.value;
+                const canvasY = (event.clientY - appState.scrollY) / appState.zoom.value;
+
+                // Find element at position
+                const elementAtPosition = elements.find(element => {
+                    return canvasX >= element.x &&
+                           canvasX <= element.x + element.width &&
+                           canvasY >= element.y &&
+                           canvasY <= element.y + element.height;
+                });
+
+                if (elementAtPosition) {
+                    // Trigger context menu for element linking
+                    const customEvent = new CustomEvent('elementRightClick', {
+                        detail: {
+                            elementId: elementAtPosition.id,
+                            elementType: elementAtPosition.type,
+                            elementText: (elementAtPosition as any).text || '',
+                            clientX: event.clientX,
+                            clientY: event.clientY,
+                        }
+                    });
+                    window.dispatchEvent(customEvent);
+                }
+            }
+        }
+    }, []);
+
     // Modify handleChange to update tooltip and position it over all related elements
     const handleChange = useCallback(
         (
@@ -1095,6 +1140,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 
             <Excalidraw
                 onChange={handleChange}
+                onPointerDown={handlePointerDown}
                 initialData={{
                     ...initialData,
                     appState: {
@@ -1115,6 +1161,23 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     <MainMenu.DefaultItems.Export />
                 </MainMenu>
             </Excalidraw>
+
+            {/* Diagram Element Linking System */}
+            {diagramId && excalidrawApiRef.current && (
+                <DiagramElementLinkingSystem
+                    diagramId={diagramId}
+                    projectId={projectId}
+                    elements={excalidrawApiRef.current.getSceneElements()}
+                    appState={excalidrawApiRef.current.getAppState()}
+                    onElementNavigate={(requirementId) => {
+                        // Navigate to requirement
+                        if (typeof window !== 'undefined') {
+                            sessionStorage.setItem('jumpToRequirementId', requirementId);
+                        }
+                        router.push(`/org/${organizationId}/project/${projectId}/requirements/${requirementId}`);
+                    }}
+                />
+            )}
 
             {/* Save As Dialog */}
             <Dialog
