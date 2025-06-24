@@ -39,8 +39,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     blocks: [],
     selectedBlockId: null,
     isEditMode: false,
-    useTanStackTables: false, // Deprecated - kept for backward compatibility
-    tableLibrary: 'mantine' as TableLibraryType,
+    useTanStackTables: false,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),
@@ -116,14 +115,5 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     setIsEditMode: (isEditMode) => set({ isEditMode }),
 
     // Table implementation
-    setUseTanStackTables: (useTanStackTables) => {
-        // Backward compatibility: map to new table library system
-        const tableLibrary: TableLibraryType = useTanStackTables ? 'tanstack' : 'default';
-        set({ useTanStackTables, tableLibrary });
-    },
-    setTableLibrary: (tableLibrary) => {
-        // Update both new and legacy state for backward compatibility
-        const useTanStackTables = tableLibrary === 'tanstack';
-        set({ tableLibrary, useTanStackTables });
-    },
+    setUseTanStackTables: (useTanStackTables) => set({ useTanStackTables }),
 }));

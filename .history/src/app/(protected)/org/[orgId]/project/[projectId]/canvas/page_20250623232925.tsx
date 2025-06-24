@@ -1,0 +1,357 @@
+'use client';
+
+import {
+    ChevronDown,
+    CircleAlert,
+    Grid,
+    Palette,
+    PenTool,
+    Pencil,
+    Settings,
+    Zap,
+} from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useGumloop } from '@/hooks/useGumloop';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+
+const DiagramGallery = dynamic(
+    async () =>
+        (await import('@/components/custom/Gallery/DiagramGallery')).default,
+    {
+        ssr: false,
+    },
+);
+
+const ReactFlowCanvas = dynamic(
+    async () =>
+        (await import('@/components/reactflow/ReactFlowCanvas')).default,
+    {
+        ssr: false,
+    },
+);
+
+type DiagramType = 'flowchart' | 'sequence' | 'class';
+
+export default function Draw() {
+    // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
+    const organizationId = usePathname().split('/')[2];
+    const [prompt, setPrompt] = useState('');
+    const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
+    // React Flow is now the only diagramming tool
+
+    // Gallery/editor state management
+    const [activeTab, setActiveTab] = useState<string>('editor');
+    const [lastActiveTab, setLastActiveTab] = useState<string>('editor');
+    const [selectedDiagramId, setSelectedDiagramId] = useState<string | null>(
+        null,
+    );
+    const [shouldRefreshGallery, setShouldRefreshGallery] =
+        useState<boolean>(false);
+    const [instanceKey, setInstanceKey] = useState<string>('initial');
+    const isInitialRender = useRef(true);
+    // Track generation status with refs to avoid re-renders triggering effects
+    const hasProcessedUrlPrompt = useRef(false);
+    const isManualGeneration = useRef(false);
+
+    // Gumloop state management
+    const { startPipeline, getPipelineRun } = useGumloop();
+    const [pipelineRunId, setPipelineRunId] = useState<string>('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [error, setError] = useState<string>('');
+
+    // Diagram name management
+    const [currentDiagramName, setCurrentDiagramName] =
+        useState<string>('Untitled Diagram');
+    const [isRenameDialogOpen, setIsRenameDialogOpen] =
+        useState<boolean>(false);
+    const [newDiagramName, setNewDiagramName] = useState<string>('');
+
+    // Add state for pending requirementId
+    const [pendingRequirementId, setPendingRequirementId] = useState<
+        string | null
+    >(null);
+
+    // Add state for pending documentId
+    const [pendingDocumentId, setPendingDocumentId] = useState<string | null>(
+        null,
+    );
+
+    // On mount, check sessionStorage for pending diagram prompt and requirementId
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const pendingPrompt = sessionStorage.getItem('pendingDiagramPrompt');
+        const pendingReqId = sessionStorage.getItem(
+            'pendingDiagramRequirementId',
+        );
+        const pendingDocId = sessionStorage.getItem('pendingDiagramDocumentId');
+
+        console.log('[Canvas] Reading sessionStorage:', {
+            pendingPrompt: pendingPrompt
+                ? pendingPrompt.substring(0, 20) + '...'
+                : null,
+            pendingReqId,
+            pendingDocId,
+        });
+
+        if (pendingPrompt) {
+            setPrompt(pendingPrompt);
+            sessionStorage.removeItem('pendingDiagramPrompt');
+        }
+        // Read requirementId
+        if (pendingReqId) {
+            setPendingRequirementId(pendingReqId);
+            sessionStorage.removeItem('pendingDiagramRequirementId');
+        }
+        // Read documentId
+        if (pendingDocId) {
+            console.log('[Canvas] Reading documentId:', pendingDocId);
+            setPendingDocumentId(pendingDocId);
+            sessionStorage.removeItem('pendingDiagramDocumentId');
+        }
+    }, []);
+
+    // Handle tab changes
+    useEffect(() => {
+        // Skip first render
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
+
+        // If we're coming from gallery to editor AND we have a selected diagram,
+        // update the instance key to force remount
+        if (
+            lastActiveTab === 'gallery' &&
+            activeTab === 'editor' &&
+            selectedDiagramId
+        ) {
+            // Add timestamp to force remount and refresh diagram data including name
+            setInstanceKey(`diagram-${selectedDiagramId}-${Date.now()}`);
+        }
+
+        // Update last active tab
+        setLastActiveTab(activeTab);
+    }, [activeTab, lastActiveTab, selectedDiagramId]);
+
+    // Get pipeline run data
+    const { data: pipelineResponse } = getPipelineRun(
+        pipelineRunId,
+        organizationId,
+    );
+
+    // React Flow doesn't need the Mermaid generation pipeline
+    // This functionality can be removed or adapted for React Flow if needed
+
+    // Auto-generation removed for React Flow
+
+    // Pipeline response handling removed for React Flow
+
+    // Manual generation and Excalidraw mount handlers removed
+
+    // Handle creating a new diagram from gallery
+    const handleNewDiagram = useCallback(() => {
+        // Remove "id" from the URL so React Flow won't try to load it
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('id');
+        window.history.pushState({}, '', newUrl);
+
+        // Also remove the old localStorage key
+        const projectId = window.location.pathname.split('/')[4];
+        const projectStorageKey = `lastReactFlowDiagramId_${projectId}`;
+        localStorage.removeItem(projectStorageKey);
+
+        setSelectedDiagramId(null);
+        setActiveTab('editor');
+        setInstanceKey(`new-diagram-${Date.now()}`);
+    }, []);
+
+    // Handle selecting a diagram from gallery
+    const handleSelectDiagram = useCallback((diagramId: string) => {
+        setSelectedDiagramId(diagramId);
+        setActiveTab('editor');
+        setInstanceKey(`diagram-${diagramId}`);
+    }, []);
+
+    // Handle diagram saved callback
+    const handleDiagramSaved = useCallback(() => {
+        setShouldRefreshGallery(true);
+    }, []);
+
+    // Reset the refresh flag after the gallery is refreshed
+    useEffect(() => {
+        if (shouldRefreshGallery && activeTab === 'gallery') {
+            setShouldRefreshGallery(false);
+        }
+    }, [activeTab, shouldRefreshGallery]);
+
+    // Handle rename diagram
+    const handleRenameDiagram = async () => {
+        if (!selectedDiagramId || !newDiagramName.trim()) return;
+
+        try {
+            const { error } = await supabase
+                .from('react_flow_diagrams')
+                .update({ name: newDiagramName.trim() })
+                .eq('id', selectedDiagramId);
+
+            if (error) {
+                console.error('Error renaming diagram:', error);
+                return;
+            }
+
+            // Update local state
+            setCurrentDiagramName(newDiagramName.trim());
+
+            // Close dialog and reset input
+            setIsRenameDialogOpen(false);
+            setNewDiagramName('');
+        } catch (err) {
+            console.error('Error in handleRenameDiagram:', err);
+        }
+    };
+
+    // Handle diagram name changes from ExcalidrawWrapper
+    const handleDiagramNameChange = useCallback((name: string) => {
+        setCurrentDiagramName(name);
+    }, []);
+
+    // React Flow is the only diagramming tool - no tool switching needed
+
+    return (
+        <div className="flex flex-col gap-4 p-5 h-full">
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    {activeTab === 'editor' && selectedDiagramId ? (
+                        <>
+                            <h1 className="text-2xl font-bold">
+                                {currentDiagramName}
+                            </h1>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-1"
+                                onClick={() => {
+                                    setNewDiagramName(currentDiagramName);
+                                    setIsRenameDialogOpen(true);
+                                }}
+                            >
+                                <Pencil size={16} />
+                            </Button>
+                            {/* React Flow Indicator */}
+                            <Badge variant="outline" className="ml-2">
+                                🎯 React Flow
+                            </Badge>
+                        </>
+                    ) : (
+                        <h1 className="text-2xl font-bold">Diagrams</h1>
+                    )}
+                </div>
+                <div className="flex items-center gap-4">
+                    <Tabs
+                        value={activeTab}
+                        onValueChange={setActiveTab}
+                        className="w-auto"
+                    >
+                        <TabsList>
+                            <TabsTrigger
+                                value="editor"
+                                className="flex items-center gap-1.5"
+                            >
+                                <PenTool size={16} />
+                                Editor
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="gallery"
+                                className="flex items-center gap-1.5"
+                            >
+                                <Grid size={16} />
+                                Gallery
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
+            </div>
+
+            {activeTab === 'gallery' ? (
+                <DiagramGallery
+                    onNewDiagram={handleNewDiagram}
+                    onSelectDiagram={handleSelectDiagram}
+                    key={shouldRefreshGallery ? 'refresh' : 'default'}
+                />
+            ) : (
+                <div className="h-[calc(100vh-150px)]">
+                    <ReactFlowCanvas
+                        diagramId={selectedDiagramId}
+                        projectId={organizationId}
+                        collaborationEnabled={true}
+                        onSave={(nodes, edges) => {
+                            // Handle React Flow save
+                            console.log('React Flow saved:', {
+                                nodes,
+                                edges,
+                            });
+                            handleDiagramSaved();
+                        }}
+                        onNodeSelect={(node) => {
+                            console.log('Node selected:', node);
+                        }}
+                        onEdgeSelect={(edge) => {
+                            console.log('Edge selected:', edge);
+                        }}
+                    />
+                </div>
+            )}
+
+            {/* Tool selector dialog removed - React Flow is the only tool */}
+
+            {/* Rename Dialog */}
+            <Dialog
+                open={isRenameDialogOpen}
+                onOpenChange={setIsRenameDialogOpen}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Diagram</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            value={newDiagramName}
+                            onChange={(e) => setNewDiagramName(e.target.value)}
+                            placeholder="Diagram name"
+                            className="mb-4"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsRenameDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleRenameDiagram}
+                                disabled={!newDiagramName.trim()}
+                            >
+                                Rename
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}

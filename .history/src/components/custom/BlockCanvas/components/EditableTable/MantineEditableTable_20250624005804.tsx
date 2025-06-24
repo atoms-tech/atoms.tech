@@ -631,7 +631,6 @@ export function MantineEditableTable<
                                 setCurrentPage(1);
                             }}
                             className="border rounded px-2 py-1 text-sm bg-background"
-                            aria-label="Items per page"
                         >
                             <option value={5}>5 per page</option>
                             <option value={10}>10 per page</option>

@@ -40,7 +40,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     selectedBlockId: null,
     isEditMode: false,
     useTanStackTables: false, // Deprecated - kept for backward compatibility
-    tableLibrary: 'mantine' as TableLibraryType,
+    tableLibrary: 'default' as TableLibraryType,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),

@@ -6,24 +6,31 @@
  * A Mantine React Table implementation that provides full feature parity
  * with the existing EditableTable components while using Mantine's design system
  */
-import {
-    Download,
-    Edit3,
-    FileSpreadsheet,
-    Filter,
-    Plus,
-    Save,
-    Search,
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { 
+    Download, 
+    FileSpreadsheet, 
+    Filter, 
+    Plus, 
+    Search, 
     Settings,
     Trash2,
-    X,
+    Edit3,
+    Save,
+    X
 } from 'lucide-react';
-import { useParams } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -32,20 +39,16 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-// import { useUser } from '@/lib/providers/user.provider';
-// import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useUser } from '@/lib/providers/user.provider';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
-import { DeleteConfirmDialog, TableLoadingSkeleton } from './components';
 import { CellValue, EditableTableProps } from './types';
+import {
+    DeleteConfirmDialog,
+    TableLoadingSkeleton,
+} from './components';
 
 // Mantine-style table row component
 interface MantineTableRowProps<T> {
@@ -73,7 +76,7 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
     const [localEdits, setLocalEdits] = useState<Record<string, CellValue>>({});
 
     const handleCellEdit = (field: string, value: CellValue) => {
-        setLocalEdits((prev) => ({ ...prev, [field]: value }));
+        setLocalEdits(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSave = () => {
@@ -90,31 +93,31 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
     };
 
     const getCellValue = (field: string) => {
-        return (
-            localEdits[field] ?? editingData[field] ?? item[field as keyof T]
-        );
+        return localEdits[field] ?? editingData[field] ?? item[field as keyof T];
     };
 
     return (
-        <tr className="border-b hover:bg-muted/50 transition-colors">
-            <td className="p-4 border-r">
+        <tr className="border-b border-blue-200 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-800/50 transition-colors">
+            <td className="p-4 border-r border-blue-200 dark:border-blue-700">
                 <div className="flex items-center gap-2">
-                    <Checkbox checked={isSelected} onCheckedChange={onSelect} />
-                    <span className="font-mono text-sm font-medium text-foreground">
+                    <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={onSelect}
+                        className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    />
+                    <span className="font-mono text-sm font-medium text-blue-900 dark:text-blue-100">
                         {item.id}
                     </span>
                 </div>
             </td>
-
+            
             {columns.map((column) => (
-                <td key={column.key} className="p-4 border-r last:border-r-0">
+                <td key={column.key} className="p-4 border-r border-blue-200 dark:border-blue-700 last:border-r-0">
                     {isEditing && isEditMode ? (
                         <MantineCellEditor
                             column={column}
                             value={getCellValue(column.key)}
-                            onChange={(value) =>
-                                handleCellEdit(column.key, value)
-                            }
+                            onChange={(value) => handleCellEdit(column.key, value)}
                         />
                     ) : (
                         <MantineCellDisplay
@@ -124,7 +127,7 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                     )}
                 </td>
             ))}
-
+            
             <td className="p-4">
                 <div className="flex gap-2">
                     {isEditMode && (
@@ -181,11 +184,7 @@ interface MantineCellEditorProps {
     onChange: (value: CellValue) => void;
 }
 
-function MantineCellEditor({
-    column,
-    value,
-    onChange,
-}: MantineCellEditorProps) {
+function MantineCellEditor({ column, value, onChange }: MantineCellEditorProps) {
     const stringValue = value?.toString() || '';
 
     switch (column.type) {
@@ -245,8 +244,8 @@ function MantineCellDisplay({ column, value }: MantineCellDisplayProps) {
     switch (column.type) {
         case 'select':
             return (
-                <Badge
-                    variant="outline"
+                <Badge 
+                    variant="outline" 
                     className="border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-900 dark:text-blue-200"
                 >
                     {stringValue}
@@ -288,20 +287,16 @@ export function MantineEditableTable<
 }: EditableTableProps<T>) {
     // Component state
     const [localData, setLocalData] = useState<T[]>([]);
-    const [editingData, setEditingData] = useState<Record<string, CellValue>>(
-        {},
-    );
+    const [editingData, setEditingData] = useState<Record<string, CellValue>>({});
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState('');
     const [sortColumn, setSortColumn] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<T | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
-    // User and permissions (optional for testing)
-    // const { user } = useUser();
+    // User and permissions
+    const { user } = useUser();
     const params = useParams();
 
     // Initialize local data
@@ -310,28 +305,22 @@ export function MantineEditableTable<
     }, [data]);
 
     // Handle cell editing
-    const handleCellEdit = useCallback(
-        (itemId: string, field: string, value: CellValue) => {
-            setEditingData((prev) => ({
-                ...prev,
-                [`${itemId}.${field}`]: value,
-            }));
-        },
-        [],
-    );
+    const handleCellEdit = useCallback((itemId: string, field: string, value: CellValue) => {
+        setEditingData(prev => ({
+            ...prev,
+            [`${itemId}.${field}`]: value,
+        }));
+    }, []);
 
     // Handle save
-    const handleSave = useCallback(
-        async (item: T) => {
-            if (onSave) {
-                await onSave(item, false);
-                if (onPostSave) {
-                    await onPostSave();
-                }
+    const handleSave = useCallback(async (item: T) => {
+        if (onSave) {
+            await onSave(item, false);
+            if (onPostSave) {
+                await onPostSave();
             }
-        },
-        [onSave, onPostSave],
-    );
+        }
+    }, [onSave, onPostSave]);
 
     // Handle delete
     const handleDelete = useCallback((item: T) => {
@@ -356,13 +345,10 @@ export function MantineEditableTable<
 
         // Apply search filter
         if (searchTerm) {
-            filtered = filtered.filter((item) =>
-                Object.values(item).some((value) =>
-                    value
-                        ?.toString()
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()),
-                ),
+            filtered = filtered.filter(item =>
+                Object.values(item).some(value =>
+                    value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+                )
             );
         }
 
@@ -371,7 +357,7 @@ export function MantineEditableTable<
             filtered = [...filtered].sort((a, b) => {
                 const aVal = a[sortColumn as keyof T]?.toString() || '';
                 const bVal = b[sortColumn as keyof T]?.toString() || '';
-
+                
                 if (sortDirection === 'asc') {
                     return aVal.localeCompare(bVal);
                 } else {
@@ -383,133 +369,36 @@ export function MantineEditableTable<
         return filtered;
     }, [localData, searchTerm, sortColumn, sortDirection]);
 
-    // Paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return processedData.slice(startIndex, endIndex);
-    }, [processedData, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(processedData.length / pageSize);
-
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
 
     return (
         <div className="w-full space-y-4">
-            {/* ATOMS-style toolbar */}
-            <div className="bg-muted/50 border rounded-lg p-4">
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to CSV functionality
-                            const csvContent = [
-                                columns.map((col) => col.header).join(','),
-                                ...processedData.map((item) =>
-                                    columns
-                                        .map(
-                                            (col) =>
-                                                item[
-                                                    col.key as keyof typeof item
-                                                ] || '',
-                                        )
-                                        .join(','),
-                                ),
-                            ].join('\n');
-
-                            const blob = new Blob([csvContent], {
-                                type: 'text/csv',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.csv';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
+            {/* Mantine-style toolbar */}
+            <div className="bg-blue-50 dark:bg-blue-950 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex flex-wrap gap-3 mb-4">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
+                        <Search className="h-4 w-4 mr-2" />
+                        Search
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to JSON functionality
-                            const jsonContent = JSON.stringify(
-                                processedData,
-                                null,
-                                2,
-                            );
-                            const blob = new Blob([jsonContent], {
-                                type: 'application/json',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.json';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                        Export JSON
+                    <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter
+                    </Button>
+                    <Button className="bg-green-600 hover:bg-green-700 text-white shadow-sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
                     </Button>
                     {isEditMode && (
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                                // Add new row functionality
-                                const newId = `REQ-${String(localData.length + 1).padStart(3, '0')}`;
-                                const newItem = {
-                                    id: newId,
-                                    title: 'New Requirement',
-                                    description: '',
-                                    priority: 'Medium',
-                                    status: 'Draft',
-                                    assignee: '',
-                                    estimatedHours: 0,
-                                    createdDate: new Date()
-                                        .toISOString()
-                                        .split('T')[0],
-                                    ai_analysis: {
-                                        confidence: 0,
-                                        suggestions: [],
-                                        issues: [],
-                                    },
-                                };
-                                setLocalData((prev) => [
-                                    ...prev,
-                                    newItem as any,
-                                ]);
-                            }}
-                        >
+                        <Button className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Row
                         </Button>
                     )}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Delete selected rows
-                            if (selectedRows.size > 0) {
-                                setLocalData((prev) =>
-                                    prev.filter(
-                                        (item) => !selectedRows.has(item.id),
-                                    ),
-                                );
-                                setSelectedRows(new Set());
-                            }
-                        }}
-                        disabled={selectedRows.size === 0}
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Selected ({selectedRows.size})
+                    <Button className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Columns
                     </Button>
                 </div>
 
@@ -527,23 +416,18 @@ export function MantineEditableTable<
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto border rounded-lg bg-card shadow-sm">
+                <div className="overflow-x-auto border-2 border-blue-200 dark:border-blue-800 rounded-lg bg-white dark:bg-blue-900 shadow-sm">
                     <table className="w-full">
-                        <thead className="bg-muted/50">
+                        <thead className="bg-blue-100 dark:bg-blue-800">
                             <tr>
-                                <th className="p-4 text-left border-r">
+                                <th className="p-4 text-left border-r border-blue-200 dark:border-blue-700">
                                     <div className="flex items-center gap-2">
-                                        <Checkbox />
-                                        <span className="font-semibold text-foreground">
-                                            ID
-                                        </span>
+                                        <Checkbox className="data-[state=checked]:bg-blue-600" />
+                                        <span className="font-semibold text-blue-900 dark:text-blue-100">ID</span>
                                     </div>
                                 </th>
                                 {columns.map((column) => (
-                                    <th
-                                        key={column.key}
-                                        className="p-4 text-left border-r border-blue-200 dark:border-blue-700 last:border-r-0"
-                                    >
+                                    <th key={column.key} className="p-4 text-left border-r border-blue-200 dark:border-blue-700 last:border-r-0">
                                         <div className="flex items-center gap-2">
                                             <span className="font-semibold text-blue-900 dark:text-blue-100">
                                                 {column.header}
@@ -552,20 +436,10 @@ export function MantineEditableTable<
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => {
-                                                    if (
-                                                        sortColumn ===
-                                                        column.key
-                                                    ) {
-                                                        setSortDirection(
-                                                            sortDirection ===
-                                                                'asc'
-                                                                ? 'desc'
-                                                                : 'asc',
-                                                        );
+                                                    if (sortColumn === column.key) {
+                                                        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
                                                     } else {
-                                                        setSortColumn(
-                                                            column.key,
-                                                        );
+                                                        setSortColumn(column.key);
                                                         setSortDirection('asc');
                                                     }
                                                 }}
@@ -577,14 +451,12 @@ export function MantineEditableTable<
                                     </th>
                                 ))}
                                 <th className="p-4 text-left">
-                                    <span className="font-semibold text-blue-900 dark:text-blue-100">
-                                        Actions
-                                    </span>
+                                    <span className="font-semibold text-blue-900 dark:text-blue-100">Actions</span>
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item) => (
+                            {processedData.map((item) => (
                                 <MantineTableRow
                                     key={item.id}
                                     item={item}
@@ -592,9 +464,7 @@ export function MantineEditableTable<
                                     isEditMode={isEditMode}
                                     isSelected={selectedRows.has(item.id)}
                                     onSelect={(selected) => {
-                                        const newSelected = new Set(
-                                            selectedRows,
-                                        );
+                                        const newSelected = new Set(selectedRows);
                                         if (selected) {
                                             newSelected.add(item.id);
                                         } else {
@@ -602,9 +472,7 @@ export function MantineEditableTable<
                                         }
                                         setSelectedRows(newSelected);
                                     }}
-                                    onEdit={(field, value) =>
-                                        handleCellEdit(item.id, field, value)
-                                    }
+                                    onEdit={(field, value) => handleCellEdit(item.id, field, value)}
                                     onDelete={() => handleDelete(item)}
                                     editingData={editingData}
                                 />
@@ -615,53 +483,21 @@ export function MantineEditableTable<
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm">
-                    <div className="flex items-center gap-4">
-                        <span className="text-foreground font-medium">
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} requirements
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-background"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">
+                        Showing {processedData.length} of {localData.length} requirements
+                    </span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             Next →
                         </Button>
@@ -670,8 +506,7 @@ export function MantineEditableTable<
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-                ✨ <strong>Mantine React Table</strong> - Clean design with
-                enhanced spacing and modern blue theme
+                ✨ <strong>Mantine React Table</strong> - Clean design with enhanced spacing and modern blue theme
             </div>
 
             {/* Delete confirmation dialog */}

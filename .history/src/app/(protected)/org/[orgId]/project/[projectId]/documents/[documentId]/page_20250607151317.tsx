@@ -1,24 +1,20 @@
 'use client';
 
+import { Table } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { TableLibrarySelector } from '@/components/custom/BlockCanvas/components/TableLibrarySelector';
-import { BlockCanvas } from '@/components/custom/BlockCanvas/indexExport';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+    BlockCanvas,
+    BlockCanvasTanStack,
+} from '@/components/custom/BlockCanvas/indexExport';
+import { Button } from '@/components/ui/button';
 import LayoutView from '@/components/views/LayoutView';
-import { useDocumentStore } from '@/store/document.store';
 
 export default function DocumentPage() {
     const params = useParams();
     const documentId = params?.documentId as string;
-    const { tableLibrary } = useDocumentStore();
+    const [useTanStackTable, setUseTanStackTable] = useState(false);
 
     //scroll to requirement if requirementId is in sessionStorage
     useEffect(() => {
@@ -80,33 +76,24 @@ export default function DocumentPage() {
 
     return (
         <LayoutView>
-            <div className="space-y-6">
-                {/* Table Library Selection Card */}
-                <Card className="border bg-card text-card-foreground shadow">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="font-semibold leading-none tracking-tight">
-                            Table Implementation
-                        </CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground">
-                            Choose the table library for all tables in this
-                            document. Changes apply immediately.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-foreground">
-                                Current Implementation:{' '}
-                                <span className="font-mono text-primary">
-                                    {tableLibrary}
-                                </span>
-                            </span>
-                            <TableLibrarySelector showFeatures={false} />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Document Canvas */}
-                <BlockCanvas documentId={documentId} />
+            <div className="space-y-4">
+                <div className="flex justify-end mb-4 px-4">
+                    <Button
+                        variant={useTanStackTable ? 'default' : 'outline'}
+                        onClick={() => setUseTanStackTable(!useTanStackTable)}
+                        className="flex items-center gap-2"
+                    >
+                        <Table className="h-4 w-4" />
+                        {useTanStackTable
+                            ? 'Using TanStack Table'
+                            : 'Switch to TanStack Table'}
+                    </Button>
+                </div>
+                {useTanStackTable ? (
+                    <BlockCanvasTanStack documentId={documentId} />
+                ) : (
+                    <BlockCanvas documentId={documentId} />
+                )}
             </div>
         </LayoutView>
     );

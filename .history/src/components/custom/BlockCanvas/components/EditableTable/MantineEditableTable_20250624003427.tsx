@@ -297,8 +297,6 @@ export function MantineEditableTable<
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<T | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
     // User and permissions (optional for testing)
     // const { user } = useUser();
@@ -383,15 +381,6 @@ export function MantineEditableTable<
         return filtered;
     }, [localData, searchTerm, sortColumn, sortDirection]);
 
-    // Paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return processedData.slice(startIndex, endIndex);
-    }, [processedData, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(processedData.length / pageSize);
-
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
@@ -401,115 +390,27 @@ export function MantineEditableTable<
             {/* ATOMS-style toolbar */}
             <div className="bg-muted/50 border rounded-lg p-4">
                 <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to CSV functionality
-                            const csvContent = [
-                                columns.map((col) => col.header).join(','),
-                                ...processedData.map((item) =>
-                                    columns
-                                        .map(
-                                            (col) =>
-                                                item[
-                                                    col.key as keyof typeof item
-                                                ] || '',
-                                        )
-                                        .join(','),
-                                ),
-                            ].join('\n');
-
-                            const blob = new Blob([csvContent], {
-                                type: 'text/csv',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.csv';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export CSV
+                    <Button variant="outline" size="sm">
+                        <Search className="h-4 w-4 mr-2" />
+                        Search
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to JSON functionality
-                            const jsonContent = JSON.stringify(
-                                processedData,
-                                null,
-                                2,
-                            );
-                            const blob = new Blob([jsonContent], {
-                                type: 'application/json',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.json';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                        Export JSON
+                    <Button variant="outline" size="sm">
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter
+                    </Button>
+                    <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export
                     </Button>
                     {isEditMode && (
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                                // Add new row functionality
-                                const newId = `REQ-${String(localData.length + 1).padStart(3, '0')}`;
-                                const newItem = {
-                                    id: newId,
-                                    title: 'New Requirement',
-                                    description: '',
-                                    priority: 'Medium',
-                                    status: 'Draft',
-                                    assignee: '',
-                                    estimatedHours: 0,
-                                    createdDate: new Date()
-                                        .toISOString()
-                                        .split('T')[0],
-                                    ai_analysis: {
-                                        confidence: 0,
-                                        suggestions: [],
-                                        issues: [],
-                                    },
-                                };
-                                setLocalData((prev) => [
-                                    ...prev,
-                                    newItem as any,
-                                ]);
-                            }}
-                        >
+                        <Button variant="default" size="sm">
                             <Plus className="h-4 w-4 mr-2" />
                             Add Row
                         </Button>
                     )}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Delete selected rows
-                            if (selectedRows.size > 0) {
-                                setLocalData((prev) =>
-                                    prev.filter(
-                                        (item) => !selectedRows.has(item.id),
-                                    ),
-                                );
-                                setSelectedRows(new Set());
-                            }
-                        }}
-                        disabled={selectedRows.size === 0}
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Selected ({selectedRows.size})
+                    <Button variant="outline" size="sm">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Columns
                     </Button>
                 </div>
 
@@ -584,7 +485,7 @@ export function MantineEditableTable<
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item) => (
+                            {processedData.map((item) => (
                                 <MantineTableRow
                                     key={item.id}
                                     item={item}
@@ -615,53 +516,22 @@ export function MantineEditableTable<
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm">
-                    <div className="flex items-center gap-4">
-                        <span className="text-foreground font-medium">
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} requirements
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-background"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">
+                        Showing {processedData.length} of {localData.length}{' '}
+                        requirements
+                    </span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             Next →
                         </Button>

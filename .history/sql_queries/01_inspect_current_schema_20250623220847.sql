@@ -1,0 +1,22 @@
+-- Check current audit_logs table structure
+SELECT 
+    column_name, 
+    data_type, 
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'audit_logs' 
+    AND table_schema = 'public'
+ORDER BY ordinal_position;
+
+-- Check if SOC2 enums exist
+SELECT enumname, enumlabel 
+FROM pg_enum e
+JOIN pg_type t ON e.enumtypid = t.oid
+WHERE t.typname IN ('audit_event_type', 'audit_severity', 'action_type', 'resource_type');
+
+-- Check existing data in audit_logs
+SELECT COUNT(*) as total_records FROM audit_logs;
+
+-- Sample current data structure
+SELECT * FROM audit_logs LIMIT 3;

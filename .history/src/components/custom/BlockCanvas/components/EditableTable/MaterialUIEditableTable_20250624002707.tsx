@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * MantineEditableTable Component
+ * MaterialUIEditableTable Component
  *
- * A Mantine React Table implementation that provides full feature parity
- * with the existing EditableTable components while using Mantine's design system
+ * A Material-UI React Table implementation that provides full feature parity
+ * with the existing EditableTable components while using Material Design principles
  */
 import {
     Download,
     Edit3,
     FileSpreadsheet,
     Filter,
+    MoreHorizontal,
     Plus,
     Save,
     Search,
@@ -47,8 +48,8 @@ import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 import { DeleteConfirmDialog, TableLoadingSkeleton } from './components';
 import { CellValue, EditableTableProps } from './types';
 
-// Mantine-style table row component
-interface MantineTableRowProps<T> {
+// Material-UI style table row component
+interface MaterialUITableRowProps<T> {
     item: T;
     columns: any[];
     isEditMode: boolean;
@@ -57,9 +58,12 @@ interface MantineTableRowProps<T> {
     onEdit: (field: string, value: CellValue) => void;
     onDelete: () => void;
     editingData: Record<string, CellValue>;
+    index: number;
 }
 
-function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
+function MaterialUITableRow<
+    T extends Record<string, CellValue> & { id: string },
+>({
     item,
     columns,
     isEditMode,
@@ -68,7 +72,8 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
     onEdit,
     onDelete,
     editingData,
-}: MantineTableRowProps<T>) {
+    index,
+}: MaterialUITableRowProps<T>) {
     const [isEditing, setIsEditing] = useState(false);
     const [localEdits, setLocalEdits] = useState<Record<string, CellValue>>({});
 
@@ -96,20 +101,26 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
     };
 
     return (
-        <tr className="border-b hover:bg-muted/50 transition-colors">
-            <td className="p-4 border-r">
+        <tr
+            className={`border-t hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                index % 2 === 0
+                    ? 'bg-white dark:bg-gray-800'
+                    : 'bg-gray-25 dark:bg-gray-750'
+            }`}
+        >
+            <td className="p-3">
                 <div className="flex items-center gap-2">
                     <Checkbox checked={isSelected} onCheckedChange={onSelect} />
-                    <span className="font-mono text-sm font-medium text-foreground">
+                    <span className="font-mono text-sm font-medium">
                         {item.id}
                     </span>
                 </div>
             </td>
 
             {columns.map((column) => (
-                <td key={column.key} className="p-4 border-r last:border-r-0">
+                <td key={column.key} className="p-3">
                     {isEditing && isEditMode ? (
-                        <MantineCellEditor
+                        <MaterialUICellEditor
                             column={column}
                             value={getCellValue(column.key)}
                             onChange={(value) =>
@@ -117,7 +128,7 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                             }
                         />
                     ) : (
-                        <MantineCellDisplay
+                        <MaterialUICellDisplay
                             column={column}
                             value={getCellValue(column.key)}
                         />
@@ -125,8 +136,8 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                 </td>
             ))}
 
-            <td className="p-4">
-                <div className="flex gap-2">
+            <td className="p-3">
+                <div className="flex gap-1">
                     {isEditMode && (
                         <>
                             {isEditing ? (
@@ -134,7 +145,7 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                                     <Button
                                         size="sm"
                                         onClick={handleSave}
-                                        className="bg-green-600 hover:bg-green-700 text-white"
+                                        className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 p-0"
                                     >
                                         <Save className="h-3 w-3" />
                                     </Button>
@@ -142,6 +153,7 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                                         size="sm"
                                         variant="outline"
                                         onClick={handleCancel}
+                                        className="h-8 w-8 p-0"
                                     >
                                         <X className="h-3 w-3" />
                                     </Button>
@@ -150,17 +162,17 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
                                 <>
                                     <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant="ghost"
                                         onClick={() => setIsEditing(true)}
-                                        className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
+                                        className="text-blue-600 hover:text-blue-800 h-8 w-8 p-0"
                                     >
                                         <Edit3 className="h-3 w-3" />
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant="outline"
+                                        variant="ghost"
                                         onClick={onDelete}
-                                        className="border-red-300 text-red-700 hover:bg-red-100 dark:hover:bg-red-800"
+                                        className="text-red-600 hover:text-red-800 h-8 w-8 p-0"
                                     >
                                         <Trash2 className="h-3 w-3" />
                                     </Button>
@@ -174,25 +186,25 @@ function MantineTableRow<T extends Record<string, CellValue> & { id: string }>({
     );
 }
 
-// Mantine-style cell editor
-interface MantineCellEditorProps {
+// Material-UI style cell editor
+interface MaterialUICellEditorProps {
     column: any;
     value: CellValue;
     onChange: (value: CellValue) => void;
 }
 
-function MantineCellEditor({
+function MaterialUICellEditor({
     column,
     value,
     onChange,
-}: MantineCellEditorProps) {
+}: MaterialUICellEditorProps) {
     const stringValue = value?.toString() || '';
 
     switch (column.type) {
         case 'select':
             return (
                 <Select value={stringValue} onValueChange={onChange}>
-                    <SelectTrigger className="border-blue-300 focus:border-blue-500">
+                    <SelectTrigger className="h-8">
                         <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -210,7 +222,7 @@ function MantineCellEditor({
                     type="number"
                     value={stringValue}
                     onChange={(e) => onChange(e.target.value)}
-                    className="border-blue-300 focus:border-blue-500"
+                    className="h-8"
                 />
             );
         case 'date':
@@ -219,7 +231,7 @@ function MantineCellEditor({
                     type="date"
                     value={stringValue}
                     onChange={(e) => onChange(e.target.value)}
-                    className="border-blue-300 focus:border-blue-500"
+                    className="h-8"
                 />
             );
         default:
@@ -227,38 +239,43 @@ function MantineCellEditor({
                 <Input
                     value={stringValue}
                     onChange={(e) => onChange(e.target.value)}
-                    className="border-blue-300 focus:border-blue-500"
+                    className="h-8"
                 />
             );
     }
 }
 
-// Mantine-style cell display
-interface MantineCellDisplayProps {
+// Material-UI style cell display
+interface MaterialUICellDisplayProps {
     column: any;
     value: CellValue;
 }
 
-function MantineCellDisplay({ column, value }: MantineCellDisplayProps) {
+function MaterialUICellDisplay({ column, value }: MaterialUICellDisplayProps) {
     const stringValue = value?.toString() || '';
 
     switch (column.type) {
         case 'select':
-            return (
-                <Badge
-                    variant="outline"
-                    className="border-blue-300 text-blue-700 bg-blue-50 dark:bg-blue-900 dark:text-blue-200"
-                >
-                    {stringValue}
-                </Badge>
-            );
+            const variant = (() => {
+                switch (stringValue) {
+                    case 'Critical':
+                        return 'destructive';
+                    case 'High':
+                        return 'default';
+                    case 'Medium':
+                        return 'secondary';
+                    default:
+                        return 'outline';
+                }
+            })();
+            return <Badge variant={variant}>{stringValue}</Badge>;
         case 'number':
             return <span className="font-mono">{stringValue}</span>;
         case 'date':
             return <span className="text-sm">{stringValue}</span>;
         default:
             return (
-                <div className="cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-700 p-1 rounded-md transition-colors">
+                <div className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 p-1 rounded transition-colors">
                     {stringValue}
                 </div>
             );
@@ -266,9 +283,9 @@ function MantineCellDisplay({ column, value }: MantineCellDisplayProps) {
 }
 
 /**
- * MantineEditableTable component
+ * MaterialUIEditableTable component
  */
-export function MantineEditableTable<
+export function MaterialUIEditableTable<
     T extends Record<string, CellValue> & {
         id: string;
         ai_analysis: RequirementAiAnalysis;
@@ -297,11 +314,9 @@ export function MantineEditableTable<
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<T | null>(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
-    // User and permissions (optional for testing)
-    // const { user } = useUser();
+    // User and permissions
+    const { user } = useUser();
     const params = useParams();
 
     // Initialize local data
@@ -383,209 +398,148 @@ export function MantineEditableTable<
         return filtered;
     }, [localData, searchTerm, sortColumn, sortDirection]);
 
-    // Paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return processedData.slice(startIndex, endIndex);
-    }, [processedData, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(processedData.length / pageSize);
-
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
 
     return (
         <div className="w-full space-y-4">
-            {/* ATOMS-style toolbar */}
-            <div className="bg-muted/50 border rounded-lg p-4">
+            {/* Material-UI style toolbar */}
+            <div className="bg-gray-50 dark:bg-gray-900 border rounded-lg p-4">
                 <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to CSV functionality
-                            const csvContent = [
-                                columns.map((col) => col.header).join(','),
-                                ...processedData.map((item) =>
-                                    columns
-                                        .map(
-                                            (col) =>
-                                                item[
-                                                    col.key as keyof typeof item
-                                                ] || '',
-                                        )
-                                        .join(','),
-                                ),
-                            ].join('\n');
-
-                            const blob = new Blob([csvContent], {
-                                type: 'text/csv',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.csv';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <Download className="h-4 w-4 mr-2" />
+                    <Button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                        <Search className="h-4 w-4 mr-1" />
+                        Global Filter
+                    </Button>
+                    <Button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                        <FileSpreadsheet className="h-4 w-4 mr-1" />
                         Export CSV
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Export to JSON functionality
-                            const jsonContent = JSON.stringify(
-                                processedData,
-                                null,
-                                2,
-                            );
-                            const blob = new Blob([jsonContent], {
-                                type: 'application/json',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.json';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                        Export JSON
+                    <Button className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+                        <Download className="h-4 w-4 mr-1" />
+                        Export PDF
+                    </Button>
+                    <Button className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
+                        <FileSpreadsheet className="h-4 w-4 mr-1" />
+                        Export Excel
                     </Button>
                     {isEditMode && (
-                        <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                                // Add new row functionality
-                                const newId = `REQ-${String(localData.length + 1).padStart(3, '0')}`;
-                                const newItem = {
-                                    id: newId,
-                                    title: 'New Requirement',
-                                    description: '',
-                                    priority: 'Medium',
-                                    status: 'Draft',
-                                    assignee: '',
-                                    estimatedHours: 0,
-                                    createdDate: new Date()
-                                        .toISOString()
-                                        .split('T')[0],
-                                    ai_analysis: {
-                                        confidence: 0,
-                                        suggestions: [],
-                                        issues: [],
-                                    },
-                                };
-                                setLocalData((prev) => [
-                                    ...prev,
-                                    newItem as any,
-                                ]);
-                            }}
-                        >
-                            <Plus className="h-4 w-4 mr-2" />
+                        <Button className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+                            <Plus className="h-4 w-4 mr-1" />
                             Add Row
                         </Button>
                     )}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            // Delete selected rows
-                            if (selectedRows.size > 0) {
-                                setLocalData((prev) =>
-                                    prev.filter(
-                                        (item) => !selectedRows.has(item.id),
-                                    ),
-                                );
-                                setSelectedRows(new Set());
-                            }
-                        }}
-                        disabled={selectedRows.size === 0}
-                    >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Selected ({selectedRows.size})
+                    <Button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete Selected
                     </Button>
                 </div>
 
                 {/* Search bar */}
                 <div className="mb-4">
-                    <div className="relative">
-                        <Input
-                            placeholder="Search requirements..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="border-2 border-blue-200 dark:border-blue-700 bg-white dark:bg-blue-900 focus:border-blue-500"
-                        />
-                        <Search className="absolute right-3 top-3 h-4 w-4 text-blue-400" />
-                    </div>
+                    <Input
+                        placeholder="Search all columns..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full"
+                    />
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto border rounded-lg bg-card shadow-sm">
+                <div className="overflow-x-auto border rounded-lg bg-white dark:bg-gray-800">
                     <table className="w-full">
-                        <thead className="bg-muted/50">
+                        <thead className="bg-gray-100 dark:bg-gray-700">
                             <tr>
-                                <th className="p-4 text-left border-r">
+                                <th className="p-3 text-left">
                                     <div className="flex items-center gap-2">
                                         <Checkbox />
-                                        <span className="font-semibold text-foreground">
+                                        <span className="font-semibold">
                                             ID
+                                        </span>
+                                        <span className="text-gray-400">
+                                            ↕️
                                         </span>
                                     </div>
                                 </th>
                                 {columns.map((column) => (
                                     <th
                                         key={column.key}
-                                        className="p-4 text-left border-r border-blue-200 dark:border-blue-700 last:border-r-0"
+                                        className="p-3 text-left"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-blue-900 dark:text-blue-100">
-                                                {column.header}
-                                            </span>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => {
-                                                    if (
-                                                        sortColumn ===
-                                                        column.key
-                                                    ) {
-                                                        setSortDirection(
-                                                            sortDirection ===
-                                                                'asc'
-                                                                ? 'desc'
-                                                                : 'asc',
-                                                        );
-                                                    } else {
-                                                        setSortColumn(
-                                                            column.key,
-                                                        );
-                                                        setSortDirection('asc');
-                                                    }
-                                                }}
-                                                className="text-blue-500 hover:text-blue-700"
-                                            >
-                                                ⇅
-                                            </Button>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold">
+                                                    {column.header}
+                                                </span>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        if (
+                                                            sortColumn ===
+                                                            column.key
+                                                        ) {
+                                                            setSortDirection(
+                                                                sortDirection ===
+                                                                    'asc'
+                                                                    ? 'desc'
+                                                                    : 'asc',
+                                                            );
+                                                        } else {
+                                                            setSortColumn(
+                                                                column.key,
+                                                            );
+                                                            setSortDirection(
+                                                                'asc',
+                                                            );
+                                                        }
+                                                    }}
+                                                    className="text-gray-400 p-0 h-auto"
+                                                >
+                                                    ↕️
+                                                </Button>
+                                            </div>
+                                            {column.type === 'select' && (
+                                                <Select>
+                                                    <SelectTrigger className="w-full h-6 text-xs">
+                                                        <SelectValue placeholder="Filter..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">
+                                                            All
+                                                        </SelectItem>
+                                                        {column.options?.map(
+                                                            (
+                                                                option: string,
+                                                            ) => (
+                                                                <SelectItem
+                                                                    key={option}
+                                                                    value={
+                                                                        option
+                                                                    }
+                                                                >
+                                                                    {option}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                            {column.type === 'text' && (
+                                                <Input
+                                                    placeholder="Filter..."
+                                                    className="w-full h-6 text-xs"
+                                                />
+                                            )}
                                         </div>
                                     </th>
                                 ))}
-                                <th className="p-4 text-left">
-                                    <span className="font-semibold text-blue-900 dark:text-blue-100">
-                                        Actions
-                                    </span>
-                                </th>
+                                <th className="p-3 text-left">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item) => (
-                                <MantineTableRow
+                            {processedData.slice(0, 8).map((item, index) => (
+                                <MaterialUITableRow
                                     key={item.id}
                                     item={item}
                                     columns={columns}
@@ -607,6 +561,7 @@ export function MantineEditableTable<
                                     }
                                     onDelete={() => handleDelete(item)}
                                     editingData={editingData}
+                                    index={index}
                                 />
                             ))}
                         </tbody>
@@ -614,54 +569,20 @@ export function MantineEditableTable<
                 </div>
 
                 {/* Pagination */}
-                <div className="flex justify-between items-center mt-4 text-sm">
-                    <div className="flex items-center gap-4">
-                        <span className="text-foreground font-medium">
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} requirements
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-background"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                <div className="flex justify-between items-center mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span>Showing 8 of {localData.length} rows</span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
+                            className="hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                             Next →
                         </Button>
@@ -670,8 +591,9 @@ export function MantineEditableTable<
             </div>
 
             <div className="text-center text-sm text-muted-foreground">
-                ✨ <strong>Mantine React Table</strong> - Clean design with
-                enhanced spacing and modern blue theme
+                ✨ <strong>Material React Table</strong> - Comprehensive
+                interface with inline editing, column filtering, sorting
+                indicators, row selection, and export capabilities
             </div>
 
             {/* Delete confirmation dialog */}

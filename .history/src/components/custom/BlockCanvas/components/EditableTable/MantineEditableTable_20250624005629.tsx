@@ -383,15 +383,6 @@ export function MantineEditableTable<
         return filtered;
     }, [localData, searchTerm, sortColumn, sortDirection]);
 
-    // Paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return processedData.slice(startIndex, endIndex);
-    }, [processedData, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(processedData.length / pageSize);
-
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
@@ -584,7 +575,7 @@ export function MantineEditableTable<
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item) => (
+                            {processedData.map((item) => (
                                 <MantineTableRow
                                     key={item.id}
                                     item={item}
@@ -615,53 +606,22 @@ export function MantineEditableTable<
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm">
-                    <div className="flex items-center gap-4">
-                        <span className="text-foreground font-medium">
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} requirements
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-background"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <span className="text-blue-700 dark:text-blue-300 font-medium">
+                        Showing {processedData.length} of {localData.length}{' '}
+                        requirements
+                    </span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
+                            className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800"
                         >
                             Next →
                         </Button>
