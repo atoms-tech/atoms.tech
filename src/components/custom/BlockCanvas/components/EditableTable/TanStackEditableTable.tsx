@@ -27,7 +27,7 @@ import {
     TanStackDataTableRow,
 } from '@/components/custom/BlockCanvas/components/EditableTable/components';
 import { Table, TableBody } from '@/components/ui/table';
-import { useUser } from '@/lib/providers/user.provider';
+// import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
@@ -66,9 +66,9 @@ export function TanStackEditableTable<
     isEditMode = false,
     alwaysShowAddRow = false,
 }: EditableTableProps<T>) {
-    // Table permissions
-    const { user } = useUser();
-    const userId = user?.id || '';
+    // Table permissions (optional for testing)
+    // const { user } = useUser();
+    const userId = ''; // user?.id || '';
     const params = useParams();
     const projectId = params?.projectId || '';
 

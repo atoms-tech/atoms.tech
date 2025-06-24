@@ -13,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
 import { setCookie } from '@/app/(protected)/org/actions';
+import { TableLibrarySelector } from '@/components/custom/BlockCanvas/components/TableLibrarySelector';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -282,6 +283,20 @@ function AppSidebar() {
             </SidebarContent>
             <SidebarFooter className="px-3 py-1.5">
                 <SidebarMenu>
+                    {/* Global Table Library Selector */}
+                    <SidebarMenuItem className="mb-2">
+                        <div className="px-2">
+                            <div className="text-xs text-muted-foreground mb-1 font-medium">
+                                Table Library
+                            </div>
+                            <TableLibrarySelector
+                                size="sm"
+                                showFeatures={false}
+                                className="w-full min-w-0"
+                            />
+                        </div>
+                    </SidebarMenuItem>
+
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>

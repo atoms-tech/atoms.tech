@@ -5,12 +5,16 @@ import { create } from 'zustand';
 
 import { Block, Document } from '@/types/base/documents.types';
 
+// Table library types
+export type TableLibraryType = 'default' | 'tanstack' | 'mantine' | 'material-ui';
+
 interface DocumentState {
     currentDocument: Document | null;
     blocks: Block[];
     selectedBlockId: string | null;
     isEditMode: boolean;
-    useTanStackTables: boolean;
+    useTanStackTables: boolean; // Deprecated - kept for backward compatibility
+    tableLibrary: TableLibraryType;
 
     // Document actions
     setCurrentDocument: (document: Document | null) => void;
@@ -26,7 +30,8 @@ interface DocumentState {
     setIsEditMode: (isEditMode: boolean) => void;
 
     // Table implementation
-    setUseTanStackTables: (useTanStackTables: boolean) => void;
+    setUseTanStackTables: (useTanStackTables: boolean) => void; // Deprecated
+    setTableLibrary: (library: TableLibraryType) => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -34,7 +39,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     blocks: [],
     selectedBlockId: null,
     isEditMode: false,
-    useTanStackTables: false,
+    useTanStackTables: false, // Deprecated - kept for backward compatibility
+    tableLibrary: 'default' as TableLibraryType,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),
@@ -110,5 +116,14 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     setIsEditMode: (isEditMode) => set({ isEditMode }),
 
     // Table implementation
-    setUseTanStackTables: (useTanStackTables) => set({ useTanStackTables }),
+    setUseTanStackTables: (useTanStackTables) => {
+        // Backward compatibility: map to new table library system
+        const tableLibrary: TableLibraryType = useTanStackTables ? 'tanstack' : 'default';
+        set({ useTanStackTables, tableLibrary });
+    },
+    setTableLibrary: (tableLibrary) => {
+        // Update both new and legacy state for backward compatibility
+        const useTanStackTables = tableLibrary === 'tanstack';
+        set({ tableLibrary, useTanStackTables });
+    },
 }));

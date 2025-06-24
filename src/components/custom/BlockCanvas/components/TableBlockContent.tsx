@@ -4,6 +4,8 @@ import {
     EditableTable,
     TanStackEditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
+import { MantineEditableTable } from '@/components/custom/BlockCanvas/components/EditableTable/MantineEditableTable';
+import { MaterialUIEditableTable } from '@/components/custom/BlockCanvas/components/EditableTable/MaterialUIEditableTable';
 import {
     EditableColumn,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -40,19 +42,35 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         useTanStackTables = false,
     }) => {
         // Get global setting from doc store as fallback
-        const { useTanStackTables: globalUseTanStackTables = false } =
-            useDocumentStore();
+        const {
+            useTanStackTables: globalUseTanStackTables = false,
+            tableLibrary = 'default',
+        } = useDocumentStore();
 
         // Use prop value if provided, otherwise fall back to global setting
         const shouldUseTanStackTables =
             useTanStackTables || globalUseTanStackTables;
 
-        // Memoize the table component selection
-        const TableComponent = useMemo(
-            () =>
-                shouldUseTanStackTables ? TanStackEditableTable : EditableTable,
-            [shouldUseTanStackTables],
-        );
+        // Memoize the table component selection based on library type
+        const TableComponent = useMemo(() => {
+            // Handle backward compatibility first
+            if (shouldUseTanStackTables && tableLibrary === 'default') {
+                return TanStackEditableTable;
+            }
+
+            // Use the new table library system
+            switch (tableLibrary) {
+                case 'tanstack':
+                    return TanStackEditableTable;
+                case 'mantine':
+                    return MantineEditableTable;
+                case 'material-ui':
+                    return MaterialUIEditableTable;
+                case 'default':
+                default:
+                    return EditableTable;
+            }
+        }, [shouldUseTanStackTables, tableLibrary]);
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(

@@ -40,7 +40,7 @@ import { Json } from '@/types/base/database.types';
 
 export function BlockCanvas({
     documentId,
-    _useTanStackTables = false,
+    _useTanStackTables = false, // Deprecated: kept for backward compatibility
 }: BlockCanvasProps) {
     const rolePermissions = React.useMemo(
         () =>

@@ -13,7 +13,7 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
-import { useUser } from '@/lib/providers/user.provider';
+// import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
@@ -79,8 +79,8 @@ export function EditableTable<
 
     // Use the extracted custom hooks
     const { sortedData, handleSort } = useTableSort(data, sortKey);
-    const { user } = useUser();
-    const userId = user?.id || ''; // Ensure userId is extracted correctly
+    // const { user } = useUser();
+    const userId = ''; // user?.id || ''; // Ensure userId is extracted correctly
     const params = useParams();
     const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
 

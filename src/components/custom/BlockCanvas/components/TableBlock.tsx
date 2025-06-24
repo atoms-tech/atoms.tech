@@ -33,6 +33,7 @@ import { AddColumnDialog } from './EditableTable/components/AddColumnDialog';
 import { EditableColumnType, PropertyConfig } from './EditableTable/types';
 import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
+import { TableLibrarySelector } from './TableLibrarySelector';
 
 // Helper function to convert property type to editable column type
 const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
@@ -409,6 +410,22 @@ export const TableBlock: React.FC<BlockProps> = ({
                     projectId={projectId}
                     documentId={params.documentId as string}
                 />
+
+                {/* Table Library Selector - Only show in edit mode */}
+                {isEditMode && (
+                    <div className="px-4 py-2 bg-muted/50 border-b">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">
+                                Table Implementation:
+                            </span>
+                            <TableLibrarySelector
+                                size="sm"
+                                showFeatures={false}
+                            />
+                        </div>
+                    </div>
+                )}
+
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
                     {!block.columns ? (
                         <TableBlockLoadingState
