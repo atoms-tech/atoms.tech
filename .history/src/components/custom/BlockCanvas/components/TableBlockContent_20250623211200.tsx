@@ -13,7 +13,7 @@ import {
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { useDocumentStore } from '@/store/document.store';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
+import { generateNextReqId } from '@/utils/reqIdGenerator';
 
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
@@ -29,9 +29,6 @@ interface TableBlockContentProps {
     useTanStackTables?: boolean;
     blockId: string;
     documentId: string;
-    projectId?: string;
-    orgId?: string;
-    reqIdScope?: ReqIdScope;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -46,9 +43,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         useTanStackTables = false,
         blockId,
         documentId,
-        projectId,
-        orgId,
-        reqIdScope = 'document',
     }) => {
         // Get global setting from doc store as fallback
         const { useTanStackTables: globalUseTanStackTables = false } =
@@ -108,13 +102,10 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                                 col.accessor === 'External_ID' ||
                                 col.accessor === 'external_id'
                             ) {
-                                // Generate REQ-ID automatically with smart scoping
-                                const reqId = await generateSmartReqId(
+                                // Generate REQ-ID automatically
+                                const reqId = await generateNextReqId(
                                     blockId,
                                     documentId,
-                                    projectId,
-                                    orgId,
-                                    reqIdScope,
                                 );
                                 newItem[
                                     col.accessor as keyof DynamicRequirement
@@ -143,7 +134,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 newItem.ai_analysis = null;
                 return newItem;
             },
-            [blockId, documentId, projectId, orgId, reqIdScope],
+            [blockId, documentId],
         );
 
         // Memoize the table props to prevent unnecessary re-renders

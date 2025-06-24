@@ -13,7 +13,7 @@ import {
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { useDocumentStore } from '@/store/document.store';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
+import { generateNextReqId } from '@/utils/reqIdGenerator';
 
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
@@ -29,9 +29,6 @@ interface TableBlockContentProps {
     useTanStackTables?: boolean;
     blockId: string;
     documentId: string;
-    projectId?: string;
-    orgId?: string;
-    reqIdScope?: ReqIdScope;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -44,11 +41,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         isEditMode,
         alwaysShowAddRow = false,
         useTanStackTables = false,
-        blockId,
-        documentId,
-        projectId,
-        orgId,
-        reqIdScope = 'document',
     }) => {
         // Get global setting from doc store as fallback
         const { useTanStackTables: globalUseTanStackTables = false } =
@@ -86,66 +78,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
             await refreshRequirements();
         }, [refreshRequirements]);
 
-        // Create a custom new row initializer that auto-generates REQ-ID
-        const customNewRowInitializer = useCallback(
-            async (columns: EditableColumn<DynamicRequirement>[]) => {
-                const newItem = {} as DynamicRequirement;
-
-                // Initialize all columns with default values
-                for (const col of columns) {
-                    switch (col.type) {
-                        case 'select':
-                            newItem[col.accessor as keyof DynamicRequirement] =
-                                null;
-                            break;
-                        case 'multi_select':
-                            newItem[col.accessor as keyof DynamicRequirement] =
-                                [] as any;
-                            break;
-                        case 'text':
-                            // Check if this is the External_ID column
-                            if (
-                                col.accessor === 'External_ID' ||
-                                col.accessor === 'external_id'
-                            ) {
-                                // Generate REQ-ID automatically with smart scoping
-                                const reqId = await generateSmartReqId(
-                                    blockId,
-                                    documentId,
-                                    projectId,
-                                    orgId,
-                                    reqIdScope,
-                                );
-                                newItem[
-                                    col.accessor as keyof DynamicRequirement
-                                ] = reqId as any;
-                            } else {
-                                newItem[
-                                    col.accessor as keyof DynamicRequirement
-                                ] = '' as any;
-                            }
-                            break;
-                        case 'number':
-                            newItem[col.accessor as keyof DynamicRequirement] =
-                                null;
-                            break;
-                        case 'date':
-                            newItem[col.accessor as keyof DynamicRequirement] =
-                                null;
-                            break;
-                        default:
-                            newItem[col.accessor as keyof DynamicRequirement] =
-                                null;
-                    }
-                }
-
-                newItem.id = 'new';
-                newItem.ai_analysis = null;
-                return newItem;
-            },
-            [blockId, documentId, projectId, orgId, reqIdScope],
-        );
-
         // Memoize the table props to prevent unnecessary re-renders
         const tableProps = useMemo(
             () => ({
@@ -159,7 +91,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 showFilter: false,
                 isEditMode,
                 alwaysShowAddRow,
-                customNewRowInitializer,
             }),
             [
                 dynamicRequirements,
@@ -169,7 +100,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 handleRefresh,
                 isEditMode,
                 alwaysShowAddRow,
-                customNewRowInitializer,
             ],
         );
 

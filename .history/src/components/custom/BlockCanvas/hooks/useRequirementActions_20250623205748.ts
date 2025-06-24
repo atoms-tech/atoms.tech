@@ -20,7 +20,6 @@ import {
     Requirement,
     RequirementAiAnalysis,
 } from '@/types/base/requirements.types';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
 
 // Type for the requirement data that will be displayed in the table
 export type DynamicRequirement = {
@@ -35,9 +34,6 @@ interface UseRequirementActionsProps {
     localRequirements: Requirement[];
     setLocalRequirements: React.Dispatch<React.SetStateAction<Requirement[]>>;
     properties: Property[] | undefined;
-    projectId?: string;
-    orgId?: string;
-    reqIdScope?: ReqIdScope;
 }
 
 export const useRequirementActions = ({
@@ -46,9 +42,6 @@ export const useRequirementActions = ({
     localRequirements,
     setLocalRequirements,
     properties,
-    projectId,
-    orgId,
-    reqIdScope = 'document',
 }: UseRequirementActionsProps) => {
     const _createRequirementMutation = useCreateRequirement();
     const _updateRequirementMutation = useUpdateRequirement();
@@ -328,23 +321,10 @@ export const useRequirementActions = ({
                 // Get the last position for new requirements
                 const position = await getLastPosition();
 
-                // Generate REQ-ID if not provided in natural fields
-                let external_id = naturalFields?.external_id;
-                if (!external_id) {
-                    external_id = await generateSmartReqId(
-                        blockId,
-                        documentId,
-                        projectId,
-                        orgId,
-                        reqIdScope,
-                    );
-                }
-
                 const newRequirementData = {
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
-                    external_id, // Use generated or provided external_id
                     position, // Add the position field
                     // Ensure ai_analysis is properly initialized
                     ai_analysis: {

@@ -35,12 +35,12 @@ export function useCreateRequirement() {
             console.log('Creating requirement', input);
 
             // Generate the next available REQ-ID with smart scoping
-            const external_id = await generateSmartReqId(
+            const external_id = await generateNextReqId(
                 input.block_id,
                 input.document_id,
                 input.projectId,
                 input.orgId,
-                input.reqIdScope,
+                input.reqIdScope || 'document',
             );
 
             const insertData: TablesInsert<'requirements'> = {

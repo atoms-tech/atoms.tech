@@ -1,0 +1,251 @@
+{
+  "config": {
+    "configFile": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/playwright.config.ts",
+    "rootDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.52.0",
+    "workers": 5,
+    "webServer": {
+      "command": "bun run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 13,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:13\n\n\u001b[0m \u001b[90m 11 |\u001b[39m \u001b[90m// Landing Page User Flow Tests\u001b[39m\n \u001b[90m 12 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Landing Page User Flows'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 13 |\u001b[39m   test(\u001b[32m'New User Onboarding - Complete Journey'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 14 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 15 |\u001b[39m     \n \u001b[90m 16 |\u001b[39m     \u001b[90m// Set test metadata\u001b[39m\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 58,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:58\n\n\u001b[0m \u001b[90m 56 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 57 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 58 |\u001b[39m   test(\u001b[32m'Landing Page Performance - Load Time Analysis'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 59 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 60 |\u001b[39m     \n \u001b[90m 61 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 90,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:90\n\n\u001b[0m \u001b[90m 88 |\u001b[39m \u001b[90m// Requirements Creation User Flow\u001b[39m\n \u001b[90m 89 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Requirements Creation User Flow'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 90 |\u001b[39m   test(\u001b[32m'Complete Requirements to Diagram Journey'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m    |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 91 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 92 |\u001b[39m     \n \u001b[90m 93 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 133,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:133\n\n\u001b[0m \u001b[90m 131 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 132 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 133 |\u001b[39m   test(\u001b[32m'Requirements Input Validation'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 134 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 135 |\u001b[39m     \n \u001b[90m 136 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 170,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:170\n\n\u001b[0m \u001b[90m 168 |\u001b[39m \u001b[90m// Authentication User Flows\u001b[39m\n \u001b[90m 169 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Authentication User Flows'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 170 |\u001b[39m   test(\u001b[32m'Complete Login Flow'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 171 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 172 |\u001b[39m     \n \u001b[90m 173 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 212,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:212\n\n\u001b[0m \u001b[90m 210 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 211 |\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 212 |\u001b[39m   test(\u001b[32m'Password Reset Flow'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 213 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 214 |\u001b[39m     \n \u001b[90m 215 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 243,
+        "column": 3
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:243\n\n\u001b[0m \u001b[90m 241 |\u001b[39m \u001b[90m// Accessibility Focused Tests\u001b[39m\n \u001b[90m 242 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Accessibility Compliance Tests'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 243 |\u001b[39m   test(\u001b[32m'Comprehensive Accessibility Audit'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 244 |\u001b[39m     \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 245 |\u001b[39m     \n \u001b[90m 246 |\u001b[39m     testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 286,
+        "column": 5
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:286\n\n\u001b[0m \u001b[90m 284 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Cross-browser Compatibility'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 285 |\u001b[39m   [\u001b[32m'chromium'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'firefox'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'webkit'\u001b[39m]\u001b[33m.\u001b[39mforEach(browserName \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 286 |\u001b[39m     test(\u001b[32m`Core functionality works in ${browserName}`\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 287 |\u001b[39m       \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 288 |\u001b[39m       \n \u001b[90m 289 |\u001b[39m       testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 286,
+        "column": 5
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:286\n\n\u001b[0m \u001b[90m 284 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Cross-browser Compatibility'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 285 |\u001b[39m   [\u001b[32m'chromium'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'firefox'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'webkit'\u001b[39m]\u001b[33m.\u001b[39mforEach(browserName \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 286 |\u001b[39m     test(\u001b[32m`Core functionality works in ${browserName}`\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 287 |\u001b[39m       \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 288 |\u001b[39m       \n \u001b[90m 289 |\u001b[39m       testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    },
+    {
+      "message": "Test has unknown parameter \"testInfo\".",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/atoms.tech/tests/enhanced-user-flows.spec.ts",
+        "line": 286,
+        "column": 5
+      },
+      "snippet": "\u001b[90m   at \u001b[39menhanced-user-flows.spec.ts:286\n\n\u001b[0m \u001b[90m 284 |\u001b[39m test\u001b[33m.\u001b[39mdescribe(\u001b[32m'Cross-browser Compatibility'\u001b[39m\u001b[33m,\u001b[39m () \u001b[33m=>\u001b[39m {\n \u001b[90m 285 |\u001b[39m   [\u001b[32m'chromium'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'firefox'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'webkit'\u001b[39m]\u001b[33m.\u001b[39mforEach(browserName \u001b[33m=>\u001b[39m {\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 286 |\u001b[39m     test(\u001b[32m`Core functionality works in ${browserName}`\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page\u001b[33m,\u001b[39m testInfo }) \u001b[33m=>\u001b[39m {\n \u001b[90m     |\u001b[39m     \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 287 |\u001b[39m       \u001b[36mconst\u001b[39m helpers \u001b[33m=\u001b[39m \u001b[36mnew\u001b[39m \u001b[33mEnhancedTestHelpers\u001b[39m(page)\u001b[33m;\u001b[39m\n \u001b[90m 288 |\u001b[39m       \n \u001b[90m 289 |\u001b[39m       testInfo\u001b[33m.\u001b[39mannotations\u001b[33m.\u001b[39mpush(\u001b[0m"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-06-09T15:25:51.255Z",
+    "duration": 10645.515000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

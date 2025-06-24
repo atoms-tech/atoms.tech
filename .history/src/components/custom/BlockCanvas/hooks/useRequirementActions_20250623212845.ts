@@ -20,7 +20,7 @@ import {
     Requirement,
     RequirementAiAnalysis,
 } from '@/types/base/requirements.types';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
+import { ReqIdScope, generateNextReqId } from '@/utils/reqIdGenerator';
 
 // Type for the requirement data that will be displayed in the table
 export type DynamicRequirement = {
@@ -46,9 +46,6 @@ export const useRequirementActions = ({
     localRequirements,
     setLocalRequirements,
     properties,
-    projectId,
-    orgId,
-    reqIdScope = 'document',
 }: UseRequirementActionsProps) => {
     const _createRequirementMutation = useCreateRequirement();
     const _updateRequirementMutation = useUpdateRequirement();
@@ -331,13 +328,7 @@ export const useRequirementActions = ({
                 // Generate REQ-ID if not provided in natural fields
                 let external_id = naturalFields?.external_id;
                 if (!external_id) {
-                    external_id = await generateSmartReqId(
-                        blockId,
-                        documentId,
-                        projectId,
-                        orgId,
-                        reqIdScope,
-                    );
+                    external_id = await generateNextReqId(blockId, documentId);
                 }
 
                 const newRequirementData = {

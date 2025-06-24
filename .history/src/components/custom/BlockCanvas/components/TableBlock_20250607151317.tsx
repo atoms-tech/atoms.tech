@@ -235,9 +235,6 @@ export const TableBlock: React.FC<BlockProps> = ({
         properties: block.columns
             ?.map((col) => col.property)
             .filter(Boolean) as Property[],
-        projectId: projectId,
-        orgId: currentOrganization?.id,
-        reqIdScope: 'org', // Use organization-wide scope for maximum uniqueness
     });
 
     const handleNameChange = (newName: string) => {
@@ -392,11 +389,6 @@ export const TableBlock: React.FC<BlockProps> = ({
                 isEditMode={isEditMode}
                 alwaysShowAddRow={isEditMode}
                 useTanStackTables={useTanStackTables}
-                blockId={block.id}
-                documentId={block.document_id}
-                projectId={projectId}
-                orgId={currentOrganization?.id}
-                reqIdScope="org" // Use organization-wide scope for maximum uniqueness
             />
         );
     };

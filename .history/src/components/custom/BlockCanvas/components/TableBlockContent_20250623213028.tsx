@@ -109,7 +109,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                                 col.accessor === 'external_id'
                             ) {
                                 // Generate REQ-ID automatically with smart scoping
-                                const reqId = await generateSmartReqId(
+                                const reqId = await generateNextReqId(
                                     blockId,
                                     documentId,
                                     projectId,

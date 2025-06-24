@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Requirement } from '@/types';
 import { TablesInsert } from '@/types/base/database.types';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
+import { ReqIdScope, generateNextReqId } from '@/utils/reqIdGenerator';
 
 export type CreateRequirementInput = Omit<
     Requirement,
@@ -35,12 +35,12 @@ export function useCreateRequirement() {
             console.log('Creating requirement', input);
 
             // Generate the next available REQ-ID with smart scoping
-            const external_id = await generateSmartReqId(
+            const external_id = await generateNextReqId(
                 input.block_id,
                 input.document_id,
                 input.projectId,
                 input.orgId,
-                input.reqIdScope,
+                input.reqIdScope || 'document',
             );
 
             const insertData: TablesInsert<'requirements'> = {

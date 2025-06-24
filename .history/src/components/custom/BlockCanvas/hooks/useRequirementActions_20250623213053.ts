@@ -331,7 +331,7 @@ export const useRequirementActions = ({
                 // Generate REQ-ID if not provided in natural fields
                 let external_id = naturalFields?.external_id;
                 if (!external_id) {
-                    external_id = await generateSmartReqId(
+                    external_id = await generateNextReqId(
                         blockId,
                         documentId,
                         projectId,

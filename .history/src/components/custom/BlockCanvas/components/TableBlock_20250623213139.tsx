@@ -396,7 +396,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                 documentId={block.document_id}
                 projectId={projectId}
                 orgId={currentOrganization?.id}
-                reqIdScope="org" // Use organization-wide scope for maximum uniqueness
+                reqIdScope="document" // Default to document scope, can be made configurable
             />
         );
     };

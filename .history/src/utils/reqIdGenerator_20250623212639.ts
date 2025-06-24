@@ -150,79 +150,26 @@ export async function generateNextReqId(
 }
 
 /**
- * Extracts all numeric parts from various REQ-ID patterns
- * Supports: REQ-001, REQ-123, R-45, FR-67, NFR-89, etc.
- * @param reqId - The REQ-ID string to extract numbers from
- * @returns number[] - Array of extracted numbers
- */
-function extractReqIdNumbers(reqId: string): number[] {
-    const numbers: number[] = [];
-
-    // Common requirement ID patterns
-    const patterns = [
-        /^REQ-(\d+)$/i, // REQ-001, REQ-123
-        /^R-(\d+)$/i, // R-45
-        /^RQ-(\d+)$/i, // RQ-67
-        /^FR-(\d+)$/i, // FR-89 (Functional Requirements)
-        /^NFR-(\d+)$/i, // NFR-12 (Non-Functional Requirements)
-        /^US-(\d+)$/i, // US-34 (User Stories)
-        /^STORY-(\d+)$/i, // STORY-56
-        /^EP-(\d+)$/i, // EP-78 (Epics)
-        /^EPIC-(\d+)$/i, // EPIC-90
-        /^FEAT-(\d+)$/i, // FEAT-12 (Features)
-        /^FEATURE-(\d+)$/i, // FEATURE-34
-        /^([A-Z]{2,4})-(\d+)$/i, // Generic pattern for any 2-4 letter prefix
-    ];
-
-    for (const pattern of patterns) {
-        const match = reqId.match(pattern);
-        if (match) {
-            // For the generic pattern, we want the second capture group
-            const numStr = pattern.source.includes('([A-Z]{2,4})')
-                ? match[2]
-                : match[1];
-            const num = parseInt(numStr, 10);
-            if (!isNaN(num)) {
-                numbers.push(num);
-            }
-        }
-    }
-
-    return numbers;
-}
-
-/**
- * Validates if a REQ-ID is in a supported format
+ * Validates if a REQ-ID is in the correct format
  * @param reqId - The REQ-ID to validate
  * @returns boolean - True if valid format
  */
 export function isValidReqIdFormat(reqId: string): boolean {
-    const supportedPatterns = [
-        /^REQ-\d{3,}$/i,
-        /^R-\d{2,}$/i,
-        /^RQ-\d{2,}$/i,
-        /^FR-\d{2,}$/i,
-        /^NFR-\d{2,}$/i,
-        /^US-\d{2,}$/i,
-        /^STORY-\d{2,}$/i,
-        /^EP-\d{2,}$/i,
-        /^EPIC-\d{2,}$/i,
-        /^FEAT-\d{2,}$/i,
-        /^FEATURE-\d{2,}$/i,
-        /^[A-Z]{2,4}-\d{2,}$/i,
-    ];
-
-    return supportedPatterns.some((pattern) => pattern.test(reqId));
+    return /^REQ-\d{3,}$/.test(reqId);
 }
 
 /**
- * Extracts the numeric part from a REQ-ID (supports multiple formats)
+ * Extracts the numeric part from a REQ-ID
  * @param reqId - The REQ-ID to extract from
  * @returns number | null - The numeric part or null if invalid
  */
 export function extractReqIdNumber(reqId: string): number | null {
-    const numbers = extractReqIdNumbers(reqId);
-    return numbers.length > 0 ? numbers[0] : null;
+    const match = reqId.match(/^REQ-(\d+)$/i);
+    if (match) {
+        const num = parseInt(match[1], 10);
+        return isNaN(num) ? null : num;
+    }
+    return null;
 }
 
 /**
@@ -233,62 +180,4 @@ export function extractReqIdNumber(reqId: string): number | null {
 export function formatReqId(num: number): string {
     const formattedNumber = num.toString().padStart(3, '0');
     return `REQ-${formattedNumber}`;
-}
-
-/**
- * Determines the optimal REQ-ID scope based on available context
- * @param projectId - The project ID
- * @param orgId - The organization ID
- * @param userPreference - User's preferred scope (optional)
- * @returns ReqIdScope - The recommended scope
- */
-export function determineOptimalReqIdScope(
-    projectId?: string,
-    orgId?: string,
-    userPreference?: ReqIdScope,
-): ReqIdScope {
-    // If user has a preference, respect it
-    if (userPreference) {
-        return userPreference;
-    }
-
-    // Default logic: use the broadest available scope for better uniqueness
-    if (orgId) {
-        return 'org'; // Organization-wide unique REQ-IDs
-    } else if (projectId) {
-        return 'project'; // Project-wide unique REQ-IDs
-    } else {
-        return 'document'; // Document-wide unique REQ-IDs
-    }
-}
-
-/**
- * Smart REQ-ID generator that automatically determines the best scope
- * @param blockId - The block ID
- * @param documentId - The document ID
- * @param projectId - The project ID (optional)
- * @param orgId - The organization ID (optional)
- * @param userPreference - User's preferred scope (optional)
- * @returns Promise<string> - The next available REQ-ID
- */
-export async function generateSmartReqId(
-    blockId: string,
-    documentId?: string,
-    projectId?: string,
-    orgId?: string,
-    userPreference?: ReqIdScope,
-): Promise<string> {
-    const optimalScope = determineOptimalReqIdScope(
-        projectId,
-        orgId,
-        userPreference,
-    );
-
-    return generateNextReqId(
-        blockId,
-        documentId,
-        projectId,
-        orgId,
-        optimalScope,
-    );
 }

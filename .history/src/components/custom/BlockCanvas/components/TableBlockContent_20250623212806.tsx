@@ -13,7 +13,7 @@ import {
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { useDocumentStore } from '@/store/document.store';
-import { ReqIdScope, generateSmartReqId } from '@/utils/reqIdGenerator';
+import { ReqIdScope, generateNextReqId } from '@/utils/reqIdGenerator';
 
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
@@ -109,7 +109,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                                 col.accessor === 'external_id'
                             ) {
                                 // Generate REQ-ID automatically with smart scoping
-                                const reqId = await generateSmartReqId(
+                                const reqId = await generateNextReqId(
                                     blockId,
                                     documentId,
                                     projectId,
