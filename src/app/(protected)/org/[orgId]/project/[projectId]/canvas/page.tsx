@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, CircleAlert, Grid, PenTool, Pencil } from 'lucide-react';
+import { ChevronDown, CircleAlert, Grid, PenTool, Pencil, Zap, Palette, Settings } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -14,8 +14,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useGumloop } from '@/hooks/useGumloop';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { toast } from 'sonner';
 
 const ExcalidrawWithClientOnly = dynamic(
     async () =>
@@ -34,7 +37,16 @@ const DiagramGallery = dynamic(
     },
 );
 
+const ReactFlowCanvas = dynamic(
+    async () =>
+        (await import('@/components/reactflow/ReactFlowCanvas')).default,
+    {
+        ssr: false,
+    },
+);
+
 type DiagramType = 'flowchart' | 'sequence' | 'class';
+type DiagramTool = 'excalidraw' | 'reactflow';
 
 export default function Draw() {
     // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
@@ -44,6 +56,10 @@ export default function Draw() {
     const [excalidrawApi, setExcalidrawApi] = useState<{
         addMermaidDiagram: (mermaidSyntax: string) => Promise<void>;
     } | null>(null);
+
+    // React Flow integration
+    const [selectedTool, setSelectedTool] = useState<DiagramTool>('excalidraw');
+    const [showToolSelector, setShowToolSelector] = useState(false);
 
     // Gallery/editor state management
     const [activeTab, setActiveTab] = useState<string>('editor');
@@ -395,6 +411,45 @@ export default function Draw() {
         setCurrentDiagramName(name);
     }, []);
 
+    // Tool switching functionality
+    const tools = [
+        {
+            id: 'excalidraw' as DiagramTool,
+            name: 'Excalidraw',
+            description: 'Hand-drawn style diagrams',
+            icon: '✏️',
+            features: ['Quick sketching', 'Natural feel', 'Simple interface'],
+            bestFor: 'Brainstorming, quick sketches, informal diagrams',
+            color: 'bg-blue-50 border-blue-200',
+        },
+        {
+            id: 'reactflow' as DiagramTool,
+            name: 'React Flow',
+            description: 'Professional structured diagrams',
+            icon: '🎯',
+            features: ['Custom nodes', 'Advanced linking', 'Layout algorithms'],
+            bestFor: 'Professional diagrams, requirement traceability, workflows',
+            color: 'bg-green-50 border-green-200',
+            recommended: true,
+        },
+    ];
+
+    const handleToolChange = (tool: DiagramTool) => {
+        setSelectedTool(tool);
+        setShowToolSelector(false);
+        toast.success(`Switched to ${tools.find(t => t.id === tool)?.name}`);
+    };
+
+    const handleMigration = () => {
+        if (selectedTool === 'excalidraw') {
+            setSelectedTool('reactflow');
+            toast.success('Migrated to React Flow with enhanced features!');
+        } else {
+            setSelectedTool('excalidraw');
+            toast.success('Switched to Excalidraw for quick sketching!');
+        }
+    };
+
     return (
         <div className="flex flex-col gap-4 p-5 h-full">
             <div className="flex justify-between items-center">
@@ -415,33 +470,71 @@ export default function Draw() {
                             >
                                 <Pencil size={16} />
                             </Button>
+                            {/* Tool Indicator */}
+                            <Badge variant="outline" className="ml-2">
+                                {selectedTool === 'excalidraw' ? '✏️ Excalidraw' : '🎯 React Flow'}
+                            </Badge>
                         </>
                     ) : (
                         <h1 className="text-2xl font-bold">Diagrams</h1>
                     )}
                 </div>
-                <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="w-auto"
-                >
-                    <TabsList>
-                        <TabsTrigger
-                            value="editor"
-                            className="flex items-center gap-1.5"
-                        >
-                            <PenTool size={16} />
-                            Editor
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="gallery"
-                            className="flex items-center gap-1.5"
-                        >
-                            <Grid size={16} />
-                            Gallery
-                        </TabsTrigger>
-                    </TabsList>
-                </Tabs>
+                <div className="flex items-center gap-4">
+                    {/* Tool Switcher */}
+                    {activeTab === 'editor' && selectedDiagramId && (
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowToolSelector(true)}
+                                className="h-8"
+                            >
+                                <Settings className="w-4 h-4 mr-1" />
+                                Switch Tool
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleMigration}
+                                className="h-8"
+                            >
+                                {selectedTool === 'excalidraw' ? (
+                                    <>
+                                        <Zap className="w-4 h-4 mr-1" />
+                                        Upgrade
+                                    </>
+                                ) : (
+                                    <>
+                                        <Palette className="w-4 h-4 mr-1" />
+                                        Sketch Mode
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    )}
+                    <Tabs
+                        value={activeTab}
+                        onValueChange={setActiveTab}
+                        className="w-auto"
+                    >
+                        <TabsList>
+                            <TabsTrigger
+                                value="editor"
+                                className="flex items-center gap-1.5"
+                            >
+                                <PenTool size={16} />
+                                Editor
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="gallery"
+                                className="flex items-center gap-1.5"
+                            >
+                                <Grid size={16} />
+                                Gallery
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+                </div>
             </div>
 
             {activeTab === 'gallery' ? (
@@ -452,17 +545,29 @@ export default function Draw() {
                 />
             ) : (
                 <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-150px)]">
-                    <div className="flex-grow h-full min-h-[500px] overflow-hidden">
-                        <ExcalidrawWithClientOnly
-                            onMounted={handleExcalidrawMount}
-                            diagramId={selectedDiagramId}
-                            onDiagramSaved={handleDiagramSaved}
-                            onDiagramNameChange={handleDiagramNameChange}
-                            onDiagramIdChange={setSelectedDiagramId}
-                            key={`pendingReq-${pendingRequirementId}-${instanceKey}`}
-                            pendingRequirementId={pendingRequirementId}
-                            pendingDocumentId={pendingDocumentId}
-                        />
+                    <div className="flex-grow h-full min-h-[500px] overflow-hidden relative">
+                        {selectedTool === 'excalidraw' ? (
+                            <ExcalidrawWithClientOnly
+                                onMounted={handleExcalidrawMount}
+                                diagramId={selectedDiagramId}
+                                onDiagramSaved={handleDiagramSaved}
+                                onDiagramNameChange={handleDiagramNameChange}
+                                onDiagramIdChange={setSelectedDiagramId}
+                                key={`pendingReq-${pendingRequirementId}-${instanceKey}`}
+                                pendingRequirementId={pendingRequirementId}
+                                pendingDocumentId={pendingDocumentId}
+                            />
+                        ) : (
+                            <ReactFlowCanvas
+                                diagramId={selectedDiagramId}
+                                projectId={organizationId}
+                                collaborationEnabled={true}
+                                onSave={(nodes, edges) => {
+                                    // Handle React Flow save
+                                    console.log('React Flow saved:', { nodes, edges });
+                                }}
+                            />
+                        )}
                     </div>
                     <div className="flex-shrink-0 flex flex-col gap-2.5 p-5 bg-gray-100 dark:bg-sidebar rounded-lg h-fit">
                         <h3 className="text-xl text-BLACK dark:text-white">
@@ -532,6 +637,74 @@ export default function Draw() {
                     </div>
                 </div>
             )}
+
+            {/* Tool Selector Dialog */}
+            <Dialog open={showToolSelector} onOpenChange={setShowToolSelector}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Choose Your Diagram Tool</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            {tools.map((tool) => (
+                                <Card
+                                    key={tool.id}
+                                    className={`relative cursor-pointer transition-all hover:shadow-lg ${tool.color} ${
+                                        selectedTool === tool.id ? 'ring-2 ring-blue-500' : ''
+                                    }`}
+                                    onClick={() => handleToolChange(tool.id)}
+                                >
+                                    {tool.recommended && (
+                                        <Badge className="absolute -top-2 -right-2 bg-green-500">
+                                            Recommended
+                                        </Badge>
+                                    )}
+                                    <CardContent className="p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <span className="text-3xl">{tool.icon}</span>
+                                            <div>
+                                                <h3 className="text-xl font-bold">{tool.name}</h3>
+                                                <p className="text-gray-600">{tool.description}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div>
+                                                <h4 className="font-semibold mb-2">Features</h4>
+                                                <ul className="text-sm space-y-1">
+                                                    {tool.features.map((feature, index) => (
+                                                        <li key={index} className="flex items-center gap-2">
+                                                            <span className="text-green-500">✓</span>
+                                                            {feature}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="font-semibold mb-1">Best For</h4>
+                                                <p className="text-sm text-gray-600">{tool.bestFor}</p>
+                                            </div>
+                                        </div>
+
+                                        <Button
+                                            className="w-full mt-4"
+                                            variant={selectedTool === tool.id ? "default" : "outline"}
+                                        >
+                                            {selectedTool === tool.id ? 'Currently Selected' : `Switch to ${tool.name}`}
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm text-gray-500 mb-4">
+                                You can switch between tools anytime. Your diagrams will be preserved.
+                            </p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Rename Dialog */}
             <Dialog
