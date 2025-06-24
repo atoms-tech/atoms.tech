@@ -10,7 +10,7 @@ import {
   ExportOptions,
   ImportOptions 
 } from '@/types/react-flow.types';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { toast } from 'sonner';
 
 // API functions

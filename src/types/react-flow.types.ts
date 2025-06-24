@@ -152,6 +152,8 @@ export interface CollaborationUser {
   cursor?: { x: number; y: number };
   selection?: string[];
   color: string;
+  role?: string;
+  isOnline?: boolean;
 }
 
 // Migration

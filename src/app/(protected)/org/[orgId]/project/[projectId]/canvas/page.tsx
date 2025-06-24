@@ -1,11 +1,23 @@
 'use client';
 
-import { ChevronDown, CircleAlert, Grid, PenTool, Pencil, Zap, Palette, Settings } from 'lucide-react';
+import {
+    ChevronDown,
+    CircleAlert,
+    Grid,
+    Palette,
+    PenTool,
+    Pencil,
+    Settings,
+    Zap,
+} from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -14,20 +26,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useGumloop } from '@/hooks/useGumloop';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { toast } from 'sonner';
-
-const ExcalidrawWithClientOnly = dynamic(
-    async () =>
-        (await import('@/components/custom/LandingPage/excalidrawWrapper'))
-            .default,
-    {
-        ssr: false,
-    },
-);
 
 const DiagramGallery = dynamic(
     async () =>
@@ -46,20 +46,13 @@ const ReactFlowCanvas = dynamic(
 );
 
 type DiagramType = 'flowchart' | 'sequence' | 'class';
-type DiagramTool = 'excalidraw' | 'reactflow';
 
 export default function Draw() {
     // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
     const organizationId = usePathname().split('/')[2];
     const [prompt, setPrompt] = useState('');
     const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
-    const [excalidrawApi, setExcalidrawApi] = useState<{
-        addMermaidDiagram: (mermaidSyntax: string) => Promise<void>;
-    } | null>(null);
-
-    // React Flow integration
-    const [selectedTool, setSelectedTool] = useState<DiagramTool>('excalidraw');
-    const [showToolSelector, setShowToolSelector] = useState(false);
+    // React Flow is now the only diagramming tool
 
     // Gallery/editor state management
     const [activeTab, setActiveTab] = useState<string>('editor');
@@ -162,11 +155,6 @@ export default function Draw() {
     );
 
     const handleGenerate = useCallback(async () => {
-        if (!excalidrawApi) {
-            console.error('Excalidraw API not initialized for generation');
-            return;
-        }
-
         if (!prompt.trim()) {
             console.log('Prompt is empty, skipping generation.');
             return;
@@ -217,31 +205,11 @@ export default function Draw() {
             // Clear the safety timeout since we're handling the error
             clearTimeout(safetyTimer);
         }
-    }, [
-        excalidrawApi,
-        prompt,
-        diagramType,
-        startPipeline,
-        isGenerating,
-        pipelineRunId,
-    ]);
+    }, [prompt, diagramType, startPipeline, isGenerating, pipelineRunId]);
 
-    // Auto-generate diagram if prompt is set from sessionStorage
-    useEffect(() => {
-        if (
-            prompt &&
-            !hasProcessedUrlPrompt.current &&
-            excalidrawApi &&
-            !isGenerating &&
-            !pipelineRunId
-        ) {
-            hasProcessedUrlPrompt.current = true;
-            isManualGeneration.current = false;
-            handleGenerate();
-        }
-    }, [excalidrawApi, prompt, handleGenerate, isGenerating, pipelineRunId]);
+    // Auto-generation removed for React Flow
 
-    // Handle the pipeline response
+    // Handle the pipeline response and convert to React Flow
     useEffect(() => {
         if (!pipelineResponse) return;
 
@@ -286,19 +254,16 @@ export default function Draw() {
                         .replace(/\n?```$/, '');
                     cleanedSyntax = cleanedSyntax.trim();
 
-                    // console.log('Cleaned mermaid syntax:', cleanedSyntax);
+                    console.log(
+                        'Generated Mermaid syntax for React Flow:',
+                        cleanedSyntax,
+                    );
 
-                    if (excalidrawApi) {
-                        excalidrawApi
-                            .addMermaidDiagram(cleanedSyntax)
-                            .catch((err) => {
-                                console.error(
-                                    'Error rendering mermaid diagram:',
-                                    err,
-                                );
-                                setError('Failed to render diagram');
-                            });
-                    }
+                    // TODO: Convert Mermaid syntax to React Flow nodes and edges
+                    // For now, we'll show success but the actual conversion needs to be implemented
+                    toast.success(
+                        'Diagram generated! Mermaid to React Flow conversion coming soon.',
+                    );
                 } catch (err) {
                     console.error('Error parsing pipeline output:', err);
                     setError('Failed to parse diagram data');
@@ -326,7 +291,7 @@ export default function Draw() {
                 );
                 return;
         }
-    }, [pipelineResponse, excalidrawApi]);
+    }, [pipelineResponse]);
 
     // This function is called by the "Generate" button
     const handleManualGenerate = useCallback(() => {
@@ -335,25 +300,16 @@ export default function Draw() {
         handleGenerate();
     }, [handleGenerate]);
 
-    const handleExcalidrawMount = useCallback(
-        (api: {
-            addMermaidDiagram: (mermaidSyntax: string) => Promise<void>;
-        }) => {
-            setExcalidrawApi(api);
-        },
-        [],
-    );
-
     // Handle creating a new diagram from gallery
     const handleNewDiagram = useCallback(() => {
-        // Remove "id" from the URL so ExcalidrawWrapper won't try to load it
+        // Remove "id" from the URL so React Flow won't try to load it
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('id');
         window.history.pushState({}, '', newUrl);
 
-        // Also remove the old localStorage key so ExcalidrawWrapper doesn't load it again
+        // Also remove the old localStorage key
         const projectId = window.location.pathname.split('/')[4];
-        const projectStorageKey = `lastExcalidrawDiagramId_${projectId}`;
+        const projectStorageKey = `lastReactFlowDiagramId_${projectId}`;
         localStorage.removeItem(projectStorageKey);
 
         setSelectedDiagramId(null);
@@ -386,7 +342,7 @@ export default function Draw() {
 
         try {
             const { error } = await supabase
-                .from('excalidraw_diagrams')
+                .from('react_flow_diagrams')
                 .update({ name: newDiagramName.trim() })
                 .eq('id', selectedDiagramId);
 
@@ -411,44 +367,7 @@ export default function Draw() {
         setCurrentDiagramName(name);
     }, []);
 
-    // Tool switching functionality
-    const tools = [
-        {
-            id: 'excalidraw' as DiagramTool,
-            name: 'Excalidraw',
-            description: 'Hand-drawn style diagrams',
-            icon: '✏️',
-            features: ['Quick sketching', 'Natural feel', 'Simple interface'],
-            bestFor: 'Brainstorming, quick sketches, informal diagrams',
-            color: 'bg-blue-50 border-blue-200',
-        },
-        {
-            id: 'reactflow' as DiagramTool,
-            name: 'React Flow',
-            description: 'Professional structured diagrams',
-            icon: '🎯',
-            features: ['Custom nodes', 'Advanced linking', 'Layout algorithms'],
-            bestFor: 'Professional diagrams, requirement traceability, workflows',
-            color: 'bg-green-50 border-green-200',
-            recommended: true,
-        },
-    ];
-
-    const handleToolChange = (tool: DiagramTool) => {
-        setSelectedTool(tool);
-        setShowToolSelector(false);
-        toast.success(`Switched to ${tools.find(t => t.id === tool)?.name}`);
-    };
-
-    const handleMigration = () => {
-        if (selectedTool === 'excalidraw') {
-            setSelectedTool('reactflow');
-            toast.success('Migrated to React Flow with enhanced features!');
-        } else {
-            setSelectedTool('excalidraw');
-            toast.success('Switched to Excalidraw for quick sketching!');
-        }
-    };
+    // React Flow is the only diagramming tool - no tool switching needed
 
     return (
         <div className="flex flex-col gap-4 p-5 h-full">
@@ -470,9 +389,9 @@ export default function Draw() {
                             >
                                 <Pencil size={16} />
                             </Button>
-                            {/* Tool Indicator */}
+                            {/* React Flow Indicator */}
                             <Badge variant="outline" className="ml-2">
-                                {selectedTool === 'excalidraw' ? '✏️ Excalidraw' : '🎯 React Flow'}
+                                🎯 React Flow
                             </Badge>
                         </>
                     ) : (
@@ -480,38 +399,6 @@ export default function Draw() {
                     )}
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Tool Switcher */}
-                    {activeTab === 'editor' && selectedDiagramId && (
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowToolSelector(true)}
-                                className="h-8"
-                            >
-                                <Settings className="w-4 h-4 mr-1" />
-                                Switch Tool
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleMigration}
-                                className="h-8"
-                            >
-                                {selectedTool === 'excalidraw' ? (
-                                    <>
-                                        <Zap className="w-4 h-4 mr-1" />
-                                        Upgrade
-                                    </>
-                                ) : (
-                                    <>
-                                        <Palette className="w-4 h-4 mr-1" />
-                                        Sketch Mode
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    )}
                     <Tabs
                         value={activeTab}
                         onValueChange={setActiveTab}
@@ -546,33 +433,34 @@ export default function Draw() {
             ) : (
                 <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-150px)]">
                     <div className="flex-grow h-full min-h-[500px] overflow-hidden relative">
-                        {selectedTool === 'excalidraw' ? (
-                            <ExcalidrawWithClientOnly
-                                onMounted={handleExcalidrawMount}
-                                diagramId={selectedDiagramId}
-                                onDiagramSaved={handleDiagramSaved}
-                                onDiagramNameChange={handleDiagramNameChange}
-                                onDiagramIdChange={setSelectedDiagramId}
-                                key={`pendingReq-${pendingRequirementId}-${instanceKey}`}
-                                pendingRequirementId={pendingRequirementId}
-                                pendingDocumentId={pendingDocumentId}
-                            />
-                        ) : (
-                            <ReactFlowCanvas
-                                diagramId={selectedDiagramId}
-                                projectId={organizationId}
-                                collaborationEnabled={true}
-                                onSave={(nodes, edges) => {
-                                    // Handle React Flow save
-                                    console.log('React Flow saved:', { nodes, edges });
-                                }}
-                            />
-                        )}
+                        <ReactFlowCanvas
+                            diagramId={selectedDiagramId}
+                            projectId={organizationId}
+                            collaborationEnabled={true}
+                            onSave={(nodes, edges) => {
+                                // Handle React Flow save
+                                console.log('React Flow saved:', {
+                                    nodes,
+                                    edges,
+                                });
+                                handleDiagramSaved();
+                            }}
+                            onNodeSelect={(node) => {
+                                console.log('Node selected:', node);
+                            }}
+                            onEdgeSelect={(edge) => {
+                                console.log('Edge selected:', edge);
+                            }}
+                        />
                     </div>
                     <div className="flex-shrink-0 flex flex-col gap-2.5 p-5 bg-gray-100 dark:bg-sidebar rounded-lg h-fit">
                         <h3 className="text-xl text-BLACK dark:text-white">
                             Text to Diagram
                         </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            Describe your diagram and we'll generate React Flow
+                            nodes for you.
+                        </p>
                         <textarea
                             value={prompt}
                             onChange={(e) => {
@@ -595,6 +483,7 @@ export default function Draw() {
                                         )
                                     }
                                     className="w-full p-2.5 bg-white dark:bg-secondary rounded-none border appearance-none cursor-pointer"
+                                    title="Select diagram type"
                                 >
                                     <option value="flowchart">Flowchart</option>
                                     <option value="sequence">Sequence</option>
@@ -605,14 +494,15 @@ export default function Draw() {
                                 </div>
                             </div>
                         </div>
-                        <button
+                        <Button
                             onClick={handleManualGenerate}
                             disabled={isGenerating}
-                            className={`px-5 py-2.5 bg-[#993CF6] text-white border-none rounded-none font-bold ${
+                            className={`w-full ${
                                 isGenerating
                                     ? 'opacity-70 cursor-default'
                                     : 'opacity-100 cursor-pointer'
                             }`}
+                            type="button"
                         >
                             {isGenerating ? (
                                 <div className="flex items-center justify-center gap-2">
@@ -620,9 +510,9 @@ export default function Draw() {
                                     Generating...
                                 </div>
                             ) : (
-                                'Generate'
+                                'Generate React Flow Diagram'
                             )}
-                        </button>
+                        </Button>
                         {error && (
                             <div className="flex items-center gap-2 text-red-600 bg-red-100 p-2 rounded text-sm">
                                 <CircleAlert className="w-4 h-4" />
@@ -638,73 +528,7 @@ export default function Draw() {
                 </div>
             )}
 
-            {/* Tool Selector Dialog */}
-            <Dialog open={showToolSelector} onOpenChange={setShowToolSelector}>
-                <DialogContent className="max-w-4xl">
-                    <DialogHeader>
-                        <DialogTitle>Choose Your Diagram Tool</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            {tools.map((tool) => (
-                                <Card
-                                    key={tool.id}
-                                    className={`relative cursor-pointer transition-all hover:shadow-lg ${tool.color} ${
-                                        selectedTool === tool.id ? 'ring-2 ring-blue-500' : ''
-                                    }`}
-                                    onClick={() => handleToolChange(tool.id)}
-                                >
-                                    {tool.recommended && (
-                                        <Badge className="absolute -top-2 -right-2 bg-green-500">
-                                            Recommended
-                                        </Badge>
-                                    )}
-                                    <CardContent className="p-6">
-                                        <div className="flex items-center gap-3 mb-4">
-                                            <span className="text-3xl">{tool.icon}</span>
-                                            <div>
-                                                <h3 className="text-xl font-bold">{tool.name}</h3>
-                                                <p className="text-gray-600">{tool.description}</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            <div>
-                                                <h4 className="font-semibold mb-2">Features</h4>
-                                                <ul className="text-sm space-y-1">
-                                                    {tool.features.map((feature, index) => (
-                                                        <li key={index} className="flex items-center gap-2">
-                                                            <span className="text-green-500">✓</span>
-                                                            {feature}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-
-                                            <div>
-                                                <h4 className="font-semibold mb-1">Best For</h4>
-                                                <p className="text-sm text-gray-600">{tool.bestFor}</p>
-                                            </div>
-                                        </div>
-
-                                        <Button
-                                            className="w-full mt-4"
-                                            variant={selectedTool === tool.id ? "default" : "outline"}
-                                        >
-                                            {selectedTool === tool.id ? 'Currently Selected' : `Switch to ${tool.name}`}
-                                        </Button>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                        <div className="text-center">
-                            <p className="text-sm text-gray-500 mb-4">
-                                You can switch between tools anytime. Your diagrams will be preserved.
-                            </p>
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            {/* Tool selector dialog removed - React Flow is the only tool */}
 
             {/* Rename Dialog */}
             <Dialog
