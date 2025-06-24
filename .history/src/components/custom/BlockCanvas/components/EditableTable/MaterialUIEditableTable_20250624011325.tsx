@@ -401,15 +401,6 @@ export function MaterialUIEditableTable<
         return filtered;
     }, [localData, searchTerm, sortColumn, sortDirection]);
 
-    // Paginated data
-    const paginatedData = useMemo(() => {
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        return processedData.slice(startIndex, endIndex);
-    }, [processedData, currentPage, pageSize]);
-
-    const totalPages = Math.ceil(processedData.length / pageSize);
-
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
@@ -419,143 +410,31 @@ export function MaterialUIEditableTable<
             {/* Material-UI style toolbar */}
             <div className="bg-gray-50 dark:bg-gray-900 border rounded-lg p-4">
                 <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                        onClick={() => {
-                            // Export to CSV functionality
-                            const csvContent = [
-                                columns.map((col) => col.header).join(','),
-                                ...processedData.map((item) =>
-                                    columns
-                                        .map(
-                                            (col) =>
-                                                item[
-                                                    col.key as keyof typeof item
-                                                ] || '',
-                                        )
-                                        .join(','),
-                                ),
-                            ].join('\n');
-
-                            const blob = new Blob([csvContent], {
-                                type: 'text/csv',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.csv';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
+                    <Button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                        <Search className="h-4 w-4 mr-1" />
+                        Global Filter
+                    </Button>
+                    <Button className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                         <FileSpreadsheet className="h-4 w-4 mr-1" />
                         Export CSV
                     </Button>
-                    <Button
-                        className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                        onClick={() => {
-                            // Export to JSON functionality
-                            const jsonContent = JSON.stringify(
-                                processedData,
-                                null,
-                                2,
-                            );
-                            const blob = new Blob([jsonContent], {
-                                type: 'application/json',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.json';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
+                    <Button className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
                         <Download className="h-4 w-4 mr-1" />
-                        Export JSON
+                        Export PDF
                     </Button>
-                    <Button
-                        className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
-                        onClick={() => {
-                            // Export to Excel functionality (TSV format)
-                            const tsvContent = [
-                                columns.map((col) => col.header).join('\t'),
-                                ...processedData.map((item) =>
-                                    columns
-                                        .map(
-                                            (col) =>
-                                                item[
-                                                    col.key as keyof typeof item
-                                                ] || '',
-                                        )
-                                        .join('\t'),
-                                ),
-                            ].join('\n');
-
-                            const blob = new Blob([tsvContent], {
-                                type: 'text/tab-separated-values',
-                            });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'requirements.xlsx';
-                            a.click();
-                            window.URL.revokeObjectURL(url);
-                        }}
-                    >
+                    <Button className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700">
                         <FileSpreadsheet className="h-4 w-4 mr-1" />
                         Export Excel
                     </Button>
                     {isEditMode && (
-                        <Button
-                            className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
-                            onClick={() => {
-                                // Add new row functionality
-                                const newId = `REQ-${String(localData.length + 1).padStart(3, '0')}`;
-                                const newItem = {
-                                    id: newId,
-                                    title: 'New Requirement',
-                                    description: '',
-                                    priority: 'Medium',
-                                    status: 'Draft',
-                                    assignee: '',
-                                    estimatedHours: 0,
-                                    createdDate: new Date()
-                                        .toISOString()
-                                        .split('T')[0],
-                                    ai_analysis: {
-                                        confidence: 0,
-                                        suggestions: [],
-                                        issues: [],
-                                    },
-                                };
-                                setLocalData((prev) => [
-                                    ...prev,
-                                    newItem as any,
-                                ]);
-                            }}
-                        >
+                        <Button className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
                             <Plus className="h-4 w-4 mr-1" />
                             Add Row
                         </Button>
                     )}
-                    <Button
-                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                        onClick={() => {
-                            // Delete selected rows
-                            if (selectedRows.size > 0) {
-                                setLocalData((prev) =>
-                                    prev.filter(
-                                        (item) => !selectedRows.has(item.id),
-                                    ),
-                                );
-                                setSelectedRows(new Set());
-                            }
-                        }}
-                        disabled={selectedRows.size === 0}
-                    >
+                    <Button className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700">
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Delete Selected ({selectedRows.size})
+                        Delete Selected
                     </Button>
                 </div>
 
@@ -662,7 +541,7 @@ export function MaterialUIEditableTable<
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item, index) => (
+                            {processedData.slice(0, 8).map((item, index) => (
                                 <MaterialUITableRow
                                     key={item.id}
                                     item={item}
@@ -694,55 +573,19 @@ export function MaterialUIEditableTable<
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-4">
-                        <span>
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} rows
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <span>Showing 8 of {localData.length} rows</span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
                             className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
                             className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
                         >
                             Next →
                         </Button>

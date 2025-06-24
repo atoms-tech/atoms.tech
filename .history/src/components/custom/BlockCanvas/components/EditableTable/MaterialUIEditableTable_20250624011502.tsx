@@ -662,7 +662,7 @@ export function MaterialUIEditableTable<
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedData.map((item, index) => (
+                            {processedData.slice(0, 8).map((item, index) => (
                                 <MaterialUITableRow
                                     key={item.id}
                                     item={item}
@@ -694,55 +694,19 @@ export function MaterialUIEditableTable<
 
                 {/* Pagination */}
                 <div className="flex justify-between items-center mt-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-4">
-                        <span>
-                            Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                            {Math.min(
-                                currentPage * pageSize,
-                                processedData.length,
-                            )}{' '}
-                            of {processedData.length} rows
-                        </span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border rounded px-2 py-1 text-sm bg-white dark:bg-gray-800"
-                            aria-label="Items per page"
-                        >
-                            <option value={5}>5 per page</option>
-                            <option value={10}>10 per page</option>
-                            <option value={25}>25 per page</option>
-                            <option value={50}>50 per page</option>
-                        </select>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <span>Showing 8 of {localData.length} rows</span>
+                    <div className="flex gap-2">
                         <Button
                             variant="outline"
                             size="sm"
                             className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() =>
-                                setCurrentPage((prev) => Math.max(1, prev - 1))
-                            }
-                            disabled={currentPage === 1}
                         >
                             ← Previous
                         </Button>
-                        <span className="text-sm">
-                            Page {currentPage} of {totalPages}
-                        </span>
                         <Button
                             variant="outline"
                             size="sm"
                             className="hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() =>
-                                setCurrentPage((prev) =>
-                                    Math.min(totalPages, prev + 1),
-                                )
-                            }
-                            disabled={currentPage === totalPages}
                         >
                             Next →
                         </Button>
