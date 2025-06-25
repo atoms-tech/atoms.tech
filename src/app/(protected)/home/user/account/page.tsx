@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Maximize2, Minimize2, Moon, Pencil, Sun, User } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -15,11 +16,11 @@ import SettingsSection from './SettingsSection';
 
 export default function AccountPage() {
     const { user, profile, refreshUser } = useUser();
+    const { theme, setTheme} = useTheme();
     const [editingName, setEditingName] = useState(false);
     const [newName, setNewName] = useState(profile?.full_name || '');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [layout, setLayout] = useState<'wide' | 'standard'>('standard');
     const [mounted, setMounted] = useState(false);
 
@@ -66,9 +67,7 @@ export default function AccountPage() {
     };
 
     const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        setTheme(theme === 'light' ? 'dark' : 'light');
     };
 
     const toggleLayout = () => {
