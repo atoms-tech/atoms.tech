@@ -10,7 +10,7 @@ import {
     Trash,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import EditDocumentForm from '@/components/base/forms/EditDocumentForm';
@@ -60,9 +60,13 @@ const CreatePanel = dynamic(
 
 export default function ProjectPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-    const [activeTab, setActiveTab] = useState('documents');
+
+    // Get current tab from URL params, default to 'documents' if not present
+    const currentTabFromUrl = searchParams.get('currentTab') || 'documents';
+    const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [searchQuery, setSearchQuery] = useState('');
     const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
         useState(false);
@@ -240,6 +244,22 @@ export default function ProjectPage() {
         doc.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
+    // Update URL when tab changes
+    const handleTabChange = (newTab: string) => {
+        setActiveTab(newTab);
+        const params = new URLSearchParams(searchParams);
+        params.set('currentTab', newTab);
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Sync tab state with URL params when they change
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('currentTab');
+        if (tabFromUrl && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams, activeTab]);
+
     return (
         <div className="container mx-auto p-6 space-y-6">
             {/* Project Header */}
@@ -257,9 +277,9 @@ export default function ProjectPage() {
 
             {/* Tabs Menu */}
             <Tabs
-                defaultValue="document"
+                defaultValue={currentTabFromUrl}
                 value={activeTab}
-                onValueChange={setActiveTab}
+                onValueChange={handleTabChange}
                 className="w-full"
             >
                 <TabsList className="grid grid-cols-2 w-full">

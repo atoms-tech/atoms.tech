@@ -43,11 +43,14 @@ export function useCreateProject() {
                 .single();
 
             if (projectError) {
-                console.error('Failed to create project', projectError);
-                throw projectError;
+                throw new Error(
+                    `Failed to create project, Supabase insert error: '${projectError.message || 'Unknown error'}`,
+                );
             }
             if (!project) {
-                throw new Error('Failed to create project');
+                throw new Error(
+                    'Failed to create project, insert returned no data.',
+                );
             }
 
             return project;

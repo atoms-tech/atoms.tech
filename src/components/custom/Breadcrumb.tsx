@@ -6,7 +6,9 @@ import type { FC } from 'react';
 import { Fragment } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { useBreadcrumbData } from '@/hooks/useBreadcrumbData';
+import { useDocument } from '@/hooks/queries/useDocument';
+import { useOrganization } from '@/hooks/queries/useOrganization';
+import { useProject } from '@/hooks/queries/useProject';
 import { cn } from '@/lib/utils';
 
 interface BreadcrumbProps {
@@ -15,86 +17,76 @@ interface BreadcrumbProps {
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
     const router = useRouter();
-    const pathname = usePathname();
-    const pathSegments = pathname.split('/').filter(Boolean);
+    const pathSegments = usePathname().split('/').filter(Boolean);
 
-    // Always call useBreadcrumbData
-    const { orgName, projectName, documentName } =
-        useBreadcrumbData(pathSegments);
+    const breadcrumbs: string[] = [];
 
-    const getBreadcrumbs = () => {
-        // Handle the new URL structure
-        if (
-            pathSegments[0] === 'org' &&
-            pathSegments[1] === 'project' &&
-            pathSegments.length >= 3
-        ) {
-            // New structure: /org/[orgId]/project/[projectId]/...
-            const section = pathSegments[3];
+    let orgId = '';
+    let projectId = '';
+    let documentId = '';
 
-            if (pathSegments.length >= 4) {
-                if (section === 'documents' && documentName) {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Documents',
-                        documentName,
-                    ];
-                } else if (section === 'requirements') {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Requirements',
-                        pathSegments[4],
-                    ];
-                }
-            }
+    for (let i = 0; i < pathSegments.length; i++) {
+        switch (pathSegments[i]) {
+            case 'org':
+                i++;
+                orgId = i < pathSegments.length ? pathSegments[i] : '';
+                break;
+            case 'project':
+                i++;
+                projectId = i < pathSegments.length ? pathSegments[i] : '';
+                break;
+            case 'documents':
+                i++;
+                documentId = i < pathSegments.length ? pathSegments[i] : '';
+                break;
+        }
+    }
 
-            return [orgName || 'Organization', projectName || 'Project'];
+    const orgName =
+        useOrganization(orgId).data?.name || 'Undefined Organization Name';
+    const projectName =
+        useProject(projectId).data?.name || 'Undefined Project Name';
+    const documentName =
+        useDocument(documentId).data?.name || 'Undefined Document Name';
+
+    for (let i = 0; i < pathSegments.length; i++) {
+        switch (pathSegments[i]) {
+            case 'org':
+                i++;
+                breadcrumbs.push(orgName);
+                break;
+            case 'project':
+                i++;
+                breadcrumbs.push(projectName);
+                break;
+            case 'documents':
+                i++;
+                breadcrumbs.push(documentName);
+                break;
+            default:
+                breadcrumbs.push(
+                    pathSegments[i].charAt(0).toUpperCase() +
+                        pathSegments[i].slice(1),
+                );
+        }
+    }
+
+    const goToParentPage = (pathSegments: string[]) => {
+        pathSegments.pop();
+        // Handles when the parent path cannot be routed to normally
+        switch (pathSegments[pathSegments.length - 1]) {
+            case 'org':
+                pathSegments = ['home', 'user'];
+                break;
+            case 'project':
+            case 'documents':
+            case 'requirements':
+                pathSegments.pop();
+                break;
         }
 
-        // Handle the old URL structure
-        if (pathSegments.length >= 3) {
-            const section = pathSegments[3];
-
-            if (pathSegments[2] === 'externalDocs') {
-                return [orgName || 'Organization', 'External Docs'];
-            }
-
-            if (pathSegments.length >= 4) {
-                if (section === 'documents' && documentName) {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Documents',
-                        documentName,
-                    ];
-                } else if (section === 'requirements') {
-                    return [
-                        orgName || 'Organization',
-                        projectName || 'Project',
-                        'Requirements',
-                        pathSegments[4],
-                    ];
-                }
-            }
-
-            return [orgName || 'Organization', projectName || 'Project'];
-        }
-
-        // Default case - just show the path segments with proper formatting
-        return pathSegments.map((segment, index) => {
-            if (segment === 'org') return 'Organization';
-            if (segment === 'project') return 'Project';
-            if (index === 1 && pathSegments[0] === 'org')
-                return orgName || 'Organization';
-            if (index === 2 && pathSegments[1] === 'project')
-                return projectName || 'Project';
-            return segment.charAt(0).toUpperCase() + segment.slice(1);
-        });
+        router.push('/' + pathSegments.join('/'));
     };
-
-    const breadcrumbs = getBreadcrumbs();
 
     return (
         <div
@@ -107,7 +99,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4 hover:bg-transparent"
-                onClick={() => router.back()}
+                onClick={() => goToParentPage(pathSegments)}
             >
                 <ChevronLeft className="h-3 w-3" />
             </Button>
