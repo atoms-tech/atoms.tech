@@ -11,7 +11,6 @@ import {
     Trash,
     User,
     Clock,
-    Download,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -512,13 +511,6 @@ export default function ProjectPage() {
                                                                     Edit Document
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleDocumentClick(doc)}
-                                                                className="gap-3 py-2.5"
-                                                            >
-                                                                <Download className="h-4 w-4" />
-                                                                Open Document
-                                                            </DropdownMenuItem>
                                                             {canPerformAction('deleteDocument') && (
                                                                 <DropdownMenuItem
                                                                     className="text-destructive gap-3 py-2.5"
