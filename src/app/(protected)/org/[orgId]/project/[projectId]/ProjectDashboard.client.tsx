@@ -2,15 +2,13 @@
 
 import {
     Beaker,
-    Calendar,
+    Clock,
     FileText,
     FolderOpen,
     MoreVertical,
     Pencil,
     PlusCircle,
     Trash,
-    User,
-    Clock,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -38,11 +36,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
-import { useProfile } from '@/hooks/queries/useProfile';
 
 import ProjectMembers from './ProjectMembers';
 
@@ -63,11 +61,11 @@ const CreatePanel = dynamic(
 );
 
 // Add a small component to display user information
-function UserInfo({ userId }: { userId: string | null }) {
+function _UserInfo({ userId }: { userId: string | null }) {
     const { data: profile } = useProfile(userId || '');
-    
+
     if (!userId) return <span>Unknown</span>;
-    
+
     return (
         <span>
             {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
@@ -462,12 +460,13 @@ export default function ProjectPage() {
                                     key={doc.id}
                                     className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
                                     style={{
-                                        boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
+                                        boxShadow:
+                                            '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
                                     }}
                                 >
                                     {/* Document paper effect shadow */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
-                                    
+
                                     <div className="flex flex-col h-full p-3 relative z-10">
                                         {/* Header with Icon and Actions */}
                                         <div className="flex items-start justify-between mb-3">
@@ -476,11 +475,11 @@ export default function ProjectPage() {
                                                 <div className="relative">
                                                     {/* Back papers for stack effect */}
                                                     <div className="absolute top-0.5 left-0.5 w-6 h-7 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm opacity-50"></div>
-                                                    
+
                                                     {/* Main document */}
                                                     <div className="relative w-6 h-7 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-sm flex items-center justify-center shadow-sm">
                                                         <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                                                        
+
                                                         {/* Folded corner effect */}
                                                         <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-md transform rotate-0"></div>
                                                     </div>
@@ -488,11 +487,17 @@ export default function ProjectPage() {
                                             </div>
 
                                             {/* Actions Menu */}
-                                            {(canPerformAction('editDocument') ||
-                                                canPerformAction('deleteDocument')) && (
+                                            {(canPerformAction(
+                                                'editDocument',
+                                            ) ||
+                                                canPerformAction(
+                                                    'deleteDocument',
+                                                )) && (
                                                 <div className="flex-shrink-0">
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
@@ -501,23 +506,40 @@ export default function ProjectPage() {
                                                                 <MoreVertical className="h-3 w-3" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-44">
-                                                            {canPerformAction('editDocument') && (
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-44"
+                                                        >
+                                                            {canPerformAction(
+                                                                'editDocument',
+                                                            ) && (
                                                                 <DropdownMenuItem
-                                                                    onClick={() => handleEditDocument(doc)}
+                                                                    onClick={() =>
+                                                                        handleEditDocument(
+                                                                            doc,
+                                                                        )
+                                                                    }
                                                                     className="gap-3 py-2.5"
                                                                 >
                                                                     <Pencil className="h-4 w-4" />
-                                                                    Edit Document
+                                                                    Edit
+                                                                    Document
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {canPerformAction('deleteDocument') && (
+                                                            {canPerformAction(
+                                                                'deleteDocument',
+                                                            ) && (
                                                                 <DropdownMenuItem
                                                                     className="text-destructive gap-3 py-2.5"
-                                                                    onClick={() => setDocumentToDelete(doc)}
+                                                                    onClick={() =>
+                                                                        setDocumentToDelete(
+                                                                            doc,
+                                                                        )
+                                                                    }
                                                                 >
                                                                     <Trash className="h-4 w-4" />
-                                                                    Delete Document
+                                                                    Delete
+                                                                    Document
                                                                 </DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
@@ -529,59 +551,81 @@ export default function ProjectPage() {
                                         {/* Document Info - Clickable Area */}
                                         <div
                                             className="flex-1 cursor-pointer flex flex-col"
-                                            onClick={() => handleDocumentClick(doc)}
+                                            onClick={() =>
+                                                handleDocumentClick(doc)
+                                            }
                                         >
                                             <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2 leading-tight">
                                                 {doc.name}
                                             </h3>
-                                            
+
                                             {doc.description && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
                                                     {doc.description}
                                                 </p>
                                             )}
-                                            
+
                                             {/* Document Metadata - Bottom */}
                                             <div className="mt-auto space-y-1">
                                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                     <Clock className="h-3 w-3 flex-shrink-0" />
                                                     <span className="truncate">
-                                                        {doc.updated_at ? 
-                                                            new Date(doc.updated_at).toLocaleDateString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            }) 
-                                                            : doc.created_at ?
-                                                            new Date(doc.created_at).toLocaleDateString('en-US', {
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            })
-                                                            : 'N/A'
-                                                        }
+                                                        {doc.updated_at
+                                                            ? new Date(
+                                                                  doc.updated_at,
+                                                              ).toLocaleDateString(
+                                                                  'en-US',
+                                                                  {
+                                                                      month: 'short',
+                                                                      day: 'numeric',
+                                                                  },
+                                                              )
+                                                            : doc.created_at
+                                                              ? new Date(
+                                                                    doc.created_at,
+                                                                ).toLocaleDateString(
+                                                                    'en-US',
+                                                                    {
+                                                                        month: 'short',
+                                                                        day: 'numeric',
+                                                                    },
+                                                                )
+                                                              : 'N/A'}
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1">
-                                                        <div className={`w-2 h-2 rounded-full ${
-                                                            doc.is_deleted 
-                                                                ? 'bg-red-500' 
-                                                                : 'bg-green-500'
-                                                        }`}></div>
-                                                        <span className={`text-xs font-medium ${
-                                                            doc.is_deleted 
-                                                                ? 'text-red-600 dark:text-red-400' 
-                                                                : 'text-green-600 dark:text-green-400'
-                                                        }`}>
-                                                            {doc.is_deleted ? 'Archived' : 'Active'}
+                                                        <div
+                                                            className={`w-2 h-2 rounded-full ${
+                                                                doc.is_deleted
+                                                                    ? 'bg-red-500'
+                                                                    : 'bg-green-500'
+                                                            }`}
+                                                        ></div>
+                                                        <span
+                                                            className={`text-xs font-medium ${
+                                                                doc.is_deleted
+                                                                    ? 'text-red-600 dark:text-red-400'
+                                                                    : 'text-green-600 dark:text-green-400'
+                                                            }`}
+                                                        >
+                                                            {doc.is_deleted
+                                                                ? 'Archived'
+                                                                : 'Active'}
                                                         </span>
                                                     </div>
-                                                    
-                                                    {doc.tags && doc.tags.length > 0 && (
-                                                        <div className="text-xs text-primary font-medium truncate">
-                                                            +{doc.tags.length}
-                                                        </div>
-                                                    )}
+
+                                                    {doc.tags &&
+                                                        doc.tags.length > 0 && (
+                                                            <div className="text-xs text-primary font-medium truncate">
+                                                                +
+                                                                {
+                                                                    doc.tags
+                                                                        .length
+                                                                }
+                                                            </div>
+                                                        )}
                                                 </div>
                                             </div>
                                         </div>
@@ -589,33 +633,40 @@ export default function ProjectPage() {
                                 </div>
                             ))}
                         </div>
-                        
+
                         {/* Empty State */}
-                        {filteredDocuments?.length === 0 && !documentsLoading && (
-                            <div className="text-center py-16">
-                                <div className="relative mx-auto mb-6">
-                                    {/* Stacked empty documents */}
-                                    <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
-                                        <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                        {filteredDocuments?.length === 0 &&
+                            !documentsLoading && (
+                                <div className="text-center py-16">
+                                    <div className="relative mx-auto mb-6">
+                                        {/* Stacked empty documents */}
+                                        <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
+                                            <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                                        </div>
+                                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
                                     </div>
-                                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
+                                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                                        No documents found
+                                    </h3>
+                                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                                        Get started by creating your first
+                                        requirement document to organize and
+                                        manage your project requirements
+                                    </p>
+                                    {canPerformAction('addDocument') && (
+                                        <Button
+                                            variant="default"
+                                            onClick={() =>
+                                                setShowCreateDocumentPanel(true)
+                                            }
+                                            className="gap-2 px-6 py-2.5"
+                                        >
+                                            <PlusCircle className="h-4 w-4" />
+                                            Create Your First Document
+                                        </Button>
+                                    )}
                                 </div>
-                                <h3 className="text-xl font-semibold text-foreground mb-2">No documents found</h3>
-                                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                    Get started by creating your first requirement document to organize and manage your project requirements
-                                </p>
-                                {canPerformAction('addDocument') && (
-                                    <Button
-                                        variant="default"
-                                        onClick={() => setShowCreateDocumentPanel(true)}
-                                        className="gap-2 px-6 py-2.5"
-                                    >
-                                        <PlusCircle className="h-4 w-4" />
-                                        Create Your First Document
-                                    </Button>
-                                )}
-                            </div>
-                        )}
+                            )}
                     </div>
                 </TabsContent>
             </Tabs>
