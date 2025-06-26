@@ -9,7 +9,9 @@
         "clean:all": "rm -rf node_modules/.cache && rm -rf .next && rm -rf node_modules && bun install",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "test": "jest --config jest.config.mjs",
+        "test:watch": "jest --config jest.config.mjs --watch"
     },
     "type": "module",
     "dependencies": {
@@ -81,6 +83,10 @@
         "@eslint/eslintrc": "^3.3.1",
         "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
         "@tailwindcss/typography": "^0.5.16",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
+        "@types/jest": "^30.0.0",
         "@types/lodash": "^4.17.16",
         "@types/node": "^20.17.31",
         "@types/react": "^19.1.2",
@@ -88,6 +94,8 @@
         "babel-plugin-react-compiler": "^19.0.0-beta-ebf51a3-20250411",
         "eslint": "^9.25.1",
         "eslint-config-next": "15.1.4",
+        "jest": "^30.0.2",
+        "jest-environment-jsdom": "^30.0.2",
         "postcss": "^8.5.3",
         "prettier": "^3.5.3",
         "supabase": "^2.22.6",
