@@ -36,7 +36,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
-import { useProfile } from '@/hooks/queries/useProfile';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
