@@ -60,19 +60,6 @@ const CreatePanel = dynamic(
     },
 );
 
-// Add a small component to display user information
-function _UserInfo({ userId }: { userId: string | null }) {
-    const { data: profile } = useProfile(userId || '');
-
-    if (!userId) return <span>Unknown</span>;
-
-    return (
-        <span>
-            {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
-        </span>
-    );
-}
-
 export default function ProjectPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
