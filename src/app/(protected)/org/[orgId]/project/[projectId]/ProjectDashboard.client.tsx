@@ -2,8 +2,9 @@
 
 import {
     Beaker,
-    FileBox,
-    FolderArchive,
+    Clock,
+    FileText,
+    FolderOpen,
     MoreVertical,
     Pencil,
     PlusCircle,
@@ -287,14 +288,14 @@ export default function ProjectPage() {
                         value="overview"
                         className="flex items-center gap-2"
                     >
-                        <FolderArchive className="h-4 w-4" />
+                        <FolderOpen className="h-4 w-4" />
                         <span>Overview</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="documents"
                         className="flex items-center gap-2"
                     >
-                        <FileBox className="h-4 w-4" />
+                        <FileText className="h-4 w-4" />
                         <span>Requirements Documents</span>
                     </TabsTrigger>
                 </TabsList>
@@ -437,77 +438,219 @@ export default function ProjectPage() {
                             </Button>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredDocuments?.map((doc) => (
-                            <div
-                                key={doc.id}
-                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors relative group"
-                            >
-                                <div className="flex justify-between items-start">
-                                    <div
-                                        className="flex-1 min-w-0"
-                                        onClick={() => handleDocumentClick(doc)}
-                                    >
-                                        <h3 className="font-medium truncate">
-                                            {doc.name}
-                                        </h3>
-                                        {doc.description && (
-                                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                                                {doc.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                    {(canPerformAction('editDocument') ||
-                                        canPerformAction('deleteDocument')) && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
-                                                >
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                {canPerformAction(
-                                                    'editDocument',
-                                                ) && (
-                                                    <DropdownMenuItem
-                                                        onClick={() =>
-                                                            handleEditDocument(
-                                                                doc,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Pencil className="h-4 w-4 mr-2" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                )}
-                                                {canPerformAction(
+                    <div className="space-y-4">
+                        {/* Documents Grid View */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                            {filteredDocuments?.map((doc) => (
+                                <div
+                                    key={doc.id}
+                                    className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
+                                    style={{
+                                        boxShadow:
+                                            '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
+                                    }}
+                                >
+                                    {/* Document paper effect shadow */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
+
+                                    <div className="flex flex-col h-full p-3 relative z-10">
+                                        {/* Header with Icon and Actions */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            {/* Document Icon */}
+                                            <div className="flex-shrink-0">
+                                                <div className="relative">
+                                                    {/* Back papers for stack effect */}
+                                                    <div className="absolute top-0.5 left-0.5 w-6 h-7 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm opacity-50"></div>
+
+                                                    {/* Main document */}
+                                                    <div className="relative w-6 h-7 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-sm flex items-center justify-center shadow-sm">
+                                                        <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+
+                                                        {/* Folded corner effect */}
+                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-md transform rotate-0"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Actions Menu */}
+                                            {(canPerformAction(
+                                                'editDocument',
+                                            ) ||
+                                                canPerformAction(
                                                     'deleteDocument',
-                                                ) && (
-                                                    <DropdownMenuItem
-                                                        className="text-destructive"
-                                                        onClick={() =>
-                                                            setDocumentToDelete(
-                                                                doc,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Trash className="h-4 w-4 mr-2" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
+                                                )) && (
+                                                <div className="flex-shrink-0">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                            >
+                                                                <MoreVertical className="h-3 w-3" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-44"
+                                                        >
+                                                            {canPerformAction(
+                                                                'editDocument',
+                                                            ) && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        handleEditDocument(
+                                                                            doc,
+                                                                        )
+                                                                    }
+                                                                    className="gap-3 py-2.5"
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                    Edit
+                                                                    Document
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {canPerformAction(
+                                                                'deleteDocument',
+                                                            ) && (
+                                                                <DropdownMenuItem
+                                                                    className="text-destructive gap-3 py-2.5"
+                                                                    onClick={() =>
+                                                                        setDocumentToDelete(
+                                                                            doc,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash className="h-4 w-4" />
+                                                                    Delete
+                                                                    Document
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Document Info - Clickable Area */}
+                                        <div
+                                            className="flex-1 cursor-pointer flex flex-col"
+                                            onClick={() =>
+                                                handleDocumentClick(doc)
+                                            }
+                                        >
+                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2 leading-tight">
+                                                {doc.name}
+                                            </h3>
+
+                                            {doc.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
+                                                    {doc.description}
+                                                </p>
+                                            )}
+
+                                            {/* Document Metadata - Bottom */}
+                                            <div className="mt-auto space-y-1">
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Clock className="h-3 w-3 flex-shrink-0" />
+                                                    <span className="truncate">
+                                                        {doc.updated_at
+                                                            ? new Date(
+                                                                  doc.updated_at,
+                                                              ).toLocaleDateString(
+                                                                  'en-US',
+                                                                  {
+                                                                      month: 'short',
+                                                                      day: 'numeric',
+                                                                  },
+                                                              )
+                                                            : doc.created_at
+                                                              ? new Date(
+                                                                    doc.created_at,
+                                                                ).toLocaleDateString(
+                                                                    'en-US',
+                                                                    {
+                                                                        month: 'short',
+                                                                        day: 'numeric',
+                                                                    },
+                                                                )
+                                                              : 'N/A'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1">
+                                                        <div
+                                                            className={`w-2 h-2 rounded-full ${
+                                                                doc.is_deleted
+                                                                    ? 'bg-red-500'
+                                                                    : 'bg-green-500'
+                                                            }`}
+                                                        ></div>
+                                                        <span
+                                                            className={`text-xs font-medium ${
+                                                                doc.is_deleted
+                                                                    ? 'text-red-600 dark:text-red-400'
+                                                                    : 'text-green-600 dark:text-green-400'
+                                                            }`}
+                                                        >
+                                                            {doc.is_deleted
+                                                                ? 'Archived'
+                                                                : 'Active'}
+                                                        </span>
+                                                    </div>
+
+                                                    {doc.tags &&
+                                                        doc.tags.length > 0 && (
+                                                            <div className="text-xs text-primary font-medium truncate">
+                                                                +
+                                                                {
+                                                                    doc.tags
+                                                                        .length
+                                                                }
+                                                            </div>
+                                                        )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+
+                        {/* Empty State */}
                         {filteredDocuments?.length === 0 &&
                             !documentsLoading && (
-                                <div className="col-span-full text-center py-8 text-muted-foreground">
-                                    No documents found
+                                <div className="text-center py-16">
+                                    <div className="relative mx-auto mb-6">
+                                        {/* Stacked empty documents */}
+                                        <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
+                                            <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                                        </div>
+                                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
+                                    </div>
+                                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                                        No documents found
+                                    </h3>
+                                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                                        Get started by creating your first
+                                        requirement document to organize and
+                                        manage your project requirements
+                                    </p>
+                                    {canPerformAction('addDocument') && (
+                                        <Button
+                                            variant="default"
+                                            onClick={() =>
+                                                setShowCreateDocumentPanel(true)
+                                            }
+                                            className="gap-2 px-6 py-2.5"
+                                        >
+                                            <PlusCircle className="h-4 w-4" />
+                                            Create Your First Document
+                                        </Button>
+                                    )}
                                 </div>
                             )}
                     </div>

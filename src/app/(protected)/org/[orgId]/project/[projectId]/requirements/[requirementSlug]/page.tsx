@@ -3,8 +3,8 @@
 import { useParams, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import LayoutView from '@/components/views/LayoutView';
 import { useToast } from '@/components/ui/use-toast';
+import LayoutView from '@/components/views/LayoutView';
 import { useUpdateRequirement } from '@/hooks/mutations/useRequirementMutations';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useRequirement } from '@/hooks/queries/useRequirement';
@@ -65,7 +65,8 @@ export default function RequirementPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Unable to save: Requirement or profile data not loaded',
+                description:
+                    'Unable to save: Requirement or profile data not loaded',
             });
             return;
         }
@@ -119,13 +120,13 @@ export default function RequirementPage() {
                 title: 'Success',
                 description: 'Requirement saved successfully',
             });
-
         } catch (error) {
             console.error('Failed to update requirement:', error);
 
-            const errorMessage = error instanceof Error
-                ? error.message
-                : 'An unexpected error occurred while saving';
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'An unexpected error occurred while saving';
 
             toast({
                 variant: 'destructive',
