@@ -380,10 +380,10 @@ export default function ExternalDocsPage({
                                     }}
                                 >
                                     <div className="flex justify-between items-center">
-                                        <div className="flex items-center">
-                                            <File className="w-4 h-4 mr-4" />
-                                            <div>
-                                                <h3 className="text-sm font-semibold">
+                                        <div className="flex items-center min-w-0 flex-1">
+                                            <File className="w-4 h-4 mr-4 flex-shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-sm font-semibold truncate" title={file.name}>
                                                     {file.name}
                                                 </h3>
                                                 <p className="text-xs text-gray-400">
