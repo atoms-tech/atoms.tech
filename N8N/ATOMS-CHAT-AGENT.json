@@ -1,473 +1,1404 @@
 {
-    "nodes": [
-      {
-        "parameters": {
-          "promptType": "define",
-          "text": "=If the information cannot be found, return \"email\": null.\n\nUser's request: \"{{ $json.query }}\"\"\n\nAnd here is all user's organization team member.\n\"\"\"\n{{ $json.profiles }}\n\"\"\"\n\nIf the user wants to send an email, and the recipient's name and email can be found from the Conversation History and the User's request, return a JSON file with the following structure:\n[{\n  \"name\": \"the recipient's name\",\n  \"email\": \"the recipient's email\",\n  \"Title\": \"the email subject\",\n  \"Context\": \"the content the user wants to send\"\n}]\n",
-          "hasOutputParser": true,
-          "options": {
-            "systemMessage": "You must return json format which user requested."
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.agent",
-        "typeVersion": 2,
-        "position": [
-          1780,
-          240
+  "nodes": [
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST"
         ],
-        "id": "c08fc384-9b42-4078-83e4-9b5395a7bb23",
-        "name": "Agent Sending Message",
-        "alwaysOutputData": true
+        "path": "agent_webhook",
+        "responseMode": "responseNode",
+        "options": {}
       },
-      {
-        "parameters": {
-          "sendTo": "={{ $json.email }}",
-          "subject": "={{ $json.Title }}",
-          "emailType": "text",
-          "message": "={{ $json.Context }}",
-          "options": {}
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -120,
+        0
+      ],
+      "id": "494f9b24-940f-4c14-a0a3-40c363086b65",
+      "name": "Webhook",
+      "webhookId": "3ba97027-8ffa-4258-b325-83fa8cf09024"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c1ab12f8-3171-489d-870b-c5721892e68e",
+                    "leftValue": "={{ $json.output === \"1\" }}",
+                    "rightValue": "=1",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "DB case"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "3f3978a5-6df5-4e9b-9ce0-ff2c440f8d68",
+                    "leftValue": "={{ $json.output === \"2\" }}",
+                    "rightValue": "=2",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Web Search case"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2954d490-9b69-4517-9296-91191c78cff8",
+                    "leftValue": "={{ $json.output === \"3\" }}",
+                    "rightValue": "=3",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Message cases"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1806d09e-5de2-4fe4-9ca8-d181ae7fb728",
+                    "leftValue": "={{ $json.output === \"4\" }}",
+                    "rightValue": "4",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "MISC"
+            }
+          ]
         },
-        "type": "n8n-nodes-base.gmail",
-        "typeVersion": 2.1,
-        "position": [
-          2700,
-          320
-        ],
-        "id": "32054bee-1388-4f61-b6d2-3b864bbe31a5",
-        "name": "Gmail",
-        "webhookId": "22813492-1279-4d04-9fe5-3686f0485c42",
-        "credentials": {
-          "gmailOAuth2": {
-            "id": "MQ8OEt3F7uYZM6PY",
-            "name": "SONGJEONGJUN320@GMAIL.COM"
-          }
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        520,
+        -20
+      ],
+      "id": "846911d4-1f80-444f-bf4a-d00dd5ad9c70",
+      "name": "Switch",
+      "alwaysOutputData": false,
+      "executeOnce": true,
+      "notesInFlow": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=If the user's request requires checking project information or details about other members to provide an answer, return 1.\n\nIf a user's request requires checking external information through a web searching function and providing an answer, return 2.\n\nIf the user's request is to send an email or Slack message, return 3.\n\nFor all other cases, return 4.\n\nThis is the conversation history you and user \"{{ $json.conversation_history }}\", And this is the user context \"{{ $json.body.message }}\", and you will classify the user's question into one of 1, 2, 3, or 4 and return it.\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "bc62a78a-92a2-43a1-a185-80e3079255f8",
+      "name": "Agent - Distinguishing User Cases",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "# Distinguishing User Question\n## Agent first will classify from 1 to 4\n### **1** - The question which Agent needs to look up the Supabase table.\n### **2** - The question which Agent needs to web search for user.\n### **3** - The question which Agent needs to message to someone through slack or gmail.\n### **4** - If the question is not the case for 1,2,3, then pass to 4 and generate answer.",
+        "height": 1560,
+        "width": 1060
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -340,
+        -620
+      ],
+      "typeVersion": 1,
+      "id": "581acad5-f52f-40d8-a074-b1f038e549a5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n# Case 4\n## Generate the answer current \n## question with conversation history.",
+        "height": 380,
+        "width": 2300,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        560
+      ],
+      "typeVersion": 1,
+      "id": "87462d41-3699-4bae-9c60-c2e47965a118",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Case 3\n## Message to someone\n### **Gmail**\n### **Slack**",
+        "height": 400,
+        "width": 2300,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "3d9d45a1-10a8-4685-afa7-9871211d024a",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "# Case 1\n## Case 1 should be classified more detaied.\n### 1 - Does user want to check Requirements documents?\n### 2 - Does user want to check Regulation Documents?\n",
+        "height": 500,
+        "width": 620,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2400,
+        -620
+      ],
+      "typeVersion": 1,
+      "id": "99b6cdb6-fb62-42b9-b0d2-10a379c4d9dc",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "operation": "get",
+        "tableId": "projects",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "organization_id",
+              "keyValue": "={{ $('Webhook').item.json.body.secureContext.pinnedOrganizationId }}"
+            }
+          ]
         }
       },
-      {
-        "parameters": {
-          "jsCode": "// Loop over input items and extract JSON from output field\nconst results = [];\n\nfor (const item of $input.all()) {\n  // Extract JSON content from the output field\n  const outputText = item.json.output;\n  \n  // Regular expression to extract content between ```json and ```\n  const jsonMatch = outputText.match(/```json\\n([\\s\\S]*?)\\n```/);\n  \n  if (jsonMatch) {\n    try {\n      // Parse the JSON string\n      const parsedJson = JSON.parse(jsonMatch[1]);\n      \n      // If it's an array, add myNewField to each item\n      if (Array.isArray(parsedJson)) {\n        for (const jsonItem of parsedJson) {\n          jsonItem.myNewField = 1;\n        }\n        results.push(...parsedJson);\n      } else {\n        // If it's a single object\n        parsedJson.myNewField = 1;\n        results.push(parsedJson);\n      }\n    } catch (error) {\n      console.error('JSON parsing error:', error);\n    }\n  }\n}\n\nreturn results;"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2080,
-          240
-        ],
-        "id": "9fd95416-8899-4f86-bfcb-3c06530c1dab",
-        "name": "Extract Email Json",
-        "alwaysOutputData": true
-      },
-      {
-        "parameters": {
-          "fieldToSplitOut": "name, email, Title, Context",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.splitOut",
-        "typeVersion": 1,
-        "position": [
-          2260,
-          240
-        ],
-        "id": "e5e37fce-fcd0-4a1c-ab87-e3139e2cb64c",
-        "name": "Split Out"
-      },
-      {
-        "parameters": {
-          "batchSize": 4,
-          "options": {}
-        },
-        "type": "n8n-nodes-base.splitInBatches",
-        "typeVersion": 3,
-        "position": [
-          2500,
-          220
-        ],
-        "id": "095783b6-aa29-4243-8f26-686dcdf27dff",
-        "name": "Loop Over Items"
-      },
-      {
-        "parameters": {
-          "modelName": "models/gemini-2.5-pro-preview-06-05",
-          "options": {
-            "maxOutputTokens": 2048,
-            "temperature": 0.3,
-            "topP": 0.9
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-        "typeVersion": 1,
-        "position": [
-          1760,
-          360
-        ],
-        "id": "91e53039-3d74-4baf-adf9-71d778a268a1",
-        "name": "gemini 2.5 06-05",
-        "credentials": {
-          "googlePalmApi": {
-            "id": "NvCtJOA0rSMuNBnB",
-            "name": "Google Gemini(PaLM) Api account"
-          }
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        -320
+      ],
+      "id": "844dde4b-96a3-4965-9268-9e7f23e858fe",
+      "name": "Pull Org Project Lists",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "XIA6SCX336tP4RqA",
+          "name": "ATOMS Supabase"
         }
-      },
-      {
-        "parameters": {
-          "workflowInputs": {
-            "values": [
-              {
-                "name": "query"
-              }
-            ]
-          }
-        },
-        "id": "c055762a-8fe7-4141-a639-df2372f30060",
-        "typeVersion": 1.1,
-        "name": "mail_to_from_mcp",
-        "type": "n8n-nodes-base.executeWorkflowTrigger",
-        "position": [
-          880,
-          300
-        ]
-      },
-      {
-        "parameters": {
-          "promptType": "define",
-          "text": "=You sent email information below json file.\n\n{{ $('Agent Sending Message').item.json.output }}",
-          "options": {
-            "systemMessage": "Briefly explain the content of the email you sent and to whom in one output.\n\nAlways write in a highly readable manner. Return markdown."
-          }
-        },
-        "type": "@n8n/n8n-nodes-langchain.agent",
-        "typeVersion": 2,
-        "position": [
-          2900,
-          200
-        ],
-        "id": "6c373bef-1d66-4a54-baed-a3a8c48df23c",
-        "name": "AI Agent1",
-        "alwaysOutputData": true
-      },
-      {
-        "parameters": {
-          "modelName": "models/gemini-1.5-pro",
-          "options": {}
-        },
-        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-        "typeVersion": 1,
-        "position": [
-          2940,
-          340
-        ],
-        "id": "36669c27-1fb7-46f1-b2be-5cce8cc555f2",
-        "name": "gemini 1.5 pro",
-        "credentials": {
-          "googlePalmApi": {
-            "id": "NvCtJOA0rSMuNBnB",
-            "name": "Google Gemini(PaLM) Api account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "return {\n  \"reply\": JSON.stringify($json.output)\n}\n"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          3240,
-          200
-        ],
-        "id": "edbefccb-640b-4a22-83fb-bd6c02ccf2bb",
-        "name": "Code"
-      },
-      {
-        "parameters": {
-          "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
-          "height": 360,
-          "width": 400
-        },
-        "type": "n8n-nodes-base.stickyNote",
-        "typeVersion": 1,
-        "position": [
-          740,
-          560
-        ],
-        "id": "1c292d19-e96a-459e-b3c7-47de3393c6ff",
-        "name": "Sticky Note"
-      },
-      {
-        "parameters": {
-          "operation": "getAll",
-          "tableId": "organization_members",
-          "returnAll": true,
-          "filters": {
-            "conditions": [
-              {
-                "keyName": "organization_id",
-                "condition": "eq",
-                "keyValue": "5eafad37-34ab-4221-a8a5-d3d4f5bdb5b9"
-              }
-            ]
-          }
-        },
-        "type": "n8n-nodes-base.supabase",
-        "typeVersion": 1,
-        "position": [
-          1040,
-          180
-        ],
-        "id": "afdd94e0-1611-4a45-9ee8-a0619d0535e0",
-        "name": "Pull organization members",
-        "credentials": {
-          "supabaseApi": {
-            "id": "XIA6SCX336tP4RqA",
-            "name": "ATOMS Supabase"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "fieldToSplitOut": "user_id",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.splitOut",
-        "typeVersion": 1,
-        "position": [
-          1160,
-          360
-        ],
-        "id": "f85e198c-e314-4c42-8465-eb075bdda8e4",
-        "name": "extract_user_id"
-      },
-      {
-        "parameters": {
-          "operation": "getAll",
-          "tableId": "profiles",
-          "returnAll": true,
-          "filters": {
-            "conditions": [
-              {
-                "keyName": "id",
-                "condition": "eq",
-                "keyValue": "={{ $json.user_id }}"
-              }
-            ]
-          }
-        },
-        "type": "n8n-nodes-base.supabase",
-        "typeVersion": 1,
-        "position": [
-          1280,
-          180
-        ],
-        "id": "a0250405-67f5-4e67-974f-65f42b7f59b4",
-        "name": "Load team member's profile",
-        "credentials": {
-          "supabaseApi": {
-            "id": "XIA6SCX336tP4RqA",
-            "name": "ATOMS Supabase"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "fieldToSplitOut": "id, full_name, email",
-          "options": {}
-        },
-        "type": "n8n-nodes-base.splitOut",
-        "typeVersion": 1,
-        "position": [
-          1400,
-          360
-        ],
-        "id": "01113ea1-bb67-4fa6-96ec-a2716515f097",
-        "name": "extract members' info"
-      },
-      {
-        "parameters": {
-          "jsCode": "// Loop over input items and concatenate id, full_name, email into one string for output\nlet outputString = '';\n\nfor (const item of $input.all()) {\n  outputString += `id: ${item.json.id}, full_name: ${item.json.full_name}, email: ${item.json.email} \\n\\n`;\n}\n\n// Get the 'query' value from the first item of 'mail_to_from_mcp'\nconst query = $('mail_to_from_mcp').first().json.query;\n\n// Return the formatted result\nreturn [\n  {\n    profiles: outputString.trim(), // Concatenate and remove the last unnecessary newline\n    query: query\n  }\n];\n"
-        },
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1520,
-          180
-        ],
-        "id": "4b2bc41b-9539-4cff-846e-26f4499fbb7c",
-        "name": "Under one output"
       }
-    ],
-    "connections": {
-      "Agent Sending Message": {
-        "main": [
-          [
+    },
+    {
+      "parameters": {
+        "content": "## Pulling Project's Regulation, Requirements documents Context\n",
+        "height": 500,
+        "width": 1680,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        -620
+      ],
+      "typeVersion": 1,
+      "id": "4b510be1-a7e2-4111-92e9-e5851d063a6f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.id);\n\n\nreturn [\n  {\n    json: {\n      project_ids: ids,\n      project_name: names,\n      username: $('Curr msg, Historical conversation').first().json.body.secureContext.username,\n      conversationHistory: $('Curr msg, Historical conversation').first().json.body.conversationHistory,\n      message: $('Curr msg, Historical conversation').first().json.body.message\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -500
+      ],
+      "id": "d935b50d-8abe-4de8-8b78-b02d4d7f45f9",
+      "name": "Extract Project's ids",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "useCustomSchema": true,
+        "operation": "getAll",
+        "tableId": "documents",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
             {
-              "node": "Extract Email Json",
-              "type": "main",
-              "index": 0
+              "keyName": "project_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.project_ids }}"
             }
           ]
-        ]
+        }
       },
-      "Gmail": {
-        "main": [
-          [
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        -500
+      ],
+      "id": "7e0b1a5c-dd05-4577-8067-ffc13efa36a2",
+      "name": "Get Documents in Single Project",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "XIA6SCX336tP4RqA",
+          "name": "ATOMS Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "project_ids, project_name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        -320
+      ],
+      "id": "59fcd1c3-d000-468f-94b1-f931c777d8f3",
+      "name": "Split Out - project_ids"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "id, name, project_id, project_name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        -320
+      ],
+      "id": "6e2d31b7-49fe-48f1-8498-471e676e262f",
+      "name": "Split Out - documnet-ids",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "requirements",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
             {
-              "node": "Loop Over Items",
-              "type": "main",
-              "index": 0
+              "keyName": "document_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
             }
           ]
-        ]
+        }
       },
-      "Extract Email Json": {
-        "main": [
-          [
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        -500
+      ],
+      "id": "9b629acc-c5a1-43f3-bef8-0e69a51dbc7e",
+      "name": "Get All documents",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "XIA6SCX336tP4RqA",
+          "name": "ATOMS Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 제거할 최상위 레벨 키 목록\nconst keysToRemove = [\n  \"id\",\n  \"document_id\",\n  \"block_id\",\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\", // properties도 제거 목록에 추가\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    // Email 값을 최상위 레벨로 추가\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    // 지정된 키들 제거 (properties 포함)\n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2020,
+        -320
+      ],
+      "id": "e5b4ded2-d898-4e17-a56b-2f5a5e95efa8",
+      "name": "Refine Dataset"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allObjectStrings = [];\n\nfor (const item of $input.all()) {\n  const currentObject = item.json;\n  const fieldStrings = []; \n\n  for (const key of Object.keys(currentObject)) {\n    let value = currentObject[key];\n\n    const valueString = String(value);\n\n    fieldStrings.push(`${key}: ${valueString}`);\n  }\n\n  allObjectStrings.push(fieldStrings.join('; '));\n}\n\nconst finalCombinedString = allObjectStrings.join('\\n');\n\nreturn {\n  all_documents: finalCombinedString,\n  username: $('Extract Project\\'s ids').first().json.username,\n  conversationHistory: $('Extract Project\\'s ids').first().json.conversationHistory,\n  message: $('Extract Project\\'s ids').first().json.message\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        -500
+      ],
+      "id": "e8ee5f18-46d0-4dfb-8525-dcf90b7d6e97",
+      "name": "Documents under one value"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=User name: {{ $json.username }}\nThis is user's organizations requirements documents.\nrequirement documents:{{ $json.all_documents }}\n\n\n\nAnd this is the conversation history between you and user.\nhistory: {{ $json.conversationHistory }}\n\n\nAnd this is user's question.\nquestion: {{ $json.message }}\n\nAnswer the user's question with the documents.\n\n\n\n\n\n",
+        "options": {
+          "systemMessage": "When you response to user, concise, clean, and understandable reply.\n\nAlways write in a highly readable manner."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        -400
+      ],
+      "id": "5b6ae22d-6f36-4804-b990-a0ef4225bae0",
+      "name": "Agent Checked DB",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here is the conversation between you and user.\n{{ $json.user_conversation_history }}\n\nThrough this answer this user's current question.\n{{ $json.current_user_content }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Always write in a highly readable manner."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        600
+      ],
+      "id": "3fc6e6d3-484a-4c02-b9ba-a2bef73511b3",
+      "name": "Agent treating MISC",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "# Case 2\n## WebSearch\n",
+        "height": 280,
+        "width": 2300,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        -120
+      ],
+      "typeVersion": 1,
+      "id": "5f0180c2-71b5-4285-86f7-7290a35924ed",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=If the information cannot be found, return \"email\": null.\n\nAnd here is user conversation and current user's request.\n\nConversation History: \"{{ $('Extract Conversation History').item.json.conversation_history }}\"\n\nUser's request: \"{{ $('Webhook').item.json.body.message }}\"\n\nIf the user wants to send an email, and the recipient's name and email can be found from the Conversation History and the User's request, return a JSON file with the following structure:\n[{\n  \"name\": \"the recipient's name\",\n  \"email\": \"the recipient's email\",\n  \"Title\": \"the email subject, containing sender's name: {{ $('Webhook').item.json.body.secureContext.username }}\",\n  \"Context\": \"the content the user wants to send\"\n}]\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You must return json format which user requested."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        300
+      ],
+      "id": "4a305b04-d317-4fdb-a1e9-a645cec61c60",
+      "name": "Agent Sending Message",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.Title }}",
+        "emailType": "text",
+        "message": "={{ $json.Context }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2220,
+        380
+      ],
+      "id": "f3c73853-6855-458f-ad48-c9a50bc3f836",
+      "name": "Gmail",
+      "webhookId": "22813492-1279-4d04-9fe5-3686f0485c42",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MQ8OEt3F7uYZM6PY",
+          "name": "SONGJEONGJUN320@GMAIL.COM"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.output) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        2820,
+        -400
+      ],
+      "id": "99b4a7d0-8985-4572-a1c6-bec6c524e15f",
+      "name": "Respond to Webhook - DB",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.output) }}\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        2860,
+        300
+      ],
+      "id": "6fd656c1-6228-4800-891d-39d0afde6440",
+      "name": "Respond to Webhook Message Success"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1300,
+        -40
+      ],
+      "id": "d64235c5-4373-4cc0-a21a-5a124b8cd6c9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-04-17-thinking",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        720
+      ],
+      "id": "853e6318-3437-4a36-a812-5cdc0341eced",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-04-17-thinking",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        80
+      ],
+      "id": "d1109dce-0bb9-4687-a202-01de8d5d8891",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.output) }}\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        600
+      ],
+      "id": "0bdf6edd-f367-49e9-b0e2-c6e49de99cf7",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const conversationHistory = $json.body.conversationHistory;\nconst combinedHistory = conversationHistory && conversationHistory.length > 0 \n  ? conversationHistory.map(entry => `${entry.role}: ${entry.content}`).join('\\n')\n  : \"No Conversation History\";\n\nconst result = {\n  conversation_history: combinedHistory\n};\nreturn result;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "50fcc716-e346-46e7-a7f1-70cff5388f0c",
+      "name": "Extract Conversation History"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
             {
-              "node": "Split Out",
-              "type": "main",
-              "index": 0
+              "id": "7a32115c-8048-4a47-9bf8-a69f2cc8b186",
+              "name": "body.message",
+              "value": "={{ $('Webhook').item.json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "fc0eb8ce-9ad7-4011-bbce-7a0a7432cb86",
+              "name": "body.secureContext.username",
+              "value": "={{ $('Webhook').item.json.body.secureContext.username }}",
+              "type": "string"
+            },
+            {
+              "id": "b16326f9-50d7-426e-941f-33d18d927bc8",
+              "name": "conversation_history",
+              "value": "={{ $json.conversation_history }}",
+              "type": "string"
             }
           ]
-        ]
+        },
+        "options": {}
       },
-      "Split Out": {
-        "main": [
-          [
-            {
-              "node": "Loop Over Items",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        120,
+        0
+      ],
+      "id": "1fbf07f8-4051-4498-b699-d0c21c20035d",
+      "name": "Curr msg, Historical conversation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and extract JSON from output field\nconst results = [];\n\nfor (const item of $input.all()) {\n  // Extract JSON content from the output field\n  const outputText = item.json.output;\n  \n  // Regular expression to extract content between ```json and ```\n  const jsonMatch = outputText.match(/```json\\n([\\s\\S]*?)\\n```/);\n  \n  if (jsonMatch) {\n    try {\n      // Parse the JSON string\n      const parsedJson = JSON.parse(jsonMatch[1]);\n      \n      // If it's an array, add myNewField to each item\n      if (Array.isArray(parsedJson)) {\n        for (const jsonItem of parsedJson) {\n          jsonItem.myNewField = 1;\n        }\n        results.push(...parsedJson);\n      } else {\n        // If it's a single object\n        parsedJson.myNewField = 1;\n        results.push(parsedJson);\n      }\n    } catch (error) {\n      console.error('JSON parsing error:', error);\n    }\n  }\n}\n\nreturn results;"
       },
-      "Loop Over Items": {
-        "main": [
-          [
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        300
+      ],
+      "id": "1aab4bde-c5ad-452b-899f-32f66c0bd7cb",
+      "name": "Extract Email Json",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You sent email information below json file.\n\n{{ $('Agent Sending Message').item.json.output }}",
+        "options": {
+          "systemMessage": "Briefly explain the content of the email you sent and to whom in one output.\n\nAlways write in a highly readable manner."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        300
+      ],
+      "id": "d7365a87-c26f-4639-8c1c-a163b2091c63",
+      "name": "AI Agent1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-preview-04-17-thinking",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        220,
+        160
+      ],
+      "id": "7cecb26a-5404-4ed6-acad-bbe7c0567bfd",
+      "name": "gemini 2.5 flash thinking2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"Case2\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        1700,
+        -40
+      ],
+      "id": "80a8f0f2-4ef0-4939-a2fa-71c042b5c013",
+      "name": "Respond to Webhook Message Success1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        440
+      ],
+      "id": "c78b4ee4-5687-40ab-9bb4-7f32a401a2b5",
+      "name": "gemini 1.5 pro",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "name, email, Title, Context",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ],
+      "id": "d1872412-26ff-49d1-8011-412d09ada362",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "batchSize": 4,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2020,
+        280
+      ],
+      "id": "db393c80-29ae-4ac3-a2f6-60e2ba5e9192",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro-preview-06-05",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        420
+      ],
+      "id": "7dde7880-7cd0-45c9-a88a-65480f91c8b0",
+      "name": "gemini 2.5 06-05",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro-preview-06-05",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2440,
+        -280
+      ],
+      "id": "0f5ff5a5-16de-4795-b2e4-77114fec41a4",
+      "name": "gemini 2.5 06-05 1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "NvCtJOA0rSMuNBnB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to get my name.",
+        "jsCode": "// Example: convert the incoming query to uppercase and return it\nreturn \"Jun\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        -1080
+      ],
+      "id": "14bbba19-7adb-45e1-8af7-ce807ded5812",
+      "name": "my_name"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool what kind of feature does Atom have.",
+        "jsCode": "// Example: convert the incoming query to uppercase and return it\nreturn \"Atom is a platform for project with AI Agent\""
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.2,
+      "position": [
+        -280,
+        -1080
+      ],
+      "id": "cd9e79e4-1430-4989-a443-54855be79729",
+      "name": "Atoms"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool, if the user requests to send an email.",
+        "workflowId": {
+          "__rl": true,
+          "value": "lsoPQkY0Q679GjX7",
+          "mode": "list",
+          "cachedResultName": "mail_to"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
             {
-              "node": "AI Agent1",
-              "type": "main",
-              "index": 0
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
             }
           ],
-          [
-            {
-              "node": "Gmail",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "gemini 2.5 06-05": {
-        "ai_languageModel": [
-          [
-            {
-              "node": "Agent Sending Message",
-              "type": "ai_languageModel",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "mail_to_from_mcp": {
-        "main": [
-          [
-            {
-              "node": "Pull organization members",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "AI Agent1": {
-        "main": [
-          [
-            {
-              "node": "Code",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "gemini 1.5 pro": {
-        "ai_languageModel": [
-          [
-            {
-              "node": "AI Agent1",
-              "type": "ai_languageModel",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Pull organization members": {
-        "main": [
-          [
-            {
-              "node": "extract_user_id",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "extract_user_id": {
-        "main": [
-          [
-            {
-              "node": "Load team member's profile",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Load team member's profile": {
-        "main": [
-          [
-            {
-              "node": "extract members' info",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "extract members' info": {
-        "main": [
-          [
-            {
-              "node": "Under one output",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Under one output": {
-        "main": [
-          [
-            {
-              "node": "Agent Sending Message",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
-    },
-    "pinData": {
-      "mail_to_from_mcp": [
-        {
-          "query": "Send an email to Jun regarding the recent changes and pull request for the requirements documents UI/UX improvements."
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
         }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -160,
+        -1080
+      ],
+      "id": "3ba1f30f-906f-4a4b-8427-e7426a2e34b1",
+      "name": "mail_to",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "description": "Call this tool, If user want to check our project's requirement fields or all the information.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PkrYL3PXzJ9ZWeNK",
+          "mode": "list",
+          "cachedResultName": "project_overview"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        -1080
+      ],
+      "id": "a8aeedd3-747c-4b14-a3e4-0418241b9c22",
+      "name": "check_projects",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        460,
+        -1180
+      ],
+      "id": "8b73b49e-b9f5-4212-8f7c-41afdac4d26a",
+      "name": "check_regulation",
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        580,
+        -1060
+      ],
+      "id": "b83e2b69-0c50-4c26-bd2e-3054cd4d1804",
+      "name": "check_team_members",
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        -1180
+      ],
+      "id": "7cf8403b-b72f-41d1-981b-24e2ffce827f",
+      "name": "invite_to_org",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "path": "9a0935c9-9e31-4149-9264-3224ef61d193"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        -1260
+      ],
+      "id": "db009ea0-96a8-461a-91c2-f399cfbc2b2d",
+      "name": "Atoms MCP Server",
+      "webhookId": "9a0935c9-9e31-4149-9264-3224ef61d193"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Conversation History",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "meta": {
-      "templateCredsSetupCompleted": true,
-      "instanceId": "2d2b6c68ebaac87da4ee6e930f60aa5893932f41d2fd67edd543222b8ff72364"
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Pull Org Project Lists",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Sending Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent treating MISC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent - Distinguishing User Cases": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pull Org Project Lists": {
+      "main": [
+        [
+          {
+            "node": "Extract Project's ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Project's ids": {
+      "main": [
+        [
+          {
+            "node": "Split Out - project_ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Documents in Single Project": {
+      "main": [
+        [
+          {
+            "node": "Split Out - documnet-ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out - project_ids": {
+      "main": [
+        [
+          {
+            "node": "Get Documents in Single Project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out - documnet-ids": {
+      "main": [
+        [
+          {
+            "node": "Get All documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All documents": {
+      "main": [
+        [
+          {
+            "node": "Refine Dataset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine Dataset": {
+      "main": [
+        [
+          {
+            "node": "Documents under one value",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documents under one value": {
+      "main": [
+        [
+          {
+            "node": "Agent Checked DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Checked DB": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook - DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent treating MISC": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Sending Message": {
+      "main": [
+        [
+          {
+            "node": "Extract Email Json",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Message Success1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent treating MISC",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Conversation History": {
+      "main": [
+        [
+          {
+            "node": "Curr msg, Historical conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Curr msg, Historical conversation": {
+      "main": [
+        [
+          {
+            "node": "Agent - Distinguishing User Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email Json": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook Message Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini 2.5 flash thinking2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent - Distinguishing User Cases",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini 1.5 pro": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini 2.5 06-05": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Sending Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gemini 2.5 06-05 1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Checked DB",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "my_name": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atoms": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mail_to": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_projects": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_regulation": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_team_members": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "invite_to_org": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atoms MCP Server",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2d2b6c68ebaac87da4ee6e930f60aa5893932f41d2fd67edd543222b8ff72364"
   }
+}
