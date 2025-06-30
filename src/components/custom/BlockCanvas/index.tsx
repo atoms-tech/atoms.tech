@@ -46,14 +46,9 @@ export function BlockCanvas({
         () =>
             ({
                 owner: ['editBlock', 'deleteBlock', 'addBlock'],
-                admin: ['editBlock', 'deleteBlock', 'addBlock'],
-                maintainer: ['editBlock', 'deleteBlock', 'addBlock'],
                 editor: ['editBlock', 'deleteBlock', 'addBlock'],
                 viewer: [],
-            }) as Record<
-                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
-                string[]
-            >,
+            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
         [],
     );
 
@@ -77,7 +72,7 @@ export function BlockCanvas({
 
     // Explicitly type userRole
     const [userRole, setUserRole] = useState<
-        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer' | null
+        'owner' | 'editor' | 'viewer' | null
     >(null);
 
     useEffect(() => {

@@ -34,6 +34,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import {
+    OrganizationRole,
+    hasOrganizationPermission,
+} from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
@@ -90,7 +94,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         string | null
     >(null);
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
 
     const { data: documents } = useQuery({
         queryKey: ['documents', selectedProjectId],
@@ -187,47 +191,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         }
     };
 
-    const canPerformAction = (action: string) => {
-        const rolePermissions = {
-            owner: [
-                'assignToProject',
-                'changeRole',
-                'uploadDeleteDocs',
-                'invitePeople',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            super_admin: [
-                'assignToProject',
-                'changeRole',
-                'uploadDeleteDocs',
-                'invitePeople',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            admin: [
-                'assignToProject',
-                'uploadDeleteDocs',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            member: ['viewProjects', 'viewDocs'],
-        };
-
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'member'
-        ].includes(action);
-    };
-
     // Update URL when tab changes
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
@@ -277,9 +240,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 <TabsList
                     className={`grid ${
                         props.organization?.type === 'enterprise'
-                            ? ['admin', 'member'].includes(userRole || '')
-                                ? 'grid-cols-3'
-                                : 'grid-cols-4'
+                            ? hasOrganizationPermission(
+                                  userRole,
+                                  'invitePeople',
+                              )
+                                ? 'grid-cols-4'
+                                : 'grid-cols-3'
                             : 'grid-cols-3'
                     } w-full`}
                 >
@@ -305,7 +271,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         <span>Regulation Documents</span>
                     </TabsTrigger>
                     {props.organization?.type === 'enterprise' &&
-                        !['admin', 'member'].includes(userRole || '') && (
+                        hasOrganizationPermission(userRole, 'invitePeople') && (
                             <TabsTrigger
                                 value="invitations"
                                 className="flex items-center gap-2"
@@ -500,7 +466,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             </DropdownMenu>
                         </div>
                         <div className="flex items-center space-x-2">
-                            {canPerformAction('createProjects') && (
+                            {hasOrganizationPermission(
+                                userRole,
+                                'createProjects',
+                            ) && (
                                 <Button
                                     className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                                     onClick={handleCreateProject}
@@ -509,7 +478,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     <Folder className="w-4 h-4" />
                                 </Button>
                             )}
-                            {canPerformAction('goToCanvas') && (
+                            {hasOrganizationPermission(
+                                userRole,
+                                'goToCanvas',
+                            ) && (
                                 <Button
                                     variant="outline"
                                     className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -520,7 +492,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 </Button>
                             )}
                             {props.organization?.type !== 'personal' &&
-                                canPerformAction('goToAiAnalysis') && (
+                                hasOrganizationPermission(
+                                    userRole,
+                                    'goToAiAnalysis',
+                                ) && (
                                     <Button
                                         variant="outline"
                                         className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -653,7 +628,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
                 <TabsContent value="invitations" className="space-y-6">
                     {props.organization?.type === 'enterprise' &&
-                        !['admin', 'member'].includes(userRole || '') && (
+                        hasOrganizationPermission(userRole, 'invitePeople') && (
                             <OrgInvitations orgId={props.orgId} />
                         )}
                 </TabsContent>
