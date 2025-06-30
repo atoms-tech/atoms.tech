@@ -55,7 +55,7 @@ export default function OrgPage() {
     };
 
     const handleDemoClick = () => {
-        router.push(`/org/${params?.orgId}`);
+        router.push(`/org/${params?.orgId}/demo`);
     };
 
     return (
