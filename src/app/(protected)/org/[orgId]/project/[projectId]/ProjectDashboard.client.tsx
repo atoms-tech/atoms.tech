@@ -402,13 +402,13 @@ export default function ProjectPage() {
                                 variant="default"
                                 onClick={() =>
                                     router.push(
-                                        `/org/${params?.orgId}/project/${params?.projectId}`,
+                                        `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
                                     )
                                 }
                                 className="gap-2"
                             >
                                 <Beaker className="h-4 w-4" />
-                                View Project
+                                Access Testbed
                             </Button>
                         </div>
                     </div>
