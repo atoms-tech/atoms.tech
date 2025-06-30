@@ -16,9 +16,7 @@ export function Contact() {
                         className="text-2xl xl:text-3xl font-bold xl:absolute xl:left-1/2 xl:transform xl:-translate-x-1/2"
                         style={{ color: '#7C3AED' }}
                     >
-                        <a 
-                            href="mailto:hello@atoms.tech">hello@atoms.tech
-                        </a>
+                        <a href="mailto:hello@atoms.tech">hello@atoms.tech</a>
                     </p>
                 </div>
             </div>
