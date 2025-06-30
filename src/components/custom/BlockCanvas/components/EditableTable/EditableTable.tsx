@@ -16,6 +16,8 @@ import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+import { useClipboard } from '@/hooks/useClipboard';
+import { useKeyboardShortcuts, createShortcut, SHORTCUT_CATEGORIES } from '@/hooks/useKeyboardShortcuts';
 
 import {
     AddRowPlaceholder,
@@ -86,6 +88,13 @@ export function EditableTable<
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
+
+    // Clipboard functionality
+    const { copyTableData, pasteFromClipboard, isCopied } = useClipboard({
+        onCopy: () => console.log('Table data copied to clipboard'),
+        onPaste: () => console.log('Data pasted from clipboard'),
+        onError: (error) => console.error(`Clipboard error: ${error.message}`),
+    });
 
     // Function to save pending changes
     const savePendingChanges = useCallback(async () => {
@@ -164,9 +173,14 @@ export function EditableTable<
         () =>
             ({
                 owner: ['editTable', 'deleteRow', 'addRow'],
+                admin: ['editTable', 'deleteRow', 'addRow'],
+                maintainer: ['editTable', 'deleteRow', 'addRow'],
                 editor: ['editTable', 'deleteRow', 'addRow'],
                 viewer: [],
-            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
+            }) as Record<
+                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+                string[]
+            >,
         [],
     );
 
@@ -243,9 +257,9 @@ export function EditableTable<
         };
     }, []);
 
-    // Handle keyboard navigation
-    const handleKeyDown = useCallback(
-        (e: KeyboardEvent) => {
+    // Handle keyboard navigation within table
+    const handleTableKeyDown = useCallback(
+        (e: React.KeyboardEvent) => {
             if (!selectedCell || !sortedData.length || !isEditMode) return;
 
             const maxRow = sortedData.length - 1;
@@ -255,22 +269,30 @@ export function EditableTable<
 
             switch (e.key) {
                 case 'ArrowUp':
+                    e.preventDefault();
                     newRow = Math.max(0, selectedCell.row - 1);
                     break;
                 case 'ArrowDown':
+                    e.preventDefault();
                     newRow = Math.min(maxRow, selectedCell.row + 1);
                     break;
                 case 'ArrowLeft':
+                    e.preventDefault();
                     newCol = Math.max(0, selectedCell.col - 1);
                     break;
                 case 'ArrowRight':
+                    e.preventDefault();
                     newCol = Math.min(maxCol, selectedCell.col + 1);
                     break;
+                case 'Delete':
+                case 'Backspace':
+                    e.preventDefault();
+                    handleDeleteCell();
+                    return;
                 default:
                     return;
             }
 
-            e.preventDefault();
             dispatch({
                 type: 'SET_SELECTED_CELL',
                 payload: { row: newRow, col: newCol },
@@ -289,13 +311,7 @@ export function EditableTable<
         }
     }, [isEditMode]);
 
-    // Add keyboard event listener
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
-    }, [handleKeyDown]);
+    // Remove the global keyboard event listener since we'll handle it locally
 
     // Handle cell change
     const handleCellChange = useCallback(
@@ -325,6 +341,85 @@ export function EditableTable<
         },
         [handleCellChange],
     );
+
+    // Copy selected cell or entire table
+    const handleCopy = useCallback(async (e?: React.KeyboardEvent) => {
+        if (!isEditMode) return;
+
+        try {
+            if (selectedCell && selectedCell.row < sortedData.length && selectedCell.col < columns.length) {
+                // Copy selected cell
+                const item = sortedData[selectedCell.row];
+                const column = columns[selectedCell.col];
+                const cellValue = String(item[column.accessor] || '');
+                await copyTableData([[cellValue]], [column.header]);
+                console.log('Copied cell:', cellValue);
+            } else {
+                // Copy entire table
+                const headers = columns.map(col => col.header);
+                const tableData = sortedData.map(item =>
+                    columns.map(col => String(item[col.accessor] || ''))
+                );
+                await copyTableData(tableData, headers);
+                console.log('Copied entire table');
+            }
+            if (e) e.preventDefault();
+        } catch (error) {
+            console.error('Copy failed:', error);
+        }
+    }, [isEditMode, selectedCell, sortedData, columns, copyTableData]);
+
+    // Paste data into selected cell
+    const handlePaste = useCallback(async (e?: React.KeyboardEvent) => {
+        if (!isEditMode || !selectedCell) return;
+
+        try {
+            const data = await pasteFromClipboard();
+            if (data?.text && selectedCell.row < sortedData.length && selectedCell.col < columns.length) {
+                const item = sortedData[selectedCell.row];
+                const column = columns[selectedCell.col];
+
+                if (item && column) {
+                    handleCellChange(item.id as string, column.accessor as string, data.text);
+                    console.log('Pasted:', data.text);
+                }
+            }
+            if (e) e.preventDefault();
+        } catch (error) {
+            console.error('Paste failed:', error);
+        }
+    }, [isEditMode, selectedCell, sortedData, columns, pasteFromClipboard, handleCellChange]);
+
+    // Delete selected cell content
+    const handleDeleteCell = useCallback(() => {
+        if (!isEditMode || !selectedCell) return;
+
+        if (selectedCell.row < sortedData.length && selectedCell.col < columns.length) {
+            const item = sortedData[selectedCell.row];
+            const column = columns[selectedCell.col];
+
+            if (item && column) {
+                handleCellChange(item.id as string, column.accessor as string, '');
+                console.log('Deleted cell content');
+            }
+        }
+    }, [isEditMode, selectedCell, sortedData, columns, handleCellChange]);
+
+    // Handle keyboard shortcuts within table context
+    const handleTableShortcuts = useCallback((e: React.KeyboardEvent) => {
+        if (!isEditMode) return;
+
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+        if (cmdOrCtrl && e.key.toLowerCase() === 'c') {
+            e.preventDefault();
+            handleCopy(e);
+        } else if (cmdOrCtrl && e.key.toLowerCase() === 'v') {
+            e.preventDefault();
+            handlePaste(e);
+        }
+    }, [isEditMode, handleCopy, handlePaste]);
 
     // Action handlers
     const handleAddNewRow = useCallback(async () => {
@@ -447,7 +542,11 @@ export function EditableTable<
                 style={{ maxWidth: '100%' }}
                 ref={tableRef}
                 onBlur={handleTableBlur}
-                tabIndex={-1}
+                onKeyDown={handleTableKeyDown}
+                onKeyUp={handleTableShortcuts}
+                tabIndex={isEditMode ? 0 : -1}
+                role={isEditMode ? "grid" : undefined}
+                aria-label={isEditMode ? "Editable data table" : undefined}
             >
                 <div
                     style={{

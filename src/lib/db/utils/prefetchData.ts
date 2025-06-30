@@ -13,6 +13,7 @@ import {
     getUserOrganizationsServer,
     getUserProfileServer,
     getUserProjectsServer,
+    ensureUserPersonalOrganizationServer,
 } from '@/lib/db/server';
 
 // Cache this function to prevent multiple executions in the same request
@@ -25,10 +26,16 @@ export const prefetchUserDashboard = cache(
         const user = userResult.user;
 
         // Now fetch profile and organizations with the user ID
-        const [profile, organizations] = await Promise.all([
-            getUserProfileServer(user.id),
-            getUserOrganizationsServer(user.id),
-        ]);
+        // The getUserProfileServer will automatically create a profile if it doesn't exist
+        const profile = await getUserProfileServer(user.id);
+
+        // Ensure user has a personal organization (especially important for OAuth users)
+        if (profile.email) {
+            await ensureUserPersonalOrganizationServer(user.id, profile.email);
+        }
+
+        // Now fetch all organizations
+        const organizations = await getUserOrganizationsServer(user.id);
 
         // Cache all fetched data
         if (queryClient) {

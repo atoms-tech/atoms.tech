@@ -348,6 +348,7 @@ export const useBlockActions = ({
                           }
                         : block,
                 ),
+                blockId // Pass blockId for tracking
             );
 
             // Then update the server

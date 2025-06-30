@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
+    BarChart3,
     Brain,
     Building,
     FileBox,
@@ -9,8 +10,8 @@ import {
     FolderArchive,
     ListTodo,
     PenTool,
+    Shield,
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
@@ -34,10 +35,6 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-import {
-    OrganizationRole,
-    hasOrganizationPermission,
-} from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
@@ -62,12 +59,7 @@ interface OrgDashboardProps {
 }
 
 export default function OrgDashboard(props: OrgDashboardProps) {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-
-    // Get current tab from URL params, default to 'projects' if not present
-    const currentTabFromUrl = searchParams.get('currentTab') || 'projects';
-    const [activeTab, setActiveTab] = useState(currentTabFromUrl);
+    const [activeTab, setActiveTab] = useState('projects');
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [visibilityFilter, setVisibilityFilter] = useState<string | null>(
@@ -94,7 +86,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         string | null
     >(null);
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     const { data: documents } = useQuery({
         queryKey: ['documents', selectedProjectId],
@@ -185,27 +177,56 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         setIsAiAnalysisDialogOpen(true);
     };
 
+    const handleGoToAnalytics = () => {
+        window.location.href = `/org/${props.orgId}/analytics`;
+    };
+
     const handleStartAnalysis = () => {
         if (selectedProjectId && selectedRequirementId) {
             window.location.href = `/org/${props.orgId}/project/${selectedProjectId}/requirements/${selectedRequirementId}`;
         }
     };
 
-    // Update URL when tab changes
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams);
-        params.set('currentTab', newTab);
-        router.push(`?${params.toString()}`, { scroll: false });
-    };
+    const canPerformAction = (action: string) => {
+        const rolePermissions = {
+            owner: [
+                'assignToProject',
+                'changeRole',
+                'uploadDeleteDocs',
+                'invitePeople',
+                'createProjects',
+                'goToCanvas',
+                'goToAiAnalysis',
+                'viewProjects',
+                'viewDocs',
+            ],
+            super_admin: [
+                'assignToProject',
+                'changeRole',
+                'uploadDeleteDocs',
+                'invitePeople',
+                'createProjects',
+                'goToCanvas',
+                'goToAiAnalysis',
+                'viewProjects',
+                'viewDocs',
+            ],
+            admin: [
+                'assignToProject',
+                'uploadDeleteDocs',
+                'createProjects',
+                'goToCanvas',
+                'goToAiAnalysis',
+                'viewProjects',
+                'viewDocs',
+            ],
+            member: ['viewProjects', 'viewDocs'],
+        };
 
-    // Sync tab state with URL params when they change
-    useEffect(() => {
-        const tabFromUrl = searchParams.get('currentTab');
-        if (tabFromUrl && tabFromUrl !== activeTab) {
-            setActiveTab(tabFromUrl);
-        }
-    }, [searchParams, activeTab]);
+        return rolePermissions[
+            (userRole as keyof typeof rolePermissions) || 'member'
+        ].includes(action);
+    };
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -232,20 +253,17 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
             {/* Main Dashboard Tabs */}
             <Tabs
-                defaultValue={currentTabFromUrl}
+                defaultValue="projects"
                 value={activeTab}
-                onValueChange={handleTabChange}
+                onValueChange={setActiveTab}
                 className="w-full"
             >
                 <TabsList
                     className={`grid ${
                         props.organization?.type === 'enterprise'
-                            ? hasOrganizationPermission(
-                                  userRole,
-                                  'invitePeople',
-                              )
+                            ? ['admin', 'member'].includes(userRole || '')
                                 ? 'grid-cols-4'
-                                : 'grid-cols-3'
+                                : 'grid-cols-5'
                             : 'grid-cols-3'
                     } w-full`}
                 >
@@ -270,8 +288,17 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         <FileBox className="h-4 w-4" />
                         <span>Regulation Documents</span>
                     </TabsTrigger>
+                    {props.organization?.type === 'enterprise' && (
+                        <TabsTrigger
+                            value="compliance"
+                            className="flex items-center gap-2"
+                        >
+                            <Shield className="h-4 w-4" />
+                            <span>SOC2 Compliance</span>
+                        </TabsTrigger>
+                    )}
                     {props.organization?.type === 'enterprise' &&
-                        hasOrganizationPermission(userRole, 'invitePeople') && (
+                        !['admin', 'member'].includes(userRole || '') && (
                             <TabsTrigger
                                 value="invitations"
                                 className="flex items-center gap-2"
@@ -466,10 +493,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             </DropdownMenu>
                         </div>
                         <div className="flex items-center space-x-2">
-                            {hasOrganizationPermission(
-                                userRole,
-                                'createProjects',
-                            ) && (
+                            {canPerformAction('createProjects') && (
                                 <Button
                                     className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                                     onClick={handleCreateProject}
@@ -478,10 +502,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     <Folder className="w-4 h-4" />
                                 </Button>
                             )}
-                            {hasOrganizationPermission(
-                                userRole,
-                                'goToCanvas',
-                            ) && (
+                            {canPerformAction('goToCanvas') && (
                                 <Button
                                     variant="outline"
                                     className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -492,10 +513,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 </Button>
                             )}
                             {props.organization?.type !== 'personal' &&
-                                hasOrganizationPermission(
-                                    userRole,
-                                    'goToAiAnalysis',
-                                ) && (
+                                canPerformAction('goToAiAnalysis') && (
                                     <Button
                                         variant="outline"
                                         className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -505,6 +523,14 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                         <Brain className="w-4 h-4" />
                                     </Button>
                                 )}
+                            <Button
+                                variant="outline"
+                                className="bg-secondary text-secondary-foreground text-sm hover:bg-secondary/90"
+                                onClick={handleGoToAnalytics}
+                            >
+                                Analytics
+                                <BarChart3 className="w-4 h-4" />
+                            </Button>
                             {props.organization?.type === 'personal' && (
                                 <Button
                                     className="bg-gradient-to-r from-blue-500 to-purple-600 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition"
@@ -626,9 +652,57 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                     <ExternalDocsPages />
                 </TabsContent>
 
+                {/* SOC2 Compliance Tab */}
+                <TabsContent value="compliance" className="space-y-6">
+                    {props.organization?.type === 'enterprise' && (
+                        <div className="space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Shield className="h-5 w-5" />
+                                        SOC2 Compliance Dashboard
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Monitor and manage SOC2 compliance
+                                        across your organization
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                                        <Shield className="h-16 w-16 text-blue-600" />
+                                        <div className="text-center space-y-2">
+                                            <h3 className="text-lg font-semibold">
+                                                SOC2 Compliance Monitoring
+                                            </h3>
+                                            <p className="text-muted-foreground max-w-md">
+                                                Access comprehensive SOC2
+                                                compliance monitoring, control
+                                                management, and audit trail
+                                                tracking.
+                                            </p>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <Button
+                                                onClick={() =>
+                                                    (window.location.href =
+                                                        '/soc2')
+                                                }
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Shield className="h-4 w-4" />
+                                                Open SOC2 Dashboard
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+                </TabsContent>
+
                 <TabsContent value="invitations" className="space-y-6">
                     {props.organization?.type === 'enterprise' &&
-                        hasOrganizationPermission(userRole, 'invitePeople') && (
+                        !['admin', 'member'].includes(userRole || '') && (
                             <OrgInvitations orgId={props.orgId} />
                         )}
                 </TabsContent>

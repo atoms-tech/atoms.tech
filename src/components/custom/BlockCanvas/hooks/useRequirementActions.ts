@@ -8,6 +8,7 @@ import {
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { generateNextReqId } from '@/lib/utils/reqIdGenerator';
 import { Json } from '@/types/base/database.types';
 import {
     ERequirementPriority,
@@ -35,6 +36,8 @@ interface UseRequirementActionsProps {
     setLocalRequirements: React.Dispatch<React.SetStateAction<Requirement[]>>;
     properties: Property[] | undefined;
 }
+
+
 
 export const useRequirementActions = ({
     blockId,
@@ -321,10 +324,26 @@ export const useRequirementActions = ({
                 // Get the last position for new requirements
                 const position = await getLastPosition();
 
+                // Get project ID from document
+                const { data: document, error: docError } = await supabase
+                    .from('documents')
+                    .select('project_id')
+                    .eq('id', documentId)
+                    .single();
+
+                if (docError) {
+                    console.error('Error fetching document for project ID:', docError);
+                    throw docError;
+                }
+
+                // Generate the next REQ-ID if not provided
+                const externalId = naturalFields?.external_id || await generateNextReqId(document.project_id);
+
                 const newRequirementData = {
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    external_id: externalId, // Use generated or provided REQ-ID
                     position, // Add the position field
                     // Ensure ai_analysis is properly initialized
                     ai_analysis: {

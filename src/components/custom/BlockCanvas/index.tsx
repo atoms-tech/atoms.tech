@@ -46,9 +46,14 @@ export function BlockCanvas({
         () =>
             ({
                 owner: ['editBlock', 'deleteBlock', 'addBlock'],
+                admin: ['editBlock', 'deleteBlock', 'addBlock'],
+                maintainer: ['editBlock', 'deleteBlock', 'addBlock'],
                 editor: ['editBlock', 'deleteBlock', 'addBlock'],
                 viewer: [],
-            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
+            }) as Record<
+                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+                string[]
+            >,
         [],
     );
 
@@ -72,7 +77,7 @@ export function BlockCanvas({
 
     // Explicitly type userRole
     const [userRole, setUserRole] = useState<
-        'owner' | 'editor' | 'viewer' | null
+        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer' | null
     >(null);
 
     useEffect(() => {
@@ -140,7 +145,10 @@ export function BlockCanvas({
 
     // Wrapper for setLocalBlocks that adds order
     const setEnhancedLocalBlocks = useCallback(
-        (updater: React.SetStateAction<BlockWithRequirements[]>) => {
+        (
+            updater: React.SetStateAction<BlockWithRequirements[]>,
+            trackingBlockId?: string
+        ) => {
             const processBlocks = (
                 blocks: BlockWithRequirements[],
             ): BlockWithRequirements[] => {
@@ -156,9 +164,9 @@ export function BlockCanvas({
             if (typeof updater === 'function') {
                 const prevBlocks = blocks || [];
                 const newBlocks = updater(prevBlocks);
-                setDocument(processBlocks(newBlocks));
+                setDocument(processBlocks(newBlocks), trackingBlockId);
             } else {
-                setDocument(processBlocks(updater));
+                setDocument(processBlocks(updater), trackingBlockId);
             }
         },
         [setDocument, blocks],

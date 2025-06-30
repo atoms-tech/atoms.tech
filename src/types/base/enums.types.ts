@@ -53,6 +53,15 @@ export const PricingPlanInterval = {
     year: 'year',
 } as const;
 
+export type EProjectRole = Database['public']['Enums']['project_role'];
+export const ProjectRole = {
+    owner: 'owner',
+    admin: 'admin',
+    maintainer: 'maintainer',
+    editor: 'editor',
+    viewer: 'viewer',
+} as const;
+
 export type EProjectStatus = Database['public']['Enums']['project_status'];
 export const ProjectStatus = {
     active: 'active',
@@ -134,6 +143,14 @@ export const TraceLinkType = {
     is_related_to: 'is_related_to',
     parent_of: 'parent_of',
     child_of: 'child_of',
+} as const;
+
+export type EUserRoleType = Database['public']['Enums']['user_role_type'];
+export const UserRoleType = {
+    member: 'member',
+    admin: 'admin',
+    owner: 'owner',
+    super_admin: 'super_admin',
 } as const;
 
 export type EUserStatus = Database['public']['Enums']['user_status'];
