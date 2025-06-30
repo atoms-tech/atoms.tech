@@ -36,6 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -76,7 +77,7 @@ export default function ProjectPage() {
     );
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<ProjectRole | null>(null);
     const {
         data: documents,
         isLoading: documentsLoading,
@@ -122,38 +123,8 @@ export default function ProjectPage() {
         fetchUserRole();
     }, [params?.projectId, user?.id]);
 
-    const canPerformAction = (action: string) => {
-        const rolePermissions = {
-            owner: [
-                'changeRole',
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-                'deleteProject',
-            ],
-            admin: [
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-            ],
-            maintainer: ['addDocument', 'viewDocument', 'editDocument'],
-            editor: ['addDocument', 'viewDocument', 'editDocument'],
-            viewer: ['viewDocument'],
-        };
-
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'viewer'
-        ].includes(action);
-    };
-
     const handleDocumentClick = (doc: Document) => {
-        if (!canPerformAction('viewDocument')) {
+        if (!hasProjectPermission(userRole, 'viewDocument')) {
             return; // Do nothing if the user does not have permission
         }
         router.push(
@@ -166,7 +137,7 @@ export default function ProjectPage() {
     };
 
     const handleDeleteDocument = async () => {
-        if (!canPerformAction('deleteDocument')) {
+        if (!hasProjectPermission(userRole, 'deleteDocument')) {
             return; // Do nothing if the user does not have permission
         }
 
@@ -313,7 +284,10 @@ export default function ProjectPage() {
                                             Basic information about your project
                                         </CardDescription>
                                     </div>
-                                    {canPerformAction('editProject') &&
+                                    {hasProjectPermission(
+                                        userRole,
+                                        'editProject',
+                                    ) &&
                                         !isEditing && (
                                             <Button
                                                 variant="outline"
@@ -412,7 +386,7 @@ export default function ProjectPage() {
                             className="w-full max-w-xs"
                         />
                         <div className="flex items-center gap-2">
-                            {canPerformAction('addDocument') && (
+                            {hasProjectPermission(userRole, 'addDocument') && (
                                 <Button
                                     variant="outline"
                                     onClick={() =>
@@ -473,10 +447,12 @@ export default function ProjectPage() {
                                             </div>
 
                                             {/* Actions Menu */}
-                                            {(canPerformAction(
+                                            {(hasProjectPermission(
+                                                userRole,
                                                 'editDocument',
                                             ) ||
-                                                canPerformAction(
+                                                hasProjectPermission(
+                                                    userRole,
                                                     'deleteDocument',
                                                 )) && (
                                                 <div className="flex-shrink-0">
@@ -496,7 +472,8 @@ export default function ProjectPage() {
                                                             align="end"
                                                             className="w-44"
                                                         >
-                                                            {canPerformAction(
+                                                            {hasProjectPermission(
+                                                                userRole,
                                                                 'editDocument',
                                                             ) && (
                                                                 <DropdownMenuItem
@@ -512,7 +489,8 @@ export default function ProjectPage() {
                                                                     Document
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {canPerformAction(
+                                                            {hasProjectPermission(
+                                                                userRole,
                                                                 'deleteDocument',
                                                             ) && (
                                                                 <DropdownMenuItem
@@ -639,7 +617,10 @@ export default function ProjectPage() {
                                         requirement document to organize and
                                         manage your project requirements
                                     </p>
-                                    {canPerformAction('addDocument') && (
+                                    {hasProjectPermission(
+                                        userRole,
+                                        'addDocument',
+                                    ) && (
                                         <Button
                                             variant="default"
                                             onClick={() =>
@@ -729,7 +710,7 @@ export default function ProjectPage() {
                         setDocumentToDelete(documentToEdit);
                         setDocumentToEdit(null);
                     }}
-                    canDelete={canPerformAction('deleteDocument')}
+                    canDelete={hasProjectPermission(userRole, 'deleteDocument')}
                 />
             )}
         </div>

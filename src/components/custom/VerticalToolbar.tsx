@@ -84,9 +84,7 @@ const VerticalToolbar = () => {
         fetchUserRole();
     }, [pathname, user?.id]);
 
-    const canEdit = ['owner', 'admin', 'editor', 'maintainer'].includes(
-        userRole || '',
-    );
+    const canEdit = ['owner', 'editor'].includes(userRole || '');
 
     const toggleEditMode = () => {
         if (!canEdit) {
