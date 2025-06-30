@@ -61,14 +61,9 @@ export function TableControls<T extends Record<string, unknown>>({
     const { userProfile } = useAuth();
 
     // Define rolePermissions with explicit type
-    const rolePermissions: Record<
-        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
-        string[]
-    > = {
+    const rolePermissions: Record<'owner' | 'editor' | 'viewer', string[]> = {
         owner: ['addColumn', 'addRow'],
-        admin: ['addColumn', 'addRow'],
-        maintainer: ['addColumn', 'addRow'],
-        editor: ['addRow'],
+        editor: ['addColumn', 'addRow'],
         viewer: [],
     };
 

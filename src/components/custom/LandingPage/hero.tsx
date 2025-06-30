@@ -9,7 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function Hero() {
     const router = useRouter();
-    const { isAuthenticated, userProfile } = useAuth();
+    // user Profile not used, temporarily commented out to pass linting.
+    const { isAuthenticated /*, userProfile */ } = useAuth();
     const [loadingStates, setLoadingStates] = useState({
         getStarted: false,
         tryDemo: false,
@@ -37,8 +38,7 @@ export function Hero() {
             router.push('/login');
             return;
         }
-        const orgId = userProfile?.personal_organization_id;
-        router.push(`/org/${orgId}/demo`);
+        router.push('/home');
     };
 
     return (
