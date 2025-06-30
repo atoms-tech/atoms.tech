@@ -12,7 +12,8 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import '@glideapps/glide-data-grid/dist/index.css';
 
 import { DeleteConfirmDialog, TableControls } from './components';
-import { CellValue } from './types';
+
+//import { CellValue } from './types';
 
 interface GlideEditableTableProps<T extends { id: string }> {
     data: T[];
@@ -47,9 +48,9 @@ export function GlideEditableTable<T extends { id: string }>({
     showFilter = false,
     filterComponent,
     onAddRow,
-    onSaveNewRow,
-    onCancelNewRow,
-    isAddingNew = false,
+    //onSaveNewRow,
+    //onCancelNewRow,
+    //isAddingNew = false,
     deleteConfirmOpen = false,
     onDeleteConfirm,
     setDeleteConfirmOpen,
@@ -87,7 +88,7 @@ export function GlideEditableTable<T extends { id: string }>({
             if (newValue.kind !== GridCellKind.Text) return;
 
             const rowData = data[row];
-            const rowId = rowData.id;
+            //const rowId = rowData.id;
             const accessor = columns[col].accessor;
 
             const updatedRow = {
@@ -136,21 +137,21 @@ export function GlideEditableTable<T extends { id: string }>({
         // You could set some dragging state here if needed
     }, []);
 
-    const handleDragOverCell = useCallback(
-        (cell: Item, dataTransfer: DataTransfer | null) => {
-            console.log('Drag over cell:', cell);
-            // You can check or update UI
-        },
-        [],
-    );
+    // const handleDragOverCell = useCallback(
+    //     (cell: Item, dataTransfer: DataTransfer | null) => {
+    //         console.log('Drag over cell:', cell);
+    //         // You can check or update UI
+    //     },
+    //     [],
+    // );
 
-    const handleDrop = useCallback(
-        (cell: Item, dataTransfer: DataTransfer | null) => {
-            console.log('Dropped on cell:', cell);
-            // Handle drop logic here
-        },
-        [],
-    );
+    // const handleDrop = useCallback(
+    //     (cell: Item, dataTransfer: DataTransfer | null) => {
+    //         console.log('Dropped on cell:', cell);
+    //         // Handle drop logic here
+    //     },
+    //     [],
+    // );
 
     return (
         <div className="w-full">
@@ -188,8 +189,8 @@ export function GlideEditableTable<T extends { id: string }>({
                             rows={data.length}
                             isDraggable="cell" //Use header for only column changes
                             onDragStart={handleDragStart}
-                            onDragOverCell={handleDragOverCell}
-                            onDrop={handleDrop}
+                            //onDragOverCell={handleDragOverCell}
+                            //onDrop={handleDrop}
                         />
                     </div>
                 </div>
