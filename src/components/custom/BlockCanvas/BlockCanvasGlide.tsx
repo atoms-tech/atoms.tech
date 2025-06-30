@@ -5,7 +5,7 @@ import { BlockCanvasProps } from './types';
 
 /**
  * BlockCanvasGlide - A version of BlockCanvas that uses GlideEditableGrid
- * 
+ *
  * This component is identical to the regular BlockCanvas except it uses
  * the Glide Table implementation for the EditableTable.
  *

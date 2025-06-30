@@ -70,7 +70,8 @@ export function BlockCanvas({
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } = useDocumentStore();
+    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } =
+        useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
@@ -311,7 +312,6 @@ export function BlockCanvas({
     useEffect(() => {
         setUseGlideTables?.(_useGlideTables);
     }, [_useGlideTables, setUseGlideTables]);
-
 
     // Don't render blocks until they're loaded
     if (loading) {

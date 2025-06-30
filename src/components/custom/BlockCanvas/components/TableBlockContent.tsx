@@ -2,8 +2,8 @@ import React, { useCallback, useMemo } from 'react';
 
 import {
     EditableTable,
-    TanStackEditableTable,
     GlideEditableTable,
+    TanStackEditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
 import {
     EditableColumn,
@@ -53,16 +53,16 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
             useTanStackTables || globalUseTanStackTables;
 
         // Added implementation for Glide bool, should change for an enum system later.
-        const shouldUseGlideTables = 
-            useGlideTables || globalUseGlideTables;
+        const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
 
         // Memoize the table component selection
-        const TableComponent = useMemo(
-            () => {
-                if (shouldUseGlideTables) return GlideEditableTable;
-                if (shouldUseTanStackTables) return TanStackEditableTable;
-                return EditableTable;
-            }, [shouldUseGlideTables, shouldUseTanStackTables]) as React.FC<typeof tableProps>;
+        const TableComponent = useMemo(() => {
+            if (shouldUseGlideTables) return GlideEditableTable;
+            if (shouldUseTanStackTables) return TanStackEditableTable;
+            return EditableTable;
+        }, [shouldUseGlideTables, shouldUseTanStackTables]) as React.FC<
+            typeof tableProps
+        >;
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(

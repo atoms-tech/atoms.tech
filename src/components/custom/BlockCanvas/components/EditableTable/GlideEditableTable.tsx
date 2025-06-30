@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useMemo, useCallback, useRef } from 'react';
 import DataEditor, {
-    GridColumn,
-    GridCellKind,
-    Item,
     GridCell,
+    GridCellKind,
+    GridColumn,
     GridDragEventArgs,
+    Item,
 } from '@glideapps/glide-data-grid';
+import React, { useCallback, useMemo, useRef } from 'react';
+
 import '@glideapps/glide-data-grid/dist/index.css';
 
+import { DeleteConfirmDialog, TableControls } from './components';
 import { CellValue } from './types';
-import { TableControls, DeleteConfirmDialog } from './components';
 
 interface GlideEditableTableProps<T extends { id: string }> {
     data: T[];
@@ -61,7 +62,7 @@ export function GlideEditableTable<T extends { id: string }>({
                 title: col.title,
                 width: col.width || 120,
             })),
-        [columns]
+        [columns],
     );
 
     const getCellContent = useCallback(
@@ -77,27 +78,27 @@ export function GlideEditableTable<T extends { id: string }>({
                 displayData: value?.toString() || '',
             };
         },
-        [columns, data]
+        [columns, data],
     );
 
     const onCellEdited = useCallback(
         (cell: Item, newValue: GridCell) => {
-        const [col, row] = cell;
-        if (newValue.kind !== GridCellKind.Text) return;
+            const [col, row] = cell;
+            if (newValue.kind !== GridCellKind.Text) return;
 
-        const rowData = data[row];
-        const rowId = rowData.id;
-        const accessor = columns[col].accessor;
+            const rowData = data[row];
+            const rowId = rowData.id;
+            const accessor = columns[col].accessor;
 
-        const updatedRow = {
-        ...rowData,
-        [accessor]: newValue.data,
-        };
+            const updatedRow = {
+                ...rowData,
+                [accessor]: newValue.data,
+            };
 
-        // Send update
-        onSave?.(updatedRow, false);
-    },
-    [columns, data, onSave]
+            // Send update
+            onSave?.(updatedRow, false);
+        },
+        [columns, data, onSave],
     );
 
     // const savePendingChanges = useCallback(async () => {
@@ -135,15 +136,21 @@ export function GlideEditableTable<T extends { id: string }>({
         // You could set some dragging state here if needed
     }, []);
 
-    const handleDragOverCell = useCallback((cell: Item, dataTransfer: DataTransfer | null) => {
-        console.log('Drag over cell:', cell);
-        // You can check or update UI
-    }, []);
+    const handleDragOverCell = useCallback(
+        (cell: Item, dataTransfer: DataTransfer | null) => {
+            console.log('Drag over cell:', cell);
+            // You can check or update UI
+        },
+        [],
+    );
 
-    const handleDrop = useCallback((cell: Item, dataTransfer: DataTransfer | null) => {
-        console.log('Dropped on cell:', cell);
-        // Handle drop logic here
-    }, []);
+    const handleDrop = useCallback(
+        (cell: Item, dataTransfer: DataTransfer | null) => {
+            console.log('Dropped on cell:', cell);
+            // Handle drop logic here
+        },
+        [],
+    );
 
     return (
         <div className="w-full">
