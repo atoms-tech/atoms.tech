@@ -41,6 +41,7 @@
         "@react-email/render": "^1.1.3",
         "@supabase/ssr": "^0.6.1",
         "@supabase/supabase-js": "^2.50.1",
+        "@tailwindcss/postcss": "^4.1.10",
         "@tanstack/react-query": "^5.81.2",
         "@tanstack/react-query-devtools": "^5.81.2",
         "@tanstack/react-table": "^8.21.3",
@@ -84,7 +85,7 @@
         "recharts": "^3.0.0",
         "resend": "^4.6.0",
         "sonner": "^2.0.5",
-        "tailwind-merge": "^2.6.0",
+        "tailwind-merge": "^3.3.1",
         "tailwindcss-animate": "^1.0.7",
         "uuid": "^11.1.0",
         "zod": "^3.25.67",
@@ -111,7 +112,7 @@
         "postcss": "^8.5.6",
         "prettier": "^3.6.0",
         "supabase": "^2.26.9",
-        "tailwindcss": "^3.4.17",
+        "tailwindcss": "^4.1.10",
         "typescript": "^5.8.3"
     },
     "overrides": {
