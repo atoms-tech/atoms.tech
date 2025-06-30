@@ -16,7 +16,7 @@ import { TableControls, DeleteConfirmDialog } from './components';
 interface GlideEditableTableProps<T extends { id: string }> {
     data: T[];
     columns: { accessor: keyof T; title: string; width?: number }[];
-    onCellChange: (rowId: string, accessor: keyof T, value: CellValue) => void;
+    //onCellChange: (rowId: string, accessor: keyof T, value: CellValue) => void;
     onBlur?: () => void;
     isEditMode?: boolean;
     showFilter?: boolean;
@@ -39,9 +39,10 @@ interface GlideEditableTableProps<T extends { id: string }> {
 export function GlideEditableTable<T extends { id: string }>({
     data,
     columns,
-    onCellChange,
+    //onCellChange,
+    onSave,
     onBlur,
-    isEditMode = false,
+    isEditMode = true,
     showFilter = false,
     filterComponent,
     onAddRow,
@@ -81,16 +82,22 @@ export function GlideEditableTable<T extends { id: string }>({
 
     const onCellEdited = useCallback(
         (cell: Item, newValue: GridCell) => {
-            const [col, row] = cell;
-            if (newValue.kind !== GridCellKind.Text) return;
+        const [col, row] = cell;
+        if (newValue.kind !== GridCellKind.Text) return;
 
-            const rowData = data[row];
-            const rowId = rowData.id;
-            const accessor = columns[col].accessor;
+        const rowData = data[row];
+        const rowId = rowData.id;
+        const accessor = columns[col].accessor;
 
-            onCellChange(rowId, accessor, newValue.data);
-        },
-        [columns, data, onCellChange]
+        const updatedRow = {
+        ...rowData,
+        [accessor]: newValue.data,
+        };
+
+        // Send update
+        onSave?.(updatedRow, false);
+    },
+    [columns, data, onSave]
     );
 
     // const savePendingChanges = useCallback(async () => {
@@ -170,7 +177,7 @@ export function GlideEditableTable<T extends { id: string }>({
                         <DataEditor
                             columns={columnDefs}
                             getCellContent={getCellContent}
-                            onCellEdited={onCellEdited}
+                            onCellEdited={isEditMode ? onCellEdited : undefined} // ← only attach handler in edit mode
                             rows={data.length}
                             isDraggable="cell" //Use header for only column changes
                             onDragStart={handleDragStart}

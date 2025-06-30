@@ -102,7 +102,7 @@ export default function DocumentPage() {
                         <SelectContent>
                             <SelectItem value="default">Default Table</SelectItem>
                             <SelectItem value="tanstack">TanStack Table</SelectItem>
-                            <SelectItem value="glide">Glide Table</SelectItem>
+                            <SelectItem value="glide">Glide Table (Demo)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
