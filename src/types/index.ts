@@ -25,7 +25,6 @@ export type {
     ENotificationType,
     EOrganizationType,
     EPricingPlanInterval,
-    EProjectRole,
     EProjectStatus,
     EPropertyType,
     ERequirementFormat,
@@ -34,7 +33,6 @@ export type {
     ERequirementStatus,
     ESubscriptionStatus,
     ETraceLinkType,
-    EUserRoleType,
     EUserStatus,
     EVisibility,
 } from './base/enums.types';
@@ -47,7 +45,6 @@ export {
     NotificationType,
     OrganizationType,
     PricingPlanInterval,
-    ProjectRole,
     ProjectStatus,
     PropertyType,
     RequirementFormat,
@@ -56,7 +53,6 @@ export {
     RequirementStatus,
     SubscriptionStatus,
     TraceLinkType,
-    UserRoleType,
     UserStatus,
     Visibility,
 } from './base/enums.types';

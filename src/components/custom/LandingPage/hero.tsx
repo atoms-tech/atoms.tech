@@ -37,8 +37,7 @@ export function Hero() {
             router.push('/login');
             return;
         }
-        const orgId = userProfile?.personal_organization_id;
-        router.push(`/org/${orgId}/demo`);
+        router.push('/home');
     };
 
     return (

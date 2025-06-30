@@ -164,14 +164,9 @@ export function EditableTable<
         () =>
             ({
                 owner: ['editTable', 'deleteRow', 'addRow'],
-                admin: ['editTable', 'deleteRow', 'addRow'],
-                maintainer: ['editTable', 'deleteRow', 'addRow'],
                 editor: ['editTable', 'deleteRow', 'addRow'],
                 viewer: [],
-            }) as Record<
-                'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
-                string[]
-            >,
+            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
         [],
     );
 
