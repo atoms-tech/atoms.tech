@@ -20,6 +20,10 @@ import {
     useUploadExternalDocument,
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import {
+    OrganizationRole,
+    hasOrganizationPermission,
+} from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -46,7 +50,7 @@ export default function ExternalDocsPage({
     const pathname = usePathname();
     const { toast } = useToast();
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
 
     // Extract orgId from URL path
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
@@ -210,10 +214,6 @@ export default function ExternalDocsPage({
         }
     };
 
-    const canManageDocuments = ['owner', 'admin'].includes(
-        userRole || '',
-    );
-
     return (
         <div className="container p-6">
             <div className="mb-4 flex justify-between items-center">
@@ -259,7 +259,7 @@ export default function ExternalDocsPage({
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    {canManageDocuments && (
+                    {hasOrganizationPermission(userRole, 'manageDocs') && (
                         <input
                             type="file"
                             onChange={handleFileUpload}
@@ -268,7 +268,7 @@ export default function ExternalDocsPage({
                             accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
                         />
                     )}
-                    {canManageDocuments && (
+                    {hasOrganizationPermission(userRole, 'manageDocs') && (
                         <label htmlFor="file-upload">
                             <Button
                                 variant="default"
@@ -396,7 +396,10 @@ export default function ExternalDocsPage({
                                                 </p>
                                             </div>
                                         </div>
-                                        {canManageDocuments && (
+                                        {hasOrganizationPermission(
+                                            userRole,
+                                            'manageDocs',
+                                        ) && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -424,7 +427,10 @@ export default function ExternalDocsPage({
                                 Please upload documents to share with your
                                 organization.
                             </p>
-                            {canManageDocuments && (
+                            {hasOrganizationPermission(
+                                userRole,
+                                'manageDocs',
+                            ) && (
                                 <label htmlFor="file-upload">
                                     <Button
                                         variant="default"

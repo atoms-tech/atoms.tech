@@ -35,6 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -71,7 +72,7 @@ export default function ProjectPage() {
     );
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<ProjectRole | null>(null);
     const {
         data: documents,
         isLoading: documentsLoading,
@@ -117,29 +118,8 @@ export default function ProjectPage() {
         fetchUserRole();
     }, [params?.projectId, user?.id]);
 
-    const canPerformAction = (action: string) => {
-        const rolePermissions = {
-            owner: [
-                'changeRole',
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-                'deleteProject',
-            ],
-            editor: ['addDocument', 'viewDocument', 'editDocument'],
-            viewer: ['viewDocument'],
-        };
-
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'viewer'
-        ].includes(action);
-    };
-
     const handleDocumentClick = (doc: Document) => {
-        if (!canPerformAction('viewDocument')) {
+        if (!hasProjectPermission(userRole, 'viewDocument')) {
             return; // Do nothing if the user does not have permission
         }
         router.push(
@@ -152,7 +132,7 @@ export default function ProjectPage() {
     };
 
     const handleDeleteDocument = async () => {
-        if (!canPerformAction('deleteDocument')) {
+        if (!hasProjectPermission(userRole, 'deleteDocument')) {
             return; // Do nothing if the user does not have permission
         }
 
@@ -283,7 +263,10 @@ export default function ProjectPage() {
                                             Basic information about your project
                                         </CardDescription>
                                     </div>
-                                    {canPerformAction('editProject') &&
+                                    {hasProjectPermission(
+                                        userRole,
+                                        'editProject',
+                                    ) &&
                                         !isEditing && (
                                             <Button
                                                 variant="outline"
@@ -382,7 +365,7 @@ export default function ProjectPage() {
                             className="w-full max-w-xs"
                         />
                         <div className="flex items-center gap-2">
-                            {canPerformAction('addDocument') && (
+                            {hasProjectPermission(userRole, 'addDocument') && (
                                 <Button
                                     variant="outline"
                                     onClick={() =>
@@ -428,8 +411,14 @@ export default function ProjectPage() {
                                             </p>
                                         )}
                                     </div>
-                                    {(canPerformAction('editDocument') ||
-                                        canPerformAction('deleteDocument')) && (
+                                    {(hasProjectPermission(
+                                        userRole,
+                                        'editDocument',
+                                    ) ||
+                                        hasProjectPermission(
+                                            userRole,
+                                            'deleteDocument',
+                                        )) && (
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button
@@ -440,7 +429,8 @@ export default function ProjectPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {canPerformAction(
+                                                {hasProjectPermission(
+                                                    userRole,
                                                     'editDocument',
                                                 ) && (
                                                     <DropdownMenuItem
@@ -454,7 +444,8 @@ export default function ProjectPage() {
                                                         Edit
                                                     </DropdownMenuItem>
                                                 )}
-                                                {canPerformAction(
+                                                {hasProjectPermission(
+                                                    userRole,
                                                     'deleteDocument',
                                                 ) && (
                                                     <DropdownMenuItem
@@ -557,7 +548,7 @@ export default function ProjectPage() {
                         setDocumentToDelete(documentToEdit);
                         setDocumentToEdit(null);
                     }}
-                    canDelete={canPerformAction('deleteDocument')}
+                    canDelete={hasProjectPermission(userRole, 'deleteDocument')}
                 />
             )}
         </div>

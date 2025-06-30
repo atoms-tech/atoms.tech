@@ -6,8 +6,8 @@ import { redirect } from 'next/navigation';
 
 import { getUserOrganizationsServer } from '@/lib/db/server';
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { OrganizationType } from '@/types';
 import { COOKIE_NAME } from '@/lib/utils/cookieUtils';
+import { OrganizationType } from '@/types';
 
 export async function login(formData: FormData) {
     const supabase = await createClient();

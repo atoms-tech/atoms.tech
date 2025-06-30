@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
@@ -87,7 +88,7 @@ export function useCreateProjectMember() {
         }: {
             userId: string;
             projectId: string;
-            role: 'owner' | 'editor' | 'viewer';
+            role: ProjectRole;
             orgId: string; // Add orgId to the parameters
         }) => {
             const { data, error } = await supabase

@@ -13,6 +13,7 @@ import {
 } from '@/hooks/mutations/useOrgMemberMutation';
 // Import useCreateOrgMember and useSetOrgMemberCount
 import { useOrgInvitation } from '@/hooks/queries/useOrganization';
+import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -83,11 +84,7 @@ export default function UserInvitations({
             await addOrgMember({
                 organization_id: invitation.organization_id,
                 user_id: user.id,
-                role: invitation.role as
-                    | 'member'
-                    | 'admin'
-                    | 'owner'
-                    | undefined,
+                role: invitation.role as OrganizationRole | undefined,
                 status: 'active',
                 last_active_at: new Date().toISOString(),
             });

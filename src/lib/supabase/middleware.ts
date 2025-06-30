@@ -53,38 +53,43 @@ export async function updateSession(request: NextRequest) {
             return NextResponse.redirect(url);
         }
         const segments = request.nextUrl.pathname.split('/').filter(Boolean);
-        if (segments[0] === 'org') {
+        if (segments.length > 1 && segments[0] === 'org') {
             // Check if user has a role in organization
             const { data, error } = await supabase
-            .from('organization_members')
-            .select('role')
-            .eq('organization_id', segments[1] || '')
-            .eq('user_id', user.id || '')
-            .single();
+                .from('organization_members')
+                .select('role')
+                .eq('organization_id', segments[1] || '')
+                .eq('user_id', user.id || '')
+                .single();
             if (error || !data) {
                 // unauthorized to see organization
                 const url = request.nextUrl.clone();
                 url.pathname = '/home/user';
                 const myNewResponse = NextResponse.redirect(url);
-                supabaseResponse.cookies.getAll().forEach(({ name, value}) =>
+                supabaseResponse.cookies
+                    .getAll()
+                    .forEach(({ name, value }) =>
                         myNewResponse.cookies.set(name, value),
                     );
                 return myNewResponse;
             }
         }
-        if (segments[2] === 'project') {
+        if (segments.length > 3 && segments[2] === 'project') {
+            // Check if user has a role in project
             const { data, error } = await supabase
-            .from('project_members')
-            .select('role')
-            .eq('project_id', segments[3] || '')
-            .eq('user_id', user.id || '')
-            .single();
+                .from('project_members')
+                .select('role')
+                .eq('project_id', segments[3] || '')
+                .eq('user_id', user.id || '')
+                .single();
             if (error || !data) {
                 // unauthorized to see project
                 const url = request.nextUrl.clone();
                 url.pathname = '/org/' + segments[1];
                 const myNewResponse = NextResponse.redirect(url);
-                supabaseResponse.cookies.getAll().forEach(({ name, value}) =>
+                supabaseResponse.cookies
+                    .getAll()
+                    .forEach(({ name, value }) =>
                         myNewResponse.cookies.set(name, value),
                     );
                 return myNewResponse;

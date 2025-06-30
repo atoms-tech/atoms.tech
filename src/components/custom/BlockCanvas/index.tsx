@@ -48,10 +48,7 @@ export function BlockCanvas({
                 owner: ['editBlock', 'deleteBlock', 'addBlock'],
                 editor: ['editBlock', 'deleteBlock', 'addBlock'],
                 viewer: [],
-            }) as Record<
-                'owner' | 'editor' | 'viewer',
-                string[]
-            >,
+            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
         [],
     );
 

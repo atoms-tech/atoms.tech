@@ -1919,10 +1919,7 @@ export type Database = {
             notification_type: 'invitation' | 'mention' | 'system';
             organization_type: 'personal' | 'team' | 'enterprise';
             pricing_plan_interval: 'none' | 'month' | 'year';
-            project_role:
-                | 'owner'
-                | 'editor'
-                | 'viewer';
+            project_role: 'owner' | 'editor' | 'viewer';
             project_status: 'active' | 'archived' | 'draft' | 'deleted';
             property_type:
                 | 'text'

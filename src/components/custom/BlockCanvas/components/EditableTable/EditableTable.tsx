@@ -166,10 +166,7 @@ export function EditableTable<
                 owner: ['editTable', 'deleteRow', 'addRow'],
                 editor: ['editTable', 'deleteRow', 'addRow'],
                 viewer: [],
-            }) as Record<
-                'owner' | 'editor' | 'viewer',
-                string[]
-            >,
+            }) as Record<'owner' | 'editor' | 'viewer', string[]>,
         [],
     );
 
