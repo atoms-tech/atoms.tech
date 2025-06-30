@@ -11,6 +11,7 @@ interface DocumentState {
     selectedBlockId: string | null;
     isEditMode: boolean;
     useTanStackTables: boolean;
+    useGlideTables: boolean;
 
     // Document actions
     setCurrentDocument: (document: Document | null) => void;
@@ -27,6 +28,7 @@ interface DocumentState {
 
     // Table implementation
     setUseTanStackTables: (useTanStackTables: boolean) => void;
+    setUseGlideTables: (useGlideTables: boolean) => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -35,6 +37,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     selectedBlockId: null,
     isEditMode: false,
     useTanStackTables: false,
+    useGlideTables: false,
 
     // Document actions
     setCurrentDocument: (document) => set({ currentDocument: document }),
@@ -109,6 +112,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     setIsEditMode: (isEditMode) => set({ isEditMode }),
 
-    // Table implementation
+    // Table implementation(s)
     setUseTanStackTables: (useTanStackTables) => set({ useTanStackTables }),
+    setUseGlideTables: (useGlideTables) => set({ useGlideTables }),
 }));

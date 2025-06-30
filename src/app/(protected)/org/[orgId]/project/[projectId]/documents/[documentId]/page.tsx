@@ -6,15 +6,26 @@ import { useEffect, useState } from 'react';
 
 import {
     BlockCanvas,
+    BlockCanvasGlide,
     BlockCanvasTanStack,
 } from '@/components/custom/BlockCanvas/indexExport';
-import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+//import { Button } from '@/components/ui/button';
 import LayoutView from '@/components/views/LayoutView';
 
 export default function DocumentPage() {
     const params = useParams();
     const documentId = params?.documentId as string;
-    const [useTanStackTable, setUseTanStackTable] = useState(false);
+    //const [useTanStackTable, setUseTanStackTable] = useState(false);
+    const [tableType, setTableType] = useState<
+        'default' | 'tanstack' | 'glide'
+    >('default');
 
     //scroll to requirement if requirementId is in sessionStorage
     useEffect(() => {
@@ -74,26 +85,47 @@ export default function DocumentPage() {
         }
     }, []);
 
+    // Switch table renderer for page based on dropdown below.
+    const renderTable = () => {
+        switch (tableType) {
+            case 'tanstack':
+                return <BlockCanvasTanStack documentId={documentId} />;
+            case 'glide':
+                return <BlockCanvasGlide documentId={documentId} />;
+            case 'default':
+            default:
+                return <BlockCanvas documentId={documentId} />;
+        }
+    };
+
     return (
         <LayoutView>
             <div className="space-y-4">
                 <div className="flex justify-end mb-4 px-4">
-                    <Button
-                        variant={useTanStackTable ? 'default' : 'outline'}
-                        onClick={() => setUseTanStackTable(!useTanStackTable)}
-                        className="flex items-center gap-2"
+                    <Select
+                        value={tableType}
+                        onValueChange={(value) =>
+                            setTableType(value as typeof tableType)
+                        }
                     >
-                        <Table className="h-4 w-4" />
-                        {useTanStackTable
-                            ? 'Using TanStack Table'
-                            : 'Switch to TanStack Table'}
-                    </Button>
+                        <SelectTrigger className="w-[240px]">
+                            <Table className="h-4 w-4 mr-2" />
+                            <SelectValue placeholder="Select table type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">
+                                Default Table
+                            </SelectItem>
+                            <SelectItem value="tanstack">
+                                TanStack Table
+                            </SelectItem>
+                            <SelectItem value="glide">
+                                Glide Table (Demo)
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-                {useTanStackTable ? (
-                    <BlockCanvasTanStack documentId={documentId} />
-                ) : (
-                    <BlockCanvas documentId={documentId} />
-                )}
+                {renderTable()}
             </div>
         </LayoutView>
     );

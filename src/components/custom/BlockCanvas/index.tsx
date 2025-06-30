@@ -41,6 +41,7 @@ import { Json } from '@/types/base/database.types';
 export function BlockCanvas({
     documentId,
     _useTanStackTables = false,
+    _useGlideTables = false,
 }: BlockCanvasProps) {
     const rolePermissions = React.useMemo(
         () =>
@@ -64,7 +65,8 @@ export function BlockCanvas({
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, setUseTanStackTables } = useDocumentStore();
+    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } =
+        useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
@@ -297,10 +299,14 @@ export function BlockCanvas({
         }
     };
 
-    // Set the useTanStackTables flag in the document store when it changes
+    // Set the use flag for selected table in the document store when it changes
     useEffect(() => {
         setUseTanStackTables(_useTanStackTables);
     }, [_useTanStackTables, setUseTanStackTables]);
+
+    useEffect(() => {
+        setUseGlideTables?.(_useGlideTables);
+    }, [_useGlideTables, setUseGlideTables]);
 
     // Don't render blocks until they're loaded
     if (loading) {
