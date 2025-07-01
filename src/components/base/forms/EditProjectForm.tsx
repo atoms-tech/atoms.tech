@@ -46,9 +46,9 @@ import { Project } from '@/types/base/projects.types';
 const projectFormSchema = z.object({
     name: z
         .string()
-        .trim()
         .min(2, 'Project name must be at least 2 characters')
         .max(50, 'Project name cannot exceed 50 characters')
+        .trim()
         .refine(
             (val) => val.length > 0,
             'Project name cannot be empty or just spaces',
@@ -213,20 +213,16 @@ export default function EditProjectForm({
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {Object.values(ProjectStatus)
-                                            .filter(
-                                                (status) =>
-                                                    status !==
-                                                    ProjectStatus.deleted,
-                                            ) // Disable changing status to deleted, let the delete button handle that.
-                                            .map((status) => (
+                                        {Object.values(ProjectStatus).map(
+                                            (status) => (
                                                 <SelectItem
                                                     key={status}
                                                     value={status}
                                                 >
                                                     {status}
                                                 </SelectItem>
-                                            ))}
+                                            ),
+                                        )}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
@@ -106,7 +105,7 @@ export function useSetOrgMemberRole() {
         }: {
             userId: string;
             orgId: string;
-            role: OrganizationRole;
+            role: 'member' | 'admin' | 'owner' | 'super_admin';
         }) => {
             // Update the role of the user in the organization_members table
             const { error } = await supabase

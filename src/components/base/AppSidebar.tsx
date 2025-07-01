@@ -4,6 +4,7 @@ import {
     Home,
     LayoutDashboard,
     LucideIcon,
+    Shield,
     Sparkles,
     User,
 } from 'lucide-react';
@@ -44,6 +45,7 @@ interface MenuItem {
 }
 
 // Menu items with app router paths
+// Menu items reserved for future use
 const _items: MenuItem[] = [
     {
         title: 'Home',
@@ -216,6 +218,25 @@ function AppSidebar() {
                                             <span className="text-xs font-medium">
                                                 Dashboard
                                             </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
+
+                            {primaryEnterpriseOrg && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            asChild
+                                        >
+                                            <Link href="/soc2">
+                                                <Shield className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                <span className="text-xs font-medium">
+                                                    SOC2 Compliance
+                                                </span>
+                                            </Link>
                                         </Button>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

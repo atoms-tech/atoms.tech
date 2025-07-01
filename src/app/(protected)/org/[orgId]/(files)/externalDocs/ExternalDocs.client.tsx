@@ -20,10 +20,6 @@ import {
     useUploadExternalDocument,
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-import {
-    OrganizationRole,
-    hasOrganizationPermission,
-} from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -50,7 +46,7 @@ export default function ExternalDocsPage({
     const pathname = usePathname();
     const { toast } = useToast();
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     // Extract orgId from URL path
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
@@ -214,6 +210,10 @@ export default function ExternalDocsPage({
         }
     };
 
+    const canManageDocuments = ['owner', 'super_admin', 'admin'].includes(
+        userRole || '',
+    );
+
     return (
         <div className="container p-6">
             <div className="mb-4 flex justify-between items-center">
@@ -259,7 +259,7 @@ export default function ExternalDocsPage({
                             ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
-                    {hasOrganizationPermission(userRole, 'manageDocs') && (
+                    {canManageDocuments && (
                         <input
                             type="file"
                             onChange={handleFileUpload}
@@ -268,7 +268,7 @@ export default function ExternalDocsPage({
                             accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx"
                         />
                     )}
-                    {hasOrganizationPermission(userRole, 'manageDocs') && (
+                    {canManageDocuments && (
                         <label htmlFor="file-upload">
                             <Button
                                 variant="default"
@@ -380,13 +380,10 @@ export default function ExternalDocsPage({
                                     }}
                                 >
                                     <div className="flex justify-between items-center">
-                                        <div className="flex items-center min-w-0 flex-1">
-                                            <File className="w-4 h-4 mr-4 flex-shrink-0" />
-                                            <div className="min-w-0 flex-1">
-                                                <h3
-                                                    className="text-sm font-semibold truncate"
-                                                    title={file.name}
-                                                >
+                                        <div className="flex items-center">
+                                            <File className="w-4 h-4 mr-4" />
+                                            <div>
+                                                <h3 className="text-sm font-semibold">
                                                     {file.name}
                                                 </h3>
                                                 <p className="text-xs text-gray-400">
@@ -399,10 +396,7 @@ export default function ExternalDocsPage({
                                                 </p>
                                             </div>
                                         </div>
-                                        {hasOrganizationPermission(
-                                            userRole,
-                                            'manageDocs',
-                                        ) && (
+                                        {canManageDocuments && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
@@ -430,10 +424,7 @@ export default function ExternalDocsPage({
                                 Please upload documents to share with your
                                 organization.
                             </p>
-                            {hasOrganizationPermission(
-                                userRole,
-                                'manageDocs',
-                            ) && (
+                            {canManageDocuments && (
                                 <label htmlFor="file-upload">
                                     <Button
                                         variant="default"
