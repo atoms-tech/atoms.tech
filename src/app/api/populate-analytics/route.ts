@@ -71,11 +71,11 @@ function generateActivityData(
     entityData: Record<string, unknown>,
 ) {
     const baseData = {
-        id: entityData.id,
-        name: entityData.name || `${entityType} ${entityData.id.slice(0, 8)}`,
-        created_at: entityData.created_at,
+        id: entityData.id as string,
+        name: (entityData.name as string) || `${entityType} ${(entityData.id as string).slice(0, 8)}`,
+        created_at: entityData.created_at as string,
         updated_at: new Date().toISOString(),
-        version: (entityData.version || 1) + 1,
+        version: ((entityData.version as number) || 1) + 1,
     };
 
     switch (action) {
@@ -222,18 +222,18 @@ export async function POST(request: NextRequest) {
             auditLogs.push({
                 action,
                 actor_id: user.id,
-                entity_id: entity.id,
+                entity_id: entity.id as string,
                 entity_type: entity.type,
-                old_data,
-                new_data,
+                old_data: old_data as any,
+                new_data: new_data as any,
                 created_at: timestamp.toISOString(),
                 metadata: {
                     version:
-                        (entity.version || 1) + Math.floor(Math.random() * 5),
+                        ((entity.version as number) || 1) + Math.floor(Math.random() * 5),
                     source: 'analytics_population_api',
                     user_agent: 'Analytics Population API',
                     ip_address: '127.0.0.1',
-                },
+                } as any,
             });
         }
 

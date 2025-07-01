@@ -53,7 +53,7 @@ export function OnboardingWidget({
         ai_usage_count: 0,
     };
 
-    const organizations = (data as any)?.organizations || [];
+    const organizations = data?.organizations || [];
 
     const steps: OnboardingStep[] = [
         {

@@ -197,7 +197,7 @@ export function useSyncRequirementData() {
         }) => {
             return await updateRequirementMutation.mutateAsync({
                 id: requirementId,
-                properties: data,
+                properties: data as any,
                 updated_by: userId,
             });
         },

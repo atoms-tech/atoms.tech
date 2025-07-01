@@ -135,13 +135,6 @@ export function DuplicateDialog({
         }
     }, [user, toast]);
 
-    // Fetch available projects when dialog opens
-    useEffect(() => {
-        if (isOpen && user) {
-            fetchAvailableProjects();
-        }
-    }, [isOpen, user, fetchAvailableProjects]);
-
     const onSubmit = async (data: DuplicateFormData) => {
         try {
             await onDuplicate(data.targetProjectId, data.newName);

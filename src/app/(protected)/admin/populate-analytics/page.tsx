@@ -21,7 +21,21 @@ export default function PopulateAnalyticsPage() {
     const [projectId, setProjectId] = useState('');
     const [daysBack, setDaysBack] = useState(30);
     const [activitiesPerDay, setActivitiesPerDay] = useState(20);
-    const [result, setResult] = useState<unknown>(null);
+    const [result, setResult] = useState<{
+        message: string;
+        details?: {
+            orgId: string;
+            projectId?: string;
+            daysBack: number;
+            activitiesPerDay: number;
+            documentsFound: number;
+            blocksFound: number;
+            usersFound: number;
+            timestampsGenerated: number;
+            auditLogsCreated: number;
+            auditLogsInserted: number;
+        };
+    } | null>(null);
     const { toast } = useToast();
 
     const handlePopulate = async () => {

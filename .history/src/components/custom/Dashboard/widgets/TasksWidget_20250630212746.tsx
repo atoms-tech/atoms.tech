@@ -237,10 +237,10 @@ export function TasksWidget({ instance }: WidgetProps) {
                     )}
                 </div>
 
-                {tasks.length > Number(maxTasks) && (
+                {tasks.length > maxTasks && (
                     <div className="text-center">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {tasks.length - Number(maxTasks)} more tasks
+                            View {tasks.length - maxTasks} more tasks
                         </Button>
                     </div>
                 )}

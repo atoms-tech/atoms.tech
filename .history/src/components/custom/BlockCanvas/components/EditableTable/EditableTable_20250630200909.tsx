@@ -94,11 +94,7 @@ export function EditableTable<
     const tableRef = React.useRef<HTMLDivElement>(null);
 
     // Clipboard functionality
-    const {
-        copyTableData,
-        pasteFromClipboard,
-        isCopied: _isCopied,
-    } = useClipboard({
+    const { copyTableData, pasteFromClipboard, _isCopied } = useClipboard({
         onCopy: () => console.log('Table data copied to clipboard'),
         onPaste: () => console.log('Data pasted from clipboard'),
         onError: (error) => console.error(`Clipboard error: ${error.message}`),
@@ -265,57 +261,6 @@ export function EditableTable<
         };
     }, []);
 
-    // Handle cell change
-    const handleCellChange = useCallback(
-        async (rowId: string, columnId: string, newValue: CellValue) => {
-            if (!isEditMode) return;
-
-            const item = editingData[rowId] || data.find((d) => d.id === rowId);
-            if (!item) return;
-
-            // Update the item in the state
-            dispatch({
-                type: 'UPDATE_EDITING_DATA',
-                payload: {
-                    rowId,
-                    columnId,
-                    value: newValue,
-                },
-            });
-        },
-        [isEditMode, editingData, data],
-    );
-
-    // Add a type adapter for onCellChange
-    const typeSafeHandleCellChange = useCallback(
-        (itemId: string, accessor: keyof T, value: CellValue) => {
-            handleCellChange(itemId, accessor as string, value);
-        },
-        [handleCellChange],
-    );
-
-    // Delete selected cell content
-    const handleDeleteCell = useCallback(() => {
-        if (!isEditMode || !selectedCell) return;
-
-        if (
-            selectedCell.row < sortedData.length &&
-            selectedCell.col < columns.length
-        ) {
-            const item = sortedData[selectedCell.row];
-            const column = columns[selectedCell.col];
-
-            if (item && column) {
-                handleCellChange(
-                    item.id as string,
-                    column.accessor as string,
-                    '',
-                );
-                console.log('Deleted cell content');
-            }
-        }
-    }, [isEditMode, selectedCell, sortedData, columns, handleCellChange]);
-
     // Handle keyboard navigation within table
     const handleTableKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -357,13 +302,7 @@ export function EditableTable<
                 payload: { row: newRow, col: newCol },
             });
         },
-        [
-            selectedCell,
-            sortedData.length,
-            columns.length,
-            isEditMode,
-            handleDeleteCell,
-        ],
+        [selectedCell, sortedData.length, columns.length, isEditMode, handleDeleteCell],
     );
 
     // Reset selected cell when exiting edit mode
@@ -377,6 +316,35 @@ export function EditableTable<
     }, [isEditMode]);
 
     // Remove the global keyboard event listener since we'll handle it locally
+
+    // Handle cell change
+    const handleCellChange = useCallback(
+        async (rowId: string, columnId: string, newValue: CellValue) => {
+            if (!isEditMode) return;
+
+            const item = editingData[rowId] || data.find((d) => d.id === rowId);
+            if (!item) return;
+
+            // Update the item in the state
+            dispatch({
+                type: 'UPDATE_EDITING_DATA',
+                payload: {
+                    rowId,
+                    columnId,
+                    value: newValue,
+                },
+            });
+        },
+        [isEditMode, editingData, data],
+    );
+
+    // Add a type adapter for onCellChange
+    const typeSafeHandleCellChange = useCallback(
+        (itemId: string, accessor: keyof T, value: CellValue) => {
+            handleCellChange(itemId, accessor as string, value);
+        },
+        [handleCellChange],
+    );
 
     // Copy selected cell or entire table
     const handleCopy = useCallback(
@@ -450,6 +418,28 @@ export function EditableTable<
             handleCellChange,
         ],
     );
+
+    // Delete selected cell content
+    const handleDeleteCell = useCallback(() => {
+        if (!isEditMode || !selectedCell) return;
+
+        if (
+            selectedCell.row < sortedData.length &&
+            selectedCell.col < columns.length
+        ) {
+            const item = sortedData[selectedCell.row];
+            const column = columns[selectedCell.col];
+
+            if (item && column) {
+                handleCellChange(
+                    item.id as string,
+                    column.accessor as string,
+                    '',
+                );
+                console.log('Deleted cell content');
+            }
+        }
+    }, [isEditMode, selectedCell, sortedData, columns, handleCellChange]);
 
     // Handle keyboard shortcuts within table context
     const handleTableShortcuts = useCallback(

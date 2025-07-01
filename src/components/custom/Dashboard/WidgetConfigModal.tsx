@@ -55,7 +55,7 @@ export function WidgetConfigModal({
                         <Label htmlFor={key}>{field.label}</Label>
                         <Input
                             id={key}
-                            value={value || ''}
+                            value={String(value) || ''}
                             onChange={(e) =>
                                 setConfig({ ...config, [key]: e.target.value })
                             }
@@ -76,7 +76,7 @@ export function WidgetConfigModal({
                         <Input
                             id={key}
                             type="number"
-                            value={value || ''}
+                            value={String(value) || ''}
                             onChange={(e) =>
                                 setConfig({
                                     ...config,
@@ -101,7 +101,7 @@ export function WidgetConfigModal({
                     <div key={key} className="flex items-center space-x-2">
                         <Checkbox
                             id={key}
-                            checked={value || false}
+                            checked={Boolean(value) || false}
                             onChange={(e) =>
                                 setConfig({
                                     ...config,
@@ -125,7 +125,7 @@ export function WidgetConfigModal({
                     <div key={key} className="space-y-2">
                         <Label htmlFor={key}>{field.label}</Label>
                         <Select
-                            value={value || field.default}
+                            value={String(value || field.default)}
                             onValueChange={(newValue) =>
                                 setConfig({ ...config, [key]: newValue })
                             }
@@ -160,7 +160,7 @@ export function WidgetConfigModal({
                             <Input
                                 id={key}
                                 type="range"
-                                value={value || field.default || field.min || 0}
+                                value={Number(value || field.default || field.min || 0)}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,
@@ -173,7 +173,7 @@ export function WidgetConfigModal({
                                 className="flex-1"
                             />
                             <span className="text-sm text-gray-500 min-w-[3rem] text-right">
-                                {value || field.default || field.min || 0}
+                                {String(value || field.default || field.min || 0)}
                             </span>
                         </div>
                         {field.description && (
@@ -192,7 +192,7 @@ export function WidgetConfigModal({
                             <Input
                                 id={key}
                                 type="color"
-                                value={value || field.default || '#000000'}
+                                value={String(value || field.default || '#000000')}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,
@@ -202,7 +202,7 @@ export function WidgetConfigModal({
                                 className="w-16 h-10 p-1 border rounded"
                             />
                             <Input
-                                value={value || field.default || '#000000'}
+                                value={String(value || field.default || '#000000')}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,

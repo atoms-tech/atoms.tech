@@ -139,7 +139,7 @@ export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange 
         setTimeout(() => setIsRefreshing(false), 1000);
     };
 
-    const displayedSuggestions = suggestions.slice(0, maxSuggestions);
+    const displayedSuggestions = suggestions.slice(0, Number(maxSuggestions));
 
     return (
         <Card className="h-full">
@@ -191,7 +191,7 @@ export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange 
                                     <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                                         {suggestion.title}
                                     </h4>
-                                    {showConfidence && (
+                                    {Boolean(showConfidence) && (
                                         <span className="text-xs text-gray-500 ml-2">
                                             {suggestion.confidence}%
                                         </span>
@@ -209,7 +209,7 @@ export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange 
                                         >
                                             {suggestion.type}
                                         </span>
-                                        {showPriority && (
+                                        {Boolean(showPriority) && (
                                             <span
                                                 className={`text-xs px-2 py-1 rounded-full capitalize ${
                                                     suggestion.priority ===
@@ -246,10 +246,10 @@ export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange 
                     </motion.div>
                 ))}
 
-                {suggestions.length > maxSuggestions && (
+                {suggestions.length > Number(maxSuggestions) && (
                     <div className="text-center pt-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {suggestions.length - maxSuggestions} more
+                            View {suggestions.length - Number(maxSuggestions)} more
                             suggestions
                         </Button>
                     </div>

@@ -113,7 +113,11 @@ export function useRealTimeAnalyticsActivities(
     params?: AnalyticsQueryParams,
     refreshInterval: number = 30000, // 30 seconds
 ) {
-    return useAnalyticsActivities(orgId, projectId, params, {
+    return useQuery({
+        queryKey: analyticsQueryKeys.activitiesWithParams(orgId, projectId, params),
+        queryFn: () => getAnalyticsActivities(orgId, projectId, params),
+        enabled: !!orgId,
+        staleTime: 1000 * 60 * 5, // 5 minutes
         refetchInterval: refreshInterval,
         refetchIntervalInBackground: true,
     });
@@ -126,7 +130,11 @@ export function useRealTimeAnalyticsMetrics(
     timeRange: 'week' | 'month' | 'quarter' | 'year' = 'month',
     refreshInterval: number = 60000, // 1 minute
 ) {
-    return useAnalyticsMetrics(orgId, projectId, timeRange, {
+    return useQuery({
+        queryKey: analyticsQueryKeys.metrics(orgId, projectId, timeRange),
+        queryFn: () => getAnalyticsMetrics(orgId, projectId, timeRange),
+        enabled: !!orgId,
+        staleTime: 1000 * 60 * 10, // 10 minutes
         refetchInterval: refreshInterval,
         refetchIntervalInBackground: true,
     });

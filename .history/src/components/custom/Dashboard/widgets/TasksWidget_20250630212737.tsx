@@ -198,17 +198,16 @@ export function TasksWidget({ instance }: WidgetProps) {
                                     </div>
 
                                     <div className="flex items-center gap-2 mt-1">
-                                        {Boolean(showPriority) &&
-                                            !task.completed && (
-                                                <div className="flex items-center gap-1">
-                                                    <div
-                                                        className={`w-2 h-2 rounded-full ${getPriorityDot(task.priority)}`}
-                                                    ></div>
-                                                    <span className="text-xs text-gray-500 capitalize">
-                                                        {task.priority}
-                                                    </span>
-                                                </div>
-                                            )}
+                                        {showPriority && !task.completed && (
+                                            <div className="flex items-center gap-1">
+                                                <div
+                                                    className={`w-2 h-2 rounded-full ${getPriorityDot(task.priority)}`}
+                                                ></div>
+                                                <span className="text-xs text-gray-500 capitalize">
+                                                    {task.priority}
+                                                </span>
+                                            </div>
+                                        )}
 
                                         {task.category && (
                                             <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
@@ -237,10 +236,10 @@ export function TasksWidget({ instance }: WidgetProps) {
                     )}
                 </div>
 
-                {tasks.length > Number(maxTasks) && (
+                {tasks.length > maxTasks && (
                     <div className="text-center">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {tasks.length - Number(maxTasks)} more tasks
+                            View {tasks.length - maxTasks} more tasks
                         </Button>
                     </div>
                 )}

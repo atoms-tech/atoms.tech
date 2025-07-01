@@ -191,50 +191,46 @@ export function TeamMembersWidget({ instance }: WidgetProps) {
                                 {member.role}
                             </p>
 
-                            {Boolean(showProjects) &&
-                                member.projects.length > 0 && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                        <div className="flex gap-1">
-                                            {member.projects
-                                                .slice(0, 2)
-                                                .map((project) => (
-                                                    <span
-                                                        key={project}
-                                                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
-                                                    >
-                                                        {project.replace(
-                                                            'Project ',
-                                                            '',
-                                                        )}
-                                                    </span>
-                                                ))}
-                                            {member.projects.length > 2 && (
-                                                <span className="text-xs text-gray-500">
-                                                    +
-                                                    {member.projects.length - 2}
+                            {showProjects && member.projects.length > 0 && (
+                                <div className="flex items-center gap-1 mt-1">
+                                    <div className="flex gap-1">
+                                        {member.projects
+                                            .slice(0, 2)
+                                            .map((project) => (
+                                                <span
+                                                    key={project}
+                                                    className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded"
+                                                >
+                                                    {project.replace(
+                                                        'Project ',
+                                                        '',
+                                                    )}
                                                 </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                            {Boolean(showStatus) &&
-                                member.status !== 'online' && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {formatLastActive(
-                                            member.lastActive || new Date(),
+                                            ))}
+                                        {member.projects.length > 2 && (
+                                            <span className="text-xs text-gray-500">
+                                                +{member.projects.length - 2}
+                                            </span>
                                         )}
-                                    </p>
-                                )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showStatus && member.status !== 'online' && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {formatLastActive(
+                                        member.lastActive || new Date(),
+                                    )}
+                                </p>
+                            )}
                         </div>
                     </motion.div>
                 ))}
 
-                {members.length > Number(maxMembers) && (
+                {members.length > maxMembers && (
                     <div className="text-center pt-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {members.length - Number(maxMembers)} more
-                            members
+                            View {members.length - maxMembers} more members
                         </Button>
                     </div>
                 )}

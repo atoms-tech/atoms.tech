@@ -60,7 +60,8 @@ const getActivityDescription = (activity: RecentActivity) => {
 };
 
 const getNavigationPath = (activity: RecentActivity) => {
-    const { entity_type, entity_id } = activity;
+    const { entity_type, entity_id } =
+        activity;
 
     // This is a simplified navigation - you may need to adjust based on your routing structure
     switch (entity_type) {
@@ -167,7 +168,10 @@ export function RecentActivityWidget({
                                     }
                                 >
                                     <div className="flex-shrink-0 mt-0.5">
-                                        {getActivityIcon(activity.entity_type)}
+                                        {getActivityIcon(
+                                            activity.entity_type,
+                                            activity.action,
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium truncate">

@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { OrganizationData, WidgetProps } from '@/types/dashboard.types';
+import { WidgetProps, OrganizationData } from '@/types/dashboard.types';
 
 interface QuickAction {
     id: string;
@@ -30,8 +30,8 @@ export function QuickActionsWidget({ instance, data }: WidgetProps) {
     const router = useRouter();
 
     // Get organizations and user data from props
-    const organizations = (data as any)?.organizations || [];
-    const _userId = (data as any)?.userId;
+    const organizations = data?.organizations || [];
+    const _userId = data?.userId;
 
     const handleCreateProject = () => {
         if (organizations.length === 1) {

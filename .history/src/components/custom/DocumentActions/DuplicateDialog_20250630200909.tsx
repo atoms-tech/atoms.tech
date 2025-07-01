@@ -77,6 +77,13 @@ export function DuplicateDialog({
         },
     });
 
+    // Fetch available projects when dialog opens
+    useEffect(() => {
+        if (isOpen && user) {
+            fetchAvailableProjects();
+        }
+    }, [isOpen, user, fetchAvailableProjects]);
+
     const fetchAvailableProjects = useCallback(async () => {
         if (!user) return;
 
@@ -135,13 +142,6 @@ export function DuplicateDialog({
         }
     }, [user, toast]);
 
-    // Fetch available projects when dialog opens
-    useEffect(() => {
-        if (isOpen && user) {
-            fetchAvailableProjects();
-        }
-    }, [isOpen, user, fetchAvailableProjects]);
-
     const onSubmit = async (data: DuplicateFormData) => {
         try {
             await onDuplicate(data.targetProjectId, data.newName);
@@ -162,9 +162,8 @@ export function DuplicateDialog({
                 <DialogHeader>
                     <DialogTitle>Duplicate Document</DialogTitle>
                     <DialogDescription>
-                        Create a copy of &quot;{document.name}&quot; in another
-                        project. All blocks, requirements, and properties will
-                        be copied.
+                        Create a copy of &quot;{document.name}&quot; in another project.
+                        All blocks, requirements, and properties will be copied.
                     </DialogDescription>
                 </DialogHeader>
 

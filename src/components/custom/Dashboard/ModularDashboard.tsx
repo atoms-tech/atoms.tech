@@ -52,9 +52,9 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
         initializeWidgets();
 
         // Initialize layout based on user status
-        const isNewUser = data?.onboardingProgress?.is_new_user || false;
+        const isNewUser = (data?.onboardingProgress as any)?.is_new_user || false;
         initializeForUser(isNewUser);
-    }, [data?.onboardingProgress?.is_new_user, initializeForUser]);
+    }, [(data?.onboardingProgress as any)?.is_new_user, initializeForUser]);
 
     // Auto-save layout changes
     useEffect(() => {
@@ -317,15 +317,15 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
             </div>
 
             {/* Drag Overlay */}
-            {draggedWidget && (
+            {_draggedWidget && (
                 <div className="fixed inset-0 pointer-events-none z-50">
                     <div
                         className="absolute bg-blue-500/20 border-2 border-blue-500 border-dashed rounded-lg"
                         style={{
-                            left: draggedWidget.position.x,
-                            top: draggedWidget.position.y,
-                            width: draggedWidget.size.width,
-                            height: draggedWidget.size.height,
+                            left: _draggedWidget.position.x,
+                            top: _draggedWidget.position.y,
+                            width: _draggedWidget.size.width,
+                            height: _draggedWidget.size.height,
                         }}
                     />
                 </div>

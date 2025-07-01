@@ -26,9 +26,9 @@ interface Metric {
 
 export function AnalyticsWidget({ instance, data }: WidgetProps) {
     // Get data from props
-    const organizations = (data?.organizations as OrganizationData[]) || [];
-    const projects = (data?.projects as ProjectData[]) || [];
-    const _userId = data?.userId;
+    const organizations = ((data as any)?.organizations as OrganizationData[]) || [];
+    const projects = ((data as any)?.projects as ProjectData[]) || [];
+    const _userId = (data as any)?.userId;
 
     // Calculate metrics
     const totalOrganizations = organizations.length;

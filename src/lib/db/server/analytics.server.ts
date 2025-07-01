@@ -111,8 +111,8 @@ export const getAnalyticsActivitiesServer = async (
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
             changes_summary: generateChangesSummary(
-                item.old_data,
-                item.new_data,
+                item.old_data as Record<string, unknown> | null,
+                item.new_data as Record<string, unknown> | null,
                 item.action,
             ),
         };
@@ -316,13 +316,13 @@ export const getVersionHistoryServer = async (
                 | 'document'
                 | 'block'
                 | 'requirement',
-            version: extractVersionFromMetadata(item.metadata) || 1,
+            version: extractVersionFromMetadata(item.metadata as Record<string, unknown> | null) || 1,
             created_at: item.created_at,
             created_by: item.actor_id,
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
-            data: item.new_data,
-            changes: generateChangesDetail(item.old_data, item.new_data),
+            data: item.new_data as Record<string, unknown>,
+            changes: generateChangesDetail(item.old_data as Record<string, unknown> | null, item.new_data as Record<string, unknown> | null),
         };
     });
 };
@@ -390,7 +390,7 @@ function extractVersionFromMetadata(metadata: Record<string, unknown> | string |
             return null;
         }
     }
-    return metadata.version || null;
+    return (metadata.version as number) || null;
 }
 
 function generateChangesDetail(

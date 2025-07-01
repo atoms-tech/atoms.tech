@@ -31,7 +31,7 @@ interface Activity {
 export function RecentActivityWidget({ instance, data }: WidgetProps) {
     // Get activities from data or use mock data
     const activities =
-        (data as any)?.activities ||
+        data?.activities ||
         ([
             {
                 id: '1',

@@ -218,23 +218,21 @@ export function TeamMembersWidget({ instance }: WidgetProps) {
                                     </div>
                                 )}
 
-                            {Boolean(showStatus) &&
-                                member.status !== 'online' && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                        {formatLastActive(
-                                            member.lastActive || new Date(),
-                                        )}
-                                    </p>
-                                )}
+                            {showStatus && member.status !== 'online' && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {formatLastActive(
+                                        member.lastActive || new Date(),
+                                    )}
+                                </p>
+                            )}
                         </div>
                     </motion.div>
                 ))}
 
-                {members.length > Number(maxMembers) && (
+                {members.length > maxMembers && (
                     <div className="text-center pt-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {members.length - Number(maxMembers)} more
-                            members
+                            View {members.length - maxMembers} more members
                         </Button>
                     </div>
                 )}

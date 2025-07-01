@@ -47,7 +47,7 @@ export function ProjectsWidget({
 
     // Get projects from data or use mock data
     const projects =
-        (data as any)?.projects ||
+        data?.projects ||
         ([
             {
                 id: '1',
@@ -85,7 +85,7 @@ export function ProjectsWidget({
             },
         ] as Project[]);
 
-    const organizations = (data as any)?.organizations || [];
+    const organizations = data?.organizations || [];
 
     const formatTimeAgo = (timestamp: Date | string | number) => {
         const now = new Date();

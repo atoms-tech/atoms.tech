@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { Json } from '@/types/base/database.types';
 
 interface DuplicateDocumentRequest {
     targetProjectId: string;
@@ -280,7 +279,7 @@ export async function POST(
                     external_id: string;
                     original_requirement: string;
                     enchanced_requirement: string;
-                    ai_analysis: Record<string, unknown> | null;
+                    ai_analysis: Record<string, unknown>;
                     created_by: string;
                     updated_by: string;
                     created_at: string;
@@ -306,36 +305,22 @@ export async function POST(
                                 document_id: newDocumentId,
                                 block_id: newBlock.id,
                                 name: req.name as string,
-                                description:
-                                    (req.description as string | null) || '',
-                                level: req.level as string,
-                                format: req.format as string,
-                                priority: req.priority as string,
-                                external_id:
-                                    (req.external_id as string | null) || '',
+                                description: req.description as string | null,
+                                level: req.level as Database['public']['Enums']['requirement_level'],
+                                format: req.format as Database['public']['Enums']['requirement_format'],
+                                priority:
+                                    req.priority as Database['public']['Enums']['requirement_priority'],
+                                external_id: req.external_id as string | null,
                                 original_requirement:
-                                    (req.original_requirement as
-                                        | string
-                                        | null) || '',
+                                    req.original_requirement as string | null,
                                 enchanced_requirement:
-                                    (req.enchanced_requirement as
-                                        | string
-                                        | null) || '',
-                                ai_analysis:
-                                    req.ai_analysis &&
-                                    typeof req.ai_analysis === 'object' &&
-                                    !Array.isArray(req.ai_analysis)
-                                        ? (req.ai_analysis as Record<
-                                              string,
-                                              unknown
-                                          >)
-                                        : null,
+                                    req.enchanced_requirement as string | null,
+                                ai_analysis: req.ai_analysis as Json | null,
                                 position: req.position as number,
-                                status: req.status as string,
-                                properties:
-                                    (req.properties as Json | null) || {},
+                                status: req.status as Database['public']['Enums']['requirement_status'],
+                                properties: req.properties as Json | null,
                                 tags: req.tags as string[] | null,
-                                type: (req.type as string | null) || '',
+                                type: req.type as string | null,
                                 created_by: user.id,
                                 updated_by: user.id,
                                 created_at: timestamp,
@@ -351,7 +336,7 @@ export async function POST(
                 if (allRequirements.length > 0) {
                     const { error: requirementsError } = await supabase
                         .from('requirements')
-                        .insert(allRequirements as any);
+                        .insert(allRequirements);
 
                     if (requirementsError) {
                         console.error(

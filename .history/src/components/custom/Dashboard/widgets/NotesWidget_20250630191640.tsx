@@ -19,10 +19,7 @@ interface Note {
     tags?: string[];
 }
 
-export function NotesWidget({
-    instance,
-    onConfigChange: _onConfigChange,
-}: WidgetProps) {
+export function NotesWidget({ instance, onConfigChange: _onConfigChange }: WidgetProps) {
     const {
         maxNotes = 5,
         showSearch = true,
@@ -75,7 +72,7 @@ export function NotesWidget({
                     tag.toLowerCase().includes(searchQuery.toLowerCase()),
                 ),
         )
-        .slice(0, Number(maxNotes) || 5);
+        .slice(0, maxNotes);
 
     const createNote = () => {
         if (newNote.title.trim() || newNote.content.trim()) {
@@ -137,7 +134,7 @@ export function NotesWidget({
                     </Button>
                 </div>
 
-                {Boolean(showSearch) && (
+                {showSearch && (
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <Input
@@ -291,10 +288,10 @@ export function NotesWidget({
                     )}
                 </div>
 
-                {notes.length > Number(maxNotes) && (
+                {notes.length > maxNotes && (
                     <div className="text-center">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {notes.length - Number(maxNotes)} more notes
+                            View {notes.length - maxNotes} more notes
                         </Button>
                     </div>
                 )}

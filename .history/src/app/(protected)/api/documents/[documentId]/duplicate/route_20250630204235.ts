@@ -306,34 +306,19 @@ export async function POST(
                                 document_id: newDocumentId,
                                 block_id: newBlock.id,
                                 name: req.name as string,
-                                description:
-                                    (req.description as string | null) || '',
+                                description: (req.description as string | null) || '',
                                 level: req.level as string,
                                 format: req.format as string,
                                 priority: req.priority as string,
-                                external_id:
-                                    (req.external_id as string | null) || '',
+                                external_id: (req.external_id as string | null) || '',
                                 original_requirement:
-                                    (req.original_requirement as
-                                        | string
-                                        | null) || '',
+                                    (req.original_requirement as string | null) || '',
                                 enchanced_requirement:
-                                    (req.enchanced_requirement as
-                                        | string
-                                        | null) || '',
-                                ai_analysis:
-                                    req.ai_analysis &&
-                                    typeof req.ai_analysis === 'object' &&
-                                    !Array.isArray(req.ai_analysis)
-                                        ? (req.ai_analysis as Record<
-                                              string,
-                                              unknown
-                                          >)
-                                        : null,
+                                    (req.enchanced_requirement as string | null) || '',
+                                ai_analysis: (req.ai_analysis as Json | null) || {},
                                 position: req.position as number,
                                 status: req.status as string,
-                                properties:
-                                    (req.properties as Json | null) || {},
+                                properties: (req.properties as Json | null) || {},
                                 tags: req.tags as string[] | null,
                                 type: (req.type as string | null) || '',
                                 created_by: user.id,

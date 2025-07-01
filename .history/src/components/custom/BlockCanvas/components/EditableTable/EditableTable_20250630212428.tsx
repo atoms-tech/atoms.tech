@@ -265,35 +265,6 @@ export function EditableTable<
         };
     }, []);
 
-    // Handle cell change
-    const handleCellChange = useCallback(
-        async (rowId: string, columnId: string, newValue: CellValue) => {
-            if (!isEditMode) return;
-
-            const item = editingData[rowId] || data.find((d) => d.id === rowId);
-            if (!item) return;
-
-            // Update the item in the state
-            dispatch({
-                type: 'UPDATE_EDITING_DATA',
-                payload: {
-                    rowId,
-                    columnId,
-                    value: newValue,
-                },
-            });
-        },
-        [isEditMode, editingData, data],
-    );
-
-    // Add a type adapter for onCellChange
-    const typeSafeHandleCellChange = useCallback(
-        (itemId: string, accessor: keyof T, value: CellValue) => {
-            handleCellChange(itemId, accessor as string, value);
-        },
-        [handleCellChange],
-    );
-
     // Delete selected cell content
     const handleDeleteCell = useCallback(() => {
         if (!isEditMode || !selectedCell) return;
@@ -377,6 +348,35 @@ export function EditableTable<
     }, [isEditMode]);
 
     // Remove the global keyboard event listener since we'll handle it locally
+
+    // Handle cell change
+    const handleCellChange = useCallback(
+        async (rowId: string, columnId: string, newValue: CellValue) => {
+            if (!isEditMode) return;
+
+            const item = editingData[rowId] || data.find((d) => d.id === rowId);
+            if (!item) return;
+
+            // Update the item in the state
+            dispatch({
+                type: 'UPDATE_EDITING_DATA',
+                payload: {
+                    rowId,
+                    columnId,
+                    value: newValue,
+                },
+            });
+        },
+        [isEditMode, editingData, data],
+    );
+
+    // Add a type adapter for onCellChange
+    const typeSafeHandleCellChange = useCallback(
+        (itemId: string, accessor: keyof T, value: CellValue) => {
+            handleCellChange(itemId, accessor as string, value);
+        },
+        [handleCellChange],
+    );
 
     // Copy selected cell or entire table
     const handleCopy = useCallback(

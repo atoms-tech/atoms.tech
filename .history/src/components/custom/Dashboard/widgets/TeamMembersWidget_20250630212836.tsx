@@ -230,11 +230,10 @@ export function TeamMembersWidget({ instance }: WidgetProps) {
                     </motion.div>
                 ))}
 
-                {members.length > Number(maxMembers) && (
+                {members.length > maxMembers && (
                     <div className="text-center pt-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {members.length - Number(maxMembers)} more
-                            members
+                            View {members.length - maxMembers} more members
                         </Button>
                     </div>
                 )}

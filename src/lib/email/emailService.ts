@@ -92,6 +92,9 @@ export class EmailService {
                 html?: string;
                 text?: string;
                 replyTo?: string;
+                cc?: string[];
+                bcc?: string[];
+                headers?: Record<string, string>;
             } = {
                 from: FROM_EMAIL,
                 to: Array.isArray(options.to) ? options.to : [options.to],
@@ -105,7 +108,7 @@ export class EmailService {
             if (options.replyTo) emailData.replyTo = options.replyTo;
             if (options.headers) emailData.headers = options.headers;
 
-            const result = await resend.emails.send(emailData);
+            const result = await resend.emails.send(emailData as any);
 
             if (result.error) {
                 throw new Error(result.error.message);

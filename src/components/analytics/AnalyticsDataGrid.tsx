@@ -58,9 +58,9 @@ export function AnalyticsDataGrid({
         isLoading,
         error,
         refetch,
-        _params,
+        params: _params,
         setFilters,
-        _setPageSize,
+        setPageSize: _setPageSize,
         nextPage,
         previousPage,
         hasNextPage,
@@ -70,6 +70,48 @@ export function AnalyticsDataGrid({
     } = usePaginatedAnalyticsActivities(orgId, projectId, initialFilters);
 
     const restoreVersionMutation = useRestoreVersion();
+
+    // Event handlers - declared before useMemo to avoid hoisting issues
+    const handleViewDetails = useCallback((activity: AnalyticsActivity) => {
+        // TODO: Open details modal
+        console.log('View details for:', activity);
+    }, []);
+
+    const handleRestore = useCallback(
+        (activity: AnalyticsActivity) => {
+            if (!activity.entity_id || !activity.entity_type) return;
+
+            // Validate entity type is supported for restoration
+            const validEntityTypes = [
+                'document',
+                'block',
+                'requirement',
+            ] as const;
+            if (!validEntityTypes.includes(activity.entity_type as 'document' | 'block' | 'requirement')) {
+                console.warn(
+                    `Entity type ${activity.entity_type} is not supported for restoration`,
+                );
+                return;
+            }
+
+            restoreVersionMutation.mutate({
+                entityId: activity.entity_id,
+                entityType: activity.entity_type as
+                    | 'document'
+                    | 'block'
+                    | 'requirement',
+                targetVersion: 1, // TODO: Get actual version from activity
+                auditLogId: activity.id,
+                reason: 'Restored from analytics grid',
+            });
+        },
+        [restoreVersionMutation],
+    );
+
+    const handleViewHistory = useCallback((activity: AnalyticsActivity) => {
+        // TODO: Open version history modal
+        console.log('View history for:', activity);
+    }, []);
 
     // Column definitions for AG Grid
     const columnDefs = useMemo<ColDef[]>(
@@ -239,47 +281,6 @@ export function AnalyticsDataGrid({
         },
         [],
     );
-
-    const handleViewDetails = useCallback((activity: AnalyticsActivity) => {
-        // TODO: Open details modal
-        console.log('View details for:', activity);
-    }, []);
-
-    const handleRestore = useCallback(
-        (activity: AnalyticsActivity) => {
-            if (!activity.entity_id || !activity.entity_type) return;
-
-            // Validate entity type is supported for restoration
-            const validEntityTypes = [
-                'document',
-                'block',
-                'requirement',
-            ] as const;
-            if (!validEntityTypes.includes(activity.entity_type as 'document' | 'block' | 'requirement')) {
-                console.warn(
-                    `Entity type ${activity.entity_type} is not supported for restoration`,
-                );
-                return;
-            }
-
-            restoreVersionMutation.mutate({
-                entityId: activity.entity_id,
-                entityType: activity.entity_type as
-                    | 'document'
-                    | 'block'
-                    | 'requirement',
-                targetVersion: 1, // TODO: Get actual version from activity
-                auditLogId: activity.id,
-                reason: 'Restored from analytics grid',
-            });
-        },
-        [restoreVersionMutation],
-    );
-
-    const handleViewHistory = useCallback((activity: AnalyticsActivity) => {
-        // TODO: Open version history modal
-        console.log('View history for:', activity);
-    }, []);
 
     const handleSearch = useCallback(() => {
         setFilters({
