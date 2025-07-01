@@ -23,7 +23,7 @@ export function NewsletterWelcomeTemplate({
             </Text>
 
             <Section style={benefitsSection}>
-                <Text style={subheading}>What you'll receive:</Text>
+                <Text style={subheading}>What you&apos;ll receive:</Text>
                 <Text style={benefitItem}>
                     📊 Product updates and new features
                 </Text>

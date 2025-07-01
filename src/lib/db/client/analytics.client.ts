@@ -396,7 +396,6 @@ export const restoreVersion = async (
     if (!restoreData) throw new Error('No data to restore');
 
     // Get current data for backup
-    let currentData: any;
     let tableName: string;
 
     switch (entityType) {
@@ -422,7 +421,7 @@ export const restoreVersion = async (
     if (getCurrentError) throw getCurrentError;
     if (!currentEntity) throw new Error('Entity not found');
 
-    currentData = currentEntity;
+    const currentData = currentEntity;
 
     // Prepare restore data with updated metadata
     const restorePayload = {
