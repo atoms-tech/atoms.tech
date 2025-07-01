@@ -64,6 +64,16 @@ export default function RootLayout({
                             </QueryProvider>
                         </ThemeProvider>
                     </CookiesProvider>
+                    {/* Below Required for Glide overlays (e.g., dropdown editors) */}
+                    <div
+                        id="portal"
+                        style={{
+                            position: 'fixed',
+                            left: 0,
+                            top: 0,
+                            zIndex: 9999,
+                        }}
+                    />
                 </body>
             </html>
         </GlobalErrorBoundary>
