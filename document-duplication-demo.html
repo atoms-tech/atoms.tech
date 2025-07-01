@@ -1,378 +1,465 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATOMS.tech - Document Copy/Duplicate Functionality Demo</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            color: white;
-        }
-        
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-        
-        .demo-section {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        
-        .demo-section h2 {
-            color: #4a5568;
-            margin-bottom: 1rem;
-            font-size: 1.8rem;
-        }
-        
-        .demo-section p {
-            color: #718096;
-            margin-bottom: 1.5rem;
-            line-height: 1.6;
-        }
-        
-        .screenshot-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .screenshot-item {
-            background: #f7fafc;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .screenshot-item:hover {
-            transform: translateY(-5px);
-        }
-        
-        .screenshot-item img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        
-        .screenshot-caption {
-            padding: 1rem;
-        }
-        
-        .screenshot-caption h3 {
-            color: #2d3748;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-        
-        .screenshot-caption p {
-            color: #718096;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-        
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .feature-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        .feature-card h3 {
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-        
-        .feature-card p {
-            color: rgba(255,255,255,0.9);
-            margin: 0;
-        }
-        
-        .workflow-steps {
-            counter-reset: step-counter;
-        }
-        
-        .workflow-step {
-            counter-increment: step-counter;
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: #f7fafc;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .workflow-step::before {
-            content: counter(step-counter);
-            background: #667eea;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-        
-        .workflow-content h3 {
-            color: #2d3748;
-            margin-bottom: 0.5rem;
-        }
-        
-        .workflow-content p {
-            color: #718096;
-            margin: 0;
-        }
-        
-        .cta-section {
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 3rem 2rem;
-            border-radius: 20px;
-            margin-top: 3rem;
-        }
-        
-        .cta-section h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-        
-        .cta-section p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 2rem;
-        }
-        
-        .btn {
-            display: inline-block;
-            background: white;
-            color: #667eea;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: transform 0.3s ease;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🎆 Document Copy/Duplicate Functionality</h1>
-            <p>Complete Implementation & Visual Documentation for ATOMS.tech Requirements Platform</p>
-        </div>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ATOMS.tech - Document Copy/Duplicate Functionality Demo</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
 
-        <div class="demo-section">
-            <h2>📝 Overview</h2>
-            <p>This demonstration showcases the comprehensive document copy/duplicate functionality implemented for the ATOMS.tech requirements platform. Users can now duplicate documents within the same project or copy them to different projects with full permission validation and deep copying of all related data.</p>
-            
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h3>🔄 Deep Copy Support</h3>
-                    <p>Copies documents, blocks, requirements, and properties</p>
-                </div>
-                <div class="feature-card">
-                    <h3>🚀 Cross-Project Duplication</h3>
-                    <p>Copy documents between different projects</p>
-                </div>
-                <div class="feature-card">
-                    <h3>🔒 Permission-Based Access</h3>
-                    <p>Role-based visibility and validation</p>
-                </div>
-                <div class="feature-card">
-                    <h3>⚡ Real-time UI Updates</h3>
-                    <p>Automatic refresh after successful duplication</p>
-                </div>
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                    sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                color: #333;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 2rem;
+            }
+
+            .header {
+                text-align: center;
+                margin-bottom: 3rem;
+                color: white;
+            }
+
+            .header h1 {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            }
+
+            .header p {
+                font-size: 1.2rem;
+                opacity: 0.9;
+            }
+
+            .demo-section {
+                background: white;
+                border-radius: 20px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            }
+
+            .demo-section h2 {
+                color: #4a5568;
+                margin-bottom: 1rem;
+                font-size: 1.8rem;
+            }
+
+            .demo-section p {
+                color: #718096;
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+            }
+
+            .screenshot-gallery {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 1.5rem;
+                margin-top: 2rem;
+            }
+
+            .screenshot-item {
+                background: #f7fafc;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                transition: transform 0.3s ease;
+            }
+
+            .screenshot-item:hover {
+                transform: translateY(-5px);
+            }
+
+            .screenshot-item img {
+                width: 100%;
+                height: auto;
+                display: block;
+            }
+
+            .screenshot-caption {
+                padding: 1rem;
+            }
+
+            .screenshot-caption h3 {
+                color: #2d3748;
+                margin-bottom: 0.5rem;
+                font-size: 1.1rem;
+            }
+
+            .screenshot-caption p {
+                color: #718096;
+                font-size: 0.9rem;
+                margin: 0;
+            }
+
+            .features-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1.5rem;
+                margin-top: 2rem;
+            }
+
+            .feature-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 1.5rem;
+                border-radius: 12px;
+                text-align: center;
+            }
+
+            .feature-card h3 {
+                margin-bottom: 1rem;
+                font-size: 1.2rem;
+            }
+
+            .feature-card p {
+                color: rgba(255, 255, 255, 0.9);
+                margin: 0;
+            }
+
+            .workflow-steps {
+                counter-reset: step-counter;
+            }
+
+            .workflow-step {
+                counter-increment: step-counter;
+                display: flex;
+                align-items: flex-start;
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                background: #f7fafc;
+                border-radius: 12px;
+                border-left: 4px solid #667eea;
+            }
+
+            .workflow-step::before {
+                content: counter(step-counter);
+                background: #667eea;
+                color: white;
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                margin-right: 1rem;
+                flex-shrink: 0;
+            }
+
+            .workflow-content h3 {
+                color: #2d3748;
+                margin-bottom: 0.5rem;
+            }
+
+            .workflow-content p {
+                color: #718096;
+                margin: 0;
+            }
+
+            .cta-section {
+                text-align: center;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 3rem 2rem;
+                border-radius: 20px;
+                margin-top: 3rem;
+            }
+
+            .cta-section h2 {
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+
+            .cta-section p {
+                font-size: 1.2rem;
+                opacity: 0.9;
+                margin-bottom: 2rem;
+            }
+
+            .btn {
+                display: inline-block;
+                background: white;
+                color: #667eea;
+                padding: 1rem 2rem;
+                border-radius: 8px;
+                text-decoration: none;
+                font-weight: bold;
+                transition: transform 0.3s ease;
+            }
+
+            .btn:hover {
+                transform: translateY(-2px);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎆 Document Copy/Duplicate Functionality</h1>
+                <p>
+                    Complete Implementation & Visual Documentation for
+                    ATOMS.tech Requirements Platform
+                </p>
             </div>
-        </div>
 
-        <div class="demo-section">
-            <h2>🎯 Complete Workflow Demonstration</h2>
-            <p>Follow the step-by-step visual demonstration of the document duplication functionality from login to completion.</p>
-            
-            <div class="workflow-steps">
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Application Landing Page</h3>
-                        <p>Starting point showing the ATOMS.tech requirements platform with modern UI and clear navigation.</p>
+            <div class="demo-section">
+                <h2>📝 Overview</h2>
+                <p>
+                    This demonstration showcases the comprehensive document
+                    copy/duplicate functionality implemented for the ATOMS.tech
+                    requirements platform. Users can now duplicate documents
+                    within the same project or copy them to different projects
+                    with full permission validation and deep copying of all
+                    related data.
+                </p>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>🔄 Deep Copy Support</h3>
+                        <p>
+                            Copies documents, blocks, requirements, and
+                            properties
+                        </p>
                     </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>User Authentication</h3>
-                        <p>Secure login process with email/password authentication and social login options.</p>
+                    <div class="feature-card">
+                        <h3>🚀 Cross-Project Duplication</h3>
+                        <p>Copy documents between different projects</p>
                     </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Organization Dashboard</h3>
-                        <p>Overview of available projects within the organization with project management capabilities.</p>
+                    <div class="feature-card">
+                        <h3>🔒 Permission-Based Access</h3>
+                        <p>Role-based visibility and validation</p>
                     </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Project Dashboard</h3>
-                        <p>Project-specific view showing requirements documents with action menus for each document.</p>
-                    </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Document Actions Menu</h3>
-                        <p>Dropdown menu revealing the new "Duplicate" option alongside existing Edit and Delete actions.</p>
-                    </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Duplicate Dialog</h3>
-                        <p>Modal dialog for configuring duplication settings including target project selection and naming.</p>
-                    </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Project Selection</h3>
-                        <p>Dropdown showing available projects with user roles and permissions for cross-project duplication.</p>
-                    </div>
-                </div>
-                
-                <div class="workflow-step">
-                    <div class="workflow-content">
-                        <h3>Duplication Execution</h3>
-                        <p>Final confirmation and execution of the document duplication process with all settings configured.</p>
+                    <div class="feature-card">
+                        <h3>⚡ Real-time UI Updates</h3>
+                        <p>Automatic refresh after successful duplication</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="demo-section">
-            <h2>📸 Visual Documentation</h2>
-            <p>High-resolution screenshots (1920x1080) documenting every step of the document duplication workflow.</p>
-            
-            <div class="screenshot-gallery">
-                <div class="screenshot-item">
-                    <img src="screenshots/01-atoms-landing-fullhd.png" alt="ATOMS Landing Page">
-                    <div class="screenshot-caption">
-                        <h3>Landing Page</h3>
-                        <p>Modern requirements platform interface with clear value proposition</p>
+            <div class="demo-section">
+                <h2>🎯 Complete Workflow Demonstration</h2>
+                <p>
+                    Follow the step-by-step visual demonstration of the document
+                    duplication functionality from login to completion.
+                </p>
+
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Application Landing Page</h3>
+                            <p>
+                                Starting point showing the ATOMS.tech
+                                requirements platform with modern UI and clear
+                                navigation.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/02-login-page-fullhd.png" alt="Login Page">
-                    <div class="screenshot-caption">
-                        <h3>Authentication</h3>
-                        <p>Secure login with multiple authentication options</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>User Authentication</h3>
+                            <p>
+                                Secure login process with email/password
+                                authentication and social login options.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/03-organization-dashboard-fullhd.png" alt="Organization Dashboard">
-                    <div class="screenshot-caption">
-                        <h3>Organization View</h3>
-                        <p>Project overview with management capabilities</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Organization Dashboard</h3>
+                            <p>
+                                Overview of available projects within the
+                                organization with project management
+                                capabilities.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/04-project-dashboard-fullhd.png" alt="Project Dashboard">
-                    <div class="screenshot-caption">
-                        <h3>Project Dashboard</h3>
-                        <p>Document listing with action menus</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Project Dashboard</h3>
+                            <p>
+                                Project-specific view showing requirements
+                                documents with action menus for each document.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/07-document-actions-dropdown-with-duplicate-fullhd.png" alt="Document Actions">
-                    <div class="screenshot-caption">
-                        <h3>Document Actions</h3>
-                        <p>Dropdown menu showing new Duplicate option</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Document Actions Menu</h3>
+                            <p>
+                                Dropdown menu revealing the new "Duplicate"
+                                option alongside existing Edit and Delete
+                                actions.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/08-duplicate-dialog-opened-fullhd.png" alt="Duplicate Dialog">
-                    <div class="screenshot-caption">
-                        <h3>Duplicate Dialog</h3>
-                        <p>Configuration modal for duplication settings</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Duplicate Dialog</h3>
+                            <p>
+                                Modal dialog for configuring duplication
+                                settings including target project selection and
+                                naming.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/09-project-selection-dropdown-fullhd.png" alt="Project Selection">
-                    <div class="screenshot-caption">
-                        <h3>Project Selection</h3>
-                        <p>Available projects with role-based permissions</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Project Selection</h3>
+                            <p>
+                                Dropdown showing available projects with user
+                                roles and permissions for cross-project
+                                duplication.
+                            </p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="screenshot-item">
-                    <img src="screenshots/10-ready-to-duplicate-fullhd.png" alt="Ready to Duplicate">
-                    <div class="screenshot-caption">
-                        <h3>Ready to Execute</h3>
-                        <p>Final configuration before duplication</p>
+
+                    <div class="workflow-step">
+                        <div class="workflow-content">
+                            <h3>Duplication Execution</h3>
+                            <p>
+                                Final confirmation and execution of the document
+                                duplication process with all settings
+                                configured.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="cta-section">
-            <h2>🎉 Implementation Complete!</h2>
-            <p>The document copy/duplicate functionality is fully implemented and production-ready with comprehensive visual documentation.</p>
-            <a href="#" class="btn">View PR #9 Details</a>
+            <div class="demo-section">
+                <h2>📸 Visual Documentation</h2>
+                <p>
+                    High-resolution screenshots (1920x1080) documenting every
+                    step of the document duplication workflow.
+                </p>
+
+                <div class="screenshot-gallery">
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/01-atoms-landing-fullhd.png"
+                            alt="ATOMS Landing Page"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Landing Page</h3>
+                            <p>
+                                Modern requirements platform interface with
+                                clear value proposition
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/02-login-page-fullhd.png"
+                            alt="Login Page"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Authentication</h3>
+                            <p>
+                                Secure login with multiple authentication
+                                options
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/03-organization-dashboard-fullhd.png"
+                            alt="Organization Dashboard"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Organization View</h3>
+                            <p>Project overview with management capabilities</p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/04-project-dashboard-fullhd.png"
+                            alt="Project Dashboard"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Project Dashboard</h3>
+                            <p>Document listing with action menus</p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/07-document-actions-dropdown-with-duplicate-fullhd.png"
+                            alt="Document Actions"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Document Actions</h3>
+                            <p>Dropdown menu showing new Duplicate option</p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/08-duplicate-dialog-opened-fullhd.png"
+                            alt="Duplicate Dialog"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Duplicate Dialog</h3>
+                            <p>Configuration modal for duplication settings</p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/09-project-selection-dropdown-fullhd.png"
+                            alt="Project Selection"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Project Selection</h3>
+                            <p>
+                                Available projects with role-based permissions
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="screenshot-item">
+                        <img
+                            src="screenshots/10-ready-to-duplicate-fullhd.png"
+                            alt="Ready to Duplicate"
+                        />
+                        <div class="screenshot-caption">
+                            <h3>Ready to Execute</h3>
+                            <p>Final configuration before duplication</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <h2>🎉 Implementation Complete!</h2>
+                <p>
+                    The document copy/duplicate functionality is fully
+                    implemented and production-ready with comprehensive visual
+                    documentation.
+                </p>
+                <a href="#" class="btn">View PR #9 Details</a>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
 </html>

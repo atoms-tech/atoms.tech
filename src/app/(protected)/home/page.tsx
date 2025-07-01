@@ -1,17 +1,21 @@
-import { Suspense } from 'react';
-import { QueryClient, HydrationBoundary, dehydrate } from '@tanstack/react-query';
-
-import LayoutView from '@/components/views/LayoutView';
-import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
 import {
-    getUserProjectsAcrossOrgsServer,
-    getUserRecentActivityServer,
-    getUserRecentActivityPaginatedServer,
-    getUserOnboardingProgressServer
-} from '@/lib/db/server/home.server';
-import { queryKeys } from '@/lib/constants/queryKeys';
+    HydrationBoundary,
+    QueryClient,
+    dehydrate,
+} from '@tanstack/react-query';
+import { Suspense } from 'react';
+
 import HomePage from '@/components/custom/HomePage/HomePage.client';
 import { HomePageSkeleton } from '@/components/custom/HomePage/HomePageSkeleton';
+import LayoutView from '@/components/views/LayoutView';
+import { queryKeys } from '@/lib/constants/queryKeys';
+import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
+import {
+    getUserOnboardingProgressServer,
+    getUserProjectsAcrossOrgsServer,
+    getUserRecentActivityPaginatedServer,
+    getUserRecentActivityServer,
+} from '@/lib/db/server/home.server';
 
 export default async function HomePageRoute() {
     const queryClient = new QueryClient();
@@ -19,12 +23,13 @@ export default async function HomePageRoute() {
     const userId = user.user.id;
 
     // Fetch all data in parallel for better performance
-    const [organizations, projects, recentActivityData, onboardingProgress] = await Promise.all([
-        getUserOrganizationsServer(userId),
-        getUserProjectsAcrossOrgsServer(userId),
-        getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
-        getUserOnboardingProgressServer(userId)
-    ]);
+    const [organizations, projects, recentActivityData, onboardingProgress] =
+        await Promise.all([
+            getUserOrganizationsServer(userId),
+            getUserProjectsAcrossOrgsServer(userId),
+            getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
+            getUserOnboardingProgressServer(userId),
+        ]);
 
     // Prefetch data for client components
     await queryClient.prefetchQuery({

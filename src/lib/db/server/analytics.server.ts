@@ -1,24 +1,25 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
-import { 
-    AnalyticsActivity, 
-    AnalyticsMetrics, 
-    AnalyticsQueryParams, 
-    VersionHistoryItem
+import {
+    AnalyticsActivity,
+    AnalyticsMetrics,
+    AnalyticsQueryParams,
+    VersionHistoryItem,
 } from '@/types/analytics.types';
 
 // Server-side analytics activities query for SSR
 export const getAnalyticsActivitiesServer = async (
     orgId: string,
     projectId?: string,
-    params?: AnalyticsQueryParams
+    params?: AnalyticsQueryParams,
 ): Promise<{ data: AnalyticsActivity[]; total: number }> => {
     const supabase = await createClient();
-    
-    let query = supabase
-        .from('audit_logs')
-        .select(`
+
+    let query = supabase.from('audit_logs').select(
+        `
             *
-        `, { count: 'exact' });
+        `,
+        { count: 'exact' },
+    );
 
     // Base filtering by organization
     if (projectId) {
@@ -27,8 +28,8 @@ export const getAnalyticsActivitiesServer = async (
             .from('documents')
             .select('id')
             .eq('project_id', projectId);
-        
-        const entityIds = projectEntities?.map(doc => doc.id) || [];
+
+        const entityIds = projectEntities?.map((doc) => doc.id) || [];
         if (entityIds.length > 0) {
             query = query.in('entity_id', entityIds);
         }
@@ -38,15 +39,15 @@ export const getAnalyticsActivitiesServer = async (
             .from('projects')
             .select('id')
             .eq('organization_id', orgId);
-        
-        const projectIds = orgProjects?.map(proj => proj.id) || [];
+
+        const projectIds = orgProjects?.map((proj) => proj.id) || [];
         if (projectIds.length > 0) {
             const { data: orgDocuments } = await supabase
                 .from('documents')
                 .select('id')
                 .in('project_id', projectIds);
-            
-            const entityIds = orgDocuments?.map(doc => doc.id) || [];
+
+            const entityIds = orgDocuments?.map((doc) => doc.id) || [];
             if (entityIds.length > 0) {
                 query = query.in('entity_id', entityIds);
             }
@@ -94,22 +95,26 @@ export const getAnalyticsActivitiesServer = async (
     if (error) throw error;
 
     // Get user profiles for actor names
-    const actorIds = [...new Set((data || []).map(item => item.actor_id))];
+    const actorIds = [...new Set((data || []).map((item) => item.actor_id))];
     const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .in('id', actorIds);
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
     // Transform data to include actor names
-    const activities: AnalyticsActivity[] = (data || []).map(item => {
+    const activities: AnalyticsActivity[] = (data || []).map((item) => {
         const profile = profileMap.get(item.actor_id);
         return {
             ...item,
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
-            changes_summary: generateChangesSummary(item.old_data, item.new_data, item.action)
+            changes_summary: generateChangesSummary(
+                item.old_data,
+                item.new_data,
+                item.action,
+            ),
         };
     });
 
@@ -120,16 +125,16 @@ export const getAnalyticsActivitiesServer = async (
 export const getAnalyticsMetricsServer = async (
     orgId: string,
     projectId?: string,
-    timeRange: 'week' | 'month' | 'quarter' | 'year' = 'month'
+    timeRange: 'week' | 'month' | 'quarter' | 'year' = 'month',
 ): Promise<AnalyticsMetrics> => {
     const supabase = await createClient();
-    
+
     const now = new Date();
     const timeRanges = {
         week: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
         month: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
         quarter: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
-        year: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+        year: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000),
     };
 
     const startDate = timeRanges[timeRange].toISOString();
@@ -141,20 +146,20 @@ export const getAnalyticsMetricsServer = async (
             .from('documents')
             .select('id')
             .eq('project_id', projectId);
-        entityIds = projectEntities?.map(doc => doc.id) || [];
+        entityIds = projectEntities?.map((doc) => doc.id) || [];
     } else {
         const { data: orgProjects } = await supabase
             .from('projects')
             .select('id')
             .eq('organization_id', orgId);
-        
-        const projectIds = orgProjects?.map(proj => proj.id) || [];
+
+        const projectIds = orgProjects?.map((proj) => proj.id) || [];
         if (projectIds.length > 0) {
             const { data: orgDocuments } = await supabase
                 .from('documents')
                 .select('id')
                 .in('project_id', projectIds);
-            entityIds = orgDocuments?.map(doc => doc.id) || [];
+            entityIds = orgDocuments?.map((doc) => doc.id) || [];
         }
     }
 
@@ -178,7 +183,7 @@ export const getAnalyticsMetricsServer = async (
         .in('entity_id', entityIds)
         .gte('created_at', startDate);
 
-    const totalUsers = new Set(uniqueUsers?.map(u => u.actor_id) || []).size;
+    const totalUsers = new Set(uniqueUsers?.map((u) => u.actor_id) || []).size;
 
     // Get document and block counts
     const { count: totalDocuments } = await supabase
@@ -201,19 +206,26 @@ export const getAnalyticsMetricsServer = async (
         .gte('created_at', startDate);
 
     // Get unique user IDs and their profiles
-    const uniqueUserIds = [...new Set(userActivity?.map(a => a.actor_id) || [])];
+    const uniqueUserIds = [
+        ...new Set(userActivity?.map((a) => a.actor_id) || []),
+    ];
     const { data: userProfiles } = await supabase
         .from('profiles')
         .select('id, full_name')
         .in('id', uniqueUserIds);
 
-    const userProfileMap = new Map(userProfiles?.map(p => [p.id, p.full_name]) || []);
+    const userProfileMap = new Map(
+        userProfiles?.map((p) => [p.id, p.full_name]) || [],
+    );
 
     const userActivityMap = new Map<string, { name: string; count: number }>();
-    userActivity?.forEach(activity => {
+    userActivity?.forEach((activity) => {
         const userId = activity.actor_id;
         const userName = userProfileMap.get(userId) || 'Unknown User';
-        const current = userActivityMap.get(userId) || { name: userName, count: 0 };
+        const current = userActivityMap.get(userId) || {
+            name: userName,
+            count: 0,
+        };
         userActivityMap.set(userId, { ...current, count: current.count + 1 });
     });
 
@@ -221,7 +233,7 @@ export const getAnalyticsMetricsServer = async (
         .map(([user_id, { name, count }]) => ({
             user_id,
             user_name: name,
-            activity_count: count
+            activity_count: count,
         }))
         .sort((a, b) => b.activity_count - a.activity_count)
         .slice(0, 10);
@@ -231,7 +243,10 @@ export const getAnalyticsMetricsServer = async (
         .from('audit_logs')
         .select('created_at')
         .in('entity_id', entityIds)
-        .gte('created_at', new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString())
+        .gte(
+            'created_at',
+            new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        )
         .order('created_at', { ascending: true });
 
     const activityByDay = generateDailyActivityChart(dailyActivity || []);
@@ -244,7 +259,7 @@ export const getAnalyticsMetricsServer = async (
         .gte('created_at', startDate);
 
     const activityTypeMap = new Map<string, number>();
-    activityTypes?.forEach(activity => {
+    activityTypes?.forEach((activity) => {
         const action = activity.action;
         activityTypeMap.set(action, (activityTypeMap.get(action) || 0) + 1);
     });
@@ -258,22 +273,22 @@ export const getAnalyticsMetricsServer = async (
         totalUsers,
         totalDocuments: totalDocuments || 0,
         totalBlocks: totalBlocks || 0,
-        activitiesThisWeek: timeRange === 'week' ? (activitiesInRange || 0) : 0,
-        activitiesThisMonth: timeRange === 'month' ? (activitiesInRange || 0) : 0,
+        activitiesThisWeek: timeRange === 'week' ? activitiesInRange || 0 : 0,
+        activitiesThisMonth: timeRange === 'month' ? activitiesInRange || 0 : 0,
         mostActiveUsers,
         mostModifiedEntities: [], // TODO: Implement this
         activityByDay,
-        activityByType
+        activityByType,
     };
 };
 
 // Get version history for an entity (server-side)
 export const getVersionHistoryServer = async (
     entityId: string,
-    entityType: 'document' | 'block' | 'requirement'
+    entityType: 'document' | 'block' | 'requirement',
 ): Promise<VersionHistoryItem[]> => {
     const supabase = await createClient();
-    
+
     const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
@@ -284,71 +299,84 @@ export const getVersionHistoryServer = async (
     if (error) throw error;
 
     // Get user profiles for actor names
-    const actorIds = [...new Set((data || []).map(item => item.actor_id))];
+    const actorIds = [...new Set((data || []).map((item) => item.actor_id))];
     const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .in('id', actorIds);
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
 
-    return (data || []).map(item => {
+    return (data || []).map((item) => {
         const profile = profileMap.get(item.actor_id);
         return {
             id: item.id,
             entity_id: item.entity_id,
-            entity_type: item.entity_type as 'document' | 'block' | 'requirement',
+            entity_type: item.entity_type as
+                | 'document'
+                | 'block'
+                | 'requirement',
             version: extractVersionFromMetadata(item.metadata) || 1,
             created_at: item.created_at,
             created_by: item.actor_id,
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
             data: item.new_data,
-            changes: generateChangesDetail(item.old_data, item.new_data)
+            changes: generateChangesDetail(item.old_data, item.new_data),
         };
     });
 };
 
 // Helper function to generate changes summary
-function generateChangesSummary(oldData: any, newData: any, action: string): string {
+function generateChangesSummary(
+    oldData: any,
+    newData: any,
+    action: string,
+): string {
     if (action === 'created') return 'Created new item';
     if (action === 'deleted') return 'Deleted item';
-    
+
     if (!oldData || !newData) return 'Modified item';
-    
+
     const changes: string[] = [];
     const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) : oldData;
     const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
-    
-    Object.keys(newObj).forEach(key => {
+
+    Object.keys(newObj).forEach((key) => {
         if (oldObj[key] !== newObj[key]) {
             changes.push(key);
         }
     });
-    
-    return changes.length > 0 ? `Modified: ${changes.join(', ')}` : 'Modified item';
+
+    return changes.length > 0
+        ? `Modified: ${changes.join(', ')}`
+        : 'Modified item';
 }
 
 // Helper function to generate daily activity chart data
-function generateDailyActivityChart(activities: Array<{ created_at: string }>): Array<{ date: string; count: number }> {
+function generateDailyActivityChart(
+    activities: Array<{ created_at: string }>,
+): Array<{ date: string; count: number }> {
     const activityMap = new Map<string, number>();
-    
-    activities.forEach(activity => {
+
+    activities.forEach((activity) => {
         const date = new Date(activity.created_at).toISOString().split('T')[0];
         activityMap.set(date, (activityMap.get(date) || 0) + 1);
     });
-    
+
     // Fill in missing days with 0
     const result: Array<{ date: string; count: number }> = [];
     const now = new Date();
     for (let i = 29; i >= 0; i--) {
-        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0];
         result.push({
             date,
-            count: activityMap.get(date) || 0
+            count: activityMap.get(date) || 0,
         });
     }
-    
+
     return result;
 }
 
@@ -365,7 +393,10 @@ function extractVersionFromMetadata(metadata: any): number | null {
     return metadata.version || null;
 }
 
-function generateChangesDetail(oldData: any, newData: any): {
+function generateChangesDetail(
+    oldData: any,
+    newData: any,
+): {
     added: Record<string, any>;
     modified: Record<string, any>;
     removed: Record<string, any>;
@@ -373,7 +404,7 @@ function generateChangesDetail(oldData: any, newData: any): {
     const changes = {
         added: {} as Record<string, any>,
         modified: {} as Record<string, any>,
-        removed: {} as Record<string, any>
+        removed: {} as Record<string, any>,
     };
 
     if (!oldData || !newData) return changes;
@@ -382,19 +413,19 @@ function generateChangesDetail(oldData: any, newData: any): {
     const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
 
     // Find added and modified fields
-    Object.keys(newObj).forEach(key => {
+    Object.keys(newObj).forEach((key) => {
         if (!(key in oldObj)) {
             changes.added[key] = newObj[key];
         } else if (oldObj[key] !== newObj[key]) {
             changes.modified[key] = {
                 from: oldObj[key],
-                to: newObj[key]
+                to: newObj[key],
             };
         }
     });
 
     // Find removed fields
-    Object.keys(oldObj).forEach(key => {
+    Object.keys(oldObj).forEach((key) => {
         if (!(key in newObj)) {
             changes.removed[key] = oldObj[key];
         }

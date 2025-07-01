@@ -5,7 +5,7 @@ export function SocialProof() {
         'AUTOMOTIVE SYSTEMS',
         'MEDICAL DEVICES',
         'ENERGY SOLUTIONS',
-        'ROBOTICS LAB'
+        'ROBOTICS LAB',
     ];
 
     return (
@@ -35,7 +35,8 @@ export function SocialProof() {
 
                 <div className="mt-12 text-center">
                     <p className="text-gray-400 text-sm">
-                        Join hundreds of engineering teams who have streamlined their requirements process
+                        Join hundreds of engineering teams who have streamlined
+                        their requirements process
                     </p>
                 </div>
             </div>

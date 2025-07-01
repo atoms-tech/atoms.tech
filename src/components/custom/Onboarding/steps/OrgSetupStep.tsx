@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
 import { useOnboarding } from '../OnboardingContext';
 
 export function OrgSetupStep() {
@@ -38,13 +39,18 @@ export function OrgSetupStep() {
                         transition={{ delay: 0.1 }}
                         className="space-y-2"
                     >
-                        <Label htmlFor="orgName" className="text-sm font-medium">
+                        <Label
+                            htmlFor="orgName"
+                            className="text-sm font-medium"
+                        >
                             Organization Name *
                         </Label>
                         <Input
                             id="orgName"
                             value={data.organizationData.name || ''}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange('name', e.target.value)
+                            }
                             placeholder="Your organization name"
                             className="w-full"
                         />
@@ -56,13 +62,18 @@ export function OrgSetupStep() {
                         transition={{ delay: 0.2 }}
                         className="space-y-2"
                     >
-                        <Label htmlFor="orgDescription" className="text-sm font-medium">
+                        <Label
+                            htmlFor="orgDescription"
+                            className="text-sm font-medium"
+                        >
                             Description
                         </Label>
                         <Textarea
                             id="orgDescription"
                             value={data.organizationData.description || ''}
-                            onChange={(e) => handleInputChange('description', e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange('description', e.target.value)
+                            }
                             placeholder="Brief description of your organization..."
                             rows={3}
                             className="w-full"

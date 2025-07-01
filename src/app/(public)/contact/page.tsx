@@ -63,12 +63,16 @@ export default function ContactPage() {
 
             if (!response.ok) {
                 console.error('Contact submission error:', result);
-                toast.error(result.error || 'Failed to send message. Please try again.');
+                toast.error(
+                    result.error || 'Failed to send message. Please try again.',
+                );
                 return;
             }
 
             // Success
-            toast.success('Message sent successfully! We\'ll get back to you soon.');
+            toast.success(
+                "Message sent successfully! We'll get back to you soon.",
+            );
             form.reset();
         } catch (error) {
             console.error('Unexpected error:', error);
@@ -87,7 +91,8 @@ export default function ContactPage() {
                             Contact Us
                         </h1>
                         <p className="text-lg text-muted-foreground">
-                            Have questions about ATOMS.TECH? We'd love to hear from you.
+                            Have questions about ATOMS.TECH? We&apos;d love to
+                            hear from you.
                         </p>
                     </div>
 
@@ -95,12 +100,16 @@ export default function ContactPage() {
                         <CardHeader>
                             <CardTitle>Send us a message</CardTitle>
                             <CardDescription>
-                                Fill out the form below and we'll get back to you as soon as possible.
+                                Fill out the form below and we&apos;ll get back
+                                to you as soon as possible.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <form
+                                    onSubmit={form.handleSubmit(onSubmit)}
+                                    className="space-y-6"
+                                >
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField
                                             control={form.control}
@@ -177,7 +186,9 @@ export default function ContactPage() {
                                         className="w-full"
                                         disabled={isSubmitting}
                                     >
-                                        {isSubmitting ? 'Sending...' : 'Send Message'}
+                                        {isSubmitting
+                                            ? 'Sending...'
+                                            : 'Send Message'}
                                     </Button>
                                 </form>
                             </Form>

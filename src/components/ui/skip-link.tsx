@@ -21,7 +21,7 @@ export function SkipLink({ href, children, className }: SkipLinkProps) {
                 'focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg',
                 'focus:z-50 focus:outline-none focus:ring-2 focus:ring-ring',
                 'transition-all duration-200',
-                className
+                className,
             )}
             onFocus={(e) => {
                 // Ensure the skip link is visible when focused

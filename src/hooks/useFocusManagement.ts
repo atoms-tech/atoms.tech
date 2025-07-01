@@ -32,7 +32,7 @@ const DEFAULT_FOCUSABLE_SELECTOR = [
 
 export function useFocusManagement(
     containerRef: React.RefObject<HTMLElement>,
-    options: UseFocusManagementOptions = {}
+    options: UseFocusManagementOptions = {},
 ) {
     const {
         trapFocus = false,
@@ -46,12 +46,12 @@ export function useFocusManagement(
 
     const getFocusableElements = useCallback((): FocusableElement[] => {
         if (!containerRef.current) return [];
-        
+
         const elements = Array.from(
-            containerRef.current.querySelectorAll(focusableSelector)
+            containerRef.current.querySelectorAll(focusableSelector),
         ) as FocusableElement[];
-        
-        return elements.filter(element => {
+
+        return elements.filter((element) => {
             // Additional checks for truly focusable elements
             const style = window.getComputedStyle(element);
             return (
@@ -81,88 +81,99 @@ export function useFocusManagement(
         return false;
     }, [getFocusableElements]);
 
-    const focusNext = useCallback((wrap = true) => {
-        const focusableElements = getFocusableElements();
-        const currentIndex = focusableElements.findIndex(
-            element => element === document.activeElement
-        );
-        
-        if (currentIndex === -1) {
-            return focusFirst();
-        }
-        
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < focusableElements.length) {
-            focusableElements[nextIndex].focus();
-            return true;
-        } else if (wrap) {
-            return focusFirst();
-        }
-        
-        return false;
-    }, [getFocusableElements, focusFirst]);
-
-    const focusPrevious = useCallback((wrap = true) => {
-        const focusableElements = getFocusableElements();
-        const currentIndex = focusableElements.findIndex(
-            element => element === document.activeElement
-        );
-        
-        if (currentIndex === -1) {
-            return focusLast();
-        }
-        
-        const previousIndex = currentIndex - 1;
-        if (previousIndex >= 0) {
-            focusableElements[previousIndex].focus();
-            return true;
-        } else if (wrap) {
-            return focusLast();
-        }
-        
-        return false;
-    }, [getFocusableElements, focusLast]);
-
-    const handleKeyDown = useCallback((event: KeyboardEvent) => {
-        if (!trapFocus || !containerRef.current) return;
-
-        if (event.key === 'Tab') {
+    const focusNext = useCallback(
+        (wrap = true) => {
             const focusableElements = getFocusableElements();
-            if (focusableElements.length === 0) {
-                event.preventDefault();
-                return;
+            const currentIndex = focusableElements.findIndex(
+                (element) => element === document.activeElement,
+            );
+
+            if (currentIndex === -1) {
+                return focusFirst();
             }
 
-            const firstElement = focusableElements[0];
-            const lastElement = focusableElements[focusableElements.length - 1];
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < focusableElements.length) {
+                focusableElements[nextIndex].focus();
+                return true;
+            } else if (wrap) {
+                return focusFirst();
+            }
 
-            if (event.shiftKey) {
-                // Shift + Tab (backward)
-                if (document.activeElement === firstElement) {
+            return false;
+        },
+        [getFocusableElements, focusFirst],
+    );
+
+    const focusPrevious = useCallback(
+        (wrap = true) => {
+            const focusableElements = getFocusableElements();
+            const currentIndex = focusableElements.findIndex(
+                (element) => element === document.activeElement,
+            );
+
+            if (currentIndex === -1) {
+                return focusLast();
+            }
+
+            const previousIndex = currentIndex - 1;
+            if (previousIndex >= 0) {
+                focusableElements[previousIndex].focus();
+                return true;
+            } else if (wrap) {
+                return focusLast();
+            }
+
+            return false;
+        },
+        [getFocusableElements, focusLast],
+    );
+
+    const handleKeyDown = useCallback(
+        (event: KeyboardEvent) => {
+            if (!trapFocus || !containerRef.current) return;
+
+            if (event.key === 'Tab') {
+                const focusableElements = getFocusableElements();
+                if (focusableElements.length === 0) {
                     event.preventDefault();
-                    lastElement.focus();
+                    return;
                 }
-            } else {
-                // Tab (forward)
-                if (document.activeElement === lastElement) {
-                    event.preventDefault();
-                    firstElement.focus();
+
+                const firstElement = focusableElements[0];
+                const lastElement =
+                    focusableElements[focusableElements.length - 1];
+
+                if (event.shiftKey) {
+                    // Shift + Tab (backward)
+                    if (document.activeElement === firstElement) {
+                        event.preventDefault();
+                        lastElement.focus();
+                    }
+                } else {
+                    // Tab (forward)
+                    if (document.activeElement === lastElement) {
+                        event.preventDefault();
+                        firstElement.focus();
+                    }
                 }
             }
-        }
-    }, [trapFocus, containerRef, getFocusableElements]);
+        },
+        [trapFocus, containerRef, getFocusableElements],
+    );
 
     // Initialize focus management
     useEffect(() => {
         if (!containerRef.current || isInitialized.current) return;
-        
+
         isInitialized.current = true;
-        
+
         // Store previously focused element for restoration
         if (restoreFocus) {
-            previouslyFocusedElement.current = document.activeElement as HTMLElement;
+            previouslyFocusedElement.current =
+                document.activeElement as HTMLElement;
         }
-        
+
         // Auto focus first element if requested
         if (autoFocus) {
             // Use setTimeout to ensure DOM is ready
@@ -170,17 +181,17 @@ export function useFocusManagement(
                 focusFirst();
             }, 0);
         }
-        
+
         // Add event listeners for focus trapping
         if (trapFocus) {
             document.addEventListener('keydown', handleKeyDown);
         }
-        
+
         return () => {
             if (trapFocus) {
                 document.removeEventListener('keydown', handleKeyDown);
             }
-            
+
             // Restore focus when component unmounts
             if (restoreFocus && previouslyFocusedElement.current) {
                 previouslyFocusedElement.current.focus();
@@ -200,26 +211,30 @@ export function useFocusManagement(
 // Utility hook for managing focus visible state
 export function useFocusVisible() {
     const [isFocusVisible, setIsFocusVisible] = React.useState(false);
-    
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Tab' || event.key === 'Enter' || event.key === ' ') {
+            if (
+                event.key === 'Tab' ||
+                event.key === 'Enter' ||
+                event.key === ' '
+            ) {
                 setIsFocusVisible(true);
             }
         };
-        
+
         const handleMouseDown = () => {
             setIsFocusVisible(false);
         };
-        
+
         document.addEventListener('keydown', handleKeyDown);
         document.addEventListener('mousedown', handleMouseDown);
-        
+
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('mousedown', handleMouseDown);
         };
     }, []);
-    
+
     return isFocusVisible;
 }

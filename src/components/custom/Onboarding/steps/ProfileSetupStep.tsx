@@ -4,7 +4,14 @@ import { User } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
 import { useOnboarding } from '../OnboardingContext';
 
 const roles = [
@@ -17,7 +24,7 @@ const roles = [
     'Technical Writer',
     'Consultant',
     'Student',
-    'Other'
+    'Other',
 ];
 
 const departments = [
@@ -29,7 +36,7 @@ const departments = [
     'Sales',
     'Consulting',
     'Research & Development',
-    'Other'
+    'Other',
 ];
 
 const goals = [
@@ -40,7 +47,7 @@ const goals = [
     'Reduce project risks',
     'Accelerate delivery',
     'Better traceability',
-    'Learn best practices'
+    'Learn best practices',
 ];
 
 export function ProfileSetupStep() {
@@ -54,8 +61,8 @@ export function ProfileSetupStep() {
         const currentGoals = data.profileData.goals || [];
         const updatedGoals = checked
             ? [...currentGoals, goal]
-            : currentGoals.filter(g => g !== goal);
-        
+            : currentGoals.filter((g) => g !== goal);
+
         updateData('profileData', { goals: updatedGoals });
     };
 
@@ -78,25 +85,30 @@ export function ProfileSetupStep() {
             <div className="space-y-4">
                 {/* Display Name */}
                 <div className="space-y-2">
-                    <Label htmlFor="displayName" className="text-sm font-medium">
+                    <Label
+                        htmlFor="displayName"
+                        className="text-sm font-medium"
+                    >
                         Display Name *
                     </Label>
                     <Input
                         id="displayName"
                         value={data.profileData.displayName || ''}
-                        onChange={(e) => handleInputChange('displayName', e.target.value)}
+                        onChange={(e) =>
+                            handleInputChange('displayName', e.target.value)
+                        }
                         placeholder="How should we address you?"
                     />
                 </div>
 
                 {/* Role */}
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                        Your Role *
-                    </Label>
+                    <Label className="text-sm font-medium">Your Role *</Label>
                     <Select
                         value={data.profileData.role || ''}
-                        onValueChange={(value) => handleInputChange('role', value)}
+                        onValueChange={(value) =>
+                            handleInputChange('role', value)
+                        }
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Select your role" />
@@ -118,7 +130,9 @@ export function ProfileSetupStep() {
                     </Label>
                     <Select
                         value={data.profileData.department || ''}
-                        onValueChange={(value) => handleInputChange('department', value)}
+                        onValueChange={(value) =>
+                            handleInputChange('department', value)
+                        }
                     >
                         <SelectTrigger>
                             <SelectValue placeholder="Select your department" />

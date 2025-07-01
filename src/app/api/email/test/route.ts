@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { emailService } from '@/lib/email/emailService';
 import { ContactFormTemplate } from '@/lib/email/templates/ContactFormTemplate';
 import { NewsletterWelcomeTemplate } from '@/lib/email/templates/NewsletterWelcomeTemplate';
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
         if (!email) {
             return NextResponse.json(
                 { error: 'Email address is required' },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
                         name: 'Test User',
                         email: 'test@example.com',
                         subject: 'Test Contact Form Submission',
-                        message: 'This is a test message from the contact form.',
+                        message:
+                            'This is a test message from the contact form.',
                         submittedAt: new Date().toLocaleString(),
                     }),
                 });
@@ -59,25 +61,26 @@ export async function POST(request: NextRequest) {
 
             default:
                 return NextResponse.json(
-                    { error: 'Invalid email type. Use: contact, newsletter, or basic' },
-                    { status: 400 }
+                    {
+                        error: 'Invalid email type. Use: contact, newsletter, or basic',
+                    },
+                    { status: 400 },
                 );
         }
 
         return NextResponse.json({
             success: result.success,
-            message: result.success 
-                ? `Test ${type} email sent successfully` 
+            message: result.success
+                ? `Test ${type} email sent successfully`
                 : `Failed to send test ${type} email`,
             messageId: result.messageId,
             error: result.error,
         });
-
     } catch (error) {
         console.error('Email test error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }
@@ -86,11 +89,11 @@ export async function GET() {
     try {
         // Test basic configuration
         const result = await emailService.testConfiguration();
-        
+
         return NextResponse.json({
             success: result.success,
-            message: result.success 
-                ? 'Email service configuration is valid' 
+            message: result.success
+                ? 'Email service configuration is valid'
                 : 'Email service configuration failed',
             error: result.error,
         });
@@ -98,7 +101,7 @@ export async function GET() {
         console.error('Email configuration test error:', error);
         return NextResponse.json(
             { error: 'Internal server error' },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

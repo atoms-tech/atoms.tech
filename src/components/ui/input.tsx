@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes, Ref } from 'react';
-import { RefCallBack } from 'react-hook-form';
 import React from 'react';
+import { RefCallBack } from 'react-hook-form';
 
 import { cn } from '@/lib/utils';
 
@@ -29,11 +29,9 @@ const Input = ({
     const errorId = error ? `${inputId}-error` : undefined;
     const descriptionId = description ? `${inputId}-description` : undefined;
 
-    const describedBy = [
-        ariaDescribedBy,
-        errorId,
-        descriptionId,
-    ].filter(Boolean).join(' ') || undefined;
+    const describedBy =
+        [ariaDescribedBy, errorId, descriptionId].filter(Boolean).join(' ') ||
+        undefined;
 
     return (
         <div className="space-y-1">
@@ -51,7 +49,8 @@ const Input = ({
                     type={type}
                     className={cn(
                         'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-                        error && 'border-destructive focus-visible:ring-destructive',
+                        error &&
+                            'border-destructive focus-visible:ring-destructive',
                         showClearButton && 'pr-8',
                         className,
                     )}
@@ -77,7 +76,11 @@ const Input = ({
                 </p>
             )}
             {error && (
-                <p id={errorId} className="text-sm text-destructive" role="alert">
+                <p
+                    id={errorId}
+                    className="text-sm text-destructive"
+                    role="alert"
+                >
                     {error}
                 </p>
             )}
