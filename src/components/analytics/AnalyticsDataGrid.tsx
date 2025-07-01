@@ -223,7 +223,7 @@ export function AnalyticsDataGrid({
                 },
             },
         ],
-        [enableRestore, restoreVersionMutation.isPending],
+        [enableRestore, restoreVersionMutation.isPending, handleRestore, handleViewDetails, handleViewHistory],
     );
 
     // Event handlers

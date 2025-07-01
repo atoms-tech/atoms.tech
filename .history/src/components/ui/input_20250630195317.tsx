@@ -45,7 +45,7 @@ const Input = ({
                 </label>
             )}
             <div className="relative">
-                <Input
+                <input
                     id={inputId}
                     type={type}
                     className={cn(

@@ -92,7 +92,7 @@ export function LazyImage({
             {/* Actual image */}
             <Image
                 ref={imgRef}
-                src={shouldLoad ? imageSrc : undefined}
+                src={shouldLoad && imageSrc ? imageSrc : '/placeholder.svg'}
                 alt={alt}
                 className={cn(
                     'transition-opacity duration-300',

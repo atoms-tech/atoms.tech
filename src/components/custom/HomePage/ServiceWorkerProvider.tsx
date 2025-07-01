@@ -135,7 +135,7 @@ export function ServiceWorkerProvider({
         };
     };
 
-    const updateServiceWorker = async () => {
+    const updateServiceWorker = useCallback(async () => {
         if (!swState.isSupported) return;
 
         try {
@@ -148,9 +148,9 @@ export function ServiceWorkerProvider({
         } catch (error) {
             console.error('Failed to update service worker:', error);
         }
-    };
+    }, [swState.isSupported]);
 
-    const clearCache = async () => {
+    const clearCache = useCallback(async () => {
         if (!swState.isSupported) return;
 
         try {
@@ -163,7 +163,7 @@ export function ServiceWorkerProvider({
         } catch (error) {
             console.error('Failed to clear cache:', error);
         }
-    };
+    }, [swState.isSupported]);
 
     // Expose utilities globally for debugging
     useEffect(() => {
@@ -179,7 +179,7 @@ export function ServiceWorkerProvider({
                 },
             };
         }
-    }, [swState, enabled]);
+    }, [swState, enabled, clearCache, updateServiceWorker]);
 
     return (
         <>

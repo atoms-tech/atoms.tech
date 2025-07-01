@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 
@@ -82,9 +82,9 @@ export function DuplicateDialog({
         if (isOpen && user) {
             fetchAvailableProjects();
         }
-    }, [isOpen, user]);
+    }, [isOpen, user, fetchAvailableProjects]);
 
-    const fetchAvailableProjects = async () => {
+    const fetchAvailableProjects = useCallback(async () => {
         if (!user) return;
 
         setLoadingProjects(true);
@@ -140,7 +140,7 @@ export function DuplicateDialog({
         } finally {
             setLoadingProjects(false);
         }
-    };
+    }, [user, toast]);
 
     const onSubmit = async (data: DuplicateFormData) => {
         try {

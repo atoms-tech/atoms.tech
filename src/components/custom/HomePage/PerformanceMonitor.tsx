@@ -143,13 +143,13 @@ export function PerformanceMonitor({
     }, [enabled, onMetricsUpdate]);
 
     // Performance markers for specific operations
-    const markStart = (operation: string) => {
+    const markStart = useCallback((operation: string) => {
         if (enabled && typeof window !== 'undefined') {
             performance.mark(`home-page-${operation}-start`);
         }
-    };
+    }, [enabled]);
 
-    const markEnd = (operation: string) => {
+    const markEnd = useCallback((operation: string) => {
         if (enabled && typeof window !== 'undefined') {
             performance.mark(`home-page-${operation}-end`);
             performance.measure(
@@ -158,7 +158,7 @@ export function PerformanceMonitor({
                 `home-page-${operation}-end`,
             );
         }
-    };
+    }, [enabled]);
 
     // Expose performance utilities
     useEffect(() => {
@@ -171,7 +171,7 @@ export function PerformanceMonitor({
                 clearMeasures: () => performance.clearMeasures(),
             };
         }
-    }, [enabled, metrics]);
+    }, [enabled, metrics, markStart, markEnd]);
 
     // Don't render anything in production
     if (!enabled || !metrics) return null;

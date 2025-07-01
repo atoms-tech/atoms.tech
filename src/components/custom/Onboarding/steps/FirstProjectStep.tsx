@@ -209,7 +209,8 @@ export function FirstProjectStep() {
                                     <input
                                         type="radio"
                                         value={option.id}
-                                        id={option.id}
+                                        id={`project-type-${option.id}`}
+                                        aria-label={`Select ${option.title} project type`}
                                         name="visibility"
                                         checked={
                                             (data.projectData.visibility ||

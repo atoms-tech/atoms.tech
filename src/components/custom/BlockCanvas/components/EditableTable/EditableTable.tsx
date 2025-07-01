@@ -302,7 +302,7 @@ export function EditableTable<
                 payload: { row: newRow, col: newCol },
             });
         },
-        [selectedCell, sortedData.length, columns.length, isEditMode],
+        [selectedCell, sortedData.length, columns.length, isEditMode, handleDeleteCell],
     );
 
     // Reset selected cell when exiting edit mode
