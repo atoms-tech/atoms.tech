@@ -51,9 +51,9 @@ export default function TestBed() {
     const createTestReq = useCreateTestReq();
 
     // Ensure this only renders on client side
-    useEffect(() => {
+    useState(() => {
         setIsClient(true);
-    }, []);
+    });
 
     if (!isClient) {
         return (

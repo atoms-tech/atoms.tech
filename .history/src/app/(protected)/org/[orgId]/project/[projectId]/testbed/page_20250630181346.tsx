@@ -3,7 +3,7 @@
 import { ChevronDown, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useCreateTestReq } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,6 @@ const TestCaseView = dynamic(
 );
 
 export default function TestBed() {
-    const [isClient, setIsClient] = useState(false);
     const [viewMode, setViewMode] = useState<
         'Test Cases' | 'Traceability Matrix'
     >('Test Cases');
@@ -49,21 +48,6 @@ export default function TestBed() {
     const { projectId } = useParams();
     const { toast } = useToast();
     const createTestReq = useCreateTestReq();
-
-    // Ensure this only renders on client side
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    if (!isClient) {
-        return (
-            <div className="container mx-auto p-8 max-w-7xl">
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-lg">Loading...</div>
-                </div>
-            </div>
-        );
-    }
 
     const handleCreateTest = async () => {
         if (!newTestData.title) {

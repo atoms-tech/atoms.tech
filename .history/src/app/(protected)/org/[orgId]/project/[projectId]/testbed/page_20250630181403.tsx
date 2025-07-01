@@ -3,7 +3,7 @@
 import { ChevronDown, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useCreateTestReq } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
 import { Button } from '@/components/ui/button';
@@ -51,9 +51,9 @@ export default function TestBed() {
     const createTestReq = useCreateTestReq();
 
     // Ensure this only renders on client side
-    useEffect(() => {
+    useState(() => {
         setIsClient(true);
-    }, []);
+    });
 
     if (!isClient) {
         return (
