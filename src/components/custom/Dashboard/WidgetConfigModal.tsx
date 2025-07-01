@@ -21,7 +21,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { WidgetConfigSchema, WidgetInstance, WidgetConfig, ConfigFieldOption } from '@/types/dashboard.types';
+import {
+    ConfigFieldOption,
+    WidgetConfig,
+    WidgetConfigSchema,
+    WidgetInstance,
+} from '@/types/dashboard.types';
 
 interface WidgetConfigModalProps {
     widget: WidgetInstance;
@@ -45,7 +50,10 @@ export function WidgetConfigModal({
         onClose();
     };
 
-    const renderConfigField = (key: string, field: WidgetConfigSchema[string]) => {
+    const renderConfigField = (
+        key: string,
+        field: WidgetConfigSchema[string],
+    ) => {
         const value = config[key] ?? field.default;
 
         switch (field.type) {
@@ -134,14 +142,16 @@ export function WidgetConfigModal({
                                 <SelectValue placeholder={field.description} />
                             </SelectTrigger>
                             <SelectContent>
-                                {field.options?.map((option: ConfigFieldOption) => (
-                                    <SelectItem
-                                        key={String(option.value)}
-                                        value={String(option.value)}
-                                    >
-                                        {option.label}
-                                    </SelectItem>
-                                ))}
+                                {field.options?.map(
+                                    (option: ConfigFieldOption) => (
+                                        <SelectItem
+                                            key={String(option.value)}
+                                            value={String(option.value)}
+                                        >
+                                            {option.label}
+                                        </SelectItem>
+                                    ),
+                                )}
                             </SelectContent>
                         </Select>
                         {field.description && (
@@ -160,7 +170,9 @@ export function WidgetConfigModal({
                             <Input
                                 id={key}
                                 type="range"
-                                value={Number(value || field.default || field.min || 0)}
+                                value={Number(
+                                    value || field.default || field.min || 0,
+                                )}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,
@@ -173,7 +185,9 @@ export function WidgetConfigModal({
                                 className="flex-1"
                             />
                             <span className="text-sm text-gray-500 min-w-[3rem] text-right">
-                                {String(value || field.default || field.min || 0)}
+                                {String(
+                                    value || field.default || field.min || 0,
+                                )}
                             </span>
                         </div>
                         {field.description && (
@@ -192,7 +206,9 @@ export function WidgetConfigModal({
                             <Input
                                 id={key}
                                 type="color"
-                                value={String(value || field.default || '#000000')}
+                                value={String(
+                                    value || field.default || '#000000',
+                                )}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,
@@ -202,7 +218,9 @@ export function WidgetConfigModal({
                                 className="w-16 h-10 p-1 border rounded"
                             />
                             <Input
-                                value={String(value || field.default || '#000000')}
+                                value={String(
+                                    value || field.default || '#000000',
+                                )}
                                 onChange={(e) =>
                                     setConfig({
                                         ...config,

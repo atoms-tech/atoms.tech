@@ -292,8 +292,14 @@ function generateChangesSummary(
     if (!oldData || !newData) return 'Modified item';
 
     const changes: string[] = [];
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
+    const oldObj =
+        typeof oldData === 'string'
+            ? (JSON.parse(oldData) as Record<string, unknown>)
+            : (oldData as Record<string, unknown>);
+    const newObj =
+        typeof newData === 'string'
+            ? (JSON.parse(newData) as Record<string, unknown>)
+            : (newData as Record<string, unknown>);
 
     Object.keys(newObj).forEach((key) => {
         if (oldObj[key] !== newObj[key]) {
@@ -365,13 +371,19 @@ export const getVersionHistory = async (
                 | 'document'
                 | 'block'
                 | 'requirement',
-            version: extractVersionFromMetadata(item.metadata as Record<string, unknown> | null) || 1,
+            version:
+                extractVersionFromMetadata(
+                    item.metadata as Record<string, unknown> | null,
+                ) || 1,
             created_at: item.created_at,
             created_by: item.actor_id,
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
             data: item.new_data as Record<string, unknown>,
-            changes: generateChangesDetail(item.old_data as Record<string, unknown> | null, item.new_data as Record<string, unknown> | null),
+            changes: generateChangesDetail(
+                item.old_data as Record<string, unknown> | null,
+                item.new_data as Record<string, unknown> | null,
+            ),
         };
     });
 };
@@ -427,7 +439,9 @@ export const restoreVersion = async (
     const restorePayload = {
         ...(restoreData as Record<string, unknown>),
         updated_at: new Date().toISOString(),
-        version: ((currentEntity as Record<string, unknown>).version as number || 1) + 1,
+        version:
+            (((currentEntity as Record<string, unknown>).version as number) ||
+                1) + 1,
     };
 
     // Update the entity
@@ -451,7 +465,9 @@ export const restoreVersion = async (
             old_data: currentData,
             new_data: updatedEntity,
             metadata: {
-                restored_from_version: (auditLog.metadata as Record<string, unknown>)?.version as number || 1,
+                restored_from_version:
+                    ((auditLog.metadata as Record<string, unknown>)
+                        ?.version as number) || 1,
                 restored_from_audit_id: auditLogId,
                 reason: reason || 'Version restored',
             },
@@ -463,7 +479,8 @@ export const restoreVersion = async (
 
     return {
         success: true,
-        newVersion: (updatedEntity as Record<string, unknown>).version as number,
+        newVersion: (updatedEntity as Record<string, unknown>)
+            .version as number,
         restoredData: updatedEntity as Record<string, unknown>,
         auditLogId: newAuditLog.id,
     };
@@ -503,13 +520,17 @@ export const getEntityDetails = async (
     if (error || !data) return null;
 
     return {
-        name: (data as Record<string, unknown>)[nameField] as string || 'Untitled',
+        name:
+            ((data as Record<string, unknown>)[nameField] as string) ||
+            'Untitled',
         ...(data as Record<string, unknown>),
     };
 };
 
 // Helper functions
-function extractVersionFromMetadata(metadata: Record<string, unknown> | string | null): number | null {
+function extractVersionFromMetadata(
+    metadata: Record<string, unknown> | string | null,
+): number | null {
     if (!metadata) return null;
     if (typeof metadata === 'string') {
         try {
@@ -538,8 +559,14 @@ function generateChangesDetail(
 
     if (!oldData || !newData) return changes;
 
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
+    const oldObj =
+        typeof oldData === 'string'
+            ? (JSON.parse(oldData) as Record<string, unknown>)
+            : (oldData as Record<string, unknown>);
+    const newObj =
+        typeof newData === 'string'
+            ? (JSON.parse(newData) as Record<string, unknown>)
+            : (newData as Record<string, unknown>);
 
     // Find added and modified fields
     Object.keys(newObj).forEach((key) => {

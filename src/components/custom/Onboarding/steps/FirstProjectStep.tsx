@@ -251,9 +251,9 @@ export function FirstProjectStep() {
                         className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4"
                     >
                         <p className="text-sm text-purple-800 dark:text-purple-200">
-                            💡 `Don&apos;t worry about getting everything perfect -
-                            you can always modify these settings later from your
-                            project dashboard.`
+                            💡 `Don&apos;t worry about getting everything
+                            perfect - you can always modify these settings later
+                            from your project dashboard.`
                         </p>
                     </motion.div>
                 </CardContent>

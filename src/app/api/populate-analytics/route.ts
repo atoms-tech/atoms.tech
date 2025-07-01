@@ -72,7 +72,9 @@ function generateActivityData(
 ) {
     const baseData = {
         id: entityData.id as string,
-        name: (entityData.name as string) || `${entityType} ${(entityData.id as string).slice(0, 8)}`,
+        name:
+            (entityData.name as string) ||
+            `${entityType} ${(entityData.id as string).slice(0, 8)}`,
         created_at: entityData.created_at as string,
         updated_at: new Date().toISOString(),
         version: ((entityData.version as number) || 1) + 1,
@@ -229,7 +231,8 @@ export async function POST(request: NextRequest) {
                 created_at: timestamp.toISOString(),
                 metadata: {
                     version:
-                        ((entity.version as number) || 1) + Math.floor(Math.random() * 5),
+                        ((entity.version as number) || 1) +
+                        Math.floor(Math.random() * 5),
                     source: 'analytics_population_api',
                     user_agent: 'Analytics Population API',
                     ip_address: '127.0.0.1',

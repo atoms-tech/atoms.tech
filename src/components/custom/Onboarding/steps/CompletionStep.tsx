@@ -10,11 +10,10 @@ import {
     Users,
 } from 'lucide-react';
 
+import { useOnboarding } from '@/components/custom/Onboarding/OnboardingContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-import { useOnboarding } from '@/components/custom/Onboarding/OnboardingContext';
 
 const nextSteps = [
     {

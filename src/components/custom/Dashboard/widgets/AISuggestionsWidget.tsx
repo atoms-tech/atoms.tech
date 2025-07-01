@@ -25,7 +25,10 @@ interface AISuggestion {
     confidence: number;
 }
 
-export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange }: WidgetProps) {
+export function AISuggestionsWidget({
+    instance,
+    onConfigChange: _onConfigChange,
+}: WidgetProps) {
     const {
         maxSuggestions = 4,
         showPriority = true,
@@ -249,8 +252,8 @@ export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange 
                 {suggestions.length > Number(maxSuggestions) && (
                     <div className="text-center pt-2">
                         <Button variant="ghost" size="sm" className="text-xs">
-                            View {suggestions.length - Number(maxSuggestions)} more
-                            suggestions
+                            View {suggestions.length - Number(maxSuggestions)}{' '}
+                            more suggestions
                         </Button>
                     </div>
                 )}

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { ModularDashboard } from '@/components/custom/Dashboard/ModularDashboard';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/queries/useProfile';
 import {
@@ -16,7 +17,6 @@ import {
 import { useUser } from '@/lib/providers/user.provider';
 import { Organization } from '@/types/base/organizations.types';
 
-import { ModularDashboard } from '@/components/custom/Dashboard/ModularDashboard';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { ServiceWorkerProvider } from './ServiceWorkerProvider';

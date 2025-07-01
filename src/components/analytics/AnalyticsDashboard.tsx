@@ -113,7 +113,9 @@ export function AnalyticsDashboard({
                 <div className="flex items-center gap-2">
                     <Select
                         value={timeRange}
-                        onValueChange={(value: 'week' | 'month' | 'quarter' | 'year') => setTimeRange(value)}
+                        onValueChange={(
+                            value: 'week' | 'month' | 'quarter' | 'year',
+                        ) => setTimeRange(value)}
                     >
                         <SelectTrigger className="w-32">
                             <SelectValue />

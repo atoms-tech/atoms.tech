@@ -96,9 +96,7 @@ export function useRequirementsByIds(requirementIds: string[]) {
     });
 }
 
-export function useDocumentRequirements(
-    documentId: string,
-) {
+export function useDocumentRequirements(documentId: string) {
     return useQuery({
         queryKey: queryKeys.requirements.byDocument(documentId),
         queryFn: async () => {

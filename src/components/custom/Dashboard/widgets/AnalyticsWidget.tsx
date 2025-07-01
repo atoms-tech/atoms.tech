@@ -14,7 +14,11 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { WidgetProps, OrganizationData, ProjectData } from '@/types/dashboard.types';
+import {
+    OrganizationData,
+    ProjectData,
+    WidgetProps,
+} from '@/types/dashboard.types';
 
 interface Metric {
     label: string;
@@ -26,7 +30,8 @@ interface Metric {
 
 export function AnalyticsWidget({ instance, data }: WidgetProps) {
     // Get data from props
-    const organizations = ((data as any)?.organizations as OrganizationData[]) || [];
+    const organizations =
+        ((data as any)?.organizations as OrganizationData[]) || [];
     const projects = ((data as any)?.projects as ProjectData[]) || [];
     const _userId = (data as any)?.userId;
 
@@ -35,9 +40,7 @@ export function AnalyticsWidget({ instance, data }: WidgetProps) {
     const enterpriseOrgs = organizations.filter(
         (org) => org.type === 'enterprise',
     ).length;
-    const _teamOrgs = organizations.filter(
-        (org) => org.type === 'team',
-    ).length;
+    const _teamOrgs = organizations.filter((org) => org.type === 'team').length;
     const activeProjects = projects.filter(
         (project) => project.status === 'active',
     ).length;

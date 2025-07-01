@@ -197,7 +197,14 @@ export function useFocusManagement(
                 previouslyFocusedElement.current.focus();
             }
         };
-    }, [trapFocus, restoreFocus, autoFocus, handleKeyDown, focusFirst, containerRef]);
+    }, [
+        trapFocus,
+        restoreFocus,
+        autoFocus,
+        handleKeyDown,
+        focusFirst,
+        containerRef,
+    ]);
 
     return {
         focusFirst,

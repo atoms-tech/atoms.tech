@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
+
 // import { AuditLog } from '@/types/base/traceability.types';
 
 export interface ProjectWithOrg extends Project {

@@ -87,7 +87,14 @@ export function AnalyticsDataGrid({
                 'block',
                 'requirement',
             ] as const;
-            if (!validEntityTypes.includes(activity.entity_type as 'document' | 'block' | 'requirement')) {
+            if (
+                !validEntityTypes.includes(
+                    activity.entity_type as
+                        | 'document'
+                        | 'block'
+                        | 'requirement',
+                )
+            ) {
                 console.warn(
                     `Entity type ${activity.entity_type} is not supported for restoration`,
                 );
@@ -265,7 +272,13 @@ export function AnalyticsDataGrid({
                 },
             },
         ],
-        [enableRestore, restoreVersionMutation.isPending, handleRestore, handleViewDetails, handleViewHistory],
+        [
+            enableRestore,
+            restoreVersionMutation.isPending,
+            handleRestore,
+            handleViewDetails,
+            handleViewHistory,
+        ],
     );
 
     // Event handlers

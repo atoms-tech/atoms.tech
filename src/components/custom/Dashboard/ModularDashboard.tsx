@@ -52,7 +52,8 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
         initializeWidgets();
 
         // Initialize layout based on user status
-        const isNewUser = (data?.onboardingProgress as any)?.is_new_user || false;
+        const isNewUser =
+            (data?.onboardingProgress as any)?.is_new_user || false;
         initializeForUser(isNewUser);
     }, [(data?.onboardingProgress as any)?.is_new_user, initializeForUser]);
 
@@ -243,7 +244,8 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
                                 {!isEditMode && (
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                                         Select widgets to add to your dashboard.
-                                        You&apos;ll enter edit mode automatically.
+                                        You&apos;ll enter edit mode
+                                        automatically.
                                     </p>
                                 )}
                             </div>

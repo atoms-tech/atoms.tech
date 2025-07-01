@@ -47,7 +47,8 @@ export function FeatureTourStep() {
                         Explore key features
                     </CardTitle>
                     <p className="text-gray-600 dark:text-gray-300">
-                        Take a quick tour of the main features you&apos;ll be using
+                        Take a quick tour of the main features you&apos;ll be
+                        using
                     </p>
                 </CardHeader>
 

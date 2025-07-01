@@ -70,7 +70,10 @@ interface OnboardingContextType {
 
     // Onboarding data
     data: OnboardingData;
-    updateData: (section: keyof OnboardingData, updates: Partial<OnboardingData[keyof OnboardingData]>) => void;
+    updateData: (
+        section: keyof OnboardingData,
+        updates: Partial<OnboardingData[keyof OnboardingData]>,
+    ) => void;
 
     // Navigation
     onNext: () => void;
@@ -135,7 +138,10 @@ export function OnboardingProvider({
         },
     });
 
-    const updateData = (section: keyof OnboardingData, updates: Partial<OnboardingData[keyof OnboardingData]>) => {
+    const updateData = (
+        section: keyof OnboardingData,
+        updates: Partial<OnboardingData[keyof OnboardingData]>,
+    ) => {
         setData((prev) => ({
             ...prev,
             [section]: {

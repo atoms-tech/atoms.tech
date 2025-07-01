@@ -17,8 +17,8 @@ export function NewsletterWelcomeTemplate({
             <Text style={heading}>Welcome to ATOMS.TECH Newsletter! 🎉</Text>
 
             <Text style={paragraph}>
-                Thank you for subscribing to our newsletter! We&apos;re excited to
-                have you join our community of requirements management
+                Thank you for subscribing to our newsletter! We&apos;re excited
+                to have you join our community of requirements management
                 professionals.
             </Text>
 
@@ -52,8 +52,8 @@ export function NewsletterWelcomeTemplate({
 
             <Section style={footerSection}>
                 <Text style={footerText}>
-                    You&apos;re receiving this email because you subscribed to our
-                    newsletter with the email address: {email}
+                    You&apos;re receiving this email because you subscribed to
+                    our newsletter with the email address: {email}
                 </Text>
                 <Text style={footerText}>
                     Don&apos;t want to receive these emails? You can{' '}

@@ -66,8 +66,8 @@ export function NewsletterSignup() {
                     You&apos;re all set!
                 </h3>
                 <p className="text-gray-300">
-                    Thanks for subscribing. We&apos;ll keep you updated on the latest
-                    features and improvements.
+                    Thanks for subscribing. We&apos;ll keep you updated on the
+                    latest features and improvements.
                 </p>
             </div>
         );

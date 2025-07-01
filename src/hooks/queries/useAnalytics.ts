@@ -114,7 +114,11 @@ export function useRealTimeAnalyticsActivities(
     refreshInterval: number = 30000, // 30 seconds
 ) {
     return useQuery({
-        queryKey: analyticsQueryKeys.activitiesWithParams(orgId, projectId, params),
+        queryKey: analyticsQueryKeys.activitiesWithParams(
+            orgId,
+            projectId,
+            params,
+        ),
         queryFn: () => getAnalyticsActivities(orgId, projectId, params),
         enabled: !!orgId,
         staleTime: 1000 * 60 * 5, // 5 minutes

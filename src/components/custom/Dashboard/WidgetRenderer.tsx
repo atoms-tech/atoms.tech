@@ -1,12 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-    Copy,
-    MoreVertical,
-    Settings,
-    Trash2,
-} from 'lucide-react';
+import { Copy, MoreVertical, Settings, Trash2 } from 'lucide-react';
 import React, { useCallback, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -20,7 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { widgetRegistry } from '@/lib/dashboard/widget-registry';
 import { useDashboardStore } from '@/store/dashboard.store';
-import { WidgetInstance, WidgetConfig, WidgetDataProps } from '@/types/dashboard.types';
+import {
+    WidgetConfig,
+    WidgetDataProps,
+    WidgetInstance,
+} from '@/types/dashboard.types';
 
 import { WidgetConfigModal } from './WidgetConfigModal';
 

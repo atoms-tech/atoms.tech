@@ -91,8 +91,8 @@ export default function ContactPage() {
                             Contact Us
                         </h1>
                         <p className="text-lg text-muted-foreground">
-                            Have questions about ATOMS.TECH? We&apos;d love to hear
-                            from you.
+                            Have questions about ATOMS.TECH? We&apos;d love to
+                            hear from you.
                         </p>
                     </div>
 
@@ -100,8 +100,8 @@ export default function ContactPage() {
                         <CardHeader>
                             <CardTitle>Send us a message</CardTitle>
                             <CardDescription>
-                                Fill out the form below and we&apos;ll get back to
-                                you as soon as possible.
+                                Fill out the form below and we&apos;ll get back
+                                to you as soon as possible.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

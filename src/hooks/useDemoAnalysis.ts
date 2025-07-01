@@ -74,7 +74,6 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
         },
     });
 
-
     const usePipelineStatus = (
         runId: string | null,
         useRegulation?: boolean,

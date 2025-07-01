@@ -316,13 +316,19 @@ export const getVersionHistoryServer = async (
                 | 'document'
                 | 'block'
                 | 'requirement',
-            version: extractVersionFromMetadata(item.metadata as Record<string, unknown> | null) || 1,
+            version:
+                extractVersionFromMetadata(
+                    item.metadata as Record<string, unknown> | null,
+                ) || 1,
             created_at: item.created_at,
             created_by: item.actor_id,
             actor_name: profile?.full_name || 'Unknown User',
             actor_email: profile?.email || '',
             data: item.new_data as Record<string, unknown>,
-            changes: generateChangesDetail(item.old_data as Record<string, unknown> | null, item.new_data as Record<string, unknown> | null),
+            changes: generateChangesDetail(
+                item.old_data as Record<string, unknown> | null,
+                item.new_data as Record<string, unknown> | null,
+            ),
         };
     });
 };
@@ -339,8 +345,14 @@ function generateChangesSummary(
     if (!oldData || !newData) return 'Modified item';
 
     const changes: string[] = [];
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
+    const oldObj =
+        typeof oldData === 'string'
+            ? (JSON.parse(oldData) as Record<string, unknown>)
+            : (oldData as Record<string, unknown>);
+    const newObj =
+        typeof newData === 'string'
+            ? (JSON.parse(newData) as Record<string, unknown>)
+            : (newData as Record<string, unknown>);
 
     Object.keys(newObj).forEach((key) => {
         if (oldObj[key] !== newObj[key]) {
@@ -380,7 +392,9 @@ function generateDailyActivityChart(
     return result;
 }
 
-function extractVersionFromMetadata(metadata: Record<string, unknown> | string | null): number | null {
+function extractVersionFromMetadata(
+    metadata: Record<string, unknown> | string | null,
+): number | null {
     if (!metadata) return null;
     if (typeof metadata === 'string') {
         try {
@@ -409,8 +423,14 @@ function generateChangesDetail(
 
     if (!oldData || !newData) return changes;
 
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
+    const oldObj =
+        typeof oldData === 'string'
+            ? (JSON.parse(oldData) as Record<string, unknown>)
+            : (oldData as Record<string, unknown>);
+    const newObj =
+        typeof newData === 'string'
+            ? (JSON.parse(newData) as Record<string, unknown>)
+            : (newData as Record<string, unknown>);
 
     // Find added and modified fields
     Object.keys(newObj).forEach((key) => {
