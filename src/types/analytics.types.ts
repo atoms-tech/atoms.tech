@@ -23,11 +23,11 @@ export interface VersionHistoryItem {
     created_by: string;
     actor_name?: string;
     actor_email?: string;
-    data: any;
+    data: Record<string, unknown>;
     changes?: {
-        added: Record<string, any>;
-        modified: Record<string, any>;
-        removed: Record<string, any>;
+        added: Record<string, unknown>;
+        modified: Record<string, unknown>;
+        removed: Record<string, unknown>;
     };
 }
 
@@ -94,7 +94,7 @@ export interface RestoreVersionInput {
 export interface RestoreVersionResult {
     success: boolean;
     newVersion: number;
-    restoredData: any;
+    restoredData: Record<string, unknown>;
     auditLogId: string;
 }
 

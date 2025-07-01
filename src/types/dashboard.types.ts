@@ -15,7 +15,7 @@ export interface WidgetPosition {
 }
 
 export interface WidgetConfig {
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface WidgetInstance {
@@ -50,7 +50,7 @@ export interface WidgetProps {
     onMove?: (position: WidgetPosition) => void;
     onRemove?: () => void;
     isEditing?: boolean;
-    data?: any;
+    data?: unknown;
 }
 
 export interface WidgetConfigSchema {
@@ -58,8 +58,8 @@ export interface WidgetConfigSchema {
         type: 'string' | 'number' | 'boolean' | 'select' | 'color' | 'range';
         label: string;
         description?: string;
-        default?: any;
-        options?: Array<{ label: string; value: any }>;
+        default?: unknown;
+        options?: Array<{ label: string; value: unknown }>;
         min?: number;
         max?: number;
         step?: number;

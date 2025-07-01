@@ -79,7 +79,7 @@ export interface AuditEvent {
     userId?: string;
     resource: string;
     action: string;
-    details: Record<string, any>;
+    details: Record<string, unknown>;
     ipAddress?: string;
     userAgent?: string;
 }

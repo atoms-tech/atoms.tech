@@ -85,7 +85,14 @@ export class EmailService {
             }
 
             // Send email via Resend
-            const emailData: any = {
+            const emailData: {
+                from: string;
+                to: string[];
+                subject: string;
+                html?: string;
+                text?: string;
+                replyTo?: string;
+            } = {
                 from: FROM_EMAIL,
                 to: Array.isArray(options.to) ? options.to : [options.to],
                 subject: options.subject,

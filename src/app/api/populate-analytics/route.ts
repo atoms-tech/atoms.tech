@@ -68,7 +68,7 @@ function selectRandomActivity(): string {
 function generateActivityData(
     entityType: string,
     action: string,
-    entityData: any,
+    entityData: Record<string, unknown>,
 ) {
     const baseData = {
         id: entityData.id,
