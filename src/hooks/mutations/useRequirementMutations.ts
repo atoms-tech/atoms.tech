@@ -24,13 +24,13 @@ export type CreateRequirementInput = Omit<
     external_id?: string; // Make external_id optional for auto-generation
 };
 
-
-
 export function useCreateRequirement() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (input: CreateRequirementInput & { project_id?: string }) => {
+        mutationFn: async (
+            input: CreateRequirementInput & { project_id?: string },
+        ) => {
             console.log('Creating requirement', input);
 
             // Get project ID from document if not provided directly
@@ -43,7 +43,10 @@ export function useCreateRequirement() {
                     .single();
 
                 if (docError) {
-                    console.error('Error fetching document for project ID:', docError);
+                    console.error(
+                        'Error fetching document for project ID:',
+                        docError,
+                    );
                     throw docError;
                 }
                 projectId = document.project_id;

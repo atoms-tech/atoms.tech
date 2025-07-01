@@ -21,7 +21,7 @@ export default function PopulateAnalyticsPage() {
     const [projectId, setProjectId] = useState('');
     const [daysBack, setDaysBack] = useState(30);
     const [activitiesPerDay, setActivitiesPerDay] = useState(20);
-    const [result, setResult] = useState<unknown>(null);
+    const [result, setResult] = useState<any>(null);
     const { toast } = useToast();
 
     const handlePopulate = async () => {

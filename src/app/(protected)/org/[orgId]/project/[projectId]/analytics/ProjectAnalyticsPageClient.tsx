@@ -1,26 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-    BarChart3,
+import {
     Activity,
-    History,
+    ArrowLeft,
+    BarChart3,
     Download,
+    FolderOpen,
+    History,
     Settings,
     TrendingUp,
-    ArrowLeft,
-    FolderOpen
 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState } from 'react';
 
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsDataGrid } from '@/components/analytics/AnalyticsDataGrid';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalyticsMetrics } from '@/hooks/queries/useAnalytics';
 import { Organization, Project } from '@/types';
 
@@ -39,7 +44,7 @@ export function ProjectAnalyticsPageClient({
     organization,
     project,
     initialTab,
-    initialTimeRange
+    initialTimeRange,
 }: ProjectAnalyticsPageClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -49,14 +54,16 @@ export function ProjectAnalyticsPageClient({
     const { data: metrics, isLoading: metricsLoading } = useAnalyticsMetrics(
         orgId,
         projectId,
-        initialTimeRange
+        initialTimeRange,
     );
 
     const handleTabChange = (tab: string) => {
         setActiveTab(tab);
         const params = new URLSearchParams(searchParams.toString());
         params.set('tab', tab);
-        router.push(`/org/${orgId}/project/${projectId}/analytics?${params.toString()}`);
+        router.push(
+            `/org/${orgId}/project/${projectId}/analytics?${params.toString()}`,
+        );
     };
 
     const handleExportData = () => {
@@ -72,7 +79,10 @@ export function ProjectAnalyticsPageClient({
                     {organization.name}
                 </Link>
                 <span>/</span>
-                <Link href={`/org/${orgId}/project/${projectId}`} className="hover:text-foreground">
+                <Link
+                    href={`/org/${orgId}/project/${projectId}`}
+                    className="hover:text-foreground"
+                >
                     {project.name}
                 </Link>
                 <span>/</span>
@@ -82,37 +92,31 @@ export function ProjectAnalyticsPageClient({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                    >
+                    <Button variant="ghost" size="sm" asChild>
                         <Link href={`/org/${orgId}/project/${projectId}`}>
                             <ArrowLeft className="h-4 w-4 mr-2" />
                             Back to Project
                         </Link>
                     </Button>
-                    
+
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                             <FolderOpen className="h-8 w-8" />
                             Project Analytics
                         </h1>
                         <p className="text-muted-foreground">
-                            Activity insights and version history for {project.name}
+                            Activity insights and version history for{' '}
+                            {project.name}
                         </p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize">
                         {project.status} Project
                     </Badge>
-                    
-                    <Button
-                        variant="outline"
-                        onClick={handleExportData}
-                    >
+
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="h-4 w-4 mr-2" />
                         Export Data
                     </Button>
@@ -125,11 +129,16 @@ export function ProjectAnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <Activity className="h-4 w-4 text-blue-500" />
-                            <span className="ml-2 text-sm font-medium">Total Activities</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Total Activities
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalActivities.toLocaleString() || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalActivities.toLocaleString() ||
+                                      '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -139,11 +148,16 @@ export function ProjectAnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="ml-2 text-sm font-medium">This Month</span>
+                            <span className="ml-2 text-sm font-medium">
+                                This Month
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.activitiesThisMonth.toLocaleString() || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.activitiesThisMonth.toLocaleString() ||
+                                      '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -153,11 +167,15 @@ export function ProjectAnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <History className="h-4 w-4 text-purple-500" />
-                            <span className="ml-2 text-sm font-medium">Contributors</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Contributors
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalUsers || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalUsers || '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -167,11 +185,15 @@ export function ProjectAnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <BarChart3 className="h-4 w-4 text-orange-500" />
-                            <span className="ml-2 text-sm font-medium">Documents</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Documents
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalDocuments || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalDocuments || '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -179,17 +201,30 @@ export function ProjectAnalyticsPageClient({
             </div>
 
             {/* Main Content */}
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+            <Tabs
+                value={activeTab}
+                onValueChange={handleTabChange}
+                className="space-y-6"
+            >
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="dashboard"
+                        className="flex items-center gap-2"
+                    >
                         <BarChart3 className="h-4 w-4" />
                         Dashboard
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="activity"
+                        className="flex items-center gap-2"
+                    >
                         <Activity className="h-4 w-4" />
                         Activity Log
                     </TabsTrigger>
-                    <TabsTrigger value="history" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="history"
+                        className="flex items-center gap-2"
+                    >
                         <History className="h-4 w-4" />
                         Version History
                     </TabsTrigger>
@@ -203,7 +238,8 @@ export function ProjectAnalyticsPageClient({
                                 Project Analytics Dashboard
                             </CardTitle>
                             <CardDescription>
-                                Visual insights into project activity and contributor engagement
+                                Visual insights into project activity and
+                                contributor engagement
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -224,7 +260,8 @@ export function ProjectAnalyticsPageClient({
                                 Project Activity Log
                             </CardTitle>
                             <CardDescription>
-                                Complete history of all activities within this project
+                                Complete history of all activities within this
+                                project
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -247,16 +284,21 @@ export function ProjectAnalyticsPageClient({
                                 Project Version History
                             </CardTitle>
                             <CardDescription>
-                                Track changes and restore previous versions of project documents and blocks
+                                Track changes and restore previous versions of
+                                project documents and blocks
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="text-center py-12 text-muted-foreground">
                                     <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <h3 className="text-lg font-medium mb-2">Version History</h3>
+                                    <h3 className="text-lg font-medium mb-2">
+                                        Version History
+                                    </h3>
                                     <p className="text-sm max-w-md mx-auto">
-                                        Select a specific document or block from the activity log to view its version history and restore previous versions.
+                                        Select a specific document or block from
+                                        the activity log to view its version
+                                        history and restore previous versions.
                                     </p>
                                     <Button
                                         variant="outline"
@@ -279,11 +321,13 @@ export function ProjectAnalyticsPageClient({
                         <div className="flex items-center gap-4">
                             <span>Project: {project.name}</span>
                             <span>•</span>
-                            <span>Last updated: {new Date().toLocaleString()}</span>
+                            <span>
+                                Last updated: {new Date().toLocaleString()}
+                            </span>
                             <span>•</span>
                             <span>Data retention: 90 days</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
                             <span>Analytics Settings</span>

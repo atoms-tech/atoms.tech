@@ -1,15 +1,15 @@
 'use client';
 
-import { 
-    Grid, 
-    AlignLeft, 
-    AlignCenter, 
+import {
+    AlignCenter,
+    AlignLeft,
     AlignRight,
-    Layers,
     Copy,
+    Grid,
+    Layers,
+    Redo,
     Trash2,
     Undo,
-    Redo
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,8 @@ import { Separator } from '@/components/ui/separator';
 import { useDashboardStore } from '@/store/dashboard.store';
 
 export function DashboardToolbar() {
-    const {
-        selectedWidget,
-        duplicateWidget,
-        removeWidget,
-        gridConfig
-    } = useDashboardStore();
+    const { selectedWidget, duplicateWidget, removeWidget, gridConfig } =
+        useDashboardStore();
 
     const hasSelection = selectedWidget !== undefined;
 
@@ -101,7 +97,9 @@ export function DashboardToolbar() {
                         size="sm"
                         className="h-8"
                         disabled={!hasSelection}
-                        onClick={() => selectedWidget && duplicateWidget(selectedWidget)}
+                        onClick={() =>
+                            selectedWidget && duplicateWidget(selectedWidget)
+                        }
                         title="Duplicate widget"
                     >
                         <Copy className="h-4 w-4" />
@@ -111,7 +109,9 @@ export function DashboardToolbar() {
                         size="sm"
                         className="h-8 text-red-600 hover:text-red-700"
                         disabled={!hasSelection}
-                        onClick={() => selectedWidget && removeWidget(selectedWidget)}
+                        onClick={() =>
+                            selectedWidget && removeWidget(selectedWidget)
+                        }
                         title="Delete widget"
                     >
                         <Trash2 className="h-4 w-4" />

@@ -67,13 +67,13 @@ export interface WidgetConfigSchema {
     };
 }
 
-export type WidgetCategory = 
-    | 'productivity' 
-    | 'analytics' 
-    | 'communication' 
-    | 'project-management' 
-    | 'ai-tools' 
-    | 'utilities' 
+export type WidgetCategory =
+    | 'productivity'
+    | 'analytics'
+    | 'communication'
+    | 'project-management'
+    | 'ai-tools'
+    | 'utilities'
     | 'custom';
 
 export interface DashboardLayout {

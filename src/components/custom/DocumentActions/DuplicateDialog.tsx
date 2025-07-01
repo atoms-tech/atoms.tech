@@ -31,8 +31,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { useUser } from '@/lib/providers/user.provider';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 
 const duplicateSchema = z.object({
@@ -92,16 +92,23 @@ export function DuplicateDialog({
             // Get all projects where user has permission to create documents
             const { data: projects, error } = await supabase
                 .from('projects')
-                .select(`
+                .select(
+                    `
                     id,
                     name,
                     organization_id,
                     project_members!inner(
                         role
                     )
-                `)
+                `,
+                )
                 .eq('project_members.user_id', user.id)
-                .in('project_members.role', ['owner', 'admin', 'maintainer', 'editor'])
+                .in('project_members.role', [
+                    'owner',
+                    'admin',
+                    'maintainer',
+                    'editor',
+                ])
                 .eq('status', 'active')
                 .order('name');
 
@@ -115,7 +122,7 @@ export function DuplicateDialog({
                 return;
             }
 
-            const formattedProjects: Project[] = projects.map(project => ({
+            const formattedProjects: Project[] = projects.map((project) => ({
                 id: project.id,
                 name: project.name,
                 organization_id: project.organization_id,
@@ -155,12 +162,16 @@ export function DuplicateDialog({
                 <DialogHeader>
                     <DialogTitle>Duplicate Document</DialogTitle>
                     <DialogDescription>
-                        Create a copy of "{document.name}" in another project. All blocks, requirements, and properties will be copied.
+                        Create a copy of "{document.name}" in another project.
+                        All blocks, requirements, and properties will be copied.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        className="space-y-4"
+                    >
                         <FormField
                             control={form.control}
                             name="targetProjectId"
@@ -174,26 +185,34 @@ export function DuplicateDialog({
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue 
+                                                <SelectValue
                                                     placeholder={
-                                                        loadingProjects 
-                                                            ? "Loading projects..." 
-                                                            : "Select a project"
-                                                    } 
+                                                        loadingProjects
+                                                            ? 'Loading projects...'
+                                                            : 'Select a project'
+                                                    }
                                                 />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {availableProjects.map((project) => (
-                                                <SelectItem key={project.id} value={project.id}>
-                                                    <div className="flex flex-col">
-                                                        <span>{project.name}</span>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            Role: {project.role}
-                                                        </span>
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
+                                            {availableProjects.map(
+                                                (project) => (
+                                                    <SelectItem
+                                                        key={project.id}
+                                                        value={project.id}
+                                                    >
+                                                        <div className="flex flex-col">
+                                                            <span>
+                                                                {project.name}
+                                                            </span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Role:{' '}
+                                                                {project.role}
+                                                            </span>
+                                                        </div>
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -231,7 +250,9 @@ export function DuplicateDialog({
                                 type="submit"
                                 disabled={isLoading || loadingProjects}
                             >
-                                {isLoading ? 'Duplicating...' : 'Duplicate Document'}
+                                {isLoading
+                                    ? 'Duplicating...'
+                                    : 'Duplicate Document'}
                             </Button>
                         </DialogFooter>
                     </form>

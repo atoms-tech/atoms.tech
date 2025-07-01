@@ -45,6 +45,7 @@ interface MenuItem {
 }
 
 // Menu items with app router paths
+// Menu items reserved for future use
 const _items: MenuItem[] = [
     {
         title: 'Home',

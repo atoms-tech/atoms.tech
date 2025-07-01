@@ -5,10 +5,8 @@ import {
     Beaker,
     FileBox,
     FolderArchive,
-    MoreVertical,
     Pencil,
     PlusCircle,
-    Trash,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
@@ -26,12 +24,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
@@ -208,7 +200,9 @@ export default function ProjectPage() {
     };
 
     const handleGoToAnalytics = () => {
-        router.push(`/org/${params?.orgId}/project/${params?.projectId}/analytics`);
+        router.push(
+            `/org/${params?.orgId}/project/${params?.projectId}/analytics`,
+        );
     };
 
     const handleDeleteProject = async () => {
@@ -457,7 +451,9 @@ export default function ProjectPage() {
                                         document={doc}
                                         userRole={userRole || 'viewer'}
                                         onEdit={() => handleEditDocument(doc)}
-                                        onDelete={() => setDocumentToDelete(doc)}
+                                        onDelete={() =>
+                                            setDocumentToDelete(doc)
+                                        }
                                     />
                                 </div>
                             </div>

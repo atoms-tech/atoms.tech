@@ -1,20 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-    TrendingUp, 
-    TrendingDown, 
-    Building, 
-    FolderOpen, 
+import {
+    Activity,
+    Building,
     Calendar,
+    FolderOpen,
     Target,
-    Activity
+    TrendingDown,
+    TrendingUp,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Organization } from '@/types/base/organizations.types';
 import { ProjectWithOrg } from '@/lib/db/server/home.server';
+import { Organization } from '@/types/base/organizations.types';
 
 interface DashboardAnalyticsProps {
     organizations: Organization[];
@@ -30,13 +30,21 @@ interface Metric {
     color: string;
 }
 
-export function DashboardAnalytics({ organizations, projects, userId }: DashboardAnalyticsProps) {
+export function DashboardAnalytics({
+    organizations,
+    projects,
+    userId,
+}: DashboardAnalyticsProps) {
     // Calculate metrics
     const totalOrganizations = organizations.length;
-    const enterpriseOrgs = organizations.filter(org => org.type === 'enterprise').length;
-    const teamOrgs = organizations.filter(org => org.type === 'team').length;
-    const activeProjects = projects.filter(project => project.status === 'active').length;
-    
+    const enterpriseOrgs = organizations.filter(
+        (org) => org.type === 'enterprise',
+    ).length;
+    const teamOrgs = organizations.filter((org) => org.type === 'team').length;
+    const activeProjects = projects.filter(
+        (project) => project.status === 'active',
+    ).length;
+
     // Mock data for demonstration - in real app, this would come from analytics
     const daysActive = 13;
     const productivityScore = 92;
@@ -48,43 +56,43 @@ export function DashboardAnalytics({ organizations, projects, userId }: Dashboar
             value: totalOrganizations,
             change: totalOrganizations > 1 ? 15 : 0,
             icon: <Building className="h-4 w-4" />,
-            color: 'text-blue-400'
+            color: 'text-blue-400',
         },
         {
             label: 'Enterprise Organizations',
             value: enterpriseOrgs,
             change: enterpriseOrgs > 0 ? 25 : 0,
             icon: <Building className="h-4 w-4" />,
-            color: 'text-purple-400'
+            color: 'text-purple-400',
         },
         {
             label: 'Team Organizations',
             value: teamOrgs,
             change: teamOrgs > 0 ? 10 : -5,
             icon: <Building className="h-4 w-4" />,
-            color: 'text-green-400'
+            color: 'text-green-400',
         },
         {
             label: 'Active Projects',
             value: activeProjects,
             change: activeProjects > 0 ? 20 : 0,
             icon: <FolderOpen className="h-4 w-4" />,
-            color: 'text-orange-400'
+            color: 'text-orange-400',
         },
         {
             label: 'Days Active',
             value: daysActive,
             change: 8,
             icon: <Calendar className="h-4 w-4" />,
-            color: 'text-teal-400'
+            color: 'text-teal-400',
         },
         {
             label: 'Productivity Score',
             value: `${productivityScore}%`,
             change: 5,
             icon: <Target className="h-4 w-4" />,
-            color: 'text-yellow-400'
-        }
+            color: 'text-yellow-400',
+        },
     ];
 
     return (
@@ -112,9 +120,13 @@ export function DashboardAnalytics({ organizations, projects, userId }: Dashboar
                                         {metric.icon}
                                     </div>
                                     {metric.change !== undefined && (
-                                        <div className={`flex items-center text-xs ${
-                                            metric.change >= 0 ? 'text-green-400' : 'text-red-400'
-                                        }`}>
+                                        <div
+                                            className={`flex items-center text-xs ${
+                                                metric.change >= 0
+                                                    ? 'text-green-400'
+                                                    : 'text-red-400'
+                                            }`}
+                                        >
                                             {metric.change >= 0 ? (
                                                 <TrendingUp className="h-3 w-3 mr-1" />
                                             ) : (
@@ -148,13 +160,26 @@ export function DashboardAnalytics({ organizations, projects, userId }: Dashboar
                     <div className="space-y-4">
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm text-gray-300">Weekly Activity Goal</span>
-                                <span className="text-sm font-medium text-white">{weeklyGoalProgress}%</span>
+                                <span className="text-sm text-gray-300">
+                                    Weekly Activity Goal
+                                </span>
+                                <span className="text-sm font-medium text-white">
+                                    {weeklyGoalProgress}%
+                                </span>
                             </div>
-                            <Progress value={weeklyGoalProgress} className="h-2" />
+                            <Progress
+                                value={weeklyGoalProgress}
+                                className="h-2"
+                            />
                             <p className="text-xs text-gray-400 mt-1">
-                                {weeklyGoalProgress >= 70 ? 'Great progress!' : 'Keep going!'} 
-                                {' '}You're {weeklyGoalProgress >= 100 ? 'ahead of' : 'on track for'} your weekly goal.
+                                {weeklyGoalProgress >= 70
+                                    ? 'Great progress!'
+                                    : 'Keep going!'}{' '}
+                                You're{' '}
+                                {weeklyGoalProgress >= 100
+                                    ? 'ahead of'
+                                    : 'on track for'}{' '}
+                                your weekly goal.
                             </p>
                         </div>
 

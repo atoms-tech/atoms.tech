@@ -66,7 +66,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         null,
     );
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
-    const [_totalUsage, setTotalUsage] = useState(0); // Track total usage
+    const [totalUsage, setTotalUsage] = useState(0); // Track total usage
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
     const [isAiAnalysisDialogOpen, setIsAiAnalysisDialogOpen] = useState(false);

@@ -11,22 +11,28 @@ export const getUserProfileServer = async (userId: string) => {
 
     // If profile doesn't exist, create it automatically
     if (error && error.code === 'PGRST116') {
-        console.log('Profile not found for user', userId, 'creating new profile...');
+        console.log(
+            'Profile not found for user',
+            userId,
+            'creating new profile...',
+        );
 
         // Get user data from auth to populate profile
-        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+        const { data: authUser } =
+            await supabase.auth.admin.getUserById(userId);
 
         if (authUser?.user) {
             const newProfile = {
                 id: userId,
                 email: authUser.user.email || '',
-                full_name: authUser.user.user_metadata?.full_name ||
-                          authUser.user.user_metadata?.name ||
-                          authUser.user.email?.split('@')[0] ||
-                          'User',
+                full_name:
+                    authUser.user.user_metadata?.full_name ||
+                    authUser.user.user_metadata?.name ||
+                    authUser.user.email?.split('@')[0] ||
+                    'User',
                 avatar_url: authUser.user.user_metadata?.avatar_url || null,
                 created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
             };
 
             const { data: createdProfile, error: createError } = await supabase
@@ -56,7 +62,10 @@ export const getAuthUserServer = async () => {
     return data;
 };
 
-export const ensureUserPersonalOrganizationServer = async (userId: string, email: string) => {
+export const ensureUserPersonalOrganizationServer = async (
+    userId: string,
+    email: string,
+) => {
     const supabase = await createClient();
 
     // Check if user already has a personal organization
@@ -90,7 +99,8 @@ export const ensureUserPersonalOrganizationServer = async (userId: string, email
         .insert({
             name: orgName,
             slug: orgSlug,
-            description: 'Your personal playground for projects and experiments',
+            description:
+                'Your personal playground for projects and experiments',
             created_by: userId,
             updated_by: userId,
             type: OrganizationType.personal,
@@ -119,7 +129,10 @@ export const ensureUserPersonalOrganizationServer = async (userId: string, email
         });
 
     if (memberError) {
-        console.error('Error adding user to personal organization:', memberError);
+        console.error(
+            'Error adding user to personal organization:',
+            memberError,
+        );
         throw memberError;
     }
 

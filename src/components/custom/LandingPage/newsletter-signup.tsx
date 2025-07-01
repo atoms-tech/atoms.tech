@@ -1,7 +1,8 @@
 'use client';
 
+import { CheckCircle, Loader2, Mail } from 'lucide-react';
 import { useState } from 'react';
-import { Mail, CheckCircle, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -14,12 +15,12 @@ export function NewsletterSignup() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!email || !email.includes('@')) {
             toast({
-                title: "Invalid email",
-                description: "Please enter a valid email address.",
-                variant: "destructive",
+                title: 'Invalid email',
+                description: 'Please enter a valid email address.',
+                variant: 'destructive',
             });
             return;
         }
@@ -39,17 +40,18 @@ export function NewsletterSignup() {
                 setIsSubscribed(true);
                 setEmail('');
                 toast({
-                    title: "Successfully subscribed!",
-                    description: "You'll receive updates about ATOMS.TECH features and improvements.",
+                    title: 'Successfully subscribed!',
+                    description:
+                        "You'll receive updates about ATOMS.TECH features and improvements.",
                 });
             } else {
                 throw new Error('Subscription failed');
             }
         } catch (error) {
             toast({
-                title: "Subscription failed",
-                description: "Please try again later or contact us directly.",
-                variant: "destructive",
+                title: 'Subscription failed',
+                description: 'Please try again later or contact us directly.',
+                variant: 'destructive',
             });
         } finally {
             setIsLoading(false);
@@ -60,9 +62,12 @@ export function NewsletterSignup() {
         return (
             <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg p-6 text-center">
                 <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">You're all set!</h3>
+                <h3 className="text-xl font-bold text-white mb-2">
+                    You're all set!
+                </h3>
                 <p className="text-gray-300">
-                    Thanks for subscribing. We'll keep you updated on the latest features and improvements.
+                    Thanks for subscribing. We'll keep you updated on the latest
+                    features and improvements.
                 </p>
             </div>
         );
@@ -75,11 +80,15 @@ export function NewsletterSignup() {
                     <Mail className="h-6 w-6 text-purple-400" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold text-white">Stay Updated</h3>
-                    <p className="text-sm text-gray-300">Get the latest features and updates</p>
+                    <h3 className="text-xl font-bold text-white">
+                        Stay Updated
+                    </h3>
+                    <p className="text-sm text-gray-300">
+                        Get the latest features and updates
+                    </p>
                 </div>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="flex gap-2">
                     <Input

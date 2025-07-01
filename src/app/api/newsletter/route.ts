@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+
 import { emailService } from '@/lib/email/emailService';
 import { NewsletterWelcomeTemplate } from '@/lib/email/templates/NewsletterWelcomeTemplate';
 
@@ -13,7 +14,9 @@ export async function POST(request: NextRequest) {
         const { email } = newsletterSchema.parse(body);
 
         // Log subscription
-        console.log(`Newsletter subscription: ${email} at ${new Date().toISOString()}`);
+        console.log(
+            `Newsletter subscription: ${email} at ${new Date().toISOString()}`,
+        );
 
         // Send welcome email
         const emailResult = await emailService.sendEmail({
@@ -27,7 +30,10 @@ export async function POST(request: NextRequest) {
 
         // Log email result
         if (!emailResult.success) {
-            console.error('Failed to send newsletter welcome email:', emailResult.error);
+            console.error(
+                'Failed to send newsletter welcome email:',
+                emailResult.error,
+            );
         }
 
         // TODO: Save to database in production
@@ -38,27 +44,27 @@ export async function POST(request: NextRequest) {
                 message: 'Successfully subscribed to newsletter',
                 emailSent: emailResult.success,
             },
-            { status: 200 }
+            { status: 200 },
         );
     } catch (error) {
         console.error('Newsletter subscription error:', error);
-        
+
         if (error instanceof z.ZodError) {
             return NextResponse.json(
-                { 
-                    success: false, 
-                    message: 'Invalid email address' 
+                {
+                    success: false,
+                    message: 'Invalid email address',
                 },
-                { status: 400 }
+                { status: 400 },
             );
         }
 
         return NextResponse.json(
-            { 
-                success: false, 
-                message: 'Failed to subscribe to newsletter' 
+            {
+                success: false,
+                message: 'Failed to subscribe to newsletter',
             },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

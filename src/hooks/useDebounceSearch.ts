@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseDebounceSearchOptions {
     delay?: number;
@@ -18,15 +18,15 @@ interface UseDebounceSearchReturn<T> {
 
 export function useDebounceSearch<T = any>(
     searchFunction?: (query: string, signal: AbortSignal) => Promise<T[]>,
-    options: UseDebounceSearchOptions = {}
+    options: UseDebounceSearchOptions = {},
 ): UseDebounceSearchReturn<T> {
     const { delay = 300, minLength = 1 } = options;
-    
+
     const [searchQuery, setSearchQuery] = useState('');
     const [debouncedQuery, setDebouncedQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [results, setResults] = useState<T[]>([]);
-    
+
     const abortControllerRef = useRef<AbortController | null>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -50,7 +50,7 @@ export function useDebounceSearch<T = any>(
     // Perform search when debounced query changes
     useEffect(() => {
         if (!searchFunction) return;
-        
+
         // Abort previous search
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -96,7 +96,7 @@ export function useDebounceSearch<T = any>(
         setDebouncedQuery('');
         setResults([]);
         setIsSearching(false);
-        
+
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -129,6 +129,6 @@ export function useDebounceSearch<T = any>(
         results,
         setResults,
         clearSearch,
-        abortSearch
+        abortSearch,
     };
 }
