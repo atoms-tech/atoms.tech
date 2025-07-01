@@ -12,31 +12,36 @@ export async function generateNextReqId(projectId: string): Promise<string> {
         // Query all existing requirements in the project to find the highest REQ-ID
         const { data: requirements, error } = await supabase
             .from('requirements')
-            .select(`
+            .select(
+                `
                 external_id,
                 documents!inner (
                     project_id
                 )
-            `)
+            `,
+            )
             .eq('documents.project_id', projectId)
             .eq('is_deleted', false)
             .not('external_id', 'is', null);
 
         if (error) {
-            console.error('Error fetching requirements for REQ-ID generation:', error);
+            console.error(
+                'Error fetching requirements for REQ-ID generation:',
+                error,
+            );
             // Fallback to REQ-001 if there's an error
             return 'REQ-001';
         }
 
         // Extract REQ-IDs and find the highest number
         const reqIds = requirements
-            .map(req => req.external_id)
-            .filter(id => id && id.startsWith('REQ-'))
-            .map(id => {
+            .map((req) => req.external_id)
+            .filter((id) => id && id.startsWith('REQ-'))
+            .map((id) => {
                 const match = id?.match(/REQ-(\d+)/);
                 return match ? parseInt(match[1], 10) : 0;
             })
-            .filter(num => !isNaN(num));
+            .filter((num) => !isNaN(num));
 
         // Find the highest number and increment by 1
         const maxNumber = reqIds.length > 0 ? Math.max(...reqIds) : 0;
@@ -66,16 +71,21 @@ export function isValidReqIdFormat(reqId: string): boolean {
  * @param reqId - The REQ-ID to check for duplicates
  * @returns Promise<boolean> - True if REQ-ID already exists
  */
-export async function reqIdExists(projectId: string, reqId: string): Promise<boolean> {
+export async function reqIdExists(
+    projectId: string,
+    reqId: string,
+): Promise<boolean> {
     try {
         const { data, error } = await supabase
             .from('requirements')
-            .select(`
+            .select(
+                `
                 id,
                 documents!inner (
                     project_id
                 )
-            `)
+            `,
+            )
             .eq('documents.project_id', projectId)
             .eq('external_id', reqId)
             .eq('is_deleted', false)

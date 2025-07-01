@@ -147,7 +147,7 @@ export function BlockCanvas({
     const setEnhancedLocalBlocks = useCallback(
         (
             updater: React.SetStateAction<BlockWithRequirements[]>,
-            trackingBlockId?: string
+            trackingBlockId?: string,
         ) => {
             const processBlocks = (
                 blocks: BlockWithRequirements[],

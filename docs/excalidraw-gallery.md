@@ -23,7 +23,6 @@ The Excalidraw Gallery feature allows users to create, save, manage, and switch 
 1. Navigate to the Canvas section of your project
 2. Toggle between "Gallery" and "Editor" views using the tabs at the top
 3. In Gallery view:
-
     - Click on any diagram to open it in the editor
     - Use the "New Diagram" button to create a fresh canvas
     - Hover over diagrams to see rename and delete options

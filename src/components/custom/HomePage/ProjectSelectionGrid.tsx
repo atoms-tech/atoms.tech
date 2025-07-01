@@ -1,25 +1,24 @@
 'use client';
 
+import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
-import { useState, useMemo } from 'react';
 import {
-    Search,
+    Building,
+    Calendar,
     Filter,
     FolderOpen,
-    Users,
-    Calendar,
     Plus,
-    Building
+    Search,
+    Users,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { useMemo, useState } from 'react';
 
-import { useDebounceSearch } from '@/hooks/useDebounceSearch';
-import { LazyImage } from '@/components/ui/lazy-image';
-
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { LazyImage } from '@/components/ui/lazy-image';
 import {
     Select,
     SelectContent,
@@ -27,7 +26,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { useDebounceSearch } from '@/hooks/useDebounceSearch';
 import { ProjectWithOrg } from '@/lib/db/server/home.server';
 import { Organization } from '@/types/base/organizations.types';
 
@@ -45,24 +44,33 @@ const itemVariants = {
 export function ProjectSelectionGrid({
     projects,
     organizations,
-    onCreateProject
+    onCreateProject,
 }: ProjectSelectionGridProps) {
     const router = useRouter();
     const [selectedOrgFilter, setSelectedOrgFilter] = useState<string>('all');
 
     // Use debounced search hook for better performance
-    const { searchQuery, setSearchQuery, debouncedQuery, isSearching } = useDebounceSearch();
+    const { searchQuery, setSearchQuery, debouncedQuery, isSearching } =
+        useDebounceSearch();
 
     const filteredProjects = useMemo(() => {
-        return projects.filter(project => {
+        return projects.filter((project) => {
             // Use debounced query for better performance
-            const matchesSearch = debouncedQuery === '' ||
-                                project.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-                                project.description?.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-                                project.organization.name.toLowerCase().includes(debouncedQuery.toLowerCase());
+            const matchesSearch =
+                debouncedQuery === '' ||
+                project.name
+                    .toLowerCase()
+                    .includes(debouncedQuery.toLowerCase()) ||
+                project.description
+                    ?.toLowerCase()
+                    .includes(debouncedQuery.toLowerCase()) ||
+                project.organization.name
+                    .toLowerCase()
+                    .includes(debouncedQuery.toLowerCase());
 
-            const matchesOrg = selectedOrgFilter === 'all' ||
-                             project.organization.id === selectedOrgFilter;
+            const matchesOrg =
+                selectedOrgFilter === 'all' ||
+                project.organization.id === selectedOrgFilter;
 
             return matchesSearch && matchesOrg;
         });
@@ -90,7 +98,7 @@ export function ProjectSelectionGrid({
             {/* Header and Controls */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <h2 className="text-xl font-semibold">Your Projects</h2>
-                
+
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     {/* Search with loading indicator */}
                     <div className="relative">
@@ -107,15 +115,20 @@ export function ProjectSelectionGrid({
                             </div>
                         )}
                     </div>
-                    
+
                     {/* Organization Filter */}
-                    <Select value={selectedOrgFilter} onValueChange={setSelectedOrgFilter}>
+                    <Select
+                        value={selectedOrgFilter}
+                        onValueChange={setSelectedOrgFilter}
+                    >
                         <SelectTrigger className="w-full sm:w-48">
                             <Filter className="h-4 w-4 mr-2" />
                             <SelectValue placeholder="All Organizations" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Organizations</SelectItem>
+                            <SelectItem value="all">
+                                All Organizations
+                            </SelectItem>
                             {organizations.map((org) => (
                                 <SelectItem key={org.id} value={org.id}>
                                     {org.name}
@@ -134,14 +147,12 @@ export function ProjectSelectionGrid({
                         <h3 className="text-lg font-medium mb-2">
                             {debouncedQuery || selectedOrgFilter !== 'all'
                                 ? 'No projects found'
-                                : 'No projects yet'
-                            }
+                                : 'No projects yet'}
                         </h3>
                         <p className="text-muted-foreground mb-4">
                             {debouncedQuery || selectedOrgFilter !== 'all'
                                 ? 'Try adjusting your search or filter criteria.'
-                                : 'Get started by creating your first project.'
-                            }
+                                : 'Get started by creating your first project.'}
                         </p>
                         <Button onClick={onCreateProject}>
                             <Plus className="h-4 w-4 mr-2" />
@@ -164,7 +175,7 @@ export function ProjectSelectionGrid({
                 >
                     {filteredProjects.map((project) => (
                         <motion.div key={project.id} variants={itemVariants}>
-                            <Card 
+                            <Card
                                 className="cursor-pointer hover:shadow-md transition-all duration-300 h-full"
                                 onClick={() => handleProjectClick(project)}
                             >
@@ -181,29 +192,42 @@ export function ProjectSelectionGrid({
                                                 </span>
                                             </div>
                                         </div>
-                                        <Badge className={getStatusColor(project.status)}>
+                                        <Badge
+                                            className={getStatusColor(
+                                                project.status,
+                                            )}
+                                        >
                                             {project.status}
                                         </Badge>
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                                        {project.description || 'No description available'}
+                                        {project.description ||
+                                            'No description available'}
                                     </p>
-                                    
+
                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center gap-1">
                                                 <Users className="h-3 w-3" />
-                                                <span>{project.member_count || 0}</span>
+                                                <span>
+                                                    {project.member_count || 0}
+                                                </span>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <Calendar className="h-3 w-3" />
                                                 <span>
-                                                    {project.last_accessed 
-                                                        ? formatDistanceToNow(new Date(project.last_accessed), { addSuffix: true })
-                                                        : 'Never accessed'
-                                                    }
+                                                    {project.last_accessed
+                                                        ? formatDistanceToNow(
+                                                              new Date(
+                                                                  project.last_accessed,
+                                                              ),
+                                                              {
+                                                                  addSuffix: true,
+                                                              },
+                                                          )
+                                                        : 'Never accessed'}
                                                 </span>
                                             </div>
                                         </div>

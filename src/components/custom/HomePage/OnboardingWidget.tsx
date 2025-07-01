@@ -1,24 +1,24 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { 
-    CheckCircle, 
-    Circle, 
-    ChevronDown, 
-    ChevronUp,
-    Rocket,
-    FolderPlus,
-    FileText,
+import {
     Brain,
-    UserPlus,
+    CheckCircle,
+    ChevronDown,
+    ChevronUp,
+    Circle,
     ExternalLink,
-    X
+    FileText,
+    FolderPlus,
+    Rocket,
+    UserPlus,
+    X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { OnboardingProgress } from '@/lib/db/server/home.server';
 import { Organization } from '@/types/base/organizations.types';
@@ -39,7 +39,11 @@ interface OnboardingStep {
     actionLabel?: string;
 }
 
-export function OnboardingWidget({ progress, organizations, userId }: OnboardingWidgetProps) {
+export function OnboardingWidget({
+    progress,
+    organizations,
+    userId,
+}: OnboardingWidgetProps) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(progress.is_new_user);
     const [isDismissed, setIsDismissed] = useState(false);
@@ -58,7 +62,7 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
                     router.push('/home/user');
                 }
             },
-            actionLabel: 'Create Project'
+            actionLabel: 'Create Project',
         },
         {
             id: 'add-requirement',
@@ -69,13 +73,15 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
             action: () => {
                 // Navigate to demo or first project
                 if (organizations.length > 0) {
-                    const personalOrg = organizations.find(org => org.type === 'personal');
+                    const personalOrg = organizations.find(
+                        (org) => org.type === 'personal',
+                    );
                     if (personalOrg) {
                         router.push(`/org/${personalOrg.id}/demo`);
                     }
                 }
             },
-            actionLabel: 'Try Demo'
+            actionLabel: 'Try Demo',
         },
         {
             id: 'use-ai-analysis',
@@ -85,13 +91,15 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
             icon: <Brain className="h-4 w-4" />,
             action: () => {
                 if (organizations.length > 0) {
-                    const personalOrg = organizations.find(org => org.type === 'personal');
+                    const personalOrg = organizations.find(
+                        (org) => org.type === 'personal',
+                    );
                     if (personalOrg) {
                         router.push(`/org/${personalOrg.id}/demo`);
                     }
                 }
             },
-            actionLabel: 'Try AI Features'
+            actionLabel: 'Try AI Features',
         },
         {
             id: 'invite-members',
@@ -104,7 +112,7 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
                     router.push(`/org/${organizations[0].id}`);
                 }
             },
-            actionLabel: 'Invite Team'
+            actionLabel: 'Invite Team',
         },
         {
             id: 'explore-features',
@@ -115,13 +123,16 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
             action: () => {
                 window.open('https://atoms.tech/docs', '_blank');
             },
-            actionLabel: 'View Docs'
-        }
+            actionLabel: 'View Docs',
+        },
     ];
 
-    const completedSteps = steps.filter(step => step.completed).length;
+    const completedSteps = steps.filter((step) => step.completed).length;
 
-    if (isDismissed || (!progress.is_new_user && progress.completion_percentage >= 80)) {
+    if (
+        isDismissed ||
+        (!progress.is_new_user && progress.completion_percentage >= 80)
+    ) {
         return null;
     }
 
@@ -163,7 +174,10 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
                             {progress.completion_percentage}%
                         </span>
                     </div>
-                    <Progress value={progress.completion_percentage} className="h-2" />
+                    <Progress
+                        value={progress.completion_percentage}
+                        className="h-2"
+                    />
                 </div>
             </CardHeader>
 
@@ -227,7 +241,12 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => window.open('https://atoms.tech/docs', '_blank')}
+                                        onClick={() =>
+                                            window.open(
+                                                'https://atoms.tech/docs',
+                                                '_blank',
+                                            )
+                                        }
                                     >
                                         Documentation
                                     </Button>
@@ -235,9 +254,15 @@ export function OnboardingWidget({ progress, organizations, userId }: Onboarding
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                            const personalOrg = organizations.find(org => org.type === 'personal');
+                                            const personalOrg =
+                                                organizations.find(
+                                                    (org) =>
+                                                        org.type === 'personal',
+                                                );
                                             if (personalOrg) {
-                                                router.push(`/org/${personalOrg.id}/demo`);
+                                                router.push(
+                                                    `/org/${personalOrg.id}/demo`,
+                                                );
                                             }
                                         }}
                                     >

@@ -75,7 +75,7 @@ export interface UseBlockActionsProps {
     blocks: BlockWithRequirements[] | undefined;
     setLocalBlocks: (
         updater: React.SetStateAction<BlockWithRequirements[]>,
-        trackingBlockId?: string
+        trackingBlockId?: string,
     ) => void;
     orgId: string;
     projectId: string;

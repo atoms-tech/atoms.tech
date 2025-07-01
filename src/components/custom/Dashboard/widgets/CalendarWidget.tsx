@@ -17,10 +17,14 @@ interface CalendarEvent {
 }
 
 export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
-    const { viewMode = 'month', showWeekends = true, highlightToday = true } = instance.config || {};
-    
+    const {
+        viewMode = 'month',
+        showWeekends = true,
+        highlightToday = true,
+    } = instance.config || {};
+
     const [currentDate, setCurrentDate] = useState(new Date());
-    
+
     // Mock events - in real app, this would come from props.data
     const events: CalendarEvent[] = [
         {
@@ -28,21 +32,21 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
             title: 'Team Meeting',
             date: new Date(),
             time: '10:00 AM',
-            type: 'meeting'
+            type: 'meeting',
         },
         {
             id: '2',
             title: 'Project Deadline',
             date: new Date(Date.now() + 86400000 * 2),
-            type: 'deadline'
+            type: 'deadline',
         },
         {
             id: '3',
             title: 'Code Review',
             date: new Date(Date.now() + 86400000 * 3),
             time: '2:00 PM',
-            type: 'meeting'
-        }
+            type: 'meeting',
+        },
     ];
 
     const getDaysInMonth = (date: Date) => {
@@ -54,7 +58,7 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
     };
 
     const navigateMonth = (direction: 'prev' | 'next') => {
-        setCurrentDate(prev => {
+        setCurrentDate((prev) => {
             const newDate = new Date(prev);
             newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
             return newDate;
@@ -63,27 +67,36 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
 
     const isToday = (day: number) => {
         const today = new Date();
-        return today.getDate() === day && 
-               today.getMonth() === currentDate.getMonth() && 
-               today.getFullYear() === currentDate.getFullYear();
+        return (
+            today.getDate() === day &&
+            today.getMonth() === currentDate.getMonth() &&
+            today.getFullYear() === currentDate.getFullYear()
+        );
     };
 
     const hasEvent = (day: number) => {
-        return events.some(event => {
+        return events.some((event) => {
             const eventDate = new Date(event.date);
-            return eventDate.getDate() === day && 
-                   eventDate.getMonth() === currentDate.getMonth() && 
-                   eventDate.getFullYear() === currentDate.getFullYear();
+            return (
+                eventDate.getDate() === day &&
+                eventDate.getMonth() === currentDate.getMonth() &&
+                eventDate.getFullYear() === currentDate.getFullYear()
+            );
         });
     };
 
     const getEventTypeColor = (type: string) => {
         switch (type) {
-            case 'meeting': return 'bg-blue-500';
-            case 'deadline': return 'bg-red-500';
-            case 'reminder': return 'bg-yellow-500';
-            case 'event': return 'bg-green-500';
-            default: return 'bg-gray-500';
+            case 'meeting':
+                return 'bg-blue-500';
+            case 'deadline':
+                return 'bg-red-500';
+            case 'reminder':
+                return 'bg-yellow-500';
+            case 'event':
+                return 'bg-green-500';
+            default:
+                return 'bg-gray-500';
         }
     };
 
@@ -101,7 +114,7 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
         for (let day = 1; day <= daysInMonth; day++) {
             const isCurrentDay = isToday(day);
             const dayHasEvent = hasEvent(day);
-            
+
             days.push(
                 <motion.div
                     key={day}
@@ -116,7 +129,7 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
                     {dayHasEvent && (
                         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-400 rounded-full"></div>
                     )}
-                </motion.div>
+                </motion.div>,
             );
         }
 
@@ -124,7 +137,7 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
     };
 
     const upcomingEvents = events
-        .filter(event => event.date >= new Date())
+        .filter((event) => event.date >= new Date())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .slice(0, 3);
 
@@ -156,7 +169,10 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
                     </div>
                 </div>
                 <div className="text-center font-medium">
-                    {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    {currentDate.toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                    })}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -164,8 +180,19 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
                     <div className="space-y-2">
                         {/* Calendar Grid */}
                         <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-2">
-                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                <div key={day} className="text-center font-medium">
+                            {[
+                                'Sun',
+                                'Mon',
+                                'Tue',
+                                'Wed',
+                                'Thu',
+                                'Fri',
+                                'Sat',
+                            ].map((day) => (
+                                <div
+                                    key={day}
+                                    className="text-center font-medium"
+                                >
                                     {day}
                                 </div>
                             ))}
@@ -180,7 +207,11 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <h4 className="text-sm font-medium">Upcoming</h4>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                        >
                             <Plus className="h-3 w-3" />
                         </Button>
                     </div>
@@ -193,9 +224,13 @@ export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
                                 transition={{ delay: index * 0.1 }}
                                 className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-800"
                             >
-                                <div className={`w-2 h-2 rounded-full ${getEventTypeColor(event.type)}`}></div>
+                                <div
+                                    className={`w-2 h-2 rounded-full ${getEventTypeColor(event.type)}`}
+                                ></div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium truncate">{event.title}</div>
+                                    <div className="text-sm font-medium truncate">
+                                        {event.title}
+                                    </div>
                                     <div className="text-xs text-gray-500">
                                         {event.date.toLocaleDateString()}
                                         {event.time && ` • ${event.time}`}

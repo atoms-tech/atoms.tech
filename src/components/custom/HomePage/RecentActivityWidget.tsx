@@ -1,23 +1,26 @@
 'use client';
 
+import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
-import { useState, useCallback } from 'react';
 import {
+    Activity,
+    ChevronDown,
+    Clock,
+    ExternalLink,
     FileText,
     FolderOpen,
     ListTodo,
-    Clock,
-    ExternalLink,
-    Activity,
-    ChevronDown,
-    Loader2
+    Loader2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { useCallback, useState } from 'react';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RecentActivity, PaginatedRecentActivity } from '@/lib/db/server/home.server';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    PaginatedRecentActivity,
+    RecentActivity,
+} from '@/lib/db/server/home.server';
 
 interface RecentActivityWidgetProps {
     activities: RecentActivity[];
@@ -41,7 +44,7 @@ const getActivityIcon = (entityType: string, action: string) => {
 
 const getActivityDescription = (activity: RecentActivity) => {
     const { action, entity_type, entity_name } = activity;
-    
+
     switch (action) {
         case 'create':
             return `Created ${entity_type} "${entity_name}"`;
@@ -57,8 +60,9 @@ const getActivityDescription = (activity: RecentActivity) => {
 };
 
 const getNavigationPath = (activity: RecentActivity) => {
-    const { entity_type, entity_id, project_name, organization_name } = activity;
-    
+    const { entity_type, entity_id, project_name, organization_name } =
+        activity;
+
     // This is a simplified navigation - you may need to adjust based on your routing structure
     switch (entity_type) {
         case 'project':
@@ -81,10 +85,11 @@ export function RecentActivityWidget({
     activities: initialActivities,
     userId,
     totalCount = 0,
-    hasMore: initialHasMore = false
+    hasMore: initialHasMore = false,
 }: RecentActivityWidgetProps) {
     const router = useRouter();
-    const [activities, setActivities] = useState<RecentActivity[]>(initialActivities);
+    const [activities, setActivities] =
+        useState<RecentActivity[]>(initialActivities);
     const [hasMore, setHasMore] = useState(initialHasMore);
     const [isLoading, setIsLoading] = useState(false);
     const [nextCursor, setNextCursor] = useState<string | undefined>();
@@ -107,10 +112,12 @@ export function RecentActivityWidget({
         setIsLoading(true);
         try {
             // This would typically be an API call to your backend
-            const response = await fetch(`/api/activity/paginated?userId=${userId}&cursor=${nextCursor}&limit=10`);
+            const response = await fetch(
+                `/api/activity/paginated?userId=${userId}&cursor=${nextCursor}&limit=10`,
+            );
             const data: PaginatedRecentActivity = await response.json();
 
-            setActivities(prev => [...prev, ...data.activities]);
+            setActivities((prev) => [...prev, ...data.activities]);
             setHasMore(data.hasMore);
             setNextCursor(data.nextCursor);
         } catch (error) {
@@ -133,7 +140,9 @@ export function RecentActivityWidget({
                     <div className="text-center py-8 text-muted-foreground">
                         <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">No recent activity</p>
-                        <p className="text-xs">Start working on projects to see activity here</p>
+                        <p className="text-xs">
+                            Start working on projects to see activity here
+                        </p>
                     </div>
                 ) : (
                     <>
@@ -154,10 +163,15 @@ export function RecentActivityWidget({
                                     key={activity.id}
                                     variants={itemVariants}
                                     className="flex items-start space-x-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                                    onClick={() => handleActivityClick(activity)}
+                                    onClick={() =>
+                                        handleActivityClick(activity)
+                                    }
                                 >
                                     <div className="flex-shrink-0 mt-0.5">
-                                        {getActivityIcon(activity.entity_type, activity.action)}
+                                        {getActivityIcon(
+                                            activity.entity_type,
+                                            activity.action,
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium truncate">
@@ -165,12 +179,21 @@ export function RecentActivityWidget({
                                         </p>
                                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                             <span>
-                                                {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                                                {formatDistanceToNow(
+                                                    new Date(
+                                                        activity.created_at,
+                                                    ),
+                                                    { addSuffix: true },
+                                                )}
                                             </span>
                                             {activity.organization_name && (
                                                 <>
                                                     <span>•</span>
-                                                    <span className="truncate">{activity.organization_name}</span>
+                                                    <span className="truncate">
+                                                        {
+                                                            activity.organization_name
+                                                        }
+                                                    </span>
                                                 </>
                                             )}
                                         </div>
@@ -197,7 +220,9 @@ export function RecentActivityWidget({
                                 ) : (
                                     <>
                                         <ChevronDown className="h-4 w-4 mr-2" />
-                                        Load More ({totalCount - activities.length} remaining)
+                                        Load More (
+                                        {totalCount - activities.length}{' '}
+                                        remaining)
                                     </>
                                 )}
                             </Button>

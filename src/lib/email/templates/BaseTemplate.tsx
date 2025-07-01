@@ -1,15 +1,15 @@
-import React from 'react';
 import {
-    Html,
-    Head,
     Body,
     Container,
+    Head,
+    Hr,
+    Html,
+    Img,
+    Link,
     Section,
     Text,
-    Link,
-    Hr,
-    Img,
 } from '@react-email/components';
+import React from 'react';
 
 interface BaseTemplateProps {
     children: React.ReactNode;
@@ -21,9 +21,7 @@ export function BaseTemplate({ children, previewText }: BaseTemplateProps) {
         <Html>
             <Head />
             <Body style={main}>
-                {previewText && (
-                    <Text style={preview}>{previewText}</Text>
-                )}
+                {previewText && <Text style={preview}>{previewText}</Text>}
                 <Container style={container}>
                     {/* Header */}
                     <Section style={header}>
@@ -37,9 +35,7 @@ export function BaseTemplate({ children, previewText }: BaseTemplateProps) {
                     </Section>
 
                     {/* Content */}
-                    <Section style={content}>
-                        {children}
-                    </Section>
+                    <Section style={content}>{children}</Section>
 
                     {/* Footer */}
                     <Hr style={hr} />
@@ -67,7 +63,8 @@ export function BaseTemplate({ children, previewText }: BaseTemplateProps) {
 // Styles
 const main = {
     backgroundColor: '#f6f9fc',
-    fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
+    fontFamily:
+        '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
 };
 
 const preview = {

@@ -1,7 +1,7 @@
 'use client';
 
-import { widgetRegistry } from './widget-registry';
 import { CORE_WIDGETS } from './widget-definitions';
+import { widgetRegistry } from './widget-registry';
 
 let isInitialized = false;
 
@@ -11,7 +11,7 @@ export function initializeWidgets() {
     }
 
     // Register all core widgets
-    CORE_WIDGETS.forEach(widget => {
+    CORE_WIDGETS.forEach((widget) => {
         widgetRegistry.register(widget);
     });
 

@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import {
+    ensureUserPersonalOrganizationServer,
     getAuthUserServer,
     getExternalDocumentsByOrgServer,
     getOrganizationServer,
@@ -13,7 +14,6 @@ import {
     getUserOrganizationsServer,
     getUserProfileServer,
     getUserProjectsServer,
-    ensureUserPersonalOrganizationServer,
 } from '@/lib/db/server';
 
 // Cache this function to prevent multiple executions in the same request

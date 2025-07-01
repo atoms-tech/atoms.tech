@@ -66,10 +66,11 @@ const Button = ({
     return (
         <Comp
             ref={ref}
-            className={cn(buttonVariants({ variant, size }),
+            className={cn(
+                buttonVariants({ variant, size }),
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 isDisabled && 'cursor-not-allowed',
-                className
+                className,
             )}
             disabled={isDisabled}
             aria-disabled={isDisabled}
@@ -77,11 +78,17 @@ const Button = ({
         >
             <span className="flex items-center gap-2">
                 {loading && (
-                    <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" aria-hidden="true" />
+                    <span
+                        className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"
+                        aria-hidden="true"
+                    />
                 )}
                 <span>{loading && loadingText ? loadingText : children}</span>
                 {shortcut && !loading && (
-                    <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-xs bg-muted rounded border" aria-label={`Keyboard shortcut: ${shortcut}`}>
+                    <kbd
+                        className="hidden sm:inline-block px-1.5 py-0.5 text-xs bg-muted rounded border"
+                        aria-label={`Keyboard shortcut: ${shortcut}`}
+                    >
                         {shortcut}
                     </kbd>
                 )}
