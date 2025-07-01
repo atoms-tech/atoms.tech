@@ -1,4 +1,6 @@
-import { Button } from '@/components/ui/button';
+'use client';
+
+import { ScheduleDemoDialog } from '@/components/custom/LandingPage/schedule-demo-dialog';
 
 export function CTA() {
     return (
@@ -13,9 +15,7 @@ export function CTA() {
                     SOFTWARE CRUMBLE UNDER ITS OWN WEIGHT.
                 </p>
                 <div className="flex flex-col md:flex-row justify-start space-y-8 md:space-y-0 md:space-x-12">
-                    <Button className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]">
-                        SCHEDULE A DEMO
-                    </Button>
+                    <ScheduleDemoDialog className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]" />
                 </div>
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-black" />
