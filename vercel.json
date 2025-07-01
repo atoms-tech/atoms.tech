@@ -7,11 +7,17 @@
         "NEXT_PUBLIC_APP_URL": "https://atoms.tech"
     },
     "functions": {
-        "app/**/*.ts": {
+        "src/app/**/*.ts": {
             "maxDuration": 30
         },
-        "app/**/*.js": {
+        "src/app/**/*.js": {
             "maxDuration": 30
+        },
+        "src/app/**/*.tsx": {
+            "maxDuration": 30
+        },
+        "src/app/api/**/*.ts": {
+            "maxDuration": 25
         }
     }
 }

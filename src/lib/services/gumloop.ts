@@ -134,6 +134,11 @@ export class GumloopService {
             };
 
             console.log('Making API request to upload files');
+
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
             const response = await fetch(`${GUMLOOP_API_URL}/upload_files`, {
                 method: 'POST',
                 headers: {
@@ -141,7 +146,10 @@ export class GumloopService {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -280,6 +288,11 @@ export class GumloopService {
                 saved_item_id: pipeline_id,
                 pipeline_inputs: pipelineInputs,
             });
+
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
             const response = await fetch(`${GUMLOOP_API_URL}/start_pipeline`, {
                 method: 'POST',
                 headers: {
@@ -291,7 +304,10 @@ export class GumloopService {
                     saved_item_id: pipeline_id,
                     pipeline_inputs: pipelineInputs,
                 }),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
