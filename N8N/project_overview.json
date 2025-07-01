@@ -10,13 +10,13 @@
           ]
         }
       },
-      "id": "c055762a-8fe7-4141-a639-df2372f30060",
+      "id": "475242ba-da2d-4b6b-b32d-7f406a20185f",
       "typeVersion": 1.1,
       "name": "project_overview",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "position": [
-        260,
-        220
+        -200,
+        520
       ]
     },
     {
@@ -28,7 +28,7 @@
           "conditions": [
             {
               "keyName": "organization_id",
-              "keyValue": "=5eafad37-34ab-4221-a8a5-d3d4f5bdb5b9"
+              "keyValue": "=f747dd98-e326-4ca8-95b2-43530ea9887a"
             }
           ]
         }
@@ -36,16 +36,16 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        460,
-        340
+        -20,
+        640
       ],
-      "id": "8d0b9a7c-f064-459e-bff9-ed3d0d3e8bea",
+      "id": "0c767b46-b598-40f5-9abb-6397f8d2e459",
       "name": "Pull Org Project Lists",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
-          "id": "XIA6SCX336tP4RqA",
-          "name": "ATOMS Supabase"
+          "id": "LDfTyVc5kKgtlyZL",
+          "name": "Supabase account"
         }
       }
     },
@@ -56,10 +56,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        600,
-        160
+        120,
+        460
       ],
-      "id": "c7187d8b-617c-49f7-81ee-7b1272cae815",
+      "id": "37914f24-bf1a-4c3d-9d80-c58640e57527",
       "name": "Extract Project's ids",
       "alwaysOutputData": true
     },
@@ -82,16 +82,16 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1400,
-        160
+        920,
+        460
       ],
-      "id": "3440085f-57a3-4023-ace1-8dd2a81d3eb2",
+      "id": "d3e6d295-c62b-4a18-b8be-52cba1234c5a",
       "name": "Get Documents in Single Project",
       "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
-          "id": "XIA6SCX336tP4RqA",
-          "name": "ATOMS Supabase"
+          "id": "LDfTyVc5kKgtlyZL",
+          "name": "Supabase account"
         }
       }
     },
@@ -103,10 +103,10 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        740,
-        340
+        260,
+        640
       ],
-      "id": "29796962-d7b6-4d08-b9a5-b94db127180d",
+      "id": "7f387ee8-115c-472d-a842-a5153c1f9553",
       "name": "Split Out - project_ids"
     },
     {
@@ -117,118 +117,17 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        1540,
-        320
+        1060,
+        640
       ],
-      "id": "59565831-cdab-45d7-81e1-6da68dc4a3d9",
+      "id": "486aa45d-551f-479c-948b-aaf5b76bc88c",
       "name": "Split Out - documnet-ids",
       "alwaysOutputData": true
     },
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "documents",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.id }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        1680,
-        160
-      ],
-      "id": "a37dd74b-c2c1-48ac-8cf9-ea837eb51187",
-      "name": "Get All documents",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "XIA6SCX336tP4RqA",
-          "name": "ATOMS Supabase"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// 제거할 최상위 레벨 키 목록\nconst keysToRemove = [\n  \"block_id\",\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\", // properties도 제거 목록에 추가\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    // Email 값을 최상위 레벨로 추가\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    // 지정된 키들 제거 (properties 포함)\n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1820,
-        320
-      ],
-      "id": "d06c9662-cc0f-404d-a8c6-8c20174b13cc",
-      "name": "Refine Dataset"
-    },
-    {
-      "parameters": {
-        "jsCode": "const allObjectStrings = [];\n\nfor (const item of $input.all()) {\n  const currentObject = item.json;\n  const fieldStrings = [];\n\n  // Ensure the name comes first with the correct formatting\n  if (currentObject.name) {\n    fieldStrings.push(`# ${currentObject.name}\\n`); // Add name as a header (for LLM readability)\n  }\n\n  // Add description if available\n  if (currentObject.description) {\n    fieldStrings.push(`Description: ${currentObject.description}\\n\\n`);\n  }\n\n  // Add content.text if available\n  if (currentObject['content.text']) {\n    fieldStrings.push(`Content:\\n${currentObject['content.text']}\\n\\n`);\n  }\n\n  allObjectStrings.push(fieldStrings.join(''));\n}\n\nconst finalCombinedString = allObjectStrings.join('\\n\\n');\n\nreturn {\n  all_documents: finalCombinedString,\n  username: $('Extract Project\\'s ids').first().json.username,\n  conversationHistory: $('Extract Project\\'s ids').first().json.conversationHistory,\n  message: $('Extract Project\\'s ids').first().json.message\n};\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2460,
-        300
-      ],
-      "id": "25f5f36a-9fa1-4173-bc26-6fd45eaa3f41",
-      "name": "Documents under one value"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=project_ids: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\nproject_names: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\nproject_descriptions: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\nuser's message: {{ $('Extract Project\\'s ids').item.json.message }}",
-        "hasOutputParser": true,
-        "options": {
-          "systemMessage": "Check the project_names and project_descriptions above, and based on the user's goal, think about which projects should be selected. Then, return the most appropriate project_ids as a list in the format below:\n- Return the target_project_ids as an array of strings, not as a single string.\n- Return only one output."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2,
-      "position": [
-        920,
-        160
-      ],
-      "id": "5f2db4c9-8f62-4a21-9ed9-c8a6b000af8d",
-      "name": "Agent Checked DB",
-      "alwaysOutputData": true,
-      "executeOnce": true
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-2.5-pro-preview-06-05",
-        "options": {
-          "maxOutputTokens": 2048,
-          "temperature": 0.3,
-          "topP": 0.9
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        940,
-        340
-      ],
-      "id": "0d8d791f-9363-4cca-8b09-86fda82cd2d1",
-      "name": "gemini 2.5 06-05 1",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "NvCtJOA0rSMuNBnB",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "blocks",
+        "tableId": "requirements",
         "returnAll": true,
         "filters": {
           "conditions": [
@@ -243,15 +142,120 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [
-        1980,
-        160
+        1200,
+        460
       ],
-      "id": "32b69f72-ae51-46c0-8db2-aaeb15838023",
-      "name": "blocks_from_document_ids",
+      "id": "360690ca-647d-4954-bc1d-014ca16e1382",
+      "name": "Get All documents",
+      "alwaysOutputData": true,
       "credentials": {
         "supabaseApi": {
-          "id": "XIA6SCX336tP4RqA",
-          "name": "ATOMS Supabase"
+          "id": "LDfTyVc5kKgtlyZL",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 제거할 최상위 레벨 키 목록\nconst keysToRemove = [\n  \"block_id\",\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\", // properties도 제거 목록에 추가\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    // Email 값을 최상위 레벨로 추가\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    // 지정된 키들 제거 (properties 포함)\n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        620
+      ],
+      "id": "eeb5e540-1416-4985-af5e-760c0527a37e",
+      "name": "Refine Dataset"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allObjectStrings = [];\n\nfor (const item of $input.all()) {\n  const currentObject = item.json;\n  const fieldStrings = [];\n\n  // Ensure the name comes first with the correct formatting\n  if (currentObject.name) {\n    fieldStrings.push(`# ${currentObject.name}\\n`); // Add name as a header (for LLM readability)\n  }\n\n  // Add description if available\n  if (currentObject.description) {\n    fieldStrings.push(`Description: ${currentObject.description}\\n\\n`);\n  }\n\n  // Add content.text if available\n  if (currentObject['content.text']) {\n    fieldStrings.push(`Content:\\n${currentObject['content.text']}\\n\\n`);\n  }\n\n  allObjectStrings.push(fieldStrings.join(''));\n}\n\nconst finalCombinedString = allObjectStrings.join('\\n\\n');\n\nreturn {\n  all_documents: finalCombinedString,\n  username: $('Extract Project\\'s ids').first().json.username,\n  conversationHistory: $('Extract Project\\'s ids').first().json.conversationHistory,\n  message: $('Extract Project\\'s ids').first().json.message\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2060,
+        620
+      ],
+      "id": "2300f10c-5148-4f8d-9b8e-255ab0e177b6",
+      "name": "Documents under one value"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=project_ids: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\nproject_names: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\nproject_descriptions: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\nuser's message: {{ $('Extract Project\\'s ids').item.json.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Check the project_names and project_descriptions above, and based on the user's goal, think about which projects should be selected. Then, return the most appropriate project_ids as a list."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        440,
+        460
+      ],
+      "id": "c5e666c0-2fcf-42ad-a878-bc049c99141f",
+      "name": "Agent Checked DB",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro-preview-06-05",
+        "options": {
+          "maxOutputTokens": 2048,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        440,
+        640
+      ],
+      "id": "5bafdd35-d1eb-4851-b64e-52399396062d",
+      "name": "gemini 2.5 06-05 1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "AwJrPOk3HV2bX5Ki",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "blocks",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "document_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.document_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        460
+      ],
+      "id": "a5555816-bf22-47b7-8a1c-80d570dd954c",
+      "name": "blocks_from_document_ids",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "LDfTyVc5kKgtlyZL",
+          "name": "Supabase account"
         }
       }
     },
@@ -264,10 +268,10 @@
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        120,
-        -260
+        -360,
+        40
       ],
-      "id": "7c406a5d-4392-4a5c-949f-0c5c41259eab",
+      "id": "2c234a2f-fc71-4611-9e09-06f5b7e27342",
       "name": "Sticky Note"
     },
     {
@@ -279,10 +283,10 @@
       "type": "n8n-nodes-base.splitOut",
       "typeVersion": 1,
       "position": [
-        2140,
-        300
+        1640,
+        620
       ],
-      "id": "7ad18b02-2aa2-4463-9760-02aedf72c3ad",
+      "id": "2d8e6b24-17b4-407c-a994-5cfd93f4283c",
       "name": "Split Out - ids,context.text"
     },
     {
@@ -293,7 +297,7 @@
           "values": [
             {
               "field1": "document_id",
-              "field2": "id"
+              "field2": "document_id"
             }
           ]
         },
@@ -302,10 +306,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.1,
       "position": [
-        2300,
-        160
+        1860,
+        460
       ],
-      "id": "4d0152cb-b79d-4cc5-bbba-907f37037c4e",
+      "id": "052db330-d64a-4299-b46b-8c0ed85e6ade",
       "name": "Merge",
       "alwaysOutputData": true
     },
@@ -316,10 +320,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.2,
       "position": [
-        1080,
-        340
+        600,
+        640
       ],
-      "id": "125beab8-dc0a-43d1-8071-4cc7f61ee1db",
+      "id": "36694eb9-ad97-46c3-b385-f974a8829609",
       "name": "Structured Output Parser"
     },
     {
@@ -329,10 +333,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1260,
-        340
+        780,
+        640
       ],
-      "id": "6b13f62b-4900-495b-8c5f-581b681ef15b",
+      "id": "9fb164b2-21e0-4802-b213-eb1960b7de78",
       "name": "extract target_project_ids"
     }
   ],
@@ -425,14 +429,9 @@
           {
             "node": "Merge",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
-      ]
-    },
-    "Documents under one value": {
-      "main": [
-        []
       ]
     },
     "Agent Checked DB": {
@@ -474,7 +473,7 @@
           {
             "node": "Merge",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -516,12 +515,12 @@
   "pinData": {
     "project_overview": [
       {
-        "query": "bug report and mcp project details"
+        "query": "list all requirements on projects"
       }
     ]
   },
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "2d2b6c68ebaac87da4ee6e930f60aa5893932f41d2fd67edd543222b8ff72364"
+    "instanceId": "0d71b622322a5065a1d05eb8df0488a161a137b6ca1d05c8af04e8f6b2d48412"
   }
 }
