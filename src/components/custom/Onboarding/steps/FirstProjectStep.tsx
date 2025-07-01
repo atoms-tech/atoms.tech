@@ -1,18 +1,18 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Eye, FileText, FolderPlus, Globe, Lock, Users } from 'lucide-react';
+import { FileText, FolderPlus, Globe, Lock, Users } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+// import {
+//     Select,
+//     SelectContent,
+//     SelectItem,
+//     SelectTrigger,
+//     SelectValue,
+// } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 // Note: Using custom radio group implementation

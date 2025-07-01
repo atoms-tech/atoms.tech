@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 import {
     AlertCircle,
     ArrowLeft,
@@ -24,7 +24,7 @@ interface OnboardingNavigationProps {
 
 export function OnboardingNavigation({
     currentStep,
-    totalSteps,
+    totalSteps: _totalSteps,
     canGoBack,
     canSkip,
     isLastStep,
@@ -37,7 +37,7 @@ export function OnboardingNavigation({
         onComplete,
         isStepValid,
         getStepErrors,
-        data,
+        data: _data,
     } = useOnboarding();
 
     // Get current step name for validation

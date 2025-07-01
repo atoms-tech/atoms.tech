@@ -19,7 +19,7 @@ interface OnboardingStepsProps {
 
 export function OnboardingSteps({
     currentStep,
-    stepIndex,
+    stepIndex: _stepIndex,
 }: OnboardingStepsProps) {
     const renderStep = () => {
         switch (currentStep) {

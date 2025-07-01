@@ -1,7 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { ArrowLeft, X } from 'lucide-react';
+// import { motion } from 'framer-motion';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { useOnboarding } from './OnboardingContext';
 
 export function OnboardingHeader() {
     const router = useRouter();
-    const { onboardingType, targetOrganization, user } = useOnboarding();
+    const { onboardingType, targetOrganization, user: _user } = useOnboarding();
 
     const handleExit = () => {
         if (onboardingType === 'organization' && targetOrganization) {
@@ -20,14 +20,14 @@ export function OnboardingHeader() {
         }
     };
 
-    const getTitle = () => {
+    const _getTitle = () => {
         if (onboardingType === 'organization') {
             return `Welcome to ${targetOrganization?.name || 'Your Organization'}`;
         }
         return 'Welcome to ATOMS.TECH';
     };
 
-    const getSubtitle = () => {
+    const _getSubtitle = () => {
         if (onboardingType === 'organization') {
             return "Let's set up your organization for success";
         }

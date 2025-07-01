@@ -1,9 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+// import { Check } from 'lucide-react';
 
-import { Progress } from '@/components/ui/progress';
+// import { Progress } from '@/components/ui/progress';
 
 interface OnboardingProgressProps {
     currentStep: number;

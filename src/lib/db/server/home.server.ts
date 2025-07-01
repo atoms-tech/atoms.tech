@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/supabaseServer';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
-import { AuditLog } from '@/types/base/traceability.types';
+// import { AuditLog } from '@/types/base/traceability.types';
 
 export interface ProjectWithOrg extends Project {
     organization: Organization;
@@ -160,7 +160,7 @@ export const getUserRecentActivityServer = async (
                         '';
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             // If entity is deleted or inaccessible, use fallback
             entityName = 'Deleted Item';
         }
@@ -269,7 +269,7 @@ export const getUserRecentActivityPaginatedServer = async (
                         '';
                 }
             }
-        } catch (error) {
+        } catch (_error) {
             // If entity is deleted or inaccessible, use fallback
             entityName = 'Deleted Item';
         }
