@@ -11,7 +11,9 @@
         "start": "next start",
         "lint": "next lint",
         "test": "jest --config jest.config.mjs",
-        "test:watch": "jest --config jest.config.mjs --watch"
+        "test:watch": "jest --config jest.config.mjs --watch",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui"
     },
     "type": "module",
     "dependencies": {
@@ -50,6 +52,9 @@
         "@tiptap/react": "^2.11.7",
         "@tiptap/starter-kit": "^2.11.7",
         "@types/uuid": "^10.0.0",
+        "@react-email/components": "^0.0.25",
+        "@react-email/render": "^1.0.1",
+        "resend": "^4.0.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
@@ -96,6 +101,7 @@
         "eslint-config-next": "15.1.4",
         "jest": "^30.0.2",
         "jest-environment-jsdom": "^30.0.2",
+        "@playwright/test": "^1.49.1",
         "postcss": "^8.5.3",
         "prettier": "^3.5.3",
         "supabase": "^2.22.6",
