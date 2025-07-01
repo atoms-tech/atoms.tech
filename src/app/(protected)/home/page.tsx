@@ -10,11 +10,6 @@ import { HomePageSkeleton } from '@/components/custom/HomePage/HomePageSkeleton'
 import LayoutView from '@/components/views/LayoutView';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
-import {
-    getUserOnboardingProgressServer,
-    getUserProjectsAcrossOrgsServer,
-    getUserRecentActivityPaginatedServer,
-} from '@/lib/db/server/home.server';
 
 export default async function HomePageRoute() {
     const queryClient = new QueryClient();
@@ -33,7 +28,12 @@ export default async function HomePageRoute() {
 
     // Set empty initial data - client will fetch these
     const projects: any[] = [];
-    const recentActivityData = { activities: [], hasMore: false, nextCursor: null };
+    const recentActivityData = {
+        activities: [],
+        hasMore: false,
+        nextCursor: undefined,
+        total: 0 // Add missing total property
+    };
     const onboardingProgress = {
         is_new_user: false,
         project_count: 0,

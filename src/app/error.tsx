@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { ErrorCard } from '@/components/ui/error-card';
 
 export default function Error({
