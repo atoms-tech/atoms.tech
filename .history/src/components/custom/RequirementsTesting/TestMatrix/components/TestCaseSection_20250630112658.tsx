@@ -1,5 +1,5 @@
 import { SearchIcon } from 'lucide-react';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useState } from 'react';
 
 import { useTestMatrix } from '@/components/custom/RequirementsTesting/TestMatrix/context/TestMatrixContext';
 import { useTestMatrixData } from '@/components/custom/RequirementsTesting/hooks/useTestMatrixData';
@@ -17,9 +17,6 @@ function TestCaseSectionComponent({
     testCases,
     linkedTestCasesMap,
 }: TestCaseSectionProps) {
-    // Inject marquee styles on client side
-    useMarqueeStyles();
-
     const {
         testSearchTerm,
         setTestSearchTerm,
@@ -243,18 +240,9 @@ const TestCaseRow = memo(function TestCaseRow({
 
 export const TestCaseSection = memo(TestCaseSectionComponent);
 
-// Inject CSS animation styles on the client side only
-function useMarqueeStyles() {
-    useEffect(() => {
-        // Only run on client side
-        if (typeof document === 'undefined') return;
-
-        // Check if styles are already injected
-        if (document.getElementById('marquee-styles')) return;
-
-        const styleTag = document.createElement('style');
-        styleTag.id = 'marquee-styles';
-        styleTag.innerHTML = `
+// Add this CSS animation to your global CSS file or as a style tag in your component
+const styleTag = document.createElement('style');
+styleTag.innerHTML = `
 @keyframes marquee {
   0% {
     transform: translateX(0);
@@ -270,14 +258,6 @@ function useMarqueeStyles() {
   animation-iteration-count: infinite;
 }
 `;
-        document.head.appendChild(styleTag);
-
-        // Cleanup function to remove styles when component unmounts
-        return () => {
-            const existingStyle = document.getElementById('marquee-styles');
-            if (existingStyle) {
-                existingStyle.remove();
-            }
-        };
-    }, []);
+if (typeof document !== 'undefined') {
+    document.head.appendChild(styleTag);
 }

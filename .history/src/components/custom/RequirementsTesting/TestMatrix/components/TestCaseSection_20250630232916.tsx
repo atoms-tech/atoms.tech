@@ -17,9 +17,6 @@ function TestCaseSectionComponent({
     testCases,
     linkedTestCasesMap,
 }: TestCaseSectionProps) {
-    // Inject marquee styles on client side
-    useMarqueeStyles();
-
     const {
         testSearchTerm,
         setTestSearchTerm,
@@ -281,3 +278,6 @@ function useMarqueeStyles() {
         };
     }, []);
 }
+
+// Call the hook to inject styles
+useMarqueeStyles();

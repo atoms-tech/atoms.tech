@@ -22,10 +22,6 @@ import { ProfilerWrapper } from '@/components/custom/ProfilerWrapper';
 export default async function Home() {
     return (
         <ProfilerWrapper id="LandingPage">
-            {/* Handle OAuth code exchange if present */}
-            <Suspense fallback={null}>
-                <OAuthHandler />
-            </Suspense>
             <div className="min-h-screen bg-[#0f0f0f] text-[#B5B5B5] relative">
                 <div className="relative z-10">
                     <Navbar />

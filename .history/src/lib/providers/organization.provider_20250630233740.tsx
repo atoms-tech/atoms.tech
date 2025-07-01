@@ -1,9 +1,7 @@
 'use client';
 
-import { createContext, use, useEffect, useState } from 'react';
+import { createContext, use, useState } from 'react';
 
-import { getUserOrganizations } from '@/lib/db/client/organizations.client';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization } from '@/types/base/organizations.types';
 
 interface OrganizationContextType {

@@ -1,0 +1,198 @@
+{
+  "timestamp": "2025-07-01T06:08:49.277Z",
+  "version": "1.0",
+  "entries": [
+    {
+      "id": "entry_mck4gn8r_goh5h0nnn",
+      "key": "swarm-auto-hybrid-1751349692145/git-committer/commits",
+      "value": [],
+      "type": "array",
+      "namespace": "default",
+      "tags": [],
+      "metadata": {},
+      "owner": "system",
+      "accessLevel": "shared",
+      "createdAt": "2025-07-01T06:03:36.747Z",
+      "updatedAt": "2025-07-01T06:03:36.747Z",
+      "lastAccessedAt": "2025-07-01T06:08:18.414Z",
+      "version": 1,
+      "size": 31,
+      "compressed": false,
+      "checksum": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "references": [],
+      "dependencies": []
+    },
+    {
+      "id": "entry_mck4hqn6_85zcvq1ft",
+      "key": "swarm-auto-hybrid-1751349692145/hook-specialist/hooks",
+      "value": "\"# Custom Hook Memory Leak Analysis\\n\\n## Critical Memory Issues Identified:\\n\\n### 1. useAnalytics.ts - PATCHED BUT STILL PROBLEMATIC\\n- Real-time hooks disabled `refetchInterval` to prevent memory leaks (lines 125, 142)\\n- `usePaginatedAnalyticsActivities` maintains complex pagination state that could accumulate\\n- Multiple query instances with different parameters create cache bloat\\n- RISK LEVEL: MEDIUM (partially fixed but cache management needed)\\n\\n### 2. useDemoAnalysis.ts - HIGH RISK\\n- Polling reduced from 2s to 10s but still aggressive (line 137)\\n- Returns nested hooks that create closure scoping issues\\n- Multiple concurrent queries for different pipeline/task states\\n- Error state management alongside mutation errors creates dual tracking\\n- RISK LEVEL: HIGH (major refactor needed)\\n\\n### 3. useDocumentRealtime.ts - CRITICAL\\n- Three concurrent Supabase realtime subscriptions (blocks, requirements, columns)\\n- Complex ref-based state tracking with potential circular references\\n- Timeout management with `updateTimeoutRef` not properly cleaned up\\n- Large state objects with nested data structures\\n- RISK LEVEL: CRITICAL (major memory leak source)\\n\\n### 4. useBlockSubscription.ts - HIGH RISK\\n- Dual state management (local state + Zustand store)\\n- Supabase realtime subscription with complex event handling\\n- Sorts arrays on every update creating new references\\n- RISK LEVEL: HIGH (dual state management anti-pattern)\\n\\n### 5. useAuth.ts - MEDIUM RISK\\n- Supabase auth subscription properly cleaned up\\n- Effect dependency on `router` causes unnecessary re-renders\\n- RISK LEVEL: MEDIUM (optimization needed)\\n\\n### 6. useChunkr.ts & useGumloop.ts - HIGH RISK\\n- Rapid 2-second polling for task status\\n- Multiple concurrent queries for different task IDs\\n- No cleanup of completed task cache entries\\n- Query cache grows indefinitely\\n- RISK LEVEL: HIGH (polling + cache bloat)\\n\\n## Root Causes:\\n1. **Aggressive Polling**: 2-10 second intervals cause memory accumulation\\n2. **Dual State Management**: Local state + external stores create conflicts\\n3. **Uncleaned Subscriptions**: Realtime subscriptions not properly disposed\\n4. **Closure Scope Issues**: Nested hooks create memory references\\n5. **Cache Bloat**: Query cache never cleaned for completed operations\\n6. **Complex State Objects**: Large nested state creates garbage collection issues\\n\\n## Recommendations:\\n1. Implement proper cache cleanup for completed operations\\n2. Replace dual state management with single source of truth\\n3. Add proper subscription cleanup with error handling\\n4. Optimize polling strategies with exponential backoff\\n5. Use React.memo and useMemo for expensive computations\\n6. Implement proper error boundaries for hook failures\"",
+      "type": "string",
+      "namespace": "default",
+      "tags": [],
+      "metadata": {},
+      "owner": "system",
+      "accessLevel": "shared",
+      "createdAt": "2025-07-01T06:04:27.810Z",
+      "updatedAt": "2025-07-01T06:04:27.810Z",
+      "lastAccessedAt": "2025-07-01T06:04:27.810Z",
+      "version": 1,
+      "size": 2852,
+      "compressed": true,
+      "checksum": "e1973956aaeaa4fa72f75bc1ab572dfe34b8770a001c78a44a405fe6b857b49f",
+      "references": [],
+      "dependencies": []
+    },
+    {
+      "id": "entry_mck4ij3e_tdoqd3lgd",
+      "key": "swarm-auto-hybrid-1751349692145/memory-detective/analysis",
+      "value": "\"CRITICAL MEMORY LEAK ANALYSIS REPORT\\n\\n## EXECUTIVE SUMMARY\\nJavaScript heap out of memory error with 8GB+ usage caused by multiple aggressive polling mechanisms and improper cleanup.\\n\\n## PRIMARY LEAK SOURCES\\n\\n### 1. AGGRESSIVE POLLING INTERVALS (HIGHEST PRIORITY)\\n- **useGumloop.ts:117** - 2-second polling when pipeline state is RUNNING\\n- **useChunkr.ts:88,114** - 2-second polling for OCR tasks (multiple concurrent tasks)\\n- **useDemoAnalysis.ts:104** - 2-second polling for pipeline status\\n- **useDemoAnalysis.ts:137** - 10-second polling for task status (reduced from 2s but still problematic)\\n\\n**IMPACT**: With multiple concurrent pipelines/tasks, this creates exponential polling load\\n\\n### 2. TOAST SYSTEM MEMORY BOMB\\n- **use-toast.ts:8** - TOAST_REMOVE_DELAY set to 1,000,000ms (16.6 minutes!)\\n- **use-toast.ts:55** - toastTimeouts Map never cleaned up, grows indefinitely\\n- **use-toast.ts:130** - memoryState accumulates toasts without bounds\\n\\n**IMPACT**: Every toast creates a 16-minute timer that holds references\\n\\n### 3. REALTIME SUBSCRIPTIONS ACCUMULATION  \\n- **useDocumentRealtime.ts:177-306** - Multiple Supabase subscriptions\\n- **useDocumentRealtime.ts:60-62** - setTimeout with potential accumulation\\n- **useDocumentRealtime.ts:47** - recentUpdatesRef Set may grow without bounds\\n\\n**IMPACT**: Document subscriptions may not unsubscribe properly on component unmount\\n\\n### 4. DOCUMENT STORE TIMING ISSUES\\n- **document.store.ts:48** - setTimeout(0) calls may accumulate during rapid updates\\n\\n### 5. ANALYTICS DEFENSIVE FIXES\\n- **useAnalytics.ts:125,142** - refetchInterval DISABLED to prevent memory leaks\\n- Comments indicate previous memory leak issues with real-time analytics\\n\\n## IMMEDIATE FIXES REQUIRED\\n\\n1. **Reduce polling intervals to 30+ seconds or use exponential backoff**\\n2. **Fix toast timeout to 5-10 seconds maximum**\\n3. **Implement proper cleanup for toast timeout Map**\\n4. **Add bounds checking for realtime subscription Sets**\\n5. **Replace setTimeout(0) with proper batching mechanism**\\n\\n## FILES REQUIRING IMMEDIATE ATTENTION\\n- src/hooks/useGumloop.ts (Line 117)\\n- src/hooks/useChunkr.ts (Lines 88, 114)  \\n- src/hooks/useDemoAnalysis.ts (Lines 104, 137)\\n- src/hooks/use-toast.ts (Lines 8, 55, 130)\\n- src/hooks/queries/useDocumentRealtime.ts (Lines 47, 60-62, 177-306)\\n- src/store/document.store.ts (Line 48)\\n\\n## VERIFICATION STEPS\\n1. Monitor polling frequency in browser DevTools Network tab\\n2. Check toast timeout Map size in memory profiler  \\n3. Verify Supabase subscription cleanup on component unmount\\n4. Profile heap usage during typical user workflows\"",
+      "type": "string",
+      "namespace": "default",
+      "tags": [],
+      "metadata": {},
+      "owner": "system",
+      "accessLevel": "shared",
+      "createdAt": "2025-07-01T06:05:04.682Z",
+      "updatedAt": "2025-07-01T06:05:04.682Z",
+      "lastAccessedAt": "2025-07-01T06:05:04.682Z",
+      "version": 1,
+      "size": 2733,
+      "compressed": true,
+      "checksum": "e99bc8a9beca75a9fbe64dc2dbc398192b2cc2255cf7ea98a242772017db9244",
+      "references": [],
+      "dependencies": []
+    },
+    {
+      "id": "entry_mck4in9p_7c0iuuq57",
+      "key": "swarm-auto-hybrid-1751349692145/git-committer/commits",
+      "value": [
+        {
+          "hash": "c2a9b01d35110581ee50a307e7db967a00f3a335",
+          "timestamp": "2025-06-30T23:03:34-0700",
+          "message": "fix: disable aggressive polling and monitoring to prevent memory leaks",
+          "description": "Comprehensive memory leak prevention fixes",
+          "files_changed": 25,
+          "insertions": 1833,
+          "deletions": 13,
+          "key_changes": [
+            "Disabled real-time analytics polling (30s -> disabled)",
+            "Reduced demo analysis polling (2s -> 10s)",
+            "Disabled performance monitoring in production",
+            "Disabled render counter in production",
+            "Added Claude-Flow configuration and commands"
+          ],
+          "agent": "git-committer"
+        }
+      ],
+      "type": "array",
+      "namespace": "default",
+      "tags": [],
+      "metadata": {},
+      "owner": "system",
+      "accessLevel": "shared",
+      "createdAt": "2025-07-01T06:05:10.093Z",
+      "updatedAt": "2025-07-01T06:05:10.093Z",
+      "lastAccessedAt": "2025-07-01T06:05:10.093Z",
+      "version": 1,
+      "size": 591,
+      "compressed": false,
+      "checksum": "f9b8f4c3fb38a49ac0e1cdaf866df261beb1a305051f55867f55207a762a8f7a",
+      "references": [],
+      "dependencies": []
+    },
+    {
+      "id": "entry_mck4nc9r_m31t35gtx",
+      "key": "swarm-auto-hybrid-1751349692145/quality-auditor/issues",
+      "value": "\"# Code Quality Audit Report\\n\\n## Executive Summary\\nComprehensive audit of the React hooks directory identified 23 quality issues across 5 categories. Most critical issues relate to memory leaks, missing useEffect dependencies, and inconsistent error handling patterns.\\n\\n## Critical Issues (High Priority)\\n\\n### 1. Memory Leak Vulnerabilities\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useAuth.ts:77\\n- **Issue:** Missing router dependency in useEffect dependency array\\n- **Risk:** Potential memory leaks and stale closures\\n- **Fix:** Add router to dependency array\\n\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/queries/useDocumentRealtime.ts:308\\n- **Issue:** fetchBlocks function in useEffect dependency without proper memoization\\n- **Risk:** Infinite re-renders and memory leaks\\n- **Status:** Partially mitigated but still problematic\\n\\n### 2. Race Condition Issues\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/queries/useDocumentRealtime.ts:47-63\\n- **Issue:** Timeout cleanup in trackOptimisticUpdate lacks proper cancellation\\n- **Risk:** Memory leaks from uncanceled timeouts\\n- **Fix:** Add proper timeout cleanup in useEffect\\n\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDebounceSearch.ts:51-92\\n- **Issue:** Multiple async operations without proper cancellation coordination\\n- **Risk:** Race conditions in search results\\n- **Status:** Partially handled with AbortController\\n\\n### 3. Polling and Interval Management\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDemoAnalysis.ts:101-108\\n- **Issue:** RefetchInterval at 2000ms for pipeline status can cause memory leaks\\n- **Risk:** High frequency polling without proper cleanup\\n- **Recommendation:** Increase interval to 5000ms minimum\\n\\n## Medium Priority Issues\\n\\n### 4. Dead Code and Unused Dependencies\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDocumentCanvas.ts\\n- **Issue:** Entire file is commented out and unused\\n- **Risk:** Code bloat and confusion\\n- **Fix:** Remove file or implement functionality\\n\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/queries/useDocumentRealtime.ts:16-22\\n- **Issue:** UseDocumentRealtimeProps interface marked as unused\\n- **Risk:** Technical debt\\n- **Fix:** Remove or implement interface usage\\n\\n### 5. Inconsistent Error Handling\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useAuth.ts:21-29\\n- **Issue:** Error handling with console.error followed by throw\\n- **Risk:** Inconsistent error propagation\\n- **Pattern:** 20 files use console.error inconsistently\\n\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDemoAnalysis.ts:63-67\\n- **Issue:** Generic error handling with fallback to empty object\\n- **Risk:** Loss of error context\\n- **Fix:** Implement proper error typing\\n\\n### 6. TypeScript Type Safety Issues\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/queries/useDocumentRealtime.ts:144\\n- **Issue:** Type assertion 'as unknown as Column' bypasses type safety\\n- **Risk:** Runtime type errors\\n- **Fix:** Proper type mapping\\n\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/mutations/useBlockMutations.ts:98\\n- **Issue:** UseQueryOptions with potentially unsafe type parameters\\n- **Risk:** Type mismatches at runtime\\n\\n### 7. Debug Code in Production\\n**Files:** 20 files contain console.log/error statements\\n- **Issue:** Debug logging left in production code\\n- **Risk:** Performance impact and information leakage\\n- **Examples:**\\n  - /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useKeyboardShortcuts.ts:94-103\\n  - /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/mutations/useBlockMutations.ts:32,64,103\\n\\n## Low Priority Issues\\n\\n### 8. Code Style and Consistency\\n- **Issue:** Inconsistent import ordering across files\\n- **Files:** 33 files with varying import patterns\\n- **Fix:** Implement ESLint import ordering rules\\n\\n### 9. Performance Optimizations\\n**File:** /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useFocusManagement.ts:179-183\\n- **Issue:** setTimeout(0) used for DOM readiness\\n- **Risk:** Unnecessary async operation\\n- **Fix:** Use proper DOM ready detection\\n\\n## Recommendations\\n\\n### Immediate Actions Required:\\n1. **Fix useAuth dependency array** - Add router to prevent memory leaks\\n2. **Remove debug console statements** - Clean up production code\\n3. **Implement proper timeout cleanup** - Prevent memory leaks in useDocumentRealtime\\n4. **Review refetch intervals** - Reduce polling frequency to prevent resource exhaustion\\n\\n### Code Quality Improvements:\\n1. **Standardize error handling** - Create consistent error handling patterns\\n2. **Remove dead code** - Clean up useDocumentCanvas.ts and unused interfaces\\n3. **Improve TypeScript usage** - Remove type assertions and improve type safety\\n4. **Add proper cleanup** - Ensure all effects have proper cleanup functions\\n\\n### Monitoring and Prevention:\\n1. **Enable stricter ESLint rules** - Catch dependency array issues\\n2. **Add memory leak detection** - Monitor component unmount cleanup\\n3. **Implement error boundaries** - Better error handling at component level\\n4. **Add performance monitoring** - Track hook performance and re-render frequency\\n\\n## Files Requiring Immediate Attention:\\n1. /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useAuth.ts\\n2. /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/queries/useDocumentRealtime.ts\\n3. /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDemoAnalysis.ts\\n4. /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/src/hooks/useDocumentCanvas.ts\\n\\nTotal Issues Found: 23\\nCritical: 3\\nHigh Priority: 4\\nMedium Priority: 9\\nLow Priority: 7\\n\\nThis audit focused on memory leaks, React anti-patterns, and code quality issues that could impact application stability and performance.\"",
+      "type": "string",
+      "namespace": "default",
+      "tags": [],
+      "metadata": {},
+      "owner": "system",
+      "accessLevel": "shared",
+      "createdAt": "2025-07-01T06:08:49.124Z",
+      "updatedAt": "2025-07-01T06:08:49.124Z",
+      "lastAccessedAt": "2025-07-01T06:08:49.124Z",
+      "version": 1,
+      "size": 6265,
+      "compressed": true,
+      "checksum": "a389fb742ad4b27c2fa2e56c7a027af3583cc868dac7248d9d36a13c934e21da",
+      "references": [],
+      "dependencies": []
+    }
+  ],
+  "statistics": {
+    "overview": {
+      "totalEntries": 5,
+      "totalSize": 12472,
+      "compressedEntries": 3,
+      "compressionRatio": -18.05144694533762,
+      "indexSize": 250,
+      "memoryUsage": 9217776,
+      "diskUsage": 0
+    },
+    "distribution": {
+      "byNamespace": {
+        "default": {
+          "count": 5,
+          "size": 12472
+        }
+      },
+      "byType": {
+        "array": {
+          "count": 2,
+          "size": 622
+        },
+        "string": {
+          "count": 3,
+          "size": 11850
+        }
+      },
+      "byOwner": {
+        "system": {
+          "count": 5,
+          "size": 12472
+        }
+      },
+      "byAccessLevel": {
+        "shared": {
+          "count": 5,
+          "size": 12472
+        }
+      }
+    },
+    "temporal": {
+      "entriesCreatedLast24h": 5,
+      "entriesUpdatedLast24h": 5,
+      "entriesAccessedLast24h": 5,
+      "oldestEntry": "2025-07-01T06:03:36.747Z",
+      "newestEntry": "2025-07-01T06:08:49.124Z"
+    },
+    "performance": {
+      "averageQueryTime": 0,
+      "averageWriteTime": 95,
+      "cacheHitRatio": 0,
+      "indexEfficiency": 0.95
+    },
+    "health": {
+      "expiredEntries": 0,
+      "orphanedReferences": 0,
+      "duplicateKeys": 1,
+      "corruptedEntries": 0,
+      "recommendedCleanup": false
+    },
+    "optimization": {
+      "suggestions": [
+        "1 duplicate keys found"
+      ],
+      "potentialSavings": {
+        "compression": 0,
+        "cleanup": 0,
+        "deduplication": 591
+      },
+      "indexOptimization": [
+        "Consider periodic index rebuilding for optimal performance"
+      ]
+    }
+  }
+}
