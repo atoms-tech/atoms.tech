@@ -162,3 +162,23 @@ export interface AnalyticsDashboardProps {
     projectId?: string;
     timeRange?: 'week' | 'month' | 'quarter' | 'year';
 }
+
+// AG Grid type helpers
+export interface GridCellParams {
+    value: unknown;
+    data: AnalyticsActivity;
+    node: unknown;
+    colDef: unknown;
+    column: unknown;
+    rowIndex: number;
+    api: unknown;
+    columnApi: unknown;
+    context: unknown;
+    refreshCell: () => void;
+    eGridCell: HTMLElement;
+    eParentOfValue: HTMLElement;
+    getValue: () => unknown;
+    setValue: (value: unknown) => void;
+    formatValue: (value: unknown) => string;
+    parseValue: (value: string) => unknown;
+}

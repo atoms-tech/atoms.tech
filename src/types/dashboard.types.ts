@@ -155,3 +155,35 @@ export interface DashboardTheme {
     shadows: boolean;
     animations: boolean;
 }
+
+// Organization and Project types for widgets
+export interface OrganizationData {
+    id: string;
+    name: string;
+    type: 'enterprise' | 'team' | 'individual';
+    status: 'active' | 'inactive';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ProjectData {
+    id: string;
+    name: string;
+    status: 'active' | 'inactive' | 'completed';
+    organization_id: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WidgetDataProps {
+    organizations?: OrganizationData[];
+    projects?: ProjectData[];
+    userId?: string;
+    [key: string]: unknown;
+}
+
+// Config field option type
+export interface ConfigFieldOption {
+    label: string;
+    value: unknown;
+}

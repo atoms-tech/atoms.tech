@@ -267,7 +267,26 @@ export async function POST(
                 }
 
                 // Copy requirements for each block
-                const allRequirements: any[] = [];
+                const allRequirements: Array<{
+                    id: string;
+                    document_id: string;
+                    block_id: string;
+                    name: string;
+                    description: string;
+                    level: string;
+                    format: string;
+                    priority: string;
+                    external_id: string;
+                    original_requirement: string;
+                    enchanced_requirement: string;
+                    ai_analysis: Record<string, unknown>;
+                    created_by: string;
+                    updated_by: string;
+                    created_at: string;
+                    updated_at: string;
+                    is_deleted: boolean;
+                    version: number;
+                }> = [];
                 for (let i = 0; i < sourceBlocks.length; i++) {
                     const sourceBlock = sourceBlocks[i];
                     const newBlock = createdBlocks[i];
@@ -277,8 +296,8 @@ export async function POST(
                         sourceBlock.requirements.length > 0
                     ) {
                         const newRequirements = sourceBlock.requirements
-                            .filter((req: any) => !req.is_deleted)
-                            .map((req: any) => ({
+                            .filter((req: Record<string, unknown>) => !req.is_deleted)
+                            .map((req: Record<string, unknown>) => ({
                                 id: uuidv4(),
                                 document_id: newDocumentId,
                                 block_id: newBlock.id,
@@ -287,11 +306,11 @@ export async function POST(
                                 level: req.level,
                                 format: req.format,
                                 priority: req.priority,
-                                external_id: req.external_id,
-                                original_requirement: req.original_requirement,
+                                external_id: req.external_id as string,
+                                original_requirement: req.original_requirement as string,
                                 enchanced_requirement:
-                                    req.enchanced_requirement,
-                                ai_analysis: req.ai_analysis,
+                                    req.enchanced_requirement as string,
+                                ai_analysis: req.ai_analysis as Record<string, unknown>,
                                 created_by: user.id,
                                 updated_by: user.id,
                                 created_at: timestamp,

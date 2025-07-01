@@ -38,6 +38,7 @@ import { usePaginatedAnalyticsActivities } from '@/hooks/queries/useAnalytics';
 import {
     AnalyticsActivity,
     AnalyticsDataGridProps,
+    GridCellParams,
 } from '@/types/analytics.types';
 
 export function AnalyticsDataGrid({
@@ -93,7 +94,7 @@ export function AnalyticsDataGrid({
                 width: 150,
                 sortable: true,
                 filter: 'agTextColumnFilter',
-                cellRenderer: (params: any) => {
+                cellRenderer: (params: GridCellParams) => {
                     const { actor_name, actor_email } = params.data;
                     return (
                         <div className="flex flex-col">
@@ -115,8 +116,8 @@ export function AnalyticsDataGrid({
                 width: 120,
                 sortable: true,
                 filter: 'agTextColumnFilter',
-                cellRenderer: (params: any) => {
-                    const action = params.value;
+                cellRenderer: (params: GridCellParams) => {
+                    const action = params.value as string;
                     const getActionColor = (action: string) => {
                         switch (action) {
                             case 'created':
@@ -145,8 +146,8 @@ export function AnalyticsDataGrid({
                 width: 130,
                 sortable: true,
                 filter: 'agTextColumnFilter',
-                cellRenderer: (params: any) => {
-                    const type = params.value;
+                cellRenderer: (params: GridCellParams) => {
+                    const type = params.value as string;
                     return (
                         <Badge variant="outline" className="capitalize">
                             {type}
@@ -160,9 +161,9 @@ export function AnalyticsDataGrid({
                 width: 200,
                 sortable: true,
                 filter: 'agTextColumnFilter',
-                cellRenderer: (params: any) => (
+                cellRenderer: (params: GridCellParams) => (
                     <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                        {params.value?.slice(0, 8)}...
+                        {(params.value as string)?.slice(0, 8)}...
                     </code>
                 ),
             },
@@ -172,9 +173,9 @@ export function AnalyticsDataGrid({
                 flex: 1,
                 sortable: false,
                 filter: 'agTextColumnFilter',
-                cellRenderer: (params: any) => (
+                cellRenderer: (params: GridCellParams) => (
                     <span className="text-sm text-muted-foreground">
-                        {params.value || 'No details available'}
+                        {(params.value as string) || 'No details available'}
                     </span>
                 ),
             },
@@ -184,7 +185,7 @@ export function AnalyticsDataGrid({
                 width: 150,
                 sortable: false,
                 filter: false,
-                cellRenderer: (params: any) => {
+                cellRenderer: (params: GridCellParams) => {
                     const activity: AnalyticsActivity = params.data;
 
                     return (
@@ -255,7 +256,7 @@ export function AnalyticsDataGrid({
                 'block',
                 'requirement',
             ] as const;
-            if (!validEntityTypes.includes(activity.entity_type as any)) {
+            if (!validEntityTypes.includes(activity.entity_type as 'document' | 'block' | 'requirement')) {
                 console.warn(
                     `Entity type ${activity.entity_type} is not supported for restoration`,
                 );

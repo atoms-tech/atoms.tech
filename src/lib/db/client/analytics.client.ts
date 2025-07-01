@@ -282,8 +282,8 @@ export const getAnalyticsMetrics = async (
 
 // Helper function to generate changes summary
 function generateChangesSummary(
-    oldData: any,
-    newData: any,
+    oldData: Record<string, unknown> | string | null,
+    newData: Record<string, unknown> | string | null,
     action: string,
 ): string {
     if (action === 'created') return 'Created new item';
@@ -292,8 +292,8 @@ function generateChangesSummary(
     if (!oldData || !newData) return 'Modified item';
 
     const changes: string[] = [];
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) : oldData;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
+    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
+    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
 
     Object.keys(newObj).forEach((key) => {
         if (oldObj[key] !== newObj[key]) {
@@ -413,7 +413,7 @@ export const restoreVersion = async (
     }
 
     const { data: currentEntity, error: getCurrentError } = await supabase
-        .from(tableName as any)
+        .from(tableName as 'documents' | 'blocks' | 'requirements')
         .select('*')
         .eq('id', entityId)
         .single();
@@ -425,14 +425,14 @@ export const restoreVersion = async (
 
     // Prepare restore data with updated metadata
     const restorePayload = {
-        ...(restoreData as any),
+        ...(restoreData as Record<string, unknown>),
         updated_at: new Date().toISOString(),
-        version: ((currentEntity as any).version || 1) + 1,
+        version: ((currentEntity as Record<string, unknown>).version as number || 1) + 1,
     };
 
     // Update the entity
     const { data: updatedEntity, error: updateError } = await supabase
-        .from(tableName as any)
+        .from(tableName as 'documents' | 'blocks' | 'requirements')
         .update(restorePayload)
         .eq('id', entityId)
         .select()
@@ -451,7 +451,7 @@ export const restoreVersion = async (
             old_data: currentData,
             new_data: updatedEntity,
             metadata: {
-                restored_from_version: (auditLog.metadata as any)?.version || 1,
+                restored_from_version: (auditLog.metadata as Record<string, unknown>)?.version as number || 1,
                 restored_from_audit_id: auditLogId,
                 reason: reason || 'Version restored',
             },
@@ -463,8 +463,8 @@ export const restoreVersion = async (
 
     return {
         success: true,
-        newVersion: (updatedEntity as any).version,
-        restoredData: updatedEntity,
+        newVersion: (updatedEntity as Record<string, unknown>).version as number,
+        restoredData: updatedEntity as Record<string, unknown>,
         auditLogId: newAuditLog.id,
     };
 };
@@ -473,7 +473,7 @@ export const restoreVersion = async (
 export const getEntityDetails = async (
     entityId: string,
     entityType: 'document' | 'block' | 'requirement',
-): Promise<{ name: string; [key: string]: any } | null> => {
+): Promise<{ name: string; [key: string]: unknown } | null> => {
     let tableName: string;
     let nameField: string;
 
@@ -495,7 +495,7 @@ export const getEntityDetails = async (
     }
 
     const { data, error } = await supabase
-        .from(tableName as any)
+        .from(tableName as 'documents' | 'blocks' | 'requirements')
         .select('*')
         .eq('id', entityId)
         .single();
@@ -503,13 +503,13 @@ export const getEntityDetails = async (
     if (error || !data) return null;
 
     return {
-        name: (data as any)[nameField] || 'Untitled',
-        ...(data as any),
+        name: (data as Record<string, unknown>)[nameField] as string || 'Untitled',
+        ...(data as Record<string, unknown>),
     };
 };
 
 // Helper functions
-function extractVersionFromMetadata(metadata: any): number | null {
+function extractVersionFromMetadata(metadata: Record<string, unknown> | string | null): number | null {
     if (!metadata) return null;
     if (typeof metadata === 'string') {
         try {
@@ -523,23 +523,23 @@ function extractVersionFromMetadata(metadata: any): number | null {
 }
 
 function generateChangesDetail(
-    oldData: any,
-    newData: any,
+    oldData: Record<string, unknown> | string | null,
+    newData: Record<string, unknown> | string | null,
 ): {
-    added: Record<string, any>;
-    modified: Record<string, any>;
-    removed: Record<string, any>;
+    added: Record<string, unknown>;
+    modified: Record<string, unknown>;
+    removed: Record<string, unknown>;
 } {
     const changes = {
-        added: {} as Record<string, any>,
-        modified: {} as Record<string, any>,
-        removed: {} as Record<string, any>,
+        added: {} as Record<string, unknown>,
+        modified: {} as Record<string, unknown>,
+        removed: {} as Record<string, unknown>,
     };
 
     if (!oldData || !newData) return changes;
 
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) : oldData;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
+    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
+    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
 
     // Find added and modified fields
     Object.keys(newObj).forEach((key) => {

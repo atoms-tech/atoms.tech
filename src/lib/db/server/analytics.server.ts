@@ -329,8 +329,8 @@ export const getVersionHistoryServer = async (
 
 // Helper function to generate changes summary
 function generateChangesSummary(
-    oldData: any,
-    newData: any,
+    oldData: Record<string, unknown> | string | null,
+    newData: Record<string, unknown> | string | null,
     action: string,
 ): string {
     if (action === 'created') return 'Created new item';
@@ -339,8 +339,8 @@ function generateChangesSummary(
     if (!oldData || !newData) return 'Modified item';
 
     const changes: string[] = [];
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) : oldData;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
+    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
+    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
 
     Object.keys(newObj).forEach((key) => {
         if (oldObj[key] !== newObj[key]) {
@@ -380,7 +380,7 @@ function generateDailyActivityChart(
     return result;
 }
 
-function extractVersionFromMetadata(metadata: any): number | null {
+function extractVersionFromMetadata(metadata: Record<string, unknown> | string | null): number | null {
     if (!metadata) return null;
     if (typeof metadata === 'string') {
         try {
@@ -394,23 +394,23 @@ function extractVersionFromMetadata(metadata: any): number | null {
 }
 
 function generateChangesDetail(
-    oldData: any,
-    newData: any,
+    oldData: Record<string, unknown> | string | null,
+    newData: Record<string, unknown> | string | null,
 ): {
-    added: Record<string, any>;
-    modified: Record<string, any>;
-    removed: Record<string, any>;
+    added: Record<string, unknown>;
+    modified: Record<string, unknown>;
+    removed: Record<string, unknown>;
 } {
     const changes = {
-        added: {} as Record<string, any>,
-        modified: {} as Record<string, any>,
-        removed: {} as Record<string, any>,
+        added: {} as Record<string, unknown>,
+        modified: {} as Record<string, unknown>,
+        removed: {} as Record<string, unknown>,
     };
 
     if (!oldData || !newData) return changes;
 
-    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) : oldData;
-    const newObj = typeof newData === 'string' ? JSON.parse(newData) : newData;
+    const oldObj = typeof oldData === 'string' ? JSON.parse(oldData) as Record<string, unknown> : oldData as Record<string, unknown>;
+    const newObj = typeof newData === 'string' ? JSON.parse(newData) as Record<string, unknown> : newData as Record<string, unknown>;
 
     // Find added and modified fields
     Object.keys(newObj).forEach((key) => {
