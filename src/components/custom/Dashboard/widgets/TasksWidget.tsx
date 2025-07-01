@@ -6,7 +6,6 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { WidgetProps } from '@/types/dashboard.types';
 
@@ -19,7 +18,7 @@ interface Task {
     category?: string;
 }
 
-export function TasksWidget({ instance, onConfigChange }: WidgetProps) {
+export function TasksWidget({ instance }: WidgetProps) {
     const {
         maxTasks = 5,
         showCompleted = true,

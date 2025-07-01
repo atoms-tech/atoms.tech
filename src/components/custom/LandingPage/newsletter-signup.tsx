@@ -47,7 +47,7 @@ export function NewsletterSignup() {
             } else {
                 throw new Error('Subscription failed');
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: 'Subscription failed',
                 description: 'Please try again later or contact us directly.',
@@ -63,10 +63,10 @@ export function NewsletterSignup() {
             <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg p-6 text-center">
                 <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-white mb-2">
-                    You're all set!
+                    You&apos;re all set!
                 </h3>
                 <p className="text-gray-300">
-                    Thanks for subscribing. We'll keep you updated on the latest
+                    Thanks for subscribing. We&apos;ll keep you updated on the latest
                     features and improvements.
                 </p>
             </div>

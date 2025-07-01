@@ -20,7 +20,7 @@ interface TeamMember {
     projects: string[];
 }
 
-export function TeamMembersWidget({ instance, onConfigChange }: WidgetProps) {
+export function TeamMembersWidget({ instance }: WidgetProps) {
     const {
         maxMembers = 6,
         showStatus = true,

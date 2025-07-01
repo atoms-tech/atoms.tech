@@ -32,7 +32,7 @@ interface QuickAction {
     shortcut?: string;
 }
 
-export function QuickActions({ organizations, userId }: QuickActionsProps) {
+export function QuickActions({ organizations }: QuickActionsProps) {
     const router = useRouter();
 
     const handleCreateProject = () => {
@@ -76,7 +76,7 @@ export function QuickActions({ organizations, userId }: QuickActionsProps) {
     };
 
     // Setup keyboard shortcuts
-    const { shortcuts } = useKeyboardShortcuts({
+    const { shortcuts: _shortcuts } = useKeyboardShortcuts({
         shortcuts: [
             {
                 key: 'n',

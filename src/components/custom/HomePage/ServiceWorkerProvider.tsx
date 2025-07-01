@@ -211,7 +211,7 @@ export function ServiceWorkerProvider({
                     <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                         <span className="text-sm font-medium">
-                            You're offline - using cached data
+                            You&apos;re offline - using cached data
                         </span>
                     </div>
                 </div>

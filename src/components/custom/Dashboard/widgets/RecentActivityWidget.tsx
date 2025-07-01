@@ -6,10 +6,8 @@ import {
     Edit,
     Eye,
     FileText,
-    GitBranch,
     MessageSquare,
     Plus,
-    Trash2,
     Users,
 } from 'lucide-react';
 

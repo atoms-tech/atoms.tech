@@ -304,7 +304,7 @@ export function OnboardingWidget({ instance: _instance, data, isEditing }: Widge
                             </span>
                         </div>
                         <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                            You've completed the essential steps. Continue
+                            You&apos;ve completed the essential steps. Continue
                             exploring to unlock more features!
                         </p>
                     </motion.div>

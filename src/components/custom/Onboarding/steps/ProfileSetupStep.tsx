@@ -39,7 +39,7 @@ const departments = [
     'Other',
 ];
 
-const goals = [
+const _goals = [
     'Improve requirements quality',
     'Enhance team collaboration',
     'Streamline documentation',
@@ -57,7 +57,7 @@ export function ProfileSetupStep() {
         updateData('profileData', { [field]: value });
     };
 
-    const handleGoalsChange = (goal: string, checked: boolean) => {
+    const _handleGoalsChange = (goal: string, checked: boolean) => {
         const currentGoals = data.profileData.goals || [];
         const updatedGoals = checked
             ? [...currentGoals, goal]

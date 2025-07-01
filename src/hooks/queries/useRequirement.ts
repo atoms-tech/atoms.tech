@@ -98,7 +98,6 @@ export function useRequirementsByIds(requirementIds: string[]) {
 
 export function useDocumentRequirements(
     documentId: string,
-    _queryFilters?: Omit<GenericQueryFilters<'requirements'>, 'filters'>,
 ) {
     return useQuery({
         queryKey: queryKeys.requirements.byDocument(documentId),

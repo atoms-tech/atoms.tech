@@ -181,7 +181,7 @@ export function AnalyticsWidget({ instance, data }: WidgetProps) {
                                     {weeklyGoalProgress >= 70
                                         ? 'Great progress!'
                                         : 'Keep going!'}{' '}
-                                    You're{' '}
+                                    You&apos;re{' '}
                                     {weeklyGoalProgress >= 100
                                         ? 'ahead of'
                                         : 'on track for'}{' '}

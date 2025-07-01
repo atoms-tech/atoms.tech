@@ -1,12 +1,9 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     Copy,
-    Maximize2,
-    Minimize2,
     MoreVertical,
-    Move,
     Settings,
     Trash2,
 } from 'lucide-react';
@@ -50,65 +47,16 @@ export function WidgetRenderer({
         startDrag,
         updateDragPreview,
         endDrag,
-        cancelDrag,
         isDragging: globalIsDragging,
         dragPreview,
     } = useDashboardStore();
 
+    // All hooks must be called before any conditional logic or early returns
     const [isDragging, setIsDragging] = useState(false);
-    const [isResizing, setIsResizing] = useState(false);
+    const [isResizing] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const [showConfigModal, setShowConfigModal] = useState(false);
     const dragRef = useRef<HTMLDivElement>(null);
-
-    const isBeingDragged = globalIsDragging && dragPreview?.id === widget.id;
-
-    const definition = widgetRegistry.get(widget.type);
-
-    if (!definition) {
-        return (
-            <div
-                className="absolute bg-red-100 border-2 border-red-300 rounded-lg p-4 flex items-center justify-center"
-                style={{
-                    left: widget.position.x,
-                    top: widget.position.y,
-                    width: widget.size.width,
-                    height: widget.size.height,
-                    zIndex: widget.zIndex || 0,
-                }}
-            >
-                <div className="text-center text-red-600">
-                    <p className="font-medium">Widget not found</p>
-                    <p className="text-sm">Type: {widget.type}</p>
-                </div>
-            </div>
-        );
-    }
-
-    const WidgetComponent = definition.component;
-
-    const handleConfigChange = (config: WidgetConfig) => {
-        updateWidget(widget.id, { config });
-    };
-
-    const handleConfigSave = (config: WidgetConfig) => {
-        updateWidget(widget.id, { config });
-    };
-
-    const handleClick = (e: React.MouseEvent) => {
-        if (isEditMode && !isDragging) {
-            e.stopPropagation();
-            selectWidget(isSelected ? null : widget.id);
-        }
-    };
-
-    const handleDuplicate = () => {
-        duplicateWidget(widget.id);
-    };
-
-    const handleRemove = () => {
-        removeWidget(widget.id);
-    };
 
     const handleMouseDown = useCallback(
         (e: React.MouseEvent) => {
@@ -259,6 +207,57 @@ export function WidgetRenderer({
             };
         }
     }, [isDragging, handleMouseMove, handleMouseUp]);
+
+    // Derived state and conditional logic can happen after all hooks
+    const isBeingDragged = globalIsDragging && dragPreview?.id === widget.id;
+    const definition = widgetRegistry.get(widget.type);
+
+    // Event handlers that don't need to be callbacks
+    const handleConfigChange = (config: WidgetConfig) => {
+        updateWidget(widget.id, { config });
+    };
+
+    const handleConfigSave = (config: WidgetConfig) => {
+        updateWidget(widget.id, { config });
+    };
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (isEditMode && !isDragging) {
+            e.stopPropagation();
+            selectWidget(isSelected ? null : widget.id);
+        }
+    };
+
+    const handleDuplicate = () => {
+        duplicateWidget(widget.id);
+    };
+
+    const handleRemove = () => {
+        removeWidget(widget.id);
+    };
+
+    // Early return after all hooks have been called
+    if (!definition) {
+        return (
+            <div
+                className="absolute bg-red-100 border-2 border-red-300 rounded-lg p-4 flex items-center justify-center"
+                style={{
+                    left: widget.position.x,
+                    top: widget.position.y,
+                    width: widget.size.width,
+                    height: widget.size.height,
+                    zIndex: widget.zIndex || 0,
+                }}
+            >
+                <div className="text-center text-red-600">
+                    <p className="font-medium">Widget not found</p>
+                    <p className="text-sm">Type: {widget.type}</p>
+                </div>
+            </div>
+        );
+    }
+
+    const WidgetComponent = definition.component;
 
     return (
         <>

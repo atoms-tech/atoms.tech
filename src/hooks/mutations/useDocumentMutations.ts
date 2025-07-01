@@ -304,7 +304,6 @@ export function useCreateDocumentProperties() {
         mutationFn: async ({
             documentId,
             orgId,
-            _propertyIds,
         }: {
             documentId: string;
             orgId: string;

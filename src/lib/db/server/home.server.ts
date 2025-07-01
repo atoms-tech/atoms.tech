@@ -160,7 +160,7 @@ export const getUserRecentActivityServer = async (
                         '';
                 }
             }
-        } catch (_error) {
+        } catch {
             // If entity is deleted or inaccessible, use fallback
             entityName = 'Deleted Item';
         }
@@ -269,7 +269,7 @@ export const getUserRecentActivityPaginatedServer = async (
                         '';
                 }
             }
-        } catch (_error) {
+        } catch {
             // If entity is deleted or inaccessible, use fallback
             entityName = 'Deleted Item';
         }

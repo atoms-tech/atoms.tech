@@ -66,7 +66,7 @@ export function useRestoreVersion() {
                 queryKey: analyticsQueryKeys.all,
             });
         },
-        onError: (error, _variables) => {
+        onError: (error) => {
             console.error('Failed to restore version:', error);
 
             // Show error toast
@@ -143,7 +143,7 @@ export function useBulkVersionRestore() {
                 }
             });
         },
-        onError: (error, _variables) => {
+        onError: (error) => {
             console.error('Failed to restore versions:', error);
 
             toast.error('Failed to restore versions', {
@@ -167,7 +167,7 @@ export function useCreateRestorePoint() {
             reason?: string;
         }
     >({
-        mutationFn: async ({ entityId, entityType: _entityType, reason: _reason }) => {
+        mutationFn: async ({ entityId }) => {
             // This would create a manual backup/snapshot
             // Implementation would depend on your backup strategy
 

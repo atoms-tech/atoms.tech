@@ -124,7 +124,7 @@ export function CompletionStep() {
                                 <div className="flex items-center justify-center mb-4">
                                     <Sparkles className="h-5 w-5 text-yellow-500 mr-2" />
                                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                                        What you've accomplished
+                                        What you&apos;ve accomplished
                                     </h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">

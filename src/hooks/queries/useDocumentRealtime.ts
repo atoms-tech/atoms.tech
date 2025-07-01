@@ -33,10 +33,6 @@ interface DocumentState {
 
 export const useDocumentRealtime = ({
     documentId,
-    // These parameters are currently unused but kept for future use
-    _orgId,
-    _projectId,
-    _userProfile,
 }: {
     documentId: string;
     _orgId: string;

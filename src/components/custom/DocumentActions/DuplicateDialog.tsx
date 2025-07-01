@@ -146,7 +146,7 @@ export function DuplicateDialog({
         try {
             await onDuplicate(data.targetProjectId, data.newName);
             form.reset();
-        } catch (error) {
+        } catch {
             // Error handling is done in the parent component
         }
     };
@@ -162,7 +162,7 @@ export function DuplicateDialog({
                 <DialogHeader>
                     <DialogTitle>Duplicate Document</DialogTitle>
                     <DialogDescription>
-                        Create a copy of "{document.name}" in another project.
+                        Create a copy of &quot;{document.name}&quot; in another project.
                         All blocks, requirements, and properties will be copied.
                     </DialogDescription>
                 </DialogHeader>

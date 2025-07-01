@@ -200,7 +200,7 @@ export function WidgetPalette({ onClose }: WidgetPaletteProps) {
                                         }
                                     });
                                 }}
-                                onDragEnd={(e) => {
+                                onDragEnd={() => {
                                     console.log(
                                         'Drag ended for widget type:',
                                         widget.type,

@@ -17,7 +17,7 @@ export function ProjectCreationStep() {
                         Project Creation
                     </CardTitle>
                     <p className="text-gray-600 dark:text-gray-300">
-                        Set up your organization's first project
+                        Set up your organization&apos;s first project
                     </p>
                 </CardHeader>
 

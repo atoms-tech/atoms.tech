@@ -29,7 +29,7 @@ interface RecentActivityWidgetProps {
     hasMore?: boolean;
 }
 
-const getActivityIcon = (entityType: string, action: string) => {
+const getActivityIcon = (entityType: string) => {
     switch (entityType) {
         case 'project':
             return <FolderOpen className="h-4 w-4" />;
@@ -60,7 +60,7 @@ const getActivityDescription = (activity: RecentActivity) => {
 };
 
 const getNavigationPath = (activity: RecentActivity) => {
-    const { entity_type, entity_id, project_name, organization_name } =
+    const { entity_type, entity_id } =
         activity;
 
     // This is a simplified navigation - you may need to adjust based on your routing structure

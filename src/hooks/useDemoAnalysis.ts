@@ -74,22 +74,6 @@ export function useDemoAnalysis(options: DemoAnalysisOptions = {}) {
         },
     });
 
-    const _getPipelineStatus = async (
-        runId: string,
-    ): Promise<PipelineRunStatusResponse> => {
-        const url = new URL('/demo/api', window.location.origin);
-        url.searchParams.set('runId', runId);
-        const response = await fetch(url.href);
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-                `Failed to get pipeline status: ${errorData.error || response.statusText}`,
-            );
-        }
-
-        return response.json();
-    };
 
     const usePipelineStatus = (
         runId: string | null,

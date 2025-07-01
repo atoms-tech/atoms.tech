@@ -7,7 +7,7 @@ import { useProject } from '@/hooks/queries/useProject';
 
 export function useBreadcrumbData(segments: string[]) {
     // State to store the preferred organization ID from cookie
-    const [_preferredOrgId, setPreferredOrgId] = useState<string | null>(null);
+    const [, setPreferredOrgId] = useState<string | null>(null);
 
     // Fetch the preferred organization ID from cookie
     useEffect(() => {
