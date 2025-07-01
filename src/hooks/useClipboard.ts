@@ -5,8 +5,8 @@ import { useCallback, useState } from 'react';
 export interface ClipboardData {
     text?: string;
     html?: string;
-    json?: any;
-    custom?: Record<string, any>;
+    json?: unknown;
+    custom?: Record<string, unknown>;
 }
 
 export interface UseClipboardOptions {
@@ -115,7 +115,7 @@ export function useClipboard(options: UseClipboardOptions = {}) {
     );
 
     const copyJSON = useCallback(
-        (json: any, fallbackText?: string) => {
+        (json: unknown, fallbackText?: string) => {
             return copyToClipboard({
                 json,
                 text: fallbackText || JSON.stringify(json, null, 2),
@@ -125,7 +125,7 @@ export function useClipboard(options: UseClipboardOptions = {}) {
     );
 
     const copyTableData = useCallback(
-        (data: any[][], headers?: string[]) => {
+        (data: unknown[][], headers?: string[]) => {
             const text = [
                 headers ? headers.join('\t') : '',
                 ...data.map((row) => row.join('\t')),

@@ -95,7 +95,7 @@ export function useVersionHistory(
 export function useEntityDetails(
     entityId: string,
     entityType: 'document' | 'block' | 'requirement',
-    options?: UseQueryOptions<{ name: string; [key: string]: any } | null>,
+    options?: UseQueryOptions<{ name: string; [key: string]: unknown } | null>,
 ) {
     return useQuery({
         queryKey: analyticsQueryKeys.entityDetails(entityId, entityType),
@@ -116,7 +116,7 @@ export function useRealTimeAnalyticsActivities(
     return useAnalyticsActivities(orgId, projectId, params, {
         refetchInterval: refreshInterval,
         refetchIntervalInBackground: true,
-    } as any);
+    });
 }
 
 // Hook for real-time analytics metrics with auto-refresh
@@ -129,7 +129,7 @@ export function useRealTimeAnalyticsMetrics(
     return useAnalyticsMetrics(orgId, projectId, timeRange, {
         refetchInterval: refreshInterval,
         refetchIntervalInBackground: true,
-    } as any);
+    });
 }
 
 // Custom hook for paginated analytics activities

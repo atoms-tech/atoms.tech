@@ -16,7 +16,7 @@ interface UseDebounceSearchReturn<T> {
     abortSearch: () => void;
 }
 
-export function useDebounceSearch<T = any>(
+export function useDebounceSearch<T = unknown>(
     searchFunction?: (query: string, signal: AbortSignal) => Promise<T[]>,
     options: UseDebounceSearchOptions = {},
 ): UseDebounceSearchReturn<T> {
