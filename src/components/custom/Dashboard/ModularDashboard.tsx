@@ -28,7 +28,7 @@ import { WidgetRenderer } from './WidgetRenderer';
 
 interface ModularDashboardProps {
     className?: string;
-    data?: any;
+    data?: Record<string, unknown>;
 }
 
 export function ModularDashboard({ className, data }: ModularDashboardProps) {

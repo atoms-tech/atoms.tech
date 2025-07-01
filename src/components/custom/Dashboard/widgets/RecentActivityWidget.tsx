@@ -24,8 +24,8 @@ interface Activity {
     title: string;
     description: string;
     timestamp: Date | string | number;
-    user?: string | { id: string; name: string; [key: string]: any };
-    project?: string | { id: string; name: string; [key: string]: any };
+    user?: string | { id: string; name: string; [key: string]: unknown };
+    project?: string | { id: string; name: string; [key: string]: unknown };
     icon: React.ReactNode;
     color: string;
 }
@@ -204,9 +204,7 @@ export function RecentActivityWidget({ instance, data }: WidgetProps) {
                                                                 {typeof activity.project ===
                                                                 'string'
                                                                     ? activity.project
-                                                                    : activity
-                                                                          .project
-                                                                          .name ||
+                                                                    : (activity.project as { name: string }).name ||
                                                                       'Unknown Project'}
                                                             </span>
                                                         )}
@@ -217,9 +215,7 @@ export function RecentActivityWidget({ instance, data }: WidgetProps) {
                                                                 {typeof activity.user ===
                                                                 'string'
                                                                     ? activity.user
-                                                                    : activity
-                                                                          .user
-                                                                          .name ||
+                                                                    : (activity.user as { name: string }).name ||
                                                                       'Unknown User'}
                                                             </span>
                                                         )}

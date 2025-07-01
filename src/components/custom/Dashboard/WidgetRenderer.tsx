@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { widgetRegistry } from '@/lib/dashboard/widget-registry';
 import { useDashboardStore } from '@/store/dashboard.store';
-import { WidgetInstance } from '@/types/dashboard.types';
+import { WidgetInstance, WidgetConfig, WidgetDataProps } from '@/types/dashboard.types';
 
 import { WidgetConfigModal } from './WidgetConfigModal';
 
@@ -31,7 +31,7 @@ interface WidgetRendererProps {
     widget: WidgetInstance;
     isEditMode: boolean;
     isSelected: boolean;
-    data?: any;
+    data?: WidgetDataProps;
 }
 
 export function WidgetRenderer({
@@ -87,11 +87,11 @@ export function WidgetRenderer({
 
     const WidgetComponent = definition.component;
 
-    const handleConfigChange = (config: any) => {
+    const handleConfigChange = (config: WidgetConfig) => {
         updateWidget(widget.id, { config });
     };
 
-    const handleConfigSave = (config: any) => {
+    const handleConfigSave = (config: WidgetConfig) => {
         updateWidget(widget.id, { config });
     };
 

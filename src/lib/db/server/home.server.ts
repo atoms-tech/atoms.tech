@@ -15,7 +15,7 @@ export interface RecentActivity {
     entity_type: string;
     entity_id: string;
     created_at: string;
-    metadata?: any;
+    metadata?: Record<string, unknown>;
     entity_name?: string;
     project_name?: string;
     organization_name?: string;

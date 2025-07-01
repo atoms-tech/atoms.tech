@@ -154,7 +154,7 @@ export function VirtualizedProjectGrid({
 
     // Virtual grid cell renderer
     const Cell = useCallback(
-        ({ columnIndex, rowIndex, style }: any) => {
+        ({ columnIndex, rowIndex, style }: { columnIndex: number; rowIndex: number; style: React.CSSProperties }) => {
             const index = rowIndex * itemsPerRow + columnIndex;
             const project = filteredProjects[index];
 

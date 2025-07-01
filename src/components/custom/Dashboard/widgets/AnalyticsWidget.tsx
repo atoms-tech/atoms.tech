@@ -14,7 +14,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { WidgetProps } from '@/types/dashboard.types';
+import { WidgetProps, OrganizationData, ProjectData } from '@/types/dashboard.types';
 
 interface Metric {
     label: string;
@@ -26,20 +26,20 @@ interface Metric {
 
 export function AnalyticsWidget({ instance, data }: WidgetProps) {
     // Get data from props
-    const organizations = data?.organizations || [];
-    const projects = data?.projects || [];
+    const organizations = (data?.organizations as OrganizationData[]) || [];
+    const projects = (data?.projects as ProjectData[]) || [];
     const userId = data?.userId;
 
     // Calculate metrics
     const totalOrganizations = organizations.length;
     const enterpriseOrgs = organizations.filter(
-        (org: any) => org.type === 'enterprise',
+        (org) => org.type === 'enterprise',
     ).length;
     const teamOrgs = organizations.filter(
-        (org: any) => org.type === 'team',
+        (org) => org.type === 'team',
     ).length;
     const activeProjects = projects.filter(
-        (project: any) => project.status === 'active',
+        (project) => project.status === 'active',
     ).length;
 
     // Mock data for demonstration - in real app, this would come from analytics

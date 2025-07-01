@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WidgetProps } from '@/types/dashboard.types';
+import { WidgetProps, OrganizationData } from '@/types/dashboard.types';
 
 interface QuickAction {
     id: string;
@@ -46,8 +46,8 @@ export function QuickActionsWidget({ instance, data }: WidgetProps) {
     };
 
     const handleAIAnalysis = () => {
-        const personalOrg = organizations.find(
-            (org: any) => org.type === 'personal',
+        const personalOrg = (organizations as OrganizationData[]).find(
+            (org) => org.type === 'individual',
         );
         if (personalOrg) {
             router.push(`/org/${personalOrg.id}/demo`);
@@ -65,8 +65,8 @@ export function QuickActionsWidget({ instance, data }: WidgetProps) {
     };
 
     const handleQuickStart = () => {
-        const personalOrg = organizations.find(
-            (org: any) => org.type === 'personal',
+        const personalOrg = (organizations as OrganizationData[]).find(
+            (org) => org.type === 'individual',
         );
         if (personalOrg) {
             router.push(`/org/${personalOrg.id}/demo`);

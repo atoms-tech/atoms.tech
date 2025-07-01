@@ -21,14 +21,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { WidgetConfigSchema, WidgetInstance } from '@/types/dashboard.types';
+import { WidgetConfigSchema, WidgetInstance, WidgetConfig, ConfigFieldOption } from '@/types/dashboard.types';
 
 interface WidgetConfigModalProps {
     widget: WidgetInstance;
     configSchema?: WidgetConfigSchema;
     isOpen: boolean;
     onClose: () => void;
-    onSave: (config: any) => void;
+    onSave: (config: WidgetConfig) => void;
 }
 
 export function WidgetConfigModal({
@@ -45,7 +45,7 @@ export function WidgetConfigModal({
         onClose();
     };
 
-    const renderConfigField = (key: string, field: any) => {
+    const renderConfigField = (key: string, field: WidgetConfigSchema[string]) => {
         const value = config[key] ?? field.default;
 
         switch (field.type) {
@@ -134,10 +134,10 @@ export function WidgetConfigModal({
                                 <SelectValue placeholder={field.description} />
                             </SelectTrigger>
                             <SelectContent>
-                                {field.options?.map((option: any) => (
+                                {field.options?.map((option: ConfigFieldOption) => (
                                     <SelectItem
-                                        key={option.value}
-                                        value={option.value}
+                                        key={String(option.value)}
+                                        value={String(option.value)}
                                     >
                                         {option.label}
                                     </SelectItem>

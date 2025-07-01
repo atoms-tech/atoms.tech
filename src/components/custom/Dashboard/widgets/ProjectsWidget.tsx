@@ -32,7 +32,7 @@ interface Project {
     lastModified: Date | string | number;
     memberCount?: number;
     requirementCount?: number;
-    organization?: string | { id: string; name: string; [key: string]: any };
+    organization?: string | { id: string; name: string; [key: string]: unknown };
     isFavorite?: boolean;
 }
 
@@ -279,9 +279,7 @@ export function ProjectsWidget({
                                                         {typeof project.organization ===
                                                         'string'
                                                             ? project.organization
-                                                            : project
-                                                                  .organization
-                                                                  .name ||
+                                                            : (project.organization as { name: string }).name ||
                                                               'Unknown Org'}
                                                     </span>
                                                 )}

@@ -24,7 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { WidgetProps } from '@/types/dashboard.types';
+import { WidgetProps, OrganizationData } from '@/types/dashboard.types';
 
 interface OnboardingStep {
     id: string;
@@ -92,8 +92,8 @@ export function OnboardingWidget({ instance, data, isEditing }: WidgetProps) {
             icon: <FileText className="h-4 w-4" />,
             action: () => {
                 if (organizations.length > 0) {
-                    const personalOrg = organizations.find(
-                        (org: any) => org.type === 'personal',
+                    const personalOrg = (organizations as OrganizationData[]).find(
+                        (org) => org.type === 'individual',
                     );
                     if (personalOrg) {
                         router.push(`/org/${personalOrg.id}/demo`);
@@ -124,8 +124,8 @@ export function OnboardingWidget({ instance, data, isEditing }: WidgetProps) {
             icon: <Brain className="h-4 w-4" />,
             action: () => {
                 if (organizations.length > 0) {
-                    const personalOrg = organizations.find(
-                        (org: any) => org.type === 'personal',
+                    const personalOrg = (organizations as OrganizationData[]).find(
+                        (org) => org.type === 'individual',
                     );
                     if (personalOrg) {
                         router.push(`/org/${personalOrg.id}/demo?ai=true`);
