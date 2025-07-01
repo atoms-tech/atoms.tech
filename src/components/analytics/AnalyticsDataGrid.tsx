@@ -13,7 +13,6 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 import { formatDistanceToNow } from 'date-fns';
 import {
-    Calendar,
     Download,
     Eye,
     Filter,
@@ -59,9 +58,9 @@ export function AnalyticsDataGrid({
         isLoading,
         error,
         refetch,
-        params,
+        _params,
         setFilters,
-        setPageSize,
+        _setPageSize,
         nextPage,
         previousPage,
         hasNextPage,
@@ -228,7 +227,7 @@ export function AnalyticsDataGrid({
     );
 
     // Event handlers
-    const handleGridReady = useCallback((event: GridReadyEvent) => {
+    const handleGridReady = useCallback((_event: GridReadyEvent) => {
         // Grid is ready
     }, []);
 

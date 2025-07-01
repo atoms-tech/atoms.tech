@@ -39,7 +39,7 @@ interface Project {
 export function ProjectsWidget({
     instance,
     data,
-    onConfigChange,
+    onConfigChange: _onConfigChange,
 }: WidgetProps) {
     const router = useRouter();
 

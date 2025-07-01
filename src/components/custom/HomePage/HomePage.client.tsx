@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Rocket } from 'lucide-react';
+// import { Rocket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -16,7 +16,7 @@ import {
 import { useUser } from '@/lib/providers/user.provider';
 import { Organization } from '@/types/base/organizations.types';
 
-import { ModularDashboard } from '../Dashboard/ModularDashboard';
+import { ModularDashboard } from '@/components/custom/Dashboard/ModularDashboard';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { PerformanceMonitor } from './PerformanceMonitor';
 import { ServiceWorkerProvider } from './ServiceWorkerProvider';
@@ -30,7 +30,7 @@ interface HomePageProps {
     userId: string;
 }
 
-const containerVariants = {
+const _containerVariants = {
     hidden: { opacity: 0 },
     show: {
         opacity: 1,
@@ -41,7 +41,7 @@ const containerVariants = {
     },
 };
 
-const itemVariants = {
+const _itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
 };
@@ -49,7 +49,7 @@ const itemVariants = {
 export default function HomePage({
     initialProjects,
     initialRecentActivity,
-    initialRecentActivityData,
+    initialRecentActivityData: _initialRecentActivityData,
     initialOnboardingProgress,
     organizations,
     userId,

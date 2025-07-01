@@ -19,7 +19,7 @@ interface Note {
     tags?: string[];
 }
 
-export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
+export function NotesWidget({ instance, onConfigChange: _onConfigChange }: WidgetProps) {
     const {
         maxNotes = 5,
         showSearch = true,

@@ -8,15 +8,13 @@ import {
     Grid,
     Plus,
     RotateCcw,
-    Save,
-    Settings,
     Upload,
     X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+// import { Card } from '@/components/ui/card';
 import { initializeWidgets } from '@/lib/dashboard/initialize-widgets';
 import { useDashboardStore } from '@/store/dashboard.store';
 import { WidgetInstance } from '@/types/dashboard.types';
@@ -45,7 +43,7 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
     } = useDashboardStore();
 
     const [showPalette, setShowPalette] = useState(false);
-    const [draggedWidget, setDraggedWidget] = useState<WidgetInstance | null>(
+    const [_draggedWidget, _setDraggedWidget] = useState<WidgetInstance | null>(
         null,
     );
 

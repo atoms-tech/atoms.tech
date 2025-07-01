@@ -33,7 +33,7 @@ interface Metric {
 export function DashboardAnalytics({
     organizations,
     projects,
-    userId,
+    userId: _userId,
 }: DashboardAnalyticsProps) {
     // Calculate metrics
     const totalOrganizations = organizations.length;

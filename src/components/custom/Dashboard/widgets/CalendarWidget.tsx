@@ -16,10 +16,10 @@ interface CalendarEvent {
     type: 'meeting' | 'deadline' | 'reminder' | 'event';
 }
 
-export function CalendarWidget({ instance, onConfigChange }: WidgetProps) {
+export function CalendarWidget({ instance, onConfigChange: _onConfigChange }: WidgetProps) {
     const {
         viewMode = 'month',
-        showWeekends = true,
+        showWeekends: _showWeekends = true,
         highlightToday = true,
     } = instance.config || {};
 

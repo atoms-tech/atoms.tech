@@ -28,14 +28,14 @@ export function AnalyticsWidget({ instance, data }: WidgetProps) {
     // Get data from props
     const organizations = (data?.organizations as OrganizationData[]) || [];
     const projects = (data?.projects as ProjectData[]) || [];
-    const userId = data?.userId;
+    const _userId = data?.userId;
 
     // Calculate metrics
     const totalOrganizations = organizations.length;
     const enterpriseOrgs = organizations.filter(
         (org) => org.type === 'enterprise',
     ).length;
-    const teamOrgs = organizations.filter(
+    const _teamOrgs = organizations.filter(
         (org) => org.type === 'team',
     ).length;
     const activeProjects = projects.filter(

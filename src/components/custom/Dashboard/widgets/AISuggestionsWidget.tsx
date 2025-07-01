@@ -25,7 +25,7 @@ interface AISuggestion {
     confidence: number;
 }
 
-export function AISuggestionsWidget({ instance, onConfigChange }: WidgetProps) {
+export function AISuggestionsWidget({ instance, onConfigChange: _onConfigChange }: WidgetProps) {
     const {
         maxSuggestions = 4,
         showPriority = true,

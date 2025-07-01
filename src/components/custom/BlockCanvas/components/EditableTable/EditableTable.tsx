@@ -14,11 +14,11 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
 import { useClipboard } from '@/hooks/useClipboard';
-import {
-    SHORTCUT_CATEGORIES,
-    createShortcut,
-    useKeyboardShortcuts,
-} from '@/hooks/useKeyboardShortcuts';
+// import {
+//     SHORTCUT_CATEGORIES,
+//     createShortcut,
+//     useKeyboardShortcuts,
+// } from '@/hooks/useKeyboardShortcuts';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
@@ -94,7 +94,7 @@ export function EditableTable<
     const tableRef = React.useRef<HTMLDivElement>(null);
 
     // Clipboard functionality
-    const { copyTableData, pasteFromClipboard, isCopied } = useClipboard({
+    const { copyTableData, pasteFromClipboard, _isCopied } = useClipboard({
         onCopy: () => console.log('Table data copied to clipboard'),
         onPaste: () => console.log('Data pasted from clipboard'),
         onError: (error) => console.error(`Clipboard error: ${error.message}`),

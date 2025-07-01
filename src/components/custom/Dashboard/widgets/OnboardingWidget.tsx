@@ -2,16 +2,13 @@
 
 import { motion } from 'framer-motion';
 import {
-    BookOpen,
     Brain,
     CheckCircle,
     ChevronDown,
     ChevronUp,
     Circle,
-    ExternalLink,
     FileText,
     FolderPlus,
-    Play,
     Rocket,
     UserPlus,
     X,
@@ -37,7 +34,7 @@ interface OnboardingStep {
     isOptional?: boolean;
 }
 
-export function OnboardingWidget({ instance, data, isEditing }: WidgetProps) {
+export function OnboardingWidget({ instance: _instance, data, isEditing }: WidgetProps) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(true);
     const [isDismissed, setIsDismissed] = useState(false);

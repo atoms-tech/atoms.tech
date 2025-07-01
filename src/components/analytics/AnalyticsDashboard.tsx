@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import {
     Activity,
     Blocks,
-    Calendar,
     FileText,
     RefreshCw,
     TrendingUp,

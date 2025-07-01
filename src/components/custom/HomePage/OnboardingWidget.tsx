@@ -42,7 +42,7 @@ interface OnboardingStep {
 export function OnboardingWidget({
     progress,
     organizations,
-    userId,
+    userId: _userId,
 }: OnboardingWidgetProps) {
     const router = useRouter();
     const [isExpanded, setIsExpanded] = useState(progress.is_new_user);

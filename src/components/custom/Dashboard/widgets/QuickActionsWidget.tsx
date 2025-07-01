@@ -31,7 +31,7 @@ export function QuickActionsWidget({ instance, data }: WidgetProps) {
 
     // Get organizations and user data from props
     const organizations = data?.organizations || [];
-    const userId = data?.userId;
+    const _userId = data?.userId;
 
     const handleCreateProject = () => {
         if (organizations.length === 1) {
