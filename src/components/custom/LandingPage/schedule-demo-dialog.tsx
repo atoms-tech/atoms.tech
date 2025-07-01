@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
     addMinutes,
     eachDayOfInterval,
@@ -11,15 +10,16 @@ import {
     startOfDay,
     startOfMonth,
 } from 'date-fns';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -101,7 +101,8 @@ export function ScheduleDemoDialog({ className }: ScheduleDemoDialogProps) {
                 {selectedDate && !selectedTime && (
                     <div className="space-y-4">
                         <p className="font-bold">
-                            Select a time on {format(selectedDate, 'MMMM d, yyyy')}
+                            Select a time on{' '}
+                            {format(selectedDate, 'MMMM d, yyyy')}
                         </p>
                         <div className="grid grid-cols-2 gap-2">
                             {timeSlots.map((slot) => (
