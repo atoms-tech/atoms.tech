@@ -24,25 +24,17 @@ export default function Error({
         if (error.message.includes('FUNCTION_INVOCATION_TIMEOUT')) {
             return 'The request took too long to process. Please try again or contact support if the issue persists.';
         }
-        if (
-            error.message.includes('504') ||
-            error.message.includes('Gateway Timeout')
-        ) {
+        if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
             return 'The server is temporarily unavailable. Please try again in a few moments.';
         }
         if (error.message.includes('Network')) {
             return 'Network connection issue. Please check your internet connection and try again.';
         }
-        return (
-            error.message || 'An unexpected error occurred. Please try again.'
-        );
+        return error.message || 'An unexpected error occurred. Please try again.';
     };
 
     const getErrorTitle = () => {
-        if (
-            error.message.includes('FUNCTION_INVOCATION_TIMEOUT') ||
-            error.message.includes('504')
-        ) {
+        if (error.message.includes('FUNCTION_INVOCATION_TIMEOUT') || error.message.includes('504')) {
             return 'Request Timeout';
         }
         if (error.message.includes('Network')) {
@@ -65,7 +57,7 @@ export default function Error({
                     text: 'Go Home',
                 }}
             />
-
+            
             {/* Additional debugging info in development */}
             {process.env.NODE_ENV === 'development' && (
                 <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg max-w-2xl">
