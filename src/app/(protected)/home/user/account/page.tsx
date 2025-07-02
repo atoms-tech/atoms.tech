@@ -2,12 +2,14 @@
 
 import { motion } from 'framer-motion';
 import { Maximize2, Minimize2, Moon, Pencil, Sun, User } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 
@@ -15,12 +17,13 @@ import SettingsSection from './SettingsSection';
 
 export default function AccountPage() {
     const { user, profile, refreshUser } = useUser();
+    const { theme, setTheme } = useTheme();
     const [editingName, setEditingName] = useState(false);
     const [newName, setNewName] = useState(profile?.full_name || '');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [theme, setTheme] = useState<'light' | 'dark'>('light');
-    const [layout, setLayout] = useState<'wide' | 'standard'>('standard');
+    const { layoutViewMode: layout, setLayoutViewMode: setLayout } =
+        useLayout();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -31,7 +34,7 @@ export default function AccountPage() {
         if (savedLayout === 'wide' || savedLayout === 'standard') {
             setLayout(savedLayout as 'wide' | 'standard');
         }
-    }, []);
+    }, [setLayout]);
 
     const handleNameUpdate = async () => {
         if (!newName || newName.length < 3) {
@@ -66,9 +69,7 @@ export default function AccountPage() {
     };
 
     const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+        setTheme(theme === 'light' ? 'dark' : 'light');
     };
 
     const toggleLayout = () => {

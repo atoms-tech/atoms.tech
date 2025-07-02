@@ -5,7 +5,6 @@ import { cache } from 'react';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import {
-    ensureUserPersonalOrganizationServer,
     getAuthUserServer,
     getExternalDocumentsByOrgServer,
     getOrganizationServer,
@@ -26,16 +25,10 @@ export const prefetchUserDashboard = cache(
         const user = userResult.user;
 
         // Now fetch profile and organizations with the user ID
-        // The getUserProfileServer will automatically create a profile if it doesn't exist
-        const profile = await getUserProfileServer(user.id);
-
-        // Ensure user has a personal organization (especially important for OAuth users)
-        if (profile.email) {
-            await ensureUserPersonalOrganizationServer(user.id, profile.email);
-        }
-
-        // Now fetch all organizations
-        const organizations = await getUserOrganizationsServer(user.id);
+        const [profile, organizations] = await Promise.all([
+            getUserProfileServer(user.id),
+            getUserOrganizationsServer(user.id),
+        ]);
 
         // Cache all fetched data
         if (queryClient) {

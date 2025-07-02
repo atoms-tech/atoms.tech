@@ -13,12 +13,22 @@ const eslintConfig = [
     ...compat.extends('next/core-web-vitals', 'next/typescript'),
     {
         rules: {
-            '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'error',
                 {
                     argsIgnorePattern: '^_',
                     varsIgnorePattern: '^_',
+                },
+            ],
+            'no-restricted-imports': [
+                'error',
+                {
+                    patterns: [
+                        {
+                            group: ['../'],
+                            message: 'Relative imports are not allowed.',
+                        },
+                    ],
                 },
             ],
         },

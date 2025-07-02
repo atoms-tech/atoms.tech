@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 import {
     Card,
@@ -18,7 +18,7 @@ const TraceLinksGraph = dynamic(() => import('@/components/TraceLinksGraph'), {
 
 export default function TraceDiagramPage() {
     const params = useParams();
-    // const searchParams = useSearchParams(); // Reserved for future use
+    const _searchParams = useSearchParams();
     const requirementId = params.requirementSlug as string;
 
     return (

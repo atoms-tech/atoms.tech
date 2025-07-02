@@ -40,60 +40,23 @@ export interface ButtonProps
     asChild?: boolean;
 }
 
-interface ExtendedButtonProps extends ButtonProps {
-    ref?: RefObject<HTMLButtonElement>;
-    shortcut?: string;
-    loading?: boolean;
-    loadingText?: string;
-}
-
 const Button = ({
     ref,
     className,
     variant,
     size,
     asChild = false,
-    shortcut,
-    loading = false,
-    loadingText,
-    disabled,
-    children,
     ...props
-}: ExtendedButtonProps) => {
+}: ButtonProps & {
+    ref?: RefObject<HTMLButtonElement>;
+}) => {
     const Comp = asChild ? Slot : 'button';
-    const isDisabled = disabled || loading;
-
     return (
         <Comp
+            className={cn(buttonVariants({ variant, size, className }))}
             ref={ref}
-            className={cn(
-                buttonVariants({ variant, size }),
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                isDisabled && 'cursor-not-allowed',
-                className,
-            )}
-            disabled={isDisabled}
-            aria-disabled={isDisabled}
             {...props}
-        >
-            <span className="flex items-center gap-2">
-                {loading && (
-                    <span
-                        className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"
-                        aria-hidden="true"
-                    />
-                )}
-                <span>{loading && loadingText ? loadingText : children}</span>
-                {shortcut && !loading && (
-                    <kbd
-                        className="hidden sm:inline-block px-1.5 py-0.5 text-xs bg-muted rounded border"
-                        aria-label={`Keyboard shortcut: ${shortcut}`}
-                    >
-                        {shortcut}
-                    </kbd>
-                )}
-            </span>
-        </Comp>
+        />
     );
 };
 Button.displayName = 'Button';
