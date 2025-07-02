@@ -120,7 +120,7 @@ export default function HomePage({
         staleTime: 1000 * 60 * 10, // 10 minutes
     });
 
-    const { data: recentActivityData = { activities: initialRecentActivity, hasMore: false, nextCursor: undefined, total: 0 } } = useQuery({
+    const { data: recentActivityData = { activities: initialRecentActivity, hasMore: false, nextCursor: null } } = useQuery({
         queryKey: ['home', 'recent-activity', userId],
         queryFn: async () => {
             // Simplified activity fetch
@@ -135,8 +135,7 @@ export default function HomePage({
             return {
                 activities: data || [],
                 hasMore: (data?.length || 0) >= 8,
-                nextCursor: data?.[data.length - 1]?.created_at || undefined,
-                total: data?.length || 0
+                nextCursor: data?.[data.length - 1]?.created_at || null
             };
         },
         enabled: !!userId,
