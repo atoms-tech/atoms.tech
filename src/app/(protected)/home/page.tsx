@@ -27,23 +27,23 @@ export default async function HomePageRoute() {
             queryFn: async () => organizations,
         });
 
-    // Set empty initial data - client will fetch these
-    const projects: any[] = [];
-    const recentActivityData = {
-        activities: [],
-        hasMore: false,
-        nextCursor: undefined,
-        total: 0, // Add missing total property
-    };
-    const onboardingProgress = {
-        is_new_user: false,
-        project_count: 0,
-        requirement_count: 0,
-        document_count: 0,
-        has_invited_members: false,
-        has_used_ai_analysis: false,
-        completion_percentage: 0,
-    };
+        // Set empty initial data - client will fetch these
+        const projects: any[] = [];
+        const recentActivityData = {
+            activities: [],
+            hasMore: false,
+            nextCursor: undefined,
+            total: 0, // Add missing total property
+        };
+        const onboardingProgress = {
+            is_new_user: false,
+            project_count: 0,
+            requirement_count: 0,
+            document_count: 0,
+            has_invited_members: false,
+            has_used_ai_analysis: false,
+            completion_percentage: 0,
+        };
 
         return (
             <LayoutView>
@@ -51,7 +51,9 @@ export default async function HomePageRoute() {
                     <Suspense fallback={<HomePageSkeleton />}>
                         <HomePage
                             initialProjects={projects}
-                            initialRecentActivity={recentActivityData.activities}
+                            initialRecentActivity={
+                                recentActivityData.activities
+                            }
                             initialRecentActivityData={recentActivityData}
                             initialOnboardingProgress={onboardingProgress}
                             organizations={organizations}
@@ -68,9 +70,12 @@ export default async function HomePageRoute() {
             <LayoutView>
                 <div className="min-h-screen flex items-center justify-center p-4">
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+                        <h1 className="text-2xl font-bold mb-4">
+                            Something went wrong
+                        </h1>
                         <p className="text-gray-600 mb-4">
-                            We're having trouble loading your dashboard. Please try refreshing the page.
+                            We&apos;re having trouble loading your dashboard.
+                            Please try refreshing the page.
                         </p>
                         <a
                             href="/home"

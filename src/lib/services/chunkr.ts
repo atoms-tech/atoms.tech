@@ -6,10 +6,11 @@ const CHUNKR_API_KEY =
 const CHUNKR_API_URL =
     process.env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1';
 
-if (!CHUNKR_API_KEY && process.env.NODE_ENV === 'production') {
-    throw new Error(
-        'Missing required environment variable: NEXT_PUBLIC_CHUNKR_API_KEY',
-    );
+// Validate environment variables at runtime, not build time
+function validateChunkrEnvironment() {
+    if (typeof window !== 'undefined' && !CHUNKR_API_KEY) {
+        console.warn('Missing environment variable: NEXT_PUBLIC_CHUNKR_API_KEY');
+    }
 }
 
 export enum TaskStatus {
@@ -63,6 +64,8 @@ export class ChunkrService {
         high_resolution = false,
         ocr_strategy = 'All',
     }: StartOcrParams): Promise<TaskResponse> {
+        validateChunkrEnvironment();
+
         try {
             const payload = {
                 file,
