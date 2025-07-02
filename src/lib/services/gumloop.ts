@@ -11,21 +11,18 @@ const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
 const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
 
-// Only validate environment variables in production
-if (process.env.NODE_ENV === 'production') {
-    for (const [key, value] of Object.entries({
-        GUMLOOP_API_KEY,
-        USER_ID,
-        GUMLOOP_FILE_CONVERT_FLOW_ID,
-        GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-        GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
-        GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
-    })) {
-        if (!value) {
-            throw new Error(
-                `Missing required environment variable: NEXT_PUBLIC_${key}`,
-            );
-        }
+for (const [key, value] of Object.entries({
+    GUMLOOP_API_KEY,
+    USER_ID,
+    GUMLOOP_FILE_CONVERT_FLOW_ID,
+    GUMLOOP_REQ_ANALYSIS_FLOW_ID,
+    GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+    GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
+})) {
+    if (!value) {
+        throw new Error(
+            `Missing required environment variable: NEXT_PUBLIC_${key}`,
+        );
     }
 }
 
