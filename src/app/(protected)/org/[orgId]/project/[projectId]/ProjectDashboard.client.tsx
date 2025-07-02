@@ -560,34 +560,12 @@ export default function ProjectPage() {
 
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1">
-                                                        <div
-                                                            className={`w-2 h-2 rounded-full ${
-                                                                doc.is_deleted
-                                                                    ? 'bg-red-500'
-                                                                    : 'bg-green-500'
-                                                            }`}
-                                                        ></div>
-                                                        <span
-                                                            className={`text-xs font-medium ${
-                                                                doc.is_deleted
-                                                                    ? 'text-red-600 dark:text-red-400'
-                                                                    : 'text-green-600 dark:text-green-400'
-                                                            }`}
-                                                        >
-                                                            {doc.is_deleted
-                                                                ? 'Archived'
-                                                                : 'Active'}
-                                                        </span>
+                                                        {/* Status dot and text removed as per request */}
                                                     </div>
-
                                                     {doc.tags &&
                                                         doc.tags.length > 0 && (
                                                             <div className="text-xs text-primary font-medium truncate">
-                                                                +
-                                                                {
-                                                                    doc.tags
-                                                                        .length
-                                                                }
+                                                                +{doc.tags.length}
                                                             </div>
                                                         )}
                                                 </div>
