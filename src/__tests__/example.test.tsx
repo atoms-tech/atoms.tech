@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import '@testing-library/jest-dom';
 
@@ -10,8 +10,8 @@ describe('Example Test', () => {
 
     it('should render a simple component', () => {
         const TestComponent = () => <div>Hello Test</div>;
-        const { getByText } = render(<TestComponent />);
-        expect(getByText('Hello Test')).toBeInTheDocument();
+        render(<TestComponent />);
+        expect(screen.getByText('Hello Test')).toBeInTheDocument();
     });
 
     it('should handle basic math', () => {
