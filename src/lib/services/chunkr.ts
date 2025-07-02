@@ -6,7 +6,7 @@ const CHUNKR_API_KEY =
 const CHUNKR_API_URL =
     process.env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1';
 
-if (!CHUNKR_API_KEY && process.env.NODE_ENV === 'production') {
+if (!CHUNKR_API_KEY) {
     throw new Error(
         'Missing required environment variable: NEXT_PUBLIC_CHUNKR_API_KEY',
     );
