@@ -14,13 +14,13 @@ export default function RenderCounter() {
         console.log(`Component rendered ${renderCount.current} times`);
     }, []);
 
-    // Increment on subsequent re-renders (only when mounted changes)
+    // Increment on subsequent re-renders
     useEffect(() => {
         if (mounted) {
             renderCount.current++;
             console.log(`Component rendered ${renderCount.current} times`);
         }
-    }, [mounted]);
+    });
 
     // Show placeholder during SSR
     if (!mounted) {

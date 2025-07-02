@@ -31,9 +31,9 @@ import { ProjectStatus, Visibility } from '@/types';
 const projectFormSchema = z.object({
     name: z
         .string()
+        .trim()
         .min(2, 'Project name must be at least 2 characters')
         .max(50, 'Project name cannot exceed 50 characters')
-        .trim()
         .refine(
             (val) => val.length > 0,
             'Project name cannot be empty or just spaces',
@@ -84,7 +84,18 @@ export default function ProjectForm({
         }
 
         try {
-            const trimmedName = data.name.trim();
+            const trimmedName = data.name.trim(); // Should not be needed since we trim during validation...
+
+            // Ensure that slug starts and ends with alphanumeric to pass db constraint.
+            let slug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+            if (!/^[a-z0-9]/.test(slug)) {
+                slug = 'p' + slug;
+            }
+            if (slug.length < 2 || !/[a-z0-9]$/.test(slug)) {
+                slug = slug + '1';
+            }
+
             const project = await createProject({
                 name: trimmedName,
                 status: data.status,
@@ -100,7 +111,7 @@ export default function ProjectForm({
                     source: 'web_app',
                     template_version: '1.0',
                 },
-                slug: trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                slug: slug,
                 created_by: userProfile.id,
                 updated_by: userProfile.id,
             });
@@ -191,9 +202,11 @@ export default function ProjectForm({
                                     <SelectItem value={ProjectStatus.archived}>
                                         Archived
                                     </SelectItem>
+                                    {/* Commented out for now, prob safe to remove.
                                     <SelectItem value={ProjectStatus.deleted}>
                                         Deleted
                                     </SelectItem>
+                                    */}
                                 </SelectContent>
                             </Select>
                             <FormMessage />

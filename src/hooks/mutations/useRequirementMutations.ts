@@ -6,7 +6,6 @@ import {
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { generateNextReqId } from '@/lib/utils/reqIdGenerator';
 import { Requirement } from '@/types';
 import { TablesInsert } from '@/types/base/database.types';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
@@ -20,40 +19,14 @@ export type CreateRequirementInput = Omit<
     | 'deleted_by'
     | 'is_deleted'
     | 'version'
-> & {
-    external_id?: string; // Make external_id optional for auto-generation
-};
+>;
 
 export function useCreateRequirement() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (
-            input: CreateRequirementInput & { project_id?: string },
-        ) => {
+        mutationFn: async (input: CreateRequirementInput) => {
             console.log('Creating requirement', input);
-
-            // Get project ID from document if not provided directly
-            let projectId = input.project_id;
-            if (!projectId) {
-                const { data: document, error: docError } = await supabase
-                    .from('documents')
-                    .select('project_id')
-                    .eq('id', input.document_id)
-                    .single();
-
-                if (docError) {
-                    console.error(
-                        'Error fetching document for project ID:',
-                        docError,
-                    );
-                    throw docError;
-                }
-                projectId = document.project_id;
-            }
-
-            // Generate the next REQ-ID
-            const externalId = await generateNextReqId(projectId);
 
             const insertData: TablesInsert<'requirements'> = {
                 block_id: input.block_id,
@@ -62,7 +35,7 @@ export function useCreateRequirement() {
                 ai_analysis: input.ai_analysis,
                 description: input.description,
                 enchanced_requirement: input.enchanced_requirement,
-                external_id: externalId,
+                external_id: 'REQ-001',
                 format: input.format,
                 level: input.level,
                 original_requirement: input.original_requirement,
@@ -192,12 +165,13 @@ export function useSyncRequirementData() {
             userId,
         }: {
             requirementId: string;
-            data: Record<string, unknown>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: Record<string, any>;
             userId: string;
         }) => {
             return await updateRequirementMutation.mutateAsync({
                 id: requirementId,
-                properties: data as any,
+                properties: data,
                 updated_by: userId,
             });
         },

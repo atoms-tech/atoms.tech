@@ -134,7 +134,7 @@
         --chart-1: 270 91% 60%; /* Electric blue */
         --chart-2: 267 94% 68%; /* Lighter blue */
         --chart-3: 265 76% 48%; /* Darker blue */
-        --chart-4: 263 65% 65%; /* Muted blue */
+        --chart-4: 263% 65%; /* Muted blue */
         --chart-5: 261 97% 87%; /* Very light blue */
         --sidebar-background: 240 5.9% 10%;
         --sidebar-foreground: 240 4.8% 95.9%;
@@ -344,4 +344,13 @@
 
 .brutalist-scrollbar:hover::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.4);
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 }
