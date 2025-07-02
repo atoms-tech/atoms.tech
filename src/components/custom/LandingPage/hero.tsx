@@ -25,7 +25,6 @@ export function Hero() {
     const handleGetStarted = () => {
         setLoading('getStarted', true);
         if (isAuthenticated) {
-            // For authenticated users, go to their preferred organization or home
             router.push('/home');
         } else {
             router.push('/login');
