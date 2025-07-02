@@ -55,7 +55,7 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
         const isNewUser =
             (data?.onboardingProgress as any)?.is_new_user || false;
         initializeForUser(isNewUser);
-    }, [data?.onboardingProgress, initializeForUser]);
+    }, [(data?.onboardingProgress as any)?.is_new_user, initializeForUser]);
 
     // Auto-save layout changes
     useEffect(() => {

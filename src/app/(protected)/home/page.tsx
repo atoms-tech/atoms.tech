@@ -21,28 +21,35 @@ export default async function HomePageRoute() {
     const user = await getAuthUserServer();
     const userId = user.user.id;
 
-    // Only fetch essential data on server-side to prevent timeouts
-    // Fetch organizations first as they're needed for navigation
-    const organizations = await getUserOrganizationsServer(userId);
+    // Fetch all data in parallel for better performance
+    const [organizations, projects, recentActivityData, onboardingProgress] =
+        await Promise.all([
+            getUserOrganizationsServer(userId),
+            getUserProjectsAcrossOrgsServer(userId),
+            getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
+            getUserOnboardingProgressServer(userId),
+        ]);
 
-    // Prefetch organizations for client components
+    // Prefetch data for client components
     await queryClient.prefetchQuery({
         queryKey: queryKeys.organizations.byMembership(userId),
         queryFn: async () => organizations,
     });
 
-    // Set empty initial data - client will fetch these
-    const projects: any[] = [];
-    const recentActivityData = { activities: [], hasMore: false, nextCursor: null };
-    const onboardingProgress = {
-        is_new_user: false,
-        project_count: 0,
-        requirement_count: 0,
-        document_count: 0,
-        has_invited_members: false,
-        has_used_ai_analysis: false,
-        completion_percentage: 0,
-    };
+    await queryClient.prefetchQuery({
+        queryKey: ['home', 'projects', userId],
+        queryFn: async () => projects,
+    });
+
+    await queryClient.prefetchQuery({
+        queryKey: ['home', 'recent-activity', userId],
+        queryFn: async () => recentActivityData,
+    });
+
+    await queryClient.prefetchQuery({
+        queryKey: ['home', 'onboarding', userId],
+        queryFn: async () => onboardingProgress,
+    });
 
     return (
         <LayoutView>
