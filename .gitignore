@@ -38,6 +38,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# build cache
+.next/cache/
+.swc/
+node_modules/.cache/
+
 # End of https://www.toptal.com/developers/gitignore/api/nextjs
 
 .idea
@@ -45,4 +50,6 @@ next-env.d.ts
 .cursorrules
 .cursor/
 
+# history files (performance killer)
+.history/
 bun.lock
