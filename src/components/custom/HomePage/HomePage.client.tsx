@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 // import { Rocket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -16,8 +15,9 @@ import {
     RecentActivity,
 } from '@/lib/db/server/home.server';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization } from '@/types/base/organizations.types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 import { PerformanceMonitor } from './PerformanceMonitor';
@@ -68,8 +68,7 @@ export default function HomePage({
             // Simplified client-side fetch
             const { data, error } = await supabase
                 .from('project_members')
-                .select(
-                    `
+                .select(`
                     project_id,
                     last_accessed_at,
                     projects:projects(
@@ -79,22 +78,19 @@ export default function HomePage({
                         created_at,
                         organizations:organizations(id, name)
                     )
-                `,
-                )
+                `)
                 .eq('user_id', userId)
                 .eq('status', 'active')
                 .order('last_accessed_at', { ascending: false })
                 .limit(10);
 
             if (error) throw error;
-            return (
-                data?.map((item) => ({
-                    ...item.projects,
-                    organization: item.projects.organizations,
-                    last_accessed: item.last_accessed_at,
-                    member_count: 1, // Simplified for performance
-                })) || []
-            );
+            return data?.map(item => ({
+                ...item.projects,
+                organization: item.projects.organizations,
+                last_accessed: item.last_accessed_at,
+                member_count: 1 // Simplified for performance
+            })) || [];
         },
         enabled: !!userId,
         staleTime: 1000 * 60 * 5, // 5 minutes
@@ -124,14 +120,7 @@ export default function HomePage({
         staleTime: 1000 * 60 * 10, // 10 minutes
     });
 
-    const {
-        data: recentActivityData = {
-            activities: initialRecentActivity,
-            hasMore: false,
-            nextCursor: undefined,
-            total: 0,
-        },
-    } = useQuery({
+    const { data: recentActivityData = { activities: initialRecentActivity, hasMore: false, nextCursor: undefined, total: 0 } } = useQuery({
         queryKey: ['home', 'recent-activity', userId],
         queryFn: async () => {
             // Simplified activity fetch
@@ -147,7 +136,7 @@ export default function HomePage({
                 activities: data || [],
                 hasMore: (data?.length || 0) >= 8,
                 nextCursor: data?.[data.length - 1]?.created_at || undefined,
-                total: data?.length || 0,
+                total: data?.length || 0
             };
         },
         enabled: !!userId,

@@ -32,7 +32,7 @@ export default async function HomePageRoute() {
         activities: [],
         hasMore: false,
         nextCursor: undefined,
-        total: 0, // Add missing total property
+        total: 0 // Add missing total property
     };
     const onboardingProgress = {
         is_new_user: false,
