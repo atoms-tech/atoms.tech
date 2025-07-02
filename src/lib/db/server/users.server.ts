@@ -2,12 +2,21 @@ import { createClient } from '@/lib/supabase/supabaseServer';
 import { BillingPlan, OrganizationType, PricingPlanInterval } from '@/types';
 
 export const getUserProfileServer = async (userId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+    try {
+        const supabase = await createClient();
+
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database query timeout')), 10000)
+        );
+
+        const queryPromise = supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
     // If profile doesn't exist, create it automatically
     if (error && error.code === 'PGRST116') {
