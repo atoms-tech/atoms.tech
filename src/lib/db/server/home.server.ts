@@ -21,7 +21,6 @@ export interface RecentActivity {
     organization_name?: string;
 }
 
-
 /**
  * Get all projects across all user's organizations with organization info
  */
@@ -287,4 +286,3 @@ export const getUserRecentActivityPaginatedServer = async (
         total: total || 0,
     };
 };
-

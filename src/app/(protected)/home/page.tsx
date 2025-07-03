@@ -22,12 +22,11 @@ export default async function HomePageRoute() {
     const userId = user.user.id;
 
     // Fetch all data in parallel for better performance
-    const [organizations, projects, recentActivityData] =
-        await Promise.all([
-            getUserOrganizationsServer(userId),
-            getUserProjectsAcrossOrgsServer(userId),
-            getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
-        ]);
+    const [organizations, projects, recentActivityData] = await Promise.all([
+        getUserOrganizationsServer(userId),
+        getUserProjectsAcrossOrgsServer(userId),
+        getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
+    ]);
 
     // Prefetch data for client components
     await queryClient.prefetchQuery({
@@ -44,7 +43,6 @@ export default async function HomePageRoute() {
         queryKey: ['home', 'recent-activity', userId],
         queryFn: async () => recentActivityData,
     });
-
 
     return (
         <LayoutView>

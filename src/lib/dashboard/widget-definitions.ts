@@ -186,7 +186,6 @@ export const CORE_WIDGETS: WidgetDefinition[] = [
         tags: ['projects', 'overview', 'management', 'status'],
     }),
 
-
     // Additional utility widgets
     createWidgetDefinition({
         type: 'team-members',

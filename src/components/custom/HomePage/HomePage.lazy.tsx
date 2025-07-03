@@ -55,18 +55,7 @@ export const LazyVirtualizedProjectGrid = dynamic(
     },
 );
 
-export const LazyOnboardingWidget = dynamic(
-    () =>
-        import('./OnboardingWidget').then((mod) => ({
-            default: mod.OnboardingWidget,
-        })),
-    {
-        loading: () => (
-            <div className="h-32 animate-pulse bg-muted rounded-lg" />
-        ),
-        ssr: false, // Interactive widget can be client-side only
-    },
-);
+// OnboardingWidget removed - component no longer exists
 
 // Main HomePage component with lazy loading
 export const LazyHomePage = dynamic(() => import('./HomePage.client'), {
@@ -102,18 +91,16 @@ export const bundleInfo = {
         'RecentActivityWidget',
         'ProjectSelectionGrid',
         'VirtualizedProjectGrid',
-        'OnboardingWidget',
     ],
     estimatedSizes: {
         'HomePage.client': '~8KB',
         RecentActivityWidget: '~4KB',
         ProjectSelectionGrid: '~6KB',
         VirtualizedProjectGrid: '~12KB',
-        OnboardingWidget: '~5KB',
     },
     loadingStrategy: {
         immediate: ['HomePage.client', 'ProjectSelectionGrid'],
-        deferred: ['RecentActivityWidget', 'OnboardingWidget'],
+        deferred: ['RecentActivityWidget'],
         conditional: ['VirtualizedProjectGrid'], // Only loads for large datasets
     },
 };
