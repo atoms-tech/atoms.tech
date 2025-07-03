@@ -54,9 +54,9 @@ export function ModularDashboard({ className, data }: ModularDashboardProps) {
         initializeWidgets();
 
         // Initialize layout based on user status
-        const isNewUser = data?.onboardingProgress?.is_new_user || false;
+        const isNewUser = false; // Remove onboarding dependency
         initializeForUser(isNewUser);
-    }, [data?.onboardingProgress?.is_new_user, initializeForUser]);
+    }, [initializeForUser]);
 
     // Auto-save layout changes
     useEffect(() => {
