@@ -221,7 +221,6 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             )}
 
-
                             {personalOrg && (
                                 <SidebarMenuItem className="mb-0.5">
                                     <SidebarMenuButton asChild>
