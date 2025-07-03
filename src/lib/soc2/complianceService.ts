@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
-import path from 'path';
 import { promisify } from 'util';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -79,7 +79,7 @@ export interface AuditEvent {
     userId?: string;
     resource: string;
     action: string;
-    details: Record<string, unknown>;
+    details: Record<string, any>;
     ipAddress?: string;
     userAgent?: string;
 }
@@ -105,25 +105,14 @@ export class SOC2ComplianceService {
     async getComplianceSummary(): Promise<ComplianceSummary> {
         try {
             const controls = await this.getAllControls();
-
+            
             const totalControls = controls.length;
-            const compliantControls = controls.filter(
-                (c) => c.status === ComplianceStatus.COMPLIANT,
-            ).length;
-            const nonCompliantControls = controls.filter(
-                (c) => c.status === ComplianceStatus.NON_COMPLIANT,
-            ).length;
-            const inProgressControls = controls.filter(
-                (c) => c.status === ComplianceStatus.IN_PROGRESS,
-            ).length;
-            const notAssessedControls = controls.filter(
-                (c) => c.status === ComplianceStatus.NOT_ASSESSED,
-            ).length;
-
-            const compliancePercentage =
-                totalControls > 0
-                    ? (compliantControls / totalControls) * 100
-                    : 0;
+            const compliantControls = controls.filter(c => c.status === ComplianceStatus.COMPLIANT).length;
+            const nonCompliantControls = controls.filter(c => c.status === ComplianceStatus.NON_COMPLIANT).length;
+            const inProgressControls = controls.filter(c => c.status === ComplianceStatus.IN_PROGRESS).length;
+            const notAssessedControls = controls.filter(c => c.status === ComplianceStatus.NOT_ASSESSED).length;
+            
+            const compliancePercentage = totalControls > 0 ? (compliantControls / totalControls) * 100 : 0;
             const riskScore = this.calculateRiskScore(controls);
 
             return {
@@ -152,42 +141,31 @@ export class SOC2ComplianceService {
             {
                 id: 'CC1.1',
                 name: 'Control Environment - Integrity and Ethical Values',
-                description:
-                    'The entity demonstrates a commitment to integrity and ethical values.',
+                description: 'The entity demonstrates a commitment to integrity and ethical values.',
                 family: ControlFamily.CC1,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-15'),
                 nextAssessment: new Date('2024-04-15'),
-                evidence: [
-                    'Code of Conduct',
-                    'Ethics Training Records',
-                    'Whistleblower Policy',
-                ],
+                evidence: ['Code of Conduct', 'Ethics Training Records', 'Whistleblower Policy'],
                 issues: [],
             },
             {
                 id: 'CC1.2',
                 name: 'Control Environment - Board Independence',
-                description:
-                    'The board of directors demonstrates independence from management.',
+                description: 'The board of directors demonstrates independence from management.',
                 family: ControlFamily.CC1,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-20'),
                 nextAssessment: new Date('2024-04-20'),
-                evidence: [
-                    'Board Charter',
-                    'Independence Declarations',
-                    'Meeting Minutes',
-                ],
+                evidence: ['Board Charter', 'Independence Declarations', 'Meeting Minutes'],
                 issues: [],
             },
             {
                 id: 'CC1.3',
                 name: 'Control Environment - Organizational Structure',
-                description:
-                    'Management establishes structures, reporting lines, and appropriate authorities.',
+                description: 'Management establishes structures, reporting lines, and appropriate authorities.',
                 family: ControlFamily.CC1,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
@@ -199,25 +177,19 @@ export class SOC2ComplianceService {
             {
                 id: 'CC1.4',
                 name: 'Control Environment - Competence',
-                description:
-                    'The entity demonstrates a commitment to attract, develop, and retain competent individuals.',
+                description: 'The entity demonstrates a commitment to attract, develop, and retain competent individuals.',
                 family: ControlFamily.CC1,
                 status: ComplianceStatus.IN_PROGRESS,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-12'),
                 nextAssessment: new Date('2024-02-12'),
-                evidence: [
-                    'Training Programs',
-                    'Performance Reviews',
-                    'Competency Framework',
-                ],
+                evidence: ['Training Programs', 'Performance Reviews', 'Competency Framework'],
                 issues: [
                     {
                         id: 'ISS-003',
                         controlId: 'CC1.4',
                         title: 'Security Training Completion Rate Below Target',
-                        description:
-                            'Only 78% of employees completed mandatory security training',
+                        description: 'Only 78% of employees completed mandatory security training',
                         severity: RiskLevel.MEDIUM,
                         status: 'open',
                         createdAt: new Date('2024-01-25'),
@@ -228,18 +200,13 @@ export class SOC2ComplianceService {
             {
                 id: 'CC1.5',
                 name: 'Control Environment - Accountability',
-                description:
-                    'The entity holds individuals accountable for their internal control responsibilities.',
+                description: 'The entity holds individuals accountable for their internal control responsibilities.',
                 family: ControlFamily.CC1,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-22'),
                 nextAssessment: new Date('2024-04-22'),
-                evidence: [
-                    'Performance Metrics',
-                    'Accountability Framework',
-                    'Disciplinary Procedures',
-                ],
+                evidence: ['Performance Metrics', 'Accountability Framework', 'Disciplinary Procedures'],
                 issues: [],
             },
 
@@ -247,59 +214,43 @@ export class SOC2ComplianceService {
             {
                 id: 'CC2.1',
                 name: 'Communication and Information - Internal Communication',
-                description:
-                    'The entity obtains or generates and uses relevant, quality information.',
+                description: 'The entity obtains or generates and uses relevant, quality information.',
                 family: ControlFamily.CC2,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-16'),
                 nextAssessment: new Date('2024-04-16'),
-                evidence: [
-                    'Communication Policies',
-                    'Information Systems',
-                    'Data Quality Controls',
-                ],
+                evidence: ['Communication Policies', 'Information Systems', 'Data Quality Controls'],
                 issues: [],
             },
             {
                 id: 'CC2.2',
                 name: 'Communication and Information - External Communication',
-                description:
-                    'The entity internally communicates information necessary for effective internal control.',
+                description: 'The entity internally communicates information necessary for effective internal control.',
                 family: ControlFamily.CC2,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-14'),
                 nextAssessment: new Date('2024-04-14'),
-                evidence: [
-                    'External Communication Procedures',
-                    'Stakeholder Reports',
-                    'Public Disclosures',
-                ],
+                evidence: ['External Communication Procedures', 'Stakeholder Reports', 'Public Disclosures'],
                 issues: [],
             },
             {
                 id: 'CC2.3',
                 name: 'Communication and Information - External Communication',
-                description:
-                    'The entity communicates with external parties regarding matters affecting internal control.',
+                description: 'The entity communicates with external parties regarding matters affecting internal control.',
                 family: ControlFamily.CC2,
                 status: ComplianceStatus.IN_PROGRESS,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-08'),
                 nextAssessment: new Date('2024-02-08'),
-                evidence: [
-                    'Vendor Communications',
-                    'Customer Notifications',
-                    'Regulatory Reporting',
-                ],
+                evidence: ['Vendor Communications', 'Customer Notifications', 'Regulatory Reporting'],
                 issues: [
                     {
                         id: 'ISS-004',
                         controlId: 'CC2.3',
                         title: 'Incident Communication Process Needs Update',
-                        description:
-                            'External incident communication procedures require revision',
+                        description: 'External incident communication procedures require revision',
                         severity: RiskLevel.MEDIUM,
                         status: 'in_progress',
                         createdAt: new Date('2024-01-28'),
@@ -312,76 +263,55 @@ export class SOC2ComplianceService {
             {
                 id: 'CC3.1',
                 name: 'Risk Assessment - Objectives',
-                description:
-                    'The entity specifies objectives with sufficient clarity to enable identification of risks.',
+                description: 'The entity specifies objectives with sufficient clarity to enable identification of risks.',
                 family: ControlFamily.CC3,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-19'),
                 nextAssessment: new Date('2024-04-19'),
-                evidence: [
-                    'Strategic Objectives',
-                    'Risk Register',
-                    'Objective Setting Process',
-                ],
+                evidence: ['Strategic Objectives', 'Risk Register', 'Objective Setting Process'],
                 issues: [],
             },
             {
                 id: 'CC3.2',
                 name: 'Risk Assessment - Risk Identification',
-                description:
-                    'The entity identifies risks to the achievement of its objectives.',
+                description: 'The entity identifies risks to the achievement of its objectives.',
                 family: ControlFamily.CC3,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-17'),
                 nextAssessment: new Date('2024-04-17'),
-                evidence: [
-                    'Risk Assessment Procedures',
-                    'Risk Identification Workshops',
-                    'Threat Analysis',
-                ],
+                evidence: ['Risk Assessment Procedures', 'Risk Identification Workshops', 'Threat Analysis'],
                 issues: [],
             },
             {
                 id: 'CC3.3',
                 name: 'Risk Assessment - Fraud Risk',
-                description:
-                    'The entity considers the potential for fraud in assessing risks.',
+                description: 'The entity considers the potential for fraud in assessing risks.',
                 family: ControlFamily.CC3,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-13'),
                 nextAssessment: new Date('2024-04-13'),
-                evidence: [
-                    'Fraud Risk Assessment',
-                    'Anti-Fraud Policies',
-                    'Fraud Detection Controls',
-                ],
+                evidence: ['Fraud Risk Assessment', 'Anti-Fraud Policies', 'Fraud Detection Controls'],
                 issues: [],
             },
             {
                 id: 'CC3.4',
                 name: 'Risk Assessment - Significant Changes',
-                description:
-                    'The entity identifies and assesses changes that could significantly impact internal control.',
+                description: 'The entity identifies and assesses changes that could significantly impact internal control.',
                 family: ControlFamily.CC3,
                 status: ComplianceStatus.IN_PROGRESS,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-11'),
                 nextAssessment: new Date('2024-02-11'),
-                evidence: [
-                    'Change Management Process',
-                    'Impact Assessments',
-                    'Change Control Board',
-                ],
+                evidence: ['Change Management Process', 'Impact Assessments', 'Change Control Board'],
                 issues: [
                     {
                         id: 'ISS-005',
                         controlId: 'CC3.4',
                         title: 'Change Impact Assessment Process Incomplete',
-                        description:
-                            'Formal process for assessing control impacts of changes needs enhancement',
+                        description: 'Formal process for assessing control impacts of changes needs enhancement',
                         severity: RiskLevel.MEDIUM,
                         status: 'open',
                         createdAt: new Date('2024-01-30'),
@@ -394,35 +324,25 @@ export class SOC2ComplianceService {
             {
                 id: 'CC4.1',
                 name: 'Monitoring Activities - Ongoing Evaluations',
-                description:
-                    'The entity selects, develops, and performs ongoing and/or separate evaluations.',
+                description: 'The entity selects, develops, and performs ongoing and/or separate evaluations.',
                 family: ControlFamily.CC4,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-21'),
                 nextAssessment: new Date('2024-04-21'),
-                evidence: [
-                    'Monitoring Procedures',
-                    'Control Testing Results',
-                    'Evaluation Reports',
-                ],
+                evidence: ['Monitoring Procedures', 'Control Testing Results', 'Evaluation Reports'],
                 issues: [],
             },
             {
                 id: 'CC4.2',
                 name: 'Monitoring Activities - Deficiency Evaluation',
-                description:
-                    'The entity evaluates and communicates internal control deficiencies.',
+                description: 'The entity evaluates and communicates internal control deficiencies.',
                 family: ControlFamily.CC4,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-23'),
                 nextAssessment: new Date('2024-04-23'),
-                evidence: [
-                    'Deficiency Tracking',
-                    'Remediation Plans',
-                    'Management Reports',
-                ],
+                evidence: ['Deficiency Tracking', 'Remediation Plans', 'Management Reports'],
                 issues: [],
             },
 
@@ -430,42 +350,31 @@ export class SOC2ComplianceService {
             {
                 id: 'CC5.1',
                 name: 'Control Activities - Selection and Development',
-                description:
-                    'The entity selects and develops control activities that contribute to risk mitigation.',
+                description: 'The entity selects and develops control activities that contribute to risk mitigation.',
                 family: ControlFamily.CC5,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-24'),
                 nextAssessment: new Date('2024-04-24'),
-                evidence: [
-                    'Control Design Documentation',
-                    'Risk-Control Matrix',
-                    'Control Effectiveness Testing',
-                ],
+                evidence: ['Control Design Documentation', 'Risk-Control Matrix', 'Control Effectiveness Testing'],
                 issues: [],
             },
             {
                 id: 'CC5.2',
                 name: 'Control Activities - Technology Controls',
-                description:
-                    'The entity selects and develops general control activities over technology.',
+                description: 'The entity selects and develops general control activities over technology.',
                 family: ControlFamily.CC5,
                 status: ComplianceStatus.IN_PROGRESS,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-09'),
                 nextAssessment: new Date('2024-02-09'),
-                evidence: [
-                    'IT General Controls',
-                    'System Access Controls',
-                    'Change Management',
-                ],
+                evidence: ['IT General Controls', 'System Access Controls', 'Change Management'],
                 issues: [
                     {
                         id: 'ISS-006',
                         controlId: 'CC5.2',
                         title: 'Automated Control Testing Framework Needed',
-                        description:
-                            'Implementation of automated testing for technology controls is pending',
+                        description: 'Implementation of automated testing for technology controls is pending',
                         severity: RiskLevel.MEDIUM,
                         status: 'in_progress',
                         createdAt: new Date('2024-02-01'),
@@ -476,18 +385,13 @@ export class SOC2ComplianceService {
             {
                 id: 'CC5.3',
                 name: 'Control Activities - Policies and Procedures',
-                description:
-                    'The entity deploys control activities through policies and procedures.',
+                description: 'The entity deploys control activities through policies and procedures.',
                 family: ControlFamily.CC5,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-26'),
                 nextAssessment: new Date('2024-04-26'),
-                evidence: [
-                    'Policy Documentation',
-                    'Procedure Manuals',
-                    'Training Materials',
-                ],
+                evidence: ['Policy Documentation', 'Procedure Manuals', 'Training Materials'],
                 issues: [],
             },
 
@@ -495,25 +399,19 @@ export class SOC2ComplianceService {
             {
                 id: 'CC6.1',
                 name: 'Logical and Physical Access Controls - Logical Access',
-                description:
-                    'The entity implements logical access security software, infrastructure, and architectures.',
+                description: 'The entity implements logical access security software, infrastructure, and architectures.',
                 family: ControlFamily.CC6,
                 status: ComplianceStatus.IN_PROGRESS,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-10'),
                 nextAssessment: new Date('2024-02-10'),
-                evidence: [
-                    'Access Control Policies',
-                    'User Access Reviews',
-                    'Authentication Systems',
-                ],
+                evidence: ['Access Control Policies', 'User Access Reviews', 'Authentication Systems'],
                 issues: [
                     {
                         id: 'ISS-001',
                         controlId: 'CC6.1',
                         title: 'Privileged Access Review Overdue',
-                        description:
-                            'Quarterly privileged access review is 5 days overdue',
+                        description: 'Quarterly privileged access review is 5 days overdue',
                         severity: RiskLevel.MEDIUM,
                         status: 'open',
                         createdAt: new Date('2024-01-20'),
@@ -524,35 +422,25 @@ export class SOC2ComplianceService {
             {
                 id: 'CC6.2',
                 name: 'Logical and Physical Access Controls - Physical Access',
-                description:
-                    'The entity restricts physical access to facilities and computer hardware.',
+                description: 'The entity restricts physical access to facilities and computer hardware.',
                 family: ControlFamily.CC6,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-27'),
                 nextAssessment: new Date('2024-04-27'),
-                evidence: [
-                    'Physical Security Policies',
-                    'Access Card Systems',
-                    'Visitor Logs',
-                ],
+                evidence: ['Physical Security Policies', 'Access Card Systems', 'Visitor Logs'],
                 issues: [],
             },
             {
                 id: 'CC6.3',
                 name: 'Logical and Physical Access Controls - Network Security',
-                description:
-                    'The entity authorizes, modifies, or removes access to data, software, and system resources.',
+                description: 'The entity authorizes, modifies, or removes access to data, software, and system resources.',
                 family: ControlFamily.CC6,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-25'),
                 nextAssessment: new Date('2024-04-25'),
-                evidence: [
-                    'Network Security Policies',
-                    'Firewall Rules',
-                    'Intrusion Detection Systems',
-                ],
+                evidence: ['Network Security Policies', 'Firewall Rules', 'Intrusion Detection Systems'],
                 issues: [],
             },
 
@@ -560,42 +448,31 @@ export class SOC2ComplianceService {
             {
                 id: 'CC7.1',
                 name: 'System Operations - System Development',
-                description:
-                    'The entity restricts the logical access to system configurations.',
+                description: 'The entity restricts the logical access to system configurations.',
                 family: ControlFamily.CC7,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-28'),
                 nextAssessment: new Date('2024-04-28'),
-                evidence: [
-                    'Development Standards',
-                    'Code Review Processes',
-                    'Deployment Procedures',
-                ],
+                evidence: ['Development Standards', 'Code Review Processes', 'Deployment Procedures'],
                 issues: [],
             },
             {
                 id: 'CC7.2',
                 name: 'System Operations - System Monitoring',
-                description:
-                    'The entity monitors system components and the operation of controls.',
+                description: 'The entity monitors system components and the operation of controls.',
                 family: ControlFamily.CC7,
                 status: ComplianceStatus.NON_COMPLIANT,
                 riskLevel: RiskLevel.HIGH,
                 lastAssessed: new Date('2024-01-05'),
                 nextAssessment: new Date('2024-02-05'),
-                evidence: [
-                    'Monitoring Procedures',
-                    'Alert Configurations',
-                    'Performance Metrics',
-                ],
+                evidence: ['Monitoring Procedures', 'Alert Configurations', 'Performance Metrics'],
                 issues: [
                     {
                         id: 'ISS-002',
                         controlId: 'CC7.2',
                         title: 'Critical System Alerts Not Configured',
-                        description:
-                            'Several critical system components lack proper alerting',
+                        description: 'Several critical system components lack proper alerting',
                         severity: RiskLevel.HIGH,
                         status: 'in_progress',
                         createdAt: new Date('2024-01-08'),
@@ -606,18 +483,13 @@ export class SOC2ComplianceService {
             {
                 id: 'CC7.3',
                 name: 'System Operations - Change Management',
-                description:
-                    'The entity implements change management processes.',
+                description: 'The entity implements change management processes.',
                 family: ControlFamily.CC7,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-29'),
                 nextAssessment: new Date('2024-04-29'),
-                evidence: [
-                    'Change Management Policy',
-                    'Change Approval Process',
-                    'Rollback Procedures',
-                ],
+                evidence: ['Change Management Policy', 'Change Approval Process', 'Rollback Procedures'],
                 issues: [],
             },
             {
@@ -629,11 +501,7 @@ export class SOC2ComplianceService {
                 riskLevel: RiskLevel.LOW,
                 lastAssessed: new Date('2024-01-30'),
                 nextAssessment: new Date('2024-04-30'),
-                evidence: [
-                    'Backup Procedures',
-                    'Recovery Testing',
-                    'Backup Access Controls',
-                ],
+                evidence: ['Backup Procedures', 'Recovery Testing', 'Backup Access Controls'],
                 issues: [],
             },
 
@@ -641,18 +509,13 @@ export class SOC2ComplianceService {
             {
                 id: 'CC8.1',
                 name: 'Change Management - Authorization',
-                description:
-                    'The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures.',
+                description: 'The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures.',
                 family: ControlFamily.CC8,
                 status: ComplianceStatus.COMPLIANT,
                 riskLevel: RiskLevel.MEDIUM,
                 lastAssessed: new Date('2024-01-31'),
                 nextAssessment: new Date('2024-04-30'),
-                evidence: [
-                    'Change Authorization Matrix',
-                    'Change Request Forms',
-                    'Approval Workflows',
-                ],
+                evidence: ['Change Authorization Matrix', 'Change Request Forms', 'Approval Workflows'],
                 issues: [],
             },
         ];
@@ -663,7 +526,7 @@ export class SOC2ComplianceService {
      */
     async getControlsByFamily(family: ControlFamily): Promise<Control[]> {
         const allControls = await this.getAllControls();
-        return allControls.filter((control) => control.family === family);
+        return allControls.filter(control => control.family === family);
     }
 
     /**
@@ -679,14 +542,9 @@ export class SOC2ComplianceService {
                 userId: 'admin@atoms.tech',
                 resource: 'soc2_dashboard',
                 action: 'login',
-                details: {
-                    success: true,
-                    mfa_used: true,
-                    session_id: 'sess_abc123',
-                },
+                details: { success: true, mfa_used: true, session_id: 'sess_abc123' },
                 ipAddress: '192.168.1.100',
-                userAgent:
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             },
             {
                 id: 'evt-002',
@@ -697,8 +555,7 @@ export class SOC2ComplianceService {
                 action: 'view',
                 details: { control_id: 'CC6.1', access_level: 'read' },
                 ipAddress: '192.168.1.101',
-                userAgent:
-                    'Mozilla/5.0 (macOS; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                userAgent: 'Mozilla/5.0 (macOS; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
             },
             {
                 id: 'evt-003',
@@ -707,12 +564,7 @@ export class SOC2ComplianceService {
                 userId: 'devops@atoms.tech',
                 resource: 'firewall_rules',
                 action: 'modify',
-                details: {
-                    rule_id: 'fw_rule_443',
-                    change_type: 'port_update',
-                    old_value: '80',
-                    new_value: '443',
-                },
+                details: { rule_id: 'fw_rule_443', change_type: 'port_update', old_value: '80', new_value: '443' },
                 ipAddress: '10.0.1.50',
                 userAgent: 'curl/7.68.0',
             },
@@ -723,10 +575,7 @@ export class SOC2ComplianceService {
                 userId: 'sysadmin@atoms.tech',
                 resource: 'production_database',
                 action: 'sudo_access',
-                details: {
-                    command: 'systemctl restart postgresql',
-                    duration_seconds: 45,
-                },
+                details: { command: 'systemctl restart postgresql', duration_seconds: 45 },
                 ipAddress: '10.0.1.25',
                 userAgent: 'SSH-2.0-OpenSSH_8.2',
             },
@@ -737,11 +586,7 @@ export class SOC2ComplianceService {
                 userId: 'analyst@atoms.tech',
                 resource: 'user_data',
                 action: 'export',
-                details: {
-                    record_count: 1250,
-                    export_format: 'csv',
-                    purpose: 'compliance_audit',
-                },
+                details: { record_count: 1250, export_format: 'csv', purpose: 'compliance_audit' },
                 ipAddress: '192.168.1.105',
                 userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
             },
@@ -752,13 +597,9 @@ export class SOC2ComplianceService {
                 userId: 'contractor@external.com',
                 resource: 'sensitive_documents',
                 action: 'access_attempt',
-                details: {
-                    reason: 'insufficient_permissions',
-                    requested_resource: '/admin/secrets',
-                },
+                details: { reason: 'insufficient_permissions', requested_resource: '/admin/secrets' },
                 ipAddress: '203.0.113.45',
-                userAgent:
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             },
             {
                 id: 'evt-007',
@@ -767,11 +608,7 @@ export class SOC2ComplianceService {
                 userId: 'system',
                 resource: 'database_backup',
                 action: 'create',
-                details: {
-                    backup_size_gb: 15.7,
-                    backup_location: 's3://backups/daily/',
-                    status: 'completed',
-                },
+                details: { backup_size_gb: 15.7, backup_location: 's3://backups/daily/', status: 'completed' },
                 ipAddress: '10.0.1.10',
                 userAgent: 'backup-agent/2.1.0',
             },
@@ -782,13 +619,9 @@ export class SOC2ComplianceService {
                 userId: 'user@atoms.tech',
                 resource: 'user_account',
                 action: 'password_update',
-                details: {
-                    password_strength: 'strong',
-                    previous_change: '2024-01-15T10:30:00Z',
-                },
+                details: { password_strength: 'strong', previous_change: '2024-01-15T10:30:00Z' },
                 ipAddress: '192.168.1.120',
-                userAgent:
-                    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+                userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
             },
             {
                 id: 'evt-009',
@@ -797,11 +630,7 @@ export class SOC2ComplianceService {
                 userId: 'service_account_monitoring',
                 resource: 'metrics_api',
                 action: 'query',
-                details: {
-                    endpoint: '/api/v1/metrics/system',
-                    response_code: 200,
-                    response_time_ms: 145,
-                },
+                details: { endpoint: '/api/v1/metrics/system', response_code: 200, response_time_ms: 145 },
                 ipAddress: '10.0.2.15',
                 userAgent: 'monitoring-service/1.5.2',
             },
@@ -812,14 +641,9 @@ export class SOC2ComplianceService {
                 userId: 'compliance@atoms.tech',
                 resource: 'document_management',
                 action: 'upload',
-                details: {
-                    file_name: 'SOC2_Evidence_Q1_2024.pdf',
-                    file_size_mb: 2.3,
-                    scan_result: 'clean',
-                },
+                details: { file_name: 'SOC2_Evidence_Q1_2024.pdf', file_size_mb: 2.3, scan_result: 'clean' },
                 ipAddress: '192.168.1.115',
-                userAgent:
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             },
             {
                 id: 'evt-011',
@@ -828,11 +652,7 @@ export class SOC2ComplianceService {
                 userId: 'external_auditor',
                 resource: 'vpn_gateway',
                 action: 'connect',
-                details: {
-                    vpn_protocol: 'OpenVPN',
-                    connection_duration_minutes: 120,
-                    data_transferred_mb: 45.2,
-                },
+                details: { vpn_protocol: 'OpenVPN', connection_duration_minutes: 120, data_transferred_mb: 45.2 },
                 ipAddress: '198.51.100.25',
                 userAgent: 'OpenVPN/2.5.7',
             },
@@ -843,11 +663,7 @@ export class SOC2ComplianceService {
                 userId: 'auditor@atoms.tech',
                 resource: 'cc6_1_control',
                 action: 'test_execution',
-                details: {
-                    test_type: 'automated',
-                    result: 'passed',
-                    evidence_collected: true,
-                },
+                details: { test_type: 'automated', result: 'passed', evidence_collected: true },
                 ipAddress: '192.168.1.130',
                 userAgent: 'compliance-testing-tool/3.2.1',
             },
@@ -858,11 +674,7 @@ export class SOC2ComplianceService {
                 userId: 'security_team',
                 resource: 'security_incident',
                 action: 'escalate',
-                details: {
-                    incident_id: 'INC-2024-001',
-                    severity: 'medium',
-                    escalation_level: 'tier_2',
-                },
+                details: { incident_id: 'INC-2024-001', severity: 'medium', escalation_level: 'tier_2' },
                 ipAddress: '10.0.1.75',
                 userAgent: 'incident-management/4.1.0',
             },
@@ -873,11 +685,7 @@ export class SOC2ComplianceService {
                 userId: 'system',
                 resource: 'ssl_certificate',
                 action: 'renew',
-                details: {
-                    certificate_cn: '*.atoms.tech',
-                    expiry_date: '2024-12-31T23:59:59Z',
-                    auto_renewal: true,
-                },
+                details: { certificate_cn: '*.atoms.tech', expiry_date: '2024-12-31T23:59:59Z', auto_renewal: true },
                 ipAddress: '10.0.1.10',
                 userAgent: 'cert-manager/1.8.0',
             },
@@ -888,15 +696,7 @@ export class SOC2ComplianceService {
                 userId: 'security_scanner',
                 resource: 'web_application',
                 action: 'scan_complete',
-                details: {
-                    vulnerabilities_found: 2,
-                    severity_breakdown: {
-                        low: 1,
-                        medium: 1,
-                        high: 0,
-                        critical: 0,
-                    },
-                },
+                details: { vulnerabilities_found: 2, severity_breakdown: { low: 1, medium: 1, high: 0, critical: 0 } },
                 ipAddress: '10.0.3.20',
                 userAgent: 'security-scanner/2.7.3',
             },
@@ -928,17 +728,15 @@ export class SOC2ComplianceService {
         let totalRisk = 0;
         let maxPossibleRisk = 0;
 
-        controls.forEach((control) => {
+        controls.forEach(control => {
             const riskWeight = riskWeights[control.riskLevel];
             const statusWeight = statusWeights[control.status];
-
+            
             totalRisk += riskWeight * statusWeight;
             maxPossibleRisk += riskWeight;
         });
 
-        return maxPossibleRisk > 0
-            ? Math.round((totalRisk / maxPossibleRisk) * 100)
-            : 0;
+        return maxPossibleRisk > 0 ? Math.round((totalRisk / maxPossibleRisk) * 100) : 0;
     }
 
     /**
@@ -946,9 +744,7 @@ export class SOC2ComplianceService {
      */
     async runComplyTodo(): Promise<string> {
         try {
-            const { stdout } = await execAsync(
-                `cd compliance && ../${path.basename(this.complyPath)} todo`,
-            );
+            const { stdout } = await execAsync(`cd compliance && ../${path.basename(this.complyPath)} todo`);
             return stdout;
         } catch (error) {
             console.error('Error running comply todo:', error);
@@ -970,15 +766,13 @@ export class SOC2ComplianceService {
         const auditEvents = await this.getRecentAuditEvents();
 
         const controlsByFamily = {} as Record<ControlFamily, Control[]>;
-        Object.values(ControlFamily).forEach((family) => {
-            controlsByFamily[family] = allControls.filter(
-                (c) => c.family === family,
-            );
+        Object.values(ControlFamily).forEach(family => {
+            controlsByFamily[family] = allControls.filter(c => c.family === family);
         });
 
         const recentIssues = allControls
-            .flatMap((control) => control.issues)
-            .filter((issue) => issue.status !== 'resolved')
+            .flatMap(control => control.issues)
+            .filter(issue => issue.status !== 'resolved')
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
             .slice(0, 10);
 
