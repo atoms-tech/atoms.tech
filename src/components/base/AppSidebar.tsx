@@ -4,7 +4,6 @@ import {
     Home,
     LayoutDashboard,
     LucideIcon,
-    Shield,
     Sparkles,
     User,
 } from 'lucide-react';
@@ -222,24 +221,6 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             )}
 
-                            {primaryEnterpriseOrg && (
-                                <SidebarMenuItem className="mb-0.5">
-                                    <SidebarMenuButton asChild>
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start"
-                                            asChild
-                                        >
-                                            <Link href="/soc2">
-                                                <Shield className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                <span className="text-xs font-medium">
-                                                    SOC2 Compliance
-                                                </span>
-                                            </Link>
-                                        </Button>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )}
 
                             {personalOrg && (
                                 <SidebarMenuItem className="mb-0.5">
