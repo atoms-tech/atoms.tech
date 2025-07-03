@@ -1,0 +1,428 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import {
+    SlashCommandRegistry,
+    SlashCommand,
+    SlashCommandProvider,
+    SlashCommandInput,
+    useDefaultSlashCommands,
+    useSlashCommandContext,
+} from '@/components/ui/slash-commands';
+
+// Mock commands for testing
+const mockCommands: SlashCommand[] = [
+    {
+        id: 'test-bold',
+        name: 'Bold',
+        description: 'Make text bold',
+        category: 'formatting',
+        keywords: ['strong', 'emphasis'],
+        execute: ({ insertText }) => {
+            insertText('**bold**');
+        },
+    },
+    {
+        id: 'test-heading',
+        name: 'Heading 1',
+        description: 'Large heading',
+        category: 'formatting',
+        keywords: ['h1', 'title'],
+        execute: ({ insertText }) => {
+            insertText('# ');
+        },
+    },
+    {
+        id: 'test-date',
+        name: 'Current Date',
+        description: 'Insert today\'s date',
+        category: 'utility',
+        execute: ({ insertText }) => {
+            insertText('2024-01-01');
+        },
+    },
+];
+
+// Test component that uses slash commands
+function TestComponent() {
+    useDefaultSlashCommands();
+    const [value, setValue] = React.useState('');
+    
+    return (
+        <SlashCommandInput
+            data-testid="slash-input"
+            value={value}
+            onChange={setValue}
+            placeholder="Type / for commands"
+        />
+    );
+}
+
+describe('SlashCommandRegistry', () => {
+    let registry: SlashCommandRegistry;
+
+    beforeEach(() => {
+        registry = new SlashCommandRegistry();
+    });
+
+    it('should warn when registering a duplicate command ID', () => {
+        const command: SlashCommand = {
+            id: 'duplicate',
+            name: 'Duplicate',
+            description: 'A duplicate command',
+            execute: jest.fn(),
+        };
+
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+        registry.register(command);
+        registry.register(command); // Attempt to register the same command again
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            'Command with id "duplicate" is already registered'
+        );
+
+        warnSpy.mockRestore();
+    });
+
+    test('should register and retrieve commands', () => {
+        const command = mockCommands[0];
+        registry.register(command);
+        
+        expect(registry.getCommand(command.id)).toBe(command);
+        expect(registry.getAllCommands()).toContain(command);
+    });
+
+    test('should unregister commands', () => {
+        const command = mockCommands[0];
+        registry.register(command);
+        
+        expect(registry.unregister(command.id)).toBe(true);
+        expect(registry.getCommand(command.id)).toBeUndefined();
+        expect(registry.unregister(command.id)).toBe(false); // Already removed
+    });
+
+    test('should search commands by name', () => {
+        registry.registerMany(mockCommands);
+
+        const results = registry.search('bold');
+        expect(results).toHaveLength(1);
+        expect(results[0].command.id).toBe('test-bold');
+        expect(results[0].relevance).toBeGreaterThan(0);
+    });
+
+    test('should filter commands by isAvailable callback in search', () => {
+        const availableCommand: SlashCommand = {
+            id: 'available',
+            name: 'Available Command',
+            description: 'This command is available',
+            execute: jest.fn(),
+            isAvailable: jest.fn(() => true),
+        };
+        const unavailableCommand: SlashCommand = {
+            id: 'unavailable',
+            name: 'Unavailable Command',
+            description: 'This command is unavailable',
+            execute: jest.fn(),
+            isAvailable: jest.fn(() => false),
+        };
+        registry.register(availableCommand);
+        registry.register(unavailableCommand);
+
+        const context = {}; // Provide any context needed for isAvailable
+        const results = registry.search('Command', context);
+
+        expect(results.some(cmd => cmd.command.id === 'available')).toBe(true);
+        expect(results.some(cmd => cmd.command.id === 'unavailable')).toBe(false);
+        expect(availableCommand.isAvailable).toHaveBeenCalledWith(context);
+        expect(unavailableCommand.isAvailable).toHaveBeenCalledWith(context);
+    });
+
+    test('should search commands by keywords', () => {
+        registry.registerMany(mockCommands);
+        
+        const results = registry.search('h1');
+        expect(results).toHaveLength(1);
+        expect(results[0].command.id).toBe('test-heading');
+    });
+
+    test('should return empty results for short queries', () => {
+        const registryWithMinLength = new SlashCommandRegistry({ minQueryLength: 2 });
+        registryWithMinLength.registerMany(mockCommands);
+        
+        const results = registryWithMinLength.search('b');
+        expect(results).toHaveLength(0);
+    });
+
+    test('should limit search results', () => {
+        const registryWithLimit = new SlashCommandRegistry({ maxResults: 1 });
+        registryWithLimit.registerMany(mockCommands);
+        
+        const results = registryWithLimit.search('test');
+        expect(results.length).toBeLessThanOrEqual(1);
+    });
+
+    test('should calculate relevance scores correctly for different match types', () => {
+        // Targeted mock commands for each match type
+        const targetedCommands = [
+            { id: 'bold', name: 'bold', description: 'Make text bold', category: 'formatting', execute: jest.fn() }, // exact
+            { id: 'bolden', name: 'bolden', description: 'Emphasize text', category: 'formatting', execute: jest.fn() }, // prefix
+            { id: 'embolden', name: 'embolden', description: 'Highlight text', category: 'formatting', execute: jest.fn() }, // substring
+            { id: 'italic', name: 'italic', description: 'Make text italic', category: 'formatting', execute: jest.fn() }, // unrelated
+        ] as SlashCommand[];
+
+        const testRegistry = new SlashCommandRegistry();
+        testRegistry.registerMany(targetedCommands);
+
+        // Exact match
+        let results = testRegistry.search('bold');
+        const exact = results.find(r => r.command.name === 'bold');
+        const prefix = results.find(r => r.command.name === 'bolden');
+        const substring = results.find(r => r.command.name === 'embolden');
+
+        expect(exact).toBeDefined();
+        expect(prefix).toBeDefined();
+        expect(substring).toBeDefined();
+
+        // Assert relevance order: exact > prefix > substring
+        expect(exact!.relevance).toBeGreaterThan(prefix!.relevance);
+        expect(prefix!.relevance).toBeGreaterThan(substring!.relevance);
+
+        // Prefix match
+        results = testRegistry.search('bolden');
+        const prefixExact = results.find(r => r.command.name === 'bolden');
+        const prefixSubstring = results.find(r => r.command.name === 'embolden');
+
+        expect(prefixExact).toBeDefined();
+        expect(prefixSubstring).toBeDefined();
+        expect(prefixExact!.relevance).toBeGreaterThan(prefixSubstring!.relevance);
+
+        // Substring match only
+        results = testRegistry.search('mbold');
+        const onlySubstring = results.find(r => r.command.name === 'embolden');
+        expect(onlySubstring).toBeDefined();
+        // Should be the only match
+        expect(results.length).toBe(1);
+    });
+
+    test('should provide registry statistics', () => {
+        registry.registerMany(mockCommands);
+
+        const stats = registry.getStats();
+        expect(stats.totalCommands).toBe(mockCommands.length);
+        expect(stats.categories.formatting).toBe(2);
+        expect(stats.categories.utility).toBe(1);
+    });
+
+    test('getStats() returns zero and empty categories when registry is empty', () => {
+        const emptyRegistry = new SlashCommandRegistry();
+        const stats = emptyRegistry.getStats();
+        expect(stats.totalCommands).toBe(0);
+        expect(stats.categories).toEqual({});
+    });
+});
+
+describe('SlashCommandInput', () => {
+    test('does not trigger autocomplete or keyboard navigation when disableSlashCommands is true', async () => {
+        const user = userEvent.setup();
+        // Render the component with disableSlashCommands set to true
+        render(
+            <SlashCommandInput disableSlashCommands={true} />
+        );
+
+        // Find the input (assuming it has a role of textbox)
+        const input = screen.getByRole('textbox');
+
+        // Type a slash
+        await user.type(input, '/');
+
+        // Assert that autocomplete is not shown
+        // (Assume autocomplete menu has a role of 'listbox' or a test id)
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+
+        // Try keyboard navigation (e.g., ArrowDown)
+        await user.keyboard('{ArrowDown}');
+        // There should still be no autocomplete menu
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+    function renderWithProvider(component: React.ReactElement) {
+        return render(
+            <SlashCommandProvider>
+                {component}
+            </SlashCommandProvider>
+        );
+    }
+
+    test('should render input field', () => {
+        renderWithProvider(<TestComponent />);
+        
+        const input = screen.getByTestId('slash-input');
+        expect(input).toBeInTheDocument();
+        expect(input).toHaveAttribute('placeholder', 'Type / for commands');
+    });
+
+    test('should show autocomplete when typing slash', async () => {
+        const user = userEvent.setup();
+        renderWithProvider(<TestComponent />);
+
+        const input = screen.getByTestId('slash-input');
+        await user.type(input, '/');
+
+        // Wait for autocomplete to appear
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).toBeInTheDocument();
+        });
+    });
+
+    test('should filter commands based on query', async () => {
+        const user = userEvent.setup();
+        renderWithProvider(<TestComponent />);
+
+        const input = screen.getByTestId('slash-input');
+        await user.type(input, '/bold');
+
+        await waitFor(() => {
+            expect(screen.getByText('Bold')).toBeInTheDocument();
+        });
+    });
+
+    test('should navigate with arrow keys', async () => {
+        const user = userEvent.setup();
+        renderWithProvider(<TestComponent />);
+
+        const input = screen.getByTestId('slash-input');
+        await user.type(input, '/');
+
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).toBeInTheDocument();
+        });
+
+        // Navigate down
+        fireEvent.keyDown(input, { key: 'ArrowDown' });
+
+        // Check if selection changed (implementation specific)
+        const selectedItem = screen.querySelector('[aria-selected="true"]');
+        expect(selectedItem).toBeInTheDocument();
+    });
+
+    test('should close autocomplete on input blur', async () => {
+        renderWithProvider(<TestComponent />);
+        const input = screen.getByRole('textbox');
+
+        // Open autocomplete by typing "/"
+        fireEvent.change(input, { target: { value: '/' } });
+
+        // Wait for the autocomplete listbox to appear
+        const listbox = await screen.findByRole('listbox');
+        expect(listbox).toBeInTheDocument();
+
+        // Simulate blur event on the input
+        fireEvent.blur(input);
+
+        // Wait for the autocomplete listbox to be removed
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        });
+    });
+    test('should close autocomplete on escape', async () => {
+        const user = userEvent.setup();
+        renderWithProvider(<TestComponent />);
+
+        const input = screen.getByTestId('slash-input');
+        await user.type(input, '/');
+
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).toBeInTheDocument();
+        });
+
+        fireEvent.keyDown(input, { key: 'Escape' });
+
+        await waitFor(() => {
+            expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        });
+    });
+
+    test('should execute command on enter', async () => {
+        const user = userEvent.setup();
+        renderWithProvider(<TestComponent />);
+
+        const input = screen.getByTestId('slash-input');
+        await user.type(input, '/bold');
+
+        await waitFor(() => {
+            expect(screen.getByText('Bold')).toBeInTheDocument();
+        });
+
+        fireEvent.keyDown(input, { key: 'Enter' });
+
+        // Check if command was executed (text should be replaced)
+        await waitFor(() => {
+            expect(input).toHaveValue('**bold**');
+        });
+    });
+
+    test('should handle controlled value changes', async () => {
+        const user = userEvent.setup();
+        const TestControlledComponent = () => {
+            const [value, setValue] = React.useState('initial text');
+
+            return (
+                <SlashCommandInput
+                    data-testid="controlled-input"
+                    value={value}
+                    onChange={setValue}
+                />
+            );
+        };
+
+        renderWithProvider(<TestControlledComponent />);
+
+        const input = screen.getByTestId('controlled-input');
+        expect(input).toHaveValue('initial text');
+
+        await user.clear(input);
+        await user.type(input, 'new text');
+
+        expect(input).toHaveValue('new text');
+    });
+});
+
+describe('SlashCommandProvider', () => {
+    test('should provide context to children', () => {
+        let contextValue: ReturnType<typeof useSlashCommandContext> | null = null;
+
+        const TestChild = () => {
+            const context = useSlashCommandContext();
+            contextValue = context;
+            return <div>Test</div>;
+        };
+
+        render(
+            <SlashCommandProvider>
+                <TestChild />
+            </SlashCommandProvider>
+        );
+
+        expect(contextValue).toBeDefined();
+        expect(contextValue!.registry).toBeInstanceOf(SlashCommandRegistry);
+        expect(typeof contextValue!.registerCommand).toBe('function');
+        expect(typeof contextValue!.searchCommands).toBe('function');
+    });
+
+    test('should throw error when used outside provider', () => {
+        const TestChild = () => {
+            useSlashCommandContext(); // This should throw
+            return <div>Test</div>;
+        };
+        
+        // Suppress console.error for this test
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        
+        expect(() => {
+            render(<TestChild />);
+        }).toThrow('useSlashCommandContext must be used within a SlashCommandProvider');
+        
+        consoleSpy.mockRestore();
+    });
+});
