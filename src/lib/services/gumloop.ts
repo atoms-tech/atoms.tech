@@ -11,18 +11,21 @@ const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
 const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
 
-for (const [key, value] of Object.entries({
-    GUMLOOP_API_KEY,
-    USER_ID,
-    GUMLOOP_FILE_CONVERT_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
-    GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
-})) {
-    if (!value) {
-        throw new Error(
-            `Missing required environment variable: NEXT_PUBLIC_${key}`,
-        );
+// Only validate environment variables in production
+if (process.env.NODE_ENV === 'production') {
+    for (const [key, value] of Object.entries({
+        GUMLOOP_API_KEY,
+        USER_ID,
+        GUMLOOP_FILE_CONVERT_FLOW_ID,
+        GUMLOOP_REQ_ANALYSIS_FLOW_ID,
+        GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+        GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
+    })) {
+        if (!value) {
+            throw new Error(
+                `Missing required environment variable: NEXT_PUBLIC_${key}`,
+            );
+        }
     }
 }
 
@@ -134,6 +137,11 @@ export class GumloopService {
             };
 
             console.log('Making API request to upload files');
+
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
             const response = await fetch(`${GUMLOOP_API_URL}/upload_files`, {
                 method: 'POST',
                 headers: {
@@ -141,7 +149,10 @@ export class GumloopService {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(payload),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -280,6 +291,11 @@ export class GumloopService {
                 saved_item_id: pipeline_id,
                 pipeline_inputs: pipelineInputs,
             });
+
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+
             const response = await fetch(`${GUMLOOP_API_URL}/start_pipeline`, {
                 method: 'POST',
                 headers: {
@@ -291,7 +307,10 @@ export class GumloopService {
                     saved_item_id: pipeline_id,
                     pipeline_inputs: pipelineInputs,
                 }),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();

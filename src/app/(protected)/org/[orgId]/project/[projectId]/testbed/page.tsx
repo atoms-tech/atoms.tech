@@ -1,18 +1,38 @@
 'use client';
 
 import { ChevronDown, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import TraceabilityMatrixView from '@/components/custom/RequirementsTesting/TestMatrix/components/TestMatrix';
-import TestCaseView from '@/components/custom/RequirementsTesting/TestTable/TestTable';
 import { useCreateTestReq } from '@/components/custom/RequirementsTesting/hooks/useTestReq';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Database } from '@/types/base/database.types';
 
+// Dynamic imports to ensure client-side only rendering
+const TraceabilityMatrixView = dynamic(
+    () =>
+        import(
+            '@/components/custom/RequirementsTesting/TestMatrix/components/TestMatrix'
+        ),
+    {
+        ssr: false,
+        loading: () => <div className="p-4">Loading matrix...</div>,
+    },
+);
+
+const TestCaseView = dynamic(
+    () => import('@/components/custom/RequirementsTesting/TestTable/TestTable'),
+    {
+        ssr: false,
+        loading: () => <div className="p-4">Loading test cases...</div>,
+    },
+);
+
 export default function TestBed() {
+    const [isClient, setIsClient] = useState(false);
     const [viewMode, setViewMode] = useState<
         'Test Cases' | 'Traceability Matrix'
     >('Test Cases');
@@ -29,6 +49,21 @@ export default function TestBed() {
     const { projectId } = useParams();
     const { toast } = useToast();
     const createTestReq = useCreateTestReq();
+
+    // Ensure this only renders on client side
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    if (!isClient) {
+        return (
+            <div className="container mx-auto p-8 max-w-7xl">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-lg">Loading...</div>
+                </div>
+            </div>
+        );
+    }
 
     const handleCreateTest = async () => {
         if (!newTestData.title) {
@@ -86,6 +121,7 @@ export default function TestBed() {
                     <div className="flex items-center gap-3">
                         <div className="relative min-w-[180px]">
                             <select
+                                title="View mode"
                                 className="w-full appearance-none bg-background border border-border px-4 h-10 rounded-md 
                                          text-sm font-medium
                                          focus:ring-2 focus:ring-accent/20 focus:border-accent hover:border-accent/50 transition-colors
@@ -202,6 +238,7 @@ export default function TestBed() {
                                 </label>
                                 <div className="relative">
                                     <select
+                                        title="Test type"
                                         className="w-full p-2 border-b border-border bg-transparent focus:border-accent transition-colors outline-none appearance-none
                                                  dark:border-border dark:text-foreground dark:focus:border-accent"
                                         value={newTestData.test_type}
@@ -242,6 +279,7 @@ export default function TestBed() {
                                 </label>
                                 <div className="relative">
                                     <select
+                                        title="Test method"
                                         className="w-full p-2 border-b border-border bg-transparent focus:border-accent transition-colors outline-none appearance-none
                                                  dark:border-border dark:text-foreground dark:focus:border-accent"
                                         value={newTestData.method}
@@ -273,6 +311,7 @@ export default function TestBed() {
                                 </label>
                                 <div className="relative">
                                     <select
+                                        title="Test priority"
                                         className="w-full p-2 border-b border-border bg-transparent focus:border-accent transition-colors outline-none appearance-none
                                                  dark:border-border dark:text-foreground dark:focus:border-accent"
                                         value={newTestData.priority}

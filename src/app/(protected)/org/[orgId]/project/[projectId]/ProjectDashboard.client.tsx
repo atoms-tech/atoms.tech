@@ -1,21 +1,20 @@
 'use client';
 
 import {
+    BarChart3,
     Beaker,
-    Clock,
-    FileText,
-    FolderOpen,
-    MoreVertical,
+    FileBox,
+    FolderArchive,
     Pencil,
     PlusCircle,
-    Trash,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import EditDocumentForm from '@/components/base/forms/EditDocumentForm';
 import EditProjectForm from '@/components/base/forms/EditProjectForm';
+import DocumentActions from '@/components/custom/DocumentActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,18 +24,11 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
-import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -62,13 +54,9 @@ const CreatePanel = dynamic(
 
 export default function ProjectPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
     const params = useParams<{ orgId: string; projectId: string }>();
     const { project } = useProject();
-
-    // Get current tab from URL params, default to 'documents' if not present
-    const currentTabFromUrl = searchParams.get('currentTab') || 'documents';
-    const [activeTab, setActiveTab] = useState(currentTabFromUrl);
+    const [activeTab, setActiveTab] = useState('documents');
     const [searchQuery, setSearchQuery] = useState('');
     const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
         useState(false);
@@ -77,7 +65,7 @@ export default function ProjectPage() {
     );
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [userRole, setUserRole] = useState<ProjectRole | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const {
         data: documents,
         isLoading: documentsLoading,
@@ -123,8 +111,38 @@ export default function ProjectPage() {
         fetchUserRole();
     }, [params?.projectId, user?.id]);
 
+    const canPerformAction = (action: string) => {
+        const rolePermissions = {
+            owner: [
+                'changeRole',
+                'removeMember',
+                'addDocument',
+                'viewDocument',
+                'deleteDocument',
+                'editDocument',
+                'editProject',
+                'deleteProject',
+            ],
+            admin: [
+                'removeMember',
+                'addDocument',
+                'viewDocument',
+                'deleteDocument',
+                'editDocument',
+                'editProject',
+            ],
+            maintainer: ['addDocument', 'viewDocument', 'editDocument'],
+            editor: ['addDocument', 'viewDocument', 'editDocument'],
+            viewer: ['viewDocument'],
+        };
+
+        return rolePermissions[
+            (userRole as keyof typeof rolePermissions) || 'viewer'
+        ].includes(action);
+    };
+
     const handleDocumentClick = (doc: Document) => {
-        if (!hasProjectPermission(userRole, 'viewDocument')) {
+        if (!canPerformAction('viewDocument')) {
             return; // Do nothing if the user does not have permission
         }
         router.push(
@@ -137,7 +155,7 @@ export default function ProjectPage() {
     };
 
     const handleDeleteDocument = async () => {
-        if (!hasProjectPermission(userRole, 'deleteDocument')) {
+        if (!canPerformAction('deleteDocument')) {
             return; // Do nothing if the user does not have permission
         }
 
@@ -181,6 +199,12 @@ export default function ProjectPage() {
         }
     };
 
+    const handleGoToAnalytics = () => {
+        router.push(
+            `/org/${params?.orgId}/project/${params?.projectId}/analytics`,
+        );
+    };
+
     const handleDeleteProject = async () => {
         if (!project || !user) return;
 
@@ -216,22 +240,6 @@ export default function ProjectPage() {
         doc.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
-    // Update URL when tab changes
-    const handleTabChange = (newTab: string) => {
-        setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams);
-        params.set('currentTab', newTab);
-        router.push(`?${params.toString()}`, { scroll: false });
-    };
-
-    // Sync tab state with URL params when they change
-    useEffect(() => {
-        const tabFromUrl = searchParams.get('currentTab');
-        if (tabFromUrl && tabFromUrl !== activeTab) {
-            setActiveTab(tabFromUrl);
-        }
-    }, [searchParams, activeTab]);
-
     return (
         <div className="container mx-auto p-6 space-y-6">
             {/* Project Header */}
@@ -245,13 +253,23 @@ export default function ProjectPage() {
                             'Manage your project resources and details'}
                     </p>
                 </div>
+                <div className="flex items-center space-x-2">
+                    <Button
+                        variant="outline"
+                        className="bg-secondary text-secondary-foreground text-sm hover:bg-secondary/90"
+                        onClick={handleGoToAnalytics}
+                    >
+                        Analytics
+                        <BarChart3 className="w-4 h-4" />
+                    </Button>
+                </div>
             </div>
 
             {/* Tabs Menu */}
             <Tabs
-                defaultValue={currentTabFromUrl}
+                defaultValue="document"
                 value={activeTab}
-                onValueChange={handleTabChange}
+                onValueChange={setActiveTab}
                 className="w-full"
             >
                 <TabsList className="grid grid-cols-2 w-full">
@@ -259,14 +277,14 @@ export default function ProjectPage() {
                         value="overview"
                         className="flex items-center gap-2"
                     >
-                        <FolderOpen className="h-4 w-4" />
+                        <FolderArchive className="h-4 w-4" />
                         <span>Overview</span>
                     </TabsTrigger>
                     <TabsTrigger
                         value="documents"
                         className="flex items-center gap-2"
                     >
-                        <FileText className="h-4 w-4" />
+                        <FileBox className="h-4 w-4" />
                         <span>Requirements Documents</span>
                     </TabsTrigger>
                 </TabsList>
@@ -284,10 +302,7 @@ export default function ProjectPage() {
                                             Basic information about your project
                                         </CardDescription>
                                     </div>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'editProject',
-                                    ) &&
+                                    {canPerformAction('editProject') &&
                                         !isEditing && (
                                             <Button
                                                 variant="outline"
@@ -386,7 +401,7 @@ export default function ProjectPage() {
                             className="w-full max-w-xs"
                         />
                         <div className="flex items-center gap-2">
-                            {hasProjectPermission(userRole, 'addDocument') && (
+                            {canPerformAction('addDocument') && (
                                 <Button
                                     variant="outline"
                                     onClick={() =>
@@ -412,226 +427,41 @@ export default function ProjectPage() {
                             </Button>
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        {/* Documents Grid View */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                            {filteredDocuments?.map((doc) => (
-                                <div
-                                    key={doc.id}
-                                    className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
-                                    style={{
-                                        boxShadow:
-                                            '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
-                                    }}
-                                >
-                                    {/* Document paper effect shadow */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
-
-                                    <div className="flex flex-col h-full p-3 relative z-10">
-                                        {/* Header with Icon and Actions */}
-                                        <div className="flex items-start justify-between mb-3">
-                                            {/* Document Icon */}
-                                            <div className="flex-shrink-0">
-                                                <div className="relative">
-                                                    {/* Back papers for stack effect */}
-                                                    <div className="absolute top-0.5 left-0.5 w-6 h-7 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm opacity-50"></div>
-
-                                                    {/* Main document */}
-                                                    <div className="relative w-6 h-7 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-sm flex items-center justify-center shadow-sm">
-                                                        <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-
-                                                        {/* Folded corner effect */}
-                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-md transform rotate-0"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Actions Menu */}
-                                            {(hasProjectPermission(
-                                                userRole,
-                                                'editDocument',
-                                            ) ||
-                                                hasProjectPermission(
-                                                    userRole,
-                                                    'deleteDocument',
-                                                )) && (
-                                                <div className="flex-shrink-0">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                                            >
-                                                                <MoreVertical className="h-3 w-3" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            className="w-44"
-                                                        >
-                                                            {hasProjectPermission(
-                                                                userRole,
-                                                                'editDocument',
-                                                            ) && (
-                                                                <DropdownMenuItem
-                                                                    onClick={() =>
-                                                                        handleEditDocument(
-                                                                            doc,
-                                                                        )
-                                                                    }
-                                                                    className="gap-3 py-2.5"
-                                                                >
-                                                                    <Pencil className="h-4 w-4" />
-                                                                    Edit
-                                                                    Document
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            {hasProjectPermission(
-                                                                userRole,
-                                                                'deleteDocument',
-                                                            ) && (
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive gap-3 py-2.5"
-                                                                    onClick={() =>
-                                                                        setDocumentToDelete(
-                                                                            doc,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Trash className="h-4 w-4" />
-                                                                    Delete
-                                                                    Document
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Document Info - Clickable Area */}
-                                        <div
-                                            className="flex-1 cursor-pointer flex flex-col"
-                                            onClick={() =>
-                                                handleDocumentClick(doc)
-                                            }
-                                        >
-                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2 leading-tight">
-                                                {doc.name}
-                                            </h3>
-
-                                            {doc.description && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
-                                                    {doc.description}
-                                                </p>
-                                            )}
-
-                                            {/* Document Metadata - Bottom */}
-                                            <div className="mt-auto space-y-1">
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <Clock className="h-3 w-3 flex-shrink-0" />
-                                                    <span className="truncate">
-                                                        {doc.updated_at
-                                                            ? new Date(
-                                                                  doc.updated_at,
-                                                              ).toLocaleDateString(
-                                                                  'en-US',
-                                                                  {
-                                                                      month: 'short',
-                                                                      day: 'numeric',
-                                                                  },
-                                                              )
-                                                            : doc.created_at
-                                                              ? new Date(
-                                                                    doc.created_at,
-                                                                ).toLocaleDateString(
-                                                                    'en-US',
-                                                                    {
-                                                                        month: 'short',
-                                                                        day: 'numeric',
-                                                                    },
-                                                                )
-                                                              : 'N/A'}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1">
-                                                        <div
-                                                            className={`w-2 h-2 rounded-full ${
-                                                                doc.is_deleted
-                                                                    ? 'bg-red-500'
-                                                                    : 'bg-green-500'
-                                                            }`}
-                                                        ></div>
-                                                        <span
-                                                            className={`text-xs font-medium ${
-                                                                doc.is_deleted
-                                                                    ? 'text-red-600 dark:text-red-400'
-                                                                    : 'text-green-600 dark:text-green-400'
-                                                            }`}
-                                                        >
-                                                            {doc.is_deleted
-                                                                ? 'Archived'
-                                                                : 'Active'}
-                                                        </span>
-                                                    </div>
-
-                                                    {doc.tags &&
-                                                        doc.tags.length > 0 && (
-                                                            <div className="text-xs text-primary font-medium truncate">
-                                                                +
-                                                                {
-                                                                    doc.tags
-                                                                        .length
-                                                                }
-                                                            </div>
-                                                        )}
-                                                </div>
-                                            </div>
-                                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredDocuments?.map((doc) => (
+                            <div
+                                key={doc.id}
+                                className="p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors relative group"
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div
+                                        className="flex-1 min-w-0"
+                                        onClick={() => handleDocumentClick(doc)}
+                                    >
+                                        <h3 className="font-medium truncate">
+                                            {doc.name}
+                                        </h3>
+                                        {doc.description && (
+                                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                                {doc.description}
+                                            </p>
+                                        )}
                                     </div>
+                                    <DocumentActions
+                                        document={doc}
+                                        userRole={userRole || 'viewer'}
+                                        onEdit={() => handleEditDocument(doc)}
+                                        onDelete={() =>
+                                            setDocumentToDelete(doc)
+                                        }
+                                    />
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Empty State */}
+                            </div>
+                        ))}
                         {filteredDocuments?.length === 0 &&
                             !documentsLoading && (
-                                <div className="text-center py-16">
-                                    <div className="relative mx-auto mb-6">
-                                        {/* Stacked empty documents */}
-                                        <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
-                                            <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
-                                        </div>
-                                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-foreground mb-2">
-                                        No documents found
-                                    </h3>
-                                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                        Get started by creating your first
-                                        requirement document to organize and
-                                        manage your project requirements
-                                    </p>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'addDocument',
-                                    ) && (
-                                        <Button
-                                            variant="default"
-                                            onClick={() =>
-                                                setShowCreateDocumentPanel(true)
-                                            }
-                                            className="gap-2 px-6 py-2.5"
-                                        >
-                                            <PlusCircle className="h-4 w-4" />
-                                            Create Your First Document
-                                        </Button>
-                                    )}
+                                <div className="col-span-full text-center py-8 text-muted-foreground">
+                                    No documents found
                                 </div>
                             )}
                     </div>
@@ -710,7 +540,7 @@ export default function ProjectPage() {
                         setDocumentToDelete(documentToEdit);
                         setDocumentToEdit(null);
                     }}
-                    canDelete={hasProjectPermission(userRole, 'deleteDocument')}
+                    canDelete={canPerformAction('deleteDocument')}
                 />
             )}
         </div>

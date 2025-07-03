@@ -29,33 +29,19 @@ import {
 } from '@/types/base/enums.types';
 
 const formSchema = z.object({
-    name: z
-        .string()
-        .trim()
-        .min(2, {
-            message: 'Organization name must be at least 2 characters.',
-        })
-        .max(255, {
-            message: 'Organization name must be at most 255 characters.',
-        }),
+    name: z.string().min(2, {
+        message: 'Organization name must be at least 2 characters.',
+    }),
     slug: z
         .string()
         .min(2, {
             message: 'Slug must be at least 2 characters.',
         })
-        .max(63, {
-            message: 'Slug name must be at most 63 characters.',
-        })
-        .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, {
-            // Can't have '-' on ends. In line with db schema.
+        .regex(/^[a-z0-9-]+$/, {
             message:
-                'Slug can only contain lowercase letters, numbers, and hyphens (not at the beginning or end).',
+                'Slug can only contain lowercase letters, numbers, and hyphens.',
         }),
-    description: z
-        .string()
-        .trim()
-        .max(512, { message: 'Description must be 512 characters or fewer.' })
-        .optional(),
+    description: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -117,17 +103,6 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                 }
             }
 
-            // If we had to modify the slug, stop and alert the user.
-            if (uniqueSlug !== values.slug) {
-                form.setValue('slug', uniqueSlug); // suggest unique slug
-                form.setError('slug', {
-                    type: 'manual',
-                    message: `Slug is already taken. Suggested: "${uniqueSlug}". You can use this or choose a new one.`,
-                });
-                setIsSubmitting(false);
-                return;
-            }
-
             // Create the organization
             const { data: orgData, error: orgError } = await supabase
                 .from('organizations')
@@ -146,12 +121,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                 .select('id')
                 .single();
 
-            if (orgError || !orgData) {
-                //throw new Error(orgError?.message || 'Insert returned no data');
-                throw new Error(
-                    `Failed to create org, Supabase insert error: '${orgError?.message || 'Insert returned no data'}`,
-                );
-            }
+            if (orgError) throw orgError;
 
             // Create base organization properties
             await createBaseOrgProperties.mutateAsync({
@@ -184,12 +154,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
             // Navigate to the new organization
             router.push(`/org/${orgData.id}`);
         } catch (error) {
-            console.error('Error creating organization:', error, {
-                name: values.name,
-                slug: values.slug,
-                description: values.description,
-            });
-
+            console.error('Error creating organization:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to create organization. Please try again.',
@@ -200,7 +165,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
         }
     };
 
-    // Auto-generate slug from name
+    // Auto-generate slug from name and ensure uniqueness
     const handleNameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const name = e.target.value;
         form.setValue('name', name);
@@ -209,11 +174,34 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
         const slug = name
             .toLowerCase()
             .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '')
-            .slice(0, 63); // Stop auto-generating slug after max length.
+            .replace(/[^a-z0-9-]/g, '');
 
-        // Slug unique check moved to OnSubmit to cut down on API calls. Could also use lodash.debounce if we want similar functionality with less overhead.
-        form.setValue('slug', slug);
+        // Check for uniqueness
+        let uniqueSlug = slug;
+        let isUnique = false;
+        let attempt = 0;
+
+        while (!isUnique) {
+            const { data: existingOrg, error: slugError } = await supabase
+                .from('organizations')
+                .select('id')
+                .eq('slug', uniqueSlug)
+                .single();
+
+            if (slugError && slugError.code !== 'PGRST116') {
+                console.error('Error checking slug uniqueness:', slugError);
+                break;
+            }
+
+            if (!existingOrg) {
+                isUnique = true;
+            } else {
+                attempt++;
+                uniqueSlug = `${slug}-${attempt}`;
+            }
+        }
+
+        form.setValue('slug', uniqueSlug);
     };
 
     return (
@@ -274,8 +262,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                                 />
                             </FormControl>
                             <FormDescription>
-                                Describe what your organization does. (
-                                {form.watch('description')?.length || 0}/512)
+                                Describe what your organization does.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

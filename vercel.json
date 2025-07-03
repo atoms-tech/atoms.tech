@@ -1,6 +1,23 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": {
-    "deploymentEnabled": false
-  }
+    "$schema": "https://openapi.vercel.sh/vercel.json",
+    "git": {
+        "deploymentEnabled": true
+    },
+    "env": {
+        "NEXT_PUBLIC_APP_URL": "https://atoms.tech"
+    },
+    "functions": {
+        "src/app/**/*.ts": {
+            "maxDuration": 30
+        },
+        "src/app/**/*.js": {
+            "maxDuration": 30
+        },
+        "src/app/**/*.tsx": {
+            "maxDuration": 30
+        },
+        "src/app/api/**/*.ts": {
+            "maxDuration": 25
+        }
+    }
 }

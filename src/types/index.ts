@@ -18,6 +18,25 @@ export type {
 } from './base/traceability.types';
 
 export type {
+    AnalyticsActivity,
+    AnalyticsMetrics,
+    VersionHistoryItem,
+    AnalyticsFilters,
+    AnalyticsPagination,
+    AnalyticsQueryParams,
+    RestoreVersionInput,
+    RestoreVersionResult,
+    ChartDataPoint,
+    PieChartDataPoint,
+    ExportOptions,
+    AnalyticsUpdate,
+    AnalyticsDataGridProps,
+    VersionComparisonModalProps,
+    RestoreConfirmDialogProps,
+    AnalyticsDashboardProps,
+} from './analytics.types';
+
+export type {
     EEntityType,
     EAssignmentRole,
     EBillingPlan,
@@ -25,6 +44,7 @@ export type {
     ENotificationType,
     EOrganizationType,
     EPricingPlanInterval,
+    EProjectRole,
     EProjectStatus,
     EPropertyType,
     ERequirementFormat,
@@ -33,6 +53,7 @@ export type {
     ERequirementStatus,
     ESubscriptionStatus,
     ETraceLinkType,
+    EUserRoleType,
     EUserStatus,
     EVisibility,
 } from './base/enums.types';
@@ -45,6 +66,7 @@ export {
     NotificationType,
     OrganizationType,
     PricingPlanInterval,
+    ProjectRole,
     ProjectStatus,
     PropertyType,
     RequirementFormat,
@@ -53,6 +75,7 @@ export {
     RequirementStatus,
     SubscriptionStatus,
     TraceLinkType,
+    UserRoleType,
     UserStatus,
     Visibility,
 } from './base/enums.types';

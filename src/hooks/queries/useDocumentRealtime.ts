@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
     BlockWithRequirements,
@@ -25,15 +25,14 @@ interface DocumentState {
     blocks: BlockWithRequirements[] | undefined;
     loading: boolean;
     error: Error | null;
-    setDocument: (blocks: BlockWithRequirements[]) => void;
+    setDocument: (
+        updater: React.SetStateAction<BlockWithRequirements[] | undefined>,
+        trackingBlockId?: string,
+    ) => void;
 }
 
 export const useDocumentRealtime = ({
     documentId,
-    // These parameters are currently unused but kept for future use
-    _orgId,
-    _projectId,
-    _userProfile,
 }: {
     documentId: string;
     _orgId: string;
@@ -43,6 +42,44 @@ export const useDocumentRealtime = ({
     const [blocks, setBlocks] = useState<BlockWithRequirements[]>();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+
+    // Track recent updates to prevent real-time conflicts
+    const recentUpdatesRef = useRef<Set<string>>(new Set());
+    const updateTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+    // Function to track when we make an optimistic update
+    const trackOptimisticUpdate = useCallback((blockId: string) => {
+        recentUpdatesRef.current.add(blockId);
+
+        // Clear the timeout if it exists
+        if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+        }
+
+        // Remove the block from recent updates after a delay
+        updateTimeoutRef.current = setTimeout(() => {
+            recentUpdatesRef.current.delete(blockId);
+        }, 1000); // 1 second delay to allow for database round-trip
+    }, []);
+
+    // Enhanced setBlocks that can track optimistic updates
+    const setBlocksWithTracking = useCallback(
+        (
+            updater: React.SetStateAction<BlockWithRequirements[] | undefined>,
+            trackingBlockId?: string,
+        ) => {
+            if (trackingBlockId) {
+                trackOptimisticUpdate(trackingBlockId);
+            }
+
+            if (typeof updater === 'function') {
+                setBlocks(updater);
+            } else {
+                setBlocks(updater);
+            }
+        },
+        [trackOptimisticUpdate],
+    );
 
     // Fetch blocks and their requirements
     const fetchBlocks = useCallback(async () => {
@@ -150,6 +187,16 @@ export const useDocumentRealtime = ({
                 (payload) => {
                     // Handle individual block changes instead of fetching all blocks
                     if (payload.eventType === 'UPDATE') {
+                        // Check if this block was recently updated optimistically
+                        const blockId = payload.new.id;
+                        if (recentUpdatesRef.current.has(blockId)) {
+                            console.log(
+                                'Skipping real-time update for recently modified block:',
+                                blockId,
+                            );
+                            return;
+                        }
+
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
                             return prevBlocks.map((block) =>
@@ -264,6 +311,6 @@ export const useDocumentRealtime = ({
         blocks,
         loading,
         error,
-        setDocument: setBlocks,
+        setDocument: setBlocksWithTracking,
     };
 };
