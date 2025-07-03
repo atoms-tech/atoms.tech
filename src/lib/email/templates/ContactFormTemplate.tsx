@@ -1,6 +1,5 @@
-import { Button, Section, Text } from '@react-email/components';
 import React from 'react';
-
+import { Text, Section, Button } from '@react-email/components';
 import { BaseTemplate } from './BaseTemplate';
 
 interface ContactFormTemplateProps {
@@ -21,17 +20,17 @@ export function ContactFormTemplate({
     return (
         <BaseTemplate previewText={`New contact form submission from ${name}`}>
             <Text style={heading}>New Contact Form Submission</Text>
-
+            
             <Section style={infoSection}>
                 <Text style={label}>Name:</Text>
                 <Text style={value}>{name}</Text>
-
+                
                 <Text style={label}>Email:</Text>
                 <Text style={value}>{email}</Text>
-
+                
                 <Text style={label}>Subject:</Text>
                 <Text style={value}>{subject}</Text>
-
+                
                 <Text style={label}>Submitted:</Text>
                 <Text style={value}>{submittedAt}</Text>
             </Section>

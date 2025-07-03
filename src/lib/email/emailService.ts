@@ -1,6 +1,6 @@
+import { Resend } from 'resend';
 import { render } from '@react-email/render';
 import { ReactElement } from 'react';
-import { Resend } from 'resend';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -51,10 +51,7 @@ export class EmailService {
         try {
             // Check if Resend is configured
             if (!resend) {
-                console.warn(
-                    'Resend API key not configured. Email would be sent to:',
-                    options.to,
-                );
+                console.warn('Resend API key not configured. Email would be sent to:', options.to);
                 return {
                     success: false,
                     error: 'Email service not configured. Please set RESEND_API_KEY environment variable.',
@@ -85,30 +82,17 @@ export class EmailService {
             }
 
             // Send email via Resend
-            const emailData: {
-                from: string;
-                to: string[];
-                subject: string;
-                html?: string;
-                text?: string;
-                replyTo?: string;
-                cc?: string[];
-                bcc?: string[];
-                headers?: Record<string, string>;
-            } = {
+            const result = await resend.emails.send({
                 from: FROM_EMAIL,
                 to: Array.isArray(options.to) ? options.to : [options.to],
                 subject: options.subject,
-            };
-
-            if (htmlContent) emailData.html = htmlContent;
-            if (textContent) emailData.text = textContent;
-            if (options.cc) emailData.cc = options.cc;
-            if (options.bcc) emailData.bcc = options.bcc;
-            if (options.replyTo) emailData.replyTo = options.replyTo;
-            if (options.headers) emailData.headers = options.headers;
-
-            const result = await resend.emails.send(emailData as any);
+                html: htmlContent,
+                text: textContent,
+                cc: options.cc,
+                bcc: options.bcc,
+                reply_to: options.replyTo,
+                headers: options.headers,
+            });
 
             if (result.error) {
                 throw new Error(result.error.message);
@@ -137,7 +121,7 @@ export class EmailService {
         message: string;
     }): Promise<EmailResult> {
         const adminEmail = process.env.ADMIN_EMAIL || 'admin@atoms.tech';
-
+        
         const htmlContent = `
             <h2>New Contact Form Submission</h2>
             <p><strong>Name:</strong> ${data.name}</p>
@@ -180,10 +164,7 @@ export class EmailService {
     /**
      * Send email verification
      */
-    async sendEmailVerification(
-        email: string,
-        verificationUrl: string,
-    ): Promise<EmailResult> {
+    async sendEmailVerification(email: string, verificationUrl: string): Promise<EmailResult> {
         const htmlContent = `
             <h2>Verify Your Email Address</h2>
             <p>Please click the link below to verify your email address:</p>
@@ -205,10 +186,7 @@ export class EmailService {
     /**
      * Send password reset email
      */
-    async sendPasswordReset(
-        email: string,
-        resetUrl: string,
-    ): Promise<EmailResult> {
+    async sendPasswordReset(email: string, resetUrl: string): Promise<EmailResult> {
         const htmlContent = `
             <h2>Reset Your Password</h2>
             <p>You requested a password reset for your ATOMS.TECH account.</p>
@@ -250,7 +228,7 @@ export class EmailService {
      */
     async testConfiguration(): Promise<EmailResult> {
         const testEmail = process.env.ADMIN_EMAIL || 'test@atoms.tech';
-
+        
         return this.sendEmail({
             to: testEmail,
             subject: 'ATOMS.TECH Email Service Test',
