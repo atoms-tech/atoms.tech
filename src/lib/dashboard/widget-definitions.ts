@@ -17,7 +17,6 @@ import { AISuggestionsWidget } from '@/components/custom/Dashboard/widgets/AISug
 import { AnalyticsWidget } from '@/components/custom/Dashboard/widgets/AnalyticsWidget';
 import { CalendarWidget } from '@/components/custom/Dashboard/widgets/CalendarWidget';
 import { NotesWidget } from '@/components/custom/Dashboard/widgets/NotesWidget';
-import { OnboardingWidget } from '@/components/custom/Dashboard/widgets/OnboardingWidget';
 import { ProjectsWidget } from '@/components/custom/Dashboard/widgets/ProjectsWidget';
 // Import widget components
 import { QuickActionsWidget } from '@/components/custom/Dashboard/widgets/QuickActionsWidget';
@@ -185,34 +184,6 @@ export const CORE_WIDGETS: WidgetDefinition[] = [
             },
         },
         tags: ['projects', 'overview', 'management', 'status'],
-    }),
-
-    createWidgetDefinition({
-        type: 'onboarding-guide',
-        name: 'Getting Started',
-        description: 'Step-by-step guide to help you get started with Atoms',
-        icon: createElement(Rocket, { className: 'h-5 w-5' }),
-        category: 'utilities',
-        component: OnboardingWidget,
-        defaultSize: {
-            ...DEFAULT_WIDGET_SIZES.medium,
-            height: 400,
-        },
-        configSchema: {
-            showOptionalSteps: {
-                type: 'boolean',
-                label: 'Show Optional Steps',
-                description: 'Display optional onboarding steps',
-                default: true,
-            },
-            autoExpand: {
-                type: 'boolean',
-                label: 'Auto Expand',
-                description: 'Automatically expand all steps',
-                default: false,
-            },
-        },
-        tags: ['onboarding', 'tutorial', 'getting-started', 'help'],
     }),
 
     // Additional utility widgets

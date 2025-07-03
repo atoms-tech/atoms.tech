@@ -8,7 +8,6 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/queries/useProfile';
 import {
-    OnboardingProgress,
     PaginatedRecentActivity,
     ProjectWithOrg,
     RecentActivity,
@@ -25,7 +24,6 @@ interface HomePageProps {
     initialProjects: ProjectWithOrg[];
     initialRecentActivity: RecentActivity[];
     initialRecentActivityData: PaginatedRecentActivity;
-    initialOnboardingProgress: OnboardingProgress;
     organizations: Organization[];
     userId: string;
 }
@@ -50,7 +48,6 @@ export default function HomePage({
     initialProjects,
     initialRecentActivity,
     initialRecentActivityData,
-    initialOnboardingProgress,
     organizations,
     userId,
 }: HomePageProps) {
@@ -124,7 +121,6 @@ export default function HomePage({
                         activities: initialRecentActivity,
                         userId,
                         user,
-                        onboardingProgress: initialOnboardingProgress,
                     }}
                 />
 

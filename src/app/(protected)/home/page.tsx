@@ -11,7 +11,6 @@ import LayoutView from '@/components/views/LayoutView';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
 import {
-    getUserOnboardingProgressServer,
     getUserProjectsAcrossOrgsServer,
     getUserRecentActivityPaginatedServer,
     getUserRecentActivityServer,
@@ -23,13 +22,11 @@ export default async function HomePageRoute() {
     const userId = user.user.id;
 
     // Fetch all data in parallel for better performance
-    const [organizations, projects, recentActivityData, onboardingProgress] =
-        await Promise.all([
-            getUserOrganizationsServer(userId),
-            getUserProjectsAcrossOrgsServer(userId),
-            getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
-            getUserOnboardingProgressServer(userId),
-        ]);
+    const [organizations, projects, recentActivityData] = await Promise.all([
+        getUserOrganizationsServer(userId),
+        getUserProjectsAcrossOrgsServer(userId),
+        getUserRecentActivityPaginatedServer(userId, 8), // Start with 8 items
+    ]);
 
     // Prefetch data for client components
     await queryClient.prefetchQuery({
@@ -47,11 +44,6 @@ export default async function HomePageRoute() {
         queryFn: async () => recentActivityData,
     });
 
-    await queryClient.prefetchQuery({
-        queryKey: ['home', 'onboarding', userId],
-        queryFn: async () => onboardingProgress,
-    });
-
     return (
         <LayoutView>
             <HydrationBoundary state={dehydrate(queryClient)}>
@@ -60,7 +52,6 @@ export default async function HomePageRoute() {
                         initialProjects={projects}
                         initialRecentActivity={recentActivityData.activities}
                         initialRecentActivityData={recentActivityData}
-                        initialOnboardingProgress={onboardingProgress}
                         organizations={organizations}
                         userId={userId}
                     />

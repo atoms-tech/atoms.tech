@@ -21,16 +21,6 @@ export interface RecentActivity {
     organization_name?: string;
 }
 
-export interface OnboardingProgress {
-    is_new_user: boolean;
-    project_count: number;
-    requirement_count: number;
-    document_count: number;
-    has_invited_members: boolean;
-    has_used_ai_analysis: boolean;
-    completion_percentage: number;
-}
-
 /**
  * Get all projects across all user's organizations with organization info
  */
@@ -294,88 +284,5 @@ export const getUserRecentActivityPaginatedServer = async (
             ? activities[activities.length - 1].created_at
             : undefined,
         total: total || 0,
-    };
-};
-
-/**
- * Get onboarding progress for user
- */
-export const getUserOnboardingProgressServer = async (
-    userId: string,
-): Promise<OnboardingProgress> => {
-    const supabase = await createClient();
-
-    // Get user profile to check account age
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('created_at')
-        .eq('id', userId)
-        .single();
-
-    const accountAge =
-        profile && profile.created_at
-            ? (Date.now() - new Date(profile.created_at).getTime()) /
-              (1000 * 60 * 60 * 24)
-            : 0;
-
-    const isNewUser = accountAge < 7; // Consider new if account is less than 7 days old
-
-    // Get project count
-    const { count: projectCount } = await supabase
-        .from('project_members')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .eq('status', 'active');
-
-    // Get requirement count
-    const { count: requirementCount } = await supabase
-        .from('audit_logs')
-        .select('*', { count: 'exact' })
-        .eq('actor_id', userId)
-        .eq('action', 'create')
-        .eq('entity_type', 'requirement');
-
-    // Get document count
-    const { count: documentCount } = await supabase
-        .from('audit_logs')
-        .select('*', { count: 'exact' })
-        .eq('actor_id', userId)
-        .eq('action', 'create')
-        .eq('entity_type', 'document');
-
-    // Check if user has invited members
-    const { count: inviteCount } = await supabase
-        .from('audit_logs')
-        .select('*', { count: 'exact' })
-        .eq('actor_id', userId)
-        .eq('action', 'invite')
-        .eq('entity_type', 'organization');
-
-    // Check if user has used AI analysis
-    const { count: aiUsageCount } = await supabase
-        .from('usage_logs')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userId)
-        .eq('feature', 'ai_analysis');
-
-    // Calculate completion percentage
-    const completedSteps = [
-        (projectCount || 0) > 0,
-        (requirementCount || 0) > 0,
-        (documentCount || 0) > 0,
-        (inviteCount || 0) > 0,
-        (aiUsageCount || 0) > 0,
-    ].filter(Boolean).length;
-
-    const completionPercentage = Math.round((completedSteps / 5) * 100);
-
-    return {
-        is_new_user: isNewUser,
-        project_count: projectCount || 0,
-        requirement_count: requirementCount || 0,
-        document_count: documentCount || 0,
-        has_invited_members: (inviteCount || 0) > 0,
-        has_used_ai_analysis: (aiUsageCount || 0) > 0,
-        completion_percentage: completionPercentage,
     };
 };
