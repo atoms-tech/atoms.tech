@@ -1,10 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 
-// import { Check } from 'lucide-react';
-
-// import { Progress } from '@/components/ui/progress';
+import { Progress } from '@/components/ui/progress';
 
 interface OnboardingProgressProps {
     currentStep: number;
@@ -15,7 +14,7 @@ interface OnboardingProgressProps {
 export function OnboardingProgress({
     currentStep,
     totalSteps,
-    percentage,
+    percentage
 }: OnboardingProgressProps) {
     return (
         <div className="w-full">
@@ -42,7 +41,9 @@ export function OnboardingProgress({
                     <div
                         key={index}
                         className={`w-2 h-2 rounded-full transition-colors ${
-                            index <= currentStep ? 'bg-primary' : 'bg-muted'
+                            index <= currentStep
+                                ? 'bg-primary'
+                                : 'bg-muted'
                         }`}
                     />
                 ))}

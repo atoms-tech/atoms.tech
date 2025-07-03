@@ -1,38 +1,36 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BarChart3, Brain, FileText, Play, Users } from 'lucide-react';
+import { Play, FileText, Users, Brain, BarChart3 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const features = [
     {
         icon: <FileText className="h-6 w-6" />,
         title: 'Requirements Editor',
-        description:
-            'Create and edit requirements with our powerful block-based editor',
-        demo: 'Try Editor',
+        description: 'Create and edit requirements with our powerful block-based editor',
+        demo: 'Try Editor'
     },
     {
         icon: <Users className="h-6 w-6" />,
         title: 'Team Collaboration',
         description: 'Work together in real-time with comments and mentions',
-        demo: 'See Collaboration',
+        demo: 'See Collaboration'
     },
     {
         icon: <Brain className="h-6 w-6" />,
         title: 'AI Assistant',
-        description:
-            'Get intelligent suggestions and analysis for your requirements',
-        demo: 'Try AI',
+        description: 'Get intelligent suggestions and analysis for your requirements',
+        demo: 'Try AI'
     },
     {
         icon: <BarChart3 className="h-6 w-6" />,
         title: 'Analytics & Reports',
         description: 'Track progress and generate compliance reports',
-        demo: 'View Analytics',
-    },
+        demo: 'View Analytics'
+    }
 ];
 
 export function FeatureTourStep() {
@@ -47,8 +45,7 @@ export function FeatureTourStep() {
                         Explore key features
                     </CardTitle>
                     <p className="text-gray-600 dark:text-gray-300">
-                        Take a quick tour of the main features you&apos;ll be
-                        using
+                        Take a quick tour of the main features you'll be using
                     </p>
                 </CardHeader>
 
@@ -71,11 +68,7 @@ export function FeatureTourStep() {
                                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                                     {feature.description}
                                 </p>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full"
-                                >
+                                <Button variant="outline" size="sm" className="w-full">
                                     {feature.demo}
                                 </Button>
                             </motion.div>

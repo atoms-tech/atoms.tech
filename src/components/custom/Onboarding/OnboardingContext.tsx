@@ -1,10 +1,9 @@
 'use client';
 
-import { User } from '@supabase/supabase-js';
-import { ReactNode, createContext, useContext, useState } from 'react';
-
-import { OnboardingProgress } from '@/lib/db/server/home.server';
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { User } from '@/types/base/users.types';
 import { Organization } from '@/types/base/organizations.types';
+import { OnboardingProgress } from '@/lib/db/server/home.server';
 
 interface OnboardingData {
     // User profile data
@@ -14,7 +13,7 @@ interface OnboardingData {
         department?: string;
         goals?: string[];
     };
-
+    
     // Organization setup data
     organizationData: {
         name?: string;
@@ -27,7 +26,7 @@ interface OnboardingData {
             optionalSteps?: string[];
         };
     };
-
+    
     // Project creation data
     projectData: {
         name?: string;
@@ -35,7 +34,7 @@ interface OnboardingData {
         template?: string;
         visibility?: 'private' | 'team' | 'organization';
     };
-
+    
     // Team invitation data
     teamData: {
         invitations?: {
@@ -44,7 +43,7 @@ interface OnboardingData {
             department?: string;
         }[];
     };
-
+    
     // Feature preferences
     featurePreferences: {
         enabledFeatures?: string[];
@@ -63,33 +62,28 @@ interface OnboardingContextType {
     onboardingProgress: OnboardingProgress;
     onboardingType: 'account' | 'organization';
     targetOrganization?: Organization | null;
-
+    
     // Step management
     currentStep: number;
     totalSteps: number;
-
+    
     // Onboarding data
     data: OnboardingData;
-    updateData: (
-        section: keyof OnboardingData,
-        updates: Partial<OnboardingData[keyof OnboardingData]>,
-    ) => void;
-
+    updateData: (section: keyof OnboardingData, updates: any) => void;
+    
     // Navigation
     onNext: () => void;
     onPrevious: () => void;
     onSkip: () => void;
     onComplete: () => void;
     isCompleting: boolean;
-
+    
     // Validation
     isStepValid: (step: string) => boolean;
     getStepErrors: (step: string) => string[];
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(
-    undefined,
-);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 interface OnboardingProviderProps {
     children: ReactNode;
@@ -120,7 +114,7 @@ export function OnboardingProvider({
     onPrevious,
     onSkip,
     onComplete,
-    isCompleting,
+    isCompleting
 }: OnboardingProviderProps) {
     const [data, setData] = useState<OnboardingData>({
         profileData: {
@@ -134,20 +128,17 @@ export function OnboardingProvider({
                 email: true,
                 inApp: true,
                 mentions: true,
-            },
-        },
+            }
+        }
     });
 
-    const updateData = (
-        section: keyof OnboardingData,
-        updates: Partial<OnboardingData[keyof OnboardingData]>,
-    ) => {
-        setData((prev) => ({
+    const updateData = (section: keyof OnboardingData, updates: any) => {
+        setData(prev => ({
             ...prev,
             [section]: {
                 ...prev[section],
-                ...updates,
-            },
+                ...updates
+            }
         }));
     };
 
@@ -156,34 +147,32 @@ export function OnboardingProvider({
             case 'welcome':
             case 'welcome-org':
                 return true;
-
+                
             case 'profile-setup':
-                return (
-                    !!data.profileData.displayName && !!data.profileData.role
-                );
-
+                return !!data.profileData.displayName && !!data.profileData.role;
+                
             case 'org-setup':
                 return !!data.organizationData.name;
-
+                
             case 'role-selection':
                 return !!data.profileData.role;
-
+                
             case 'first-project':
             case 'project-creation':
                 return !!data.projectData.name;
-
+                
             case 'team-roles':
                 return true; // Optional step
-
+                
             case 'collaboration-setup':
                 return true; // Optional step
-
+                
             case 'feature-tour':
                 return true; // Always valid
-
+                
             case 'completion':
                 return true;
-
+                
             default:
                 return true;
         }
@@ -191,7 +180,7 @@ export function OnboardingProvider({
 
     const getStepErrors = (step: string): string[] => {
         const errors: string[] = [];
-
+        
         switch (step) {
             case 'profile-setup':
                 if (!data.profileData.displayName) {
@@ -201,19 +190,19 @@ export function OnboardingProvider({
                     errors.push('Role selection is required');
                 }
                 break;
-
+                
             case 'org-setup':
                 if (!data.organizationData.name) {
                     errors.push('Organization name is required');
                 }
                 break;
-
+                
             case 'role-selection':
                 if (!data.profileData.role) {
                     errors.push('Please select your role');
                 }
                 break;
-
+                
             case 'first-project':
             case 'project-creation':
                 if (!data.projectData.name) {
@@ -221,7 +210,7 @@ export function OnboardingProvider({
                 }
                 break;
         }
-
+        
         return errors;
     };
 
@@ -241,7 +230,7 @@ export function OnboardingProvider({
         onComplete,
         isCompleting,
         isStepValid,
-        getStepErrors,
+        getStepErrors
     };
 
     return (
@@ -254,9 +243,7 @@ export function OnboardingProvider({
 export function useOnboarding() {
     const context = useContext(OnboardingContext);
     if (context === undefined) {
-        throw new Error(
-            'useOnboarding must be used within an OnboardingProvider',
-        );
+        throw new Error('useOnboarding must be used within an OnboardingProvider');
     }
     return context;
 }

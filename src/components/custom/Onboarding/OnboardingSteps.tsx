@@ -1,26 +1,23 @@
 'use client';
 
-import { CollaborationSetupStep } from './steps/CollaborationSetupStep';
-import { CompletionStep } from './steps/CompletionStep';
-import { FeatureTourStep } from './steps/FeatureTourStep';
-import { FirstProjectStep } from './steps/FirstProjectStep';
-import { OrgSetupStep } from './steps/OrgSetupStep';
-import { ProfileSetupStep } from './steps/ProfileSetupStep';
-import { ProjectCreationStep } from './steps/ProjectCreationStep';
-import { RoleSelectionStep } from './steps/RoleSelectionStep';
-import { TeamRolesStep } from './steps/TeamRolesStep';
-import { WelcomeOrgStep } from './steps/WelcomeOrgStep';
 import { WelcomeStep } from './steps/WelcomeStep';
+import { WelcomeOrgStep } from './steps/WelcomeOrgStep';
+import { ProfileSetupStep } from './steps/ProfileSetupStep';
+import { RoleSelectionStep } from './steps/RoleSelectionStep';
+import { FirstProjectStep } from './steps/FirstProjectStep';
+import { FeatureTourStep } from './steps/FeatureTourStep';
+import { CompletionStep } from './steps/CompletionStep';
+import { OrgSetupStep } from './steps/OrgSetupStep';
+import { TeamRolesStep } from './steps/TeamRolesStep';
+import { ProjectCreationStep } from './steps/ProjectCreationStep';
+import { CollaborationSetupStep } from './steps/CollaborationSetupStep';
 
 interface OnboardingStepsProps {
     currentStep: string;
     stepIndex: number;
 }
 
-export function OnboardingSteps({
-    currentStep,
-    stepIndex: _stepIndex,
-}: OnboardingStepsProps) {
+export function OnboardingSteps({ currentStep, stepIndex }: OnboardingStepsProps) {
     const renderStep = () => {
         switch (currentStep) {
             // Account-level onboarding steps
@@ -34,7 +31,7 @@ export function OnboardingSteps({
                 return <FirstProjectStep />;
             case 'feature-tour':
                 return <FeatureTourStep />;
-
+            
             // Organization-level onboarding steps
             case 'welcome-org':
                 return <WelcomeOrgStep />;
@@ -46,15 +43,19 @@ export function OnboardingSteps({
                 return <ProjectCreationStep />;
             case 'collaboration-setup':
                 return <CollaborationSetupStep />;
-
+            
             // Shared steps
             case 'completion':
                 return <CompletionStep />;
-
+            
             default:
                 return <WelcomeStep />;
         }
     };
 
-    return <div className="w-full">{renderStep()}</div>;
+    return (
+        <div className="w-full">
+            {renderStep()}
+        </div>
+    );
 }

@@ -1,16 +1,9 @@
 'use client';
 
-// import { motion } from 'framer-motion';
-import {
-    AlertCircle,
-    ArrowLeft,
-    ArrowRight,
-    Check,
-    Loader2,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, Check, Loader2, AlertCircle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-
 import { useOnboarding } from './OnboardingContext';
 
 interface OnboardingNavigationProps {
@@ -24,31 +17,31 @@ interface OnboardingNavigationProps {
 
 export function OnboardingNavigation({
     currentStep,
-    totalSteps: _totalSteps,
+    totalSteps,
     canGoBack,
     canSkip,
     isLastStep,
-    isCompleting,
+    isCompleting
 }: OnboardingNavigationProps) {
-    const {
-        onNext,
-        onPrevious,
-        onSkip,
+    const { 
+        onNext, 
+        onPrevious, 
+        onSkip, 
         onComplete,
         isStepValid,
         getStepErrors,
-        data: _data,
+        data
     } = useOnboarding();
 
     // Get current step name for validation
     const getStepName = () => {
         const steps = [
             'welcome',
-            'profile-setup',
+            'profile-setup', 
             'role-selection',
             'first-project',
             'feature-tour',
-            'completion',
+            'completion'
         ];
         return steps[currentStep] || 'welcome';
     };

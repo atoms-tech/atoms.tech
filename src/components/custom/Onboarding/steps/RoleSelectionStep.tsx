@@ -1,24 +1,31 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { CheckCircle, Crown, Shield, User, Users } from 'lucide-react';
+import { 
+    User, 
+    Users, 
+    Crown, 
+    Shield, 
+    Eye,
+    CheckCircle
+} from 'lucide-react';
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useOnboarding } from '../OnboardingContext';
 
 const roleOptions = [
     {
         id: 'individual',
         title: 'Individual Contributor',
-        description:
-            'I work on requirements independently or as part of a small team',
+        description: 'I work on requirements independently or as part of a small team',
         icon: <User className="h-6 w-6" />,
         features: [
             'Personal workspace',
             'Basic collaboration',
             'AI assistance',
-            'Template library',
+            'Template library'
         ],
-        color: 'border-blue-200 hover:border-blue-400 dark:border-blue-800 dark:hover:border-blue-600',
+        color: 'border-blue-200 hover:border-blue-400 dark:border-blue-800 dark:hover:border-blue-600'
     },
     {
         id: 'team-lead',
@@ -29,24 +36,23 @@ const roleOptions = [
             'Team management',
             'Project oversight',
             'Advanced analytics',
-            'Workflow automation',
+            'Workflow automation'
         ],
-        color: 'border-green-200 hover:border-green-400 dark:border-green-800 dark:hover:border-green-600',
+        color: 'border-green-200 hover:border-green-400 dark:border-green-800 dark:hover:border-green-600'
     },
     {
         id: 'admin',
         title: 'Organization Admin',
-        description:
-            'I need to set up and manage the platform for my organization',
+        description: 'I need to set up and manage the platform for my organization',
         icon: <Crown className="h-6 w-6" />,
         features: [
             'User management',
             'Organization settings',
             'Security controls',
-            'Compliance features',
+            'Compliance features'
         ],
-        color: 'border-purple-200 hover:border-purple-400 dark:border-purple-800 dark:hover:border-purple-600',
-    },
+        color: 'border-purple-200 hover:border-purple-400 dark:border-purple-800 dark:hover:border-purple-600'
+    }
 ];
 
 export function RoleSelectionStep() {
@@ -71,11 +77,7 @@ export function RoleSelectionStep() {
                     <motion.div
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
-                        transition={{
-                            duration: 0.6,
-                            type: 'spring',
-                            stiffness: 200,
-                        }}
+                        transition={{ duration: 0.6, type: "spring", stiffness: 200 }}
                         className="w-16 h-16 bg-gradient-to-br from-green-600 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-600/25"
                     >
                         <Shield className="h-8 w-8 text-white" />
@@ -86,7 +88,7 @@ export function RoleSelectionStep() {
                         transition={{ delay: 0.2 }}
                         className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-green-900 dark:from-white dark:to-green-100 bg-clip-text text-transparent mb-3"
                     >
-                        `What&apos;s your role?`
+                        What's your role?
                     </motion.h2>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
@@ -94,8 +96,7 @@ export function RoleSelectionStep() {
                         transition={{ delay: 0.3 }}
                         className="text-lg text-slate-600 dark:text-slate-300"
                     >
-                        This helps us customize your experience and show
-                        relevant features
+                        This helps us customize your experience and show relevant features
                     </motion.p>
                 </motion.div>
 
@@ -109,8 +110,8 @@ export function RoleSelectionStep() {
                             transition={{
                                 delay: 0.4 + index * 0.1,
                                 duration: 0.5,
-                                type: 'spring',
-                                stiffness: 200,
+                                type: "spring",
+                                stiffness: 200
                             }}
                             className={`group relative p-8 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
                                 data.profileData.role === role.id
@@ -120,50 +121,48 @@ export function RoleSelectionStep() {
                             onClick={() => handleRoleSelect(role.id)}
                             whileHover={{
                                 y: -8,
-                                transition: { duration: 0.2 },
+                                transition: { duration: 0.2 }
                             }}
                             whileTap={{ scale: 0.98 }}
                         >
-                            {data.profileData.role === role.id && (
-                                <div className="absolute top-4 right-4">
-                                    <CheckCircle className="h-5 w-5 text-blue-600" />
-                                </div>
-                            )}
+                                {data.profileData.role === role.id && (
+                                    <div className="absolute top-4 right-4">
+                                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                                    </div>
+                                )}
 
-                            <div className="flex flex-col items-center text-center">
-                                <div
-                                    className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
+                                <div className="flex flex-col items-center text-center">
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
                                         data.profileData.role === role.id
                                             ? 'bg-blue-600 text-white'
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-                                    }`}
-                                >
-                                    {role.icon}
+                                    }`}>
+                                        {role.icon}
+                                    </div>
+
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                                        {role.title}
+                                    </h3>
+
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                                        {role.description}
+                                    </p>
+
+                                    <div className="space-y-2 w-full">
+                                        {role.features.map((feature) => (
+                                            <div
+                                                key={feature}
+                                                className="flex items-center text-sm text-gray-500 dark:text-gray-400"
+                                            >
+                                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2" />
+                                                {feature}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-
-                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                                    {role.title}
-                                </h3>
-
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                                    {role.description}
-                                </p>
-
-                                <div className="space-y-2 w-full">
-                                    {role.features.map((feature) => (
-                                        <div
-                                            key={feature}
-                                            className="flex items-center text-sm text-gray-500 dark:text-gray-400"
-                                        >
-                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2" />
-                                            {feature}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
+                            </motion.div>
+                        ))}
+                    </div>
 
                 {/* Help Text */}
                 <motion.div
@@ -177,8 +176,7 @@ export function RoleSelectionStep() {
                             <span className="text-white text-sm">💡</span>
                         </div>
                         <p className="text-slate-600 dark:text-slate-300 text-center">
-                            `Don&apos;t worry - you can always change this later
-                            in your settings`
+                            Don't worry - you can always change this later in your settings
                         </p>
                     </div>
                 </motion.div>

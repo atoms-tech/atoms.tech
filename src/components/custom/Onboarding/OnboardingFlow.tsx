@@ -1,18 +1,17 @@
 'use client';
 
-import { User } from '@supabase/supabase-js';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-import { OnboardingProgress as OnboardingProgressType } from '@/lib/db/server/home.server';
-import { Organization } from '@/types/base/organizations.types';
 
 import { OnboardingProvider } from './OnboardingContext';
 import { OnboardingHeader } from './OnboardingHeader';
-import { OnboardingNavigation } from './OnboardingNavigation';
 import { OnboardingProgress } from './OnboardingProgress';
 import { OnboardingSteps } from './OnboardingSteps';
+import { OnboardingNavigation } from './OnboardingNavigation';
+import { User } from '@/types/base/users.types';
+import { Organization } from '@/types/base/organizations.types';
+import { OnboardingProgress as OnboardingProgressType } from '@/lib/db/server/home.server';
 
 interface OnboardingFlowProps {
     user: User;
@@ -29,7 +28,7 @@ export function OnboardingFlow({
     onboardingProgress,
     onboardingType,
     targetOrgId,
-    initialStep,
+    initialStep
 }: OnboardingFlowProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -37,8 +36,8 @@ export function OnboardingFlow({
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Get the target organization if doing org-level onboarding
-    const targetOrganization = targetOrgId
-        ? organizations.find((org) => org.id === targetOrgId)
+    const targetOrganization = targetOrgId 
+        ? organizations.find(org => org.id === targetOrgId)
         : null;
 
     // Define steps based on onboarding type
@@ -50,7 +49,7 @@ export function OnboardingFlow({
                 'team-roles',
                 'project-creation',
                 'collaboration-setup',
-                'completion',
+                'completion'
             ];
         } else {
             return [
@@ -59,7 +58,7 @@ export function OnboardingFlow({
                 'role-selection',
                 'first-project',
                 'feature-tour',
-                'completion',
+                'completion'
             ];
         }
     };
@@ -73,7 +72,7 @@ export function OnboardingFlow({
         params.set('step', currentStep.toString());
         if (onboardingType) params.set('type', onboardingType);
         if (targetOrgId) params.set('orgId', targetOrgId);
-
+        
         router.replace(`/onboarding?${params.toString()}`, { scroll: false });
     }, [currentStep, onboardingType, targetOrgId, router, searchParams]);
 
@@ -97,11 +96,11 @@ export function OnboardingFlow({
 
     const handleComplete = async () => {
         setIsCompleting(true);
-
+        
         try {
             // Mark onboarding as completed
             // This would typically involve an API call to update user preferences
-
+            
             // Redirect based on onboarding type
             if (onboardingType === 'organization' && targetOrgId) {
                 router.push(`/org/${targetOrgId}`);

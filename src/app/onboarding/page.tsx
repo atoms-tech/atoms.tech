@@ -1,11 +1,10 @@
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 
+import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
+import { getUserOnboardingProgressServer } from '@/lib/db/server/home.server';
 import { OnboardingFlow } from '@/components/custom/Onboarding/OnboardingFlow';
 import { OnboardingLoadingSkeleton } from '@/components/custom/Onboarding/OnboardingLoadingSkeleton';
-import { getAuthUserServer } from '@/lib/db/server';
-import { getUserOnboardingProgressServer } from '@/lib/db/server/home.server';
-import { createClient } from '@/lib/supabase/supabaseServer';
 
 interface OnboardingPageProps {
     searchParams: Promise<{
@@ -15,9 +14,7 @@ interface OnboardingPageProps {
     }>;
 }
 
-export default async function OnboardingPage({
-    searchParams,
-}: OnboardingPageProps) {
+export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
     const params = await searchParams;
     const authData = await getAuthUserServer();
 
@@ -27,32 +24,10 @@ export default async function OnboardingPage({
 
     const user = authData.user;
 
-    // Get organizations with role information
-    const supabase = await createClient();
-    const { data: organizationMemberships, error: orgError } = await supabase
-        .from('organization_members')
-        .select(
-            `
-            role,
-            organizations!inner(*)
-        `,
-        )
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .eq('is_deleted', false);
-
-    if (orgError) {
-        console.error('Error fetching organizations:', orgError);
-        throw orgError;
-    }
-
-    const organizations =
-        organizationMemberships?.map((membership) => ({
-            ...membership.organizations,
-            role: membership.role,
-        })) || [];
-
-    const onboardingProgress = await getUserOnboardingProgressServer(user.id);
+    const [organizations, onboardingProgress] = await Promise.all([
+        getUserOrganizationsServer(user.id),
+        getUserOnboardingProgressServer(user.id)
+    ]);
 
     // Determine onboarding type
     const onboardingType = params.type || 'account';
@@ -61,12 +36,11 @@ export default async function OnboardingPage({
 
     // If organization onboarding is requested, verify user has access
     if (onboardingType === 'organization' && targetOrgId) {
-        const hasAccess = organizations.some(
-            (org) =>
-                org.id === targetOrgId &&
-                (org.role === 'owner' || org.role === 'admin'),
+        const hasAccess = organizations.some(org => 
+            org.id === targetOrgId && 
+            (org.role === 'owner' || org.role === 'admin')
         );
-
+        
         if (!hasAccess) {
             redirect('/onboarding?type=account');
         }

@@ -1,19 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import {
-    ArrowRight,
+import { 
+    CheckCircle, 
+    Rocket, 
+    FileText, 
+    Users, 
     Brain,
-    CheckCircle,
-    FileText,
-    Sparkles,
-    Users,
+    ArrowRight,
+    Sparkles
 } from 'lucide-react';
 
-import { useOnboarding } from '@/components/custom/Onboarding/OnboardingContext';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { useOnboarding } from '../OnboardingContext';
 
 const nextSteps = [
     {
@@ -21,29 +22,29 @@ const nextSteps = [
         title: 'Create your first requirement',
         description: 'Start documenting what your system needs to do',
         action: 'Create Requirement',
-        color: 'bg-blue-500',
+        color: 'bg-blue-500'
     },
     {
         icon: <Users className="h-5 w-5" />,
         title: 'Invite your team',
         description: 'Collaborate with colleagues on your requirements',
         action: 'Invite Team',
-        color: 'bg-green-500',
+        color: 'bg-green-500'
     },
     {
         icon: <Brain className="h-5 w-5" />,
         title: 'Try AI assistance',
         description: 'Get intelligent suggestions for your requirements',
         action: 'Try AI',
-        color: 'bg-purple-500',
-    },
+        color: 'bg-purple-500'
+    }
 ];
 
 const achievements = [
     'Profile setup complete',
     'First project created',
     'Platform tour completed',
-    'Ready to collaborate',
+    'Ready to collaborate'
 ];
 
 export function CompletionStep() {
@@ -53,18 +54,14 @@ export function CompletionStep() {
         if (onboardingType === 'organization') {
             return {
                 title: `Welcome to ${targetOrganization?.name}!`,
-                subtitle:
-                    'Your organization is now set up and ready for collaboration',
-                message:
-                    "You've successfully configured your organization settings, team roles, and collaboration features.",
+                subtitle: 'Your organization is now set up and ready for collaboration',
+                message: 'You\'ve successfully configured your organization settings, team roles, and collaboration features.'
             };
         } else {
             return {
                 title: `Welcome to ATOMS.TECH, ${data.profileData.displayName}!`,
-                subtitle:
-                    "You're all set up and ready to start managing requirements",
-                message:
-                    "You've completed the setup process and can now start creating and managing requirements with your team.",
+                subtitle: 'You\'re all set up and ready to start managing requirements',
+                message: 'You\'ve completed the setup process and can now start creating and managing requirements with your team.'
             };
         }
     };
@@ -80,12 +77,12 @@ export function CompletionStep() {
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                transition={{ type: 'spring', duration: 0.6 }}
+                                transition={{ type: "spring", duration: 0.6 }}
                                 className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"
                             >
                                 <CheckCircle className="h-8 w-8 text-white" />
                             </motion.div>
-
+                            
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -123,7 +120,7 @@ export function CompletionStep() {
                                 <div className="flex items-center justify-center mb-4">
                                     <Sparkles className="h-5 w-5 text-yellow-500 mr-2" />
                                     <h3 className="font-semibold text-gray-900 dark:text-white">
-                                        What you&apos;ve accomplished
+                                        What you've accomplished
                                     </h3>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
@@ -132,9 +129,7 @@ export function CompletionStep() {
                                             key={achievement}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            transition={{
-                                                delay: 0.6 + index * 0.1,
-                                            }}
+                                            transition={{ delay: 0.6 + index * 0.1 }}
                                             className="flex items-center space-x-2"
                                         >
                                             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -162,14 +157,10 @@ export function CompletionStep() {
                                             key={step.title}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{
-                                                delay: 0.8 + index * 0.1,
-                                            }}
+                                            transition={{ delay: 0.8 + index * 0.1 }}
                                             className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                                         >
-                                            <div
-                                                className={`w-8 h-8 ${step.color} rounded-lg flex items-center justify-center text-white mb-3`}
-                                            >
+                                            <div className={`w-8 h-8 ${step.color} rounded-lg flex items-center justify-center text-white mb-3`}>
                                                 {step.icon}
                                             </div>
                                             <h4 className="font-medium text-gray-900 dark:text-white mb-2">
@@ -198,15 +189,11 @@ export function CompletionStep() {
                                 transition={{ delay: 1.1 }}
                                 className="text-center pt-4"
                             >
-                                <Badge
-                                    variant="secondary"
-                                    className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4"
-                                >
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 mb-4">
                                     🎉 Setup Complete
                                 </Badge>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    You can always access help and tutorials
-                                    from the main menu
+                                    You can always access help and tutorials from the main menu
                                 </p>
                             </motion.div>
                         </CardContent>
