@@ -37,8 +37,6 @@ interface UseRequirementActionsProps {
     properties: Property[] | undefined;
 }
 
-
-
 export const useRequirementActions = ({
     blockId,
     documentId,
@@ -332,12 +330,17 @@ export const useRequirementActions = ({
                     .single();
 
                 if (docError) {
-                    console.error('Error fetching document for project ID:', docError);
+                    console.error(
+                        'Error fetching document for project ID:',
+                        docError,
+                    );
                     throw docError;
                 }
 
                 // Generate the next REQ-ID if not provided
-                const externalId = naturalFields?.external_id || await generateNextReqId(document.project_id);
+                const externalId =
+                    naturalFields?.external_id ||
+                    (await generateNextReqId(document.project_id));
 
                 const newRequirementData = {
                     ...requirementData,

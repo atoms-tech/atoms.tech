@@ -1,30 +1,30 @@
-import { TrendingUp, Users, Clock, CheckCircle } from 'lucide-react';
+import { CheckCircle, Clock, TrendingUp, Users } from 'lucide-react';
 
 const stats = [
     {
         icon: TrendingUp,
         value: '50%',
         label: 'FASTER REQUIREMENTS',
-        description: 'Average time reduction in requirements creation'
+        description: 'Average time reduction in requirements creation',
     },
     {
         icon: Users,
         value: '1000+',
         label: 'ACTIVE USERS',
-        description: 'Engineers and teams using ATOMS.TECH daily'
+        description: 'Engineers and teams using ATOMS.TECH daily',
     },
     {
         icon: Clock,
         value: '10K+',
         label: 'HOURS SAVED',
-        description: 'Total time saved across all projects'
+        description: 'Total time saved across all projects',
     },
     {
         icon: CheckCircle,
         value: '99.9%',
         label: 'COMPLIANCE RATE',
-        description: 'Requirements meeting industry standards'
-    }
+        description: 'Requirements meeting industry standards',
+    },
 ];
 
 export function Stats() {
@@ -52,7 +52,7 @@ export function Stats() {
                                     <stat.icon className="w-12 h-12 text-purple-600" />
                                 </div>
                             </div>
-                            
+
                             <div className="mb-4">
                                 <div className="text-4xl md:text-5xl lg:text-6xl font-black text-black mb-2">
                                     {stat.value}
@@ -61,7 +61,7 @@ export function Stats() {
                                     {stat.label}
                                 </div>
                             </div>
-                            
+
                             <p className="text-sm text-gray-600 leading-relaxed">
                                 {stat.description}
                             </p>

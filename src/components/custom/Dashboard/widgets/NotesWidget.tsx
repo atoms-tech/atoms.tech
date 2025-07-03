@@ -20,24 +20,30 @@ interface Note {
 }
 
 export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
-    const { maxNotes = 5, showSearch = true, allowEdit = true } = instance.config || {};
-    
+    const {
+        maxNotes = 5,
+        showSearch = true,
+        allowEdit = true,
+    } = instance.config || {};
+
     const [notes, setNotes] = useState<Note[]>([
         {
             id: '1',
             title: 'Meeting Notes',
-            content: 'Discussed project timeline and deliverables. Next steps: finalize requirements and start development.',
+            content:
+                'Discussed project timeline and deliverables. Next steps: finalize requirements and start development.',
             createdAt: new Date(Date.now() - 86400000),
             updatedAt: new Date(Date.now() - 86400000),
-            tags: ['work', 'meeting']
+            tags: ['work', 'meeting'],
         },
         {
             id: '2',
             title: 'Ideas',
-            content: 'New feature ideas for the dashboard: drag and drop, better analytics, mobile support.',
+            content:
+                'New feature ideas for the dashboard: drag and drop, better analytics, mobile support.',
             createdAt: new Date(Date.now() - 172800000),
             updatedAt: new Date(Date.now() - 172800000),
-            tags: ['ideas', 'features']
+            tags: ['ideas', 'features'],
         },
         {
             id: '3',
@@ -45,21 +51,26 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
             content: 'Remember to update the documentation before the release.',
             createdAt: new Date(Date.now() - 259200000),
             updatedAt: new Date(Date.now() - 259200000),
-            tags: ['reminder']
-        }
+            tags: ['reminder'],
+        },
     ]);
-    
+
     const [searchQuery, setSearchQuery] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [newNote, setNewNote] = useState({ title: '', content: '' });
     const [editingId, setEditingId] = useState<string | null>(null);
 
     const filteredNotes = notes
-        .filter(note => 
-            searchQuery === '' || 
-            note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            note.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        .filter(
+            (note) =>
+                searchQuery === '' ||
+                note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                note.content
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                note.tags?.some((tag) =>
+                    tag.toLowerCase().includes(searchQuery.toLowerCase()),
+                ),
         )
         .slice(0, maxNotes);
 
@@ -70,31 +81,35 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                 title: newNote.title.trim() || 'Untitled',
                 content: newNote.content.trim(),
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
             };
-            setNotes(prev => [note, ...prev]);
+            setNotes((prev) => [note, ...prev]);
             setNewNote({ title: '', content: '' });
             setIsCreating(false);
         }
     };
 
     const updateNote = (id: string, updates: Partial<Note>) => {
-        setNotes(prev => prev.map(note => 
-            note.id === id 
-                ? { ...note, ...updates, updatedAt: new Date() }
-                : note
-        ));
+        setNotes((prev) =>
+            prev.map((note) =>
+                note.id === id
+                    ? { ...note, ...updates, updatedAt: new Date() }
+                    : note,
+            ),
+        );
         setEditingId(null);
     };
 
     const deleteNote = (id: string) => {
-        setNotes(prev => prev.filter(note => note.id !== id));
+        setNotes((prev) => prev.filter((note) => note.id !== id));
     };
 
     const formatDate = (date: Date) => {
         const now = new Date();
-        const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-        
+        const diffInHours = Math.floor(
+            (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+        );
+
         if (diffInHours < 1) return 'Just now';
         if (diffInHours < 24) return `${diffInHours}h ago`;
         if (diffInHours < 48) return 'Yesterday';
@@ -118,7 +133,7 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                         <Plus className="h-4 w-4" />
                     </Button>
                 </div>
-                
+
                 {showSearch && (
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -131,7 +146,7 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                     </div>
                 )}
             </CardHeader>
-            
+
             <CardContent className="space-y-3">
                 {/* Create New Note */}
                 {isCreating && (
@@ -144,13 +159,23 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                         <Input
                             placeholder="Note title..."
                             value={newNote.title}
-                            onChange={(e) => setNewNote(prev => ({ ...prev, title: e.target.value }))}
+                            onChange={(e) =>
+                                setNewNote((prev) => ({
+                                    ...prev,
+                                    title: e.target.value,
+                                }))
+                            }
                             className="border-0 bg-transparent p-0 text-sm font-medium placeholder:text-gray-400"
                         />
                         <Textarea
                             placeholder="Write your note..."
                             value={newNote.content}
-                            onChange={(e) => setNewNote(prev => ({ ...prev, content: e.target.value }))}
+                            onChange={(e) =>
+                                setNewNote((prev) => ({
+                                    ...prev,
+                                    content: e.target.value,
+                                }))
+                            }
                             className="border-0 bg-transparent p-0 text-sm resize-none min-h-[60px] placeholder:text-gray-400"
                         />
                         <div className="flex justify-end gap-2">
@@ -185,19 +210,31 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                                 <div className="space-y-2">
                                     <Input
                                         defaultValue={note.title}
-                                        onBlur={(e) => updateNote(note.id, { title: e.target.value })}
+                                        onBlur={(e) =>
+                                            updateNote(note.id, {
+                                                title: e.target.value,
+                                            })
+                                        }
                                         className="border-0 bg-transparent p-0 text-sm font-medium"
                                     />
                                     <Textarea
                                         defaultValue={note.content}
-                                        onBlur={(e) => updateNote(note.id, { content: e.target.value })}
+                                        onBlur={(e) =>
+                                            updateNote(note.id, {
+                                                content: e.target.value,
+                                            })
+                                        }
                                         className="border-0 bg-transparent p-0 text-sm resize-none min-h-[60px]"
                                     />
                                 </div>
                             ) : (
                                 <div
-                                    onClick={() => allowEdit && setEditingId(note.id)}
-                                    className={allowEdit ? 'cursor-pointer' : ''}
+                                    onClick={() =>
+                                        allowEdit && setEditingId(note.id)
+                                    }
+                                    className={
+                                        allowEdit ? 'cursor-pointer' : ''
+                                    }
                                 >
                                     <div className="flex items-start justify-between">
                                         <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-1">
@@ -220,7 +257,7 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                                     </p>
                                     <div className="flex items-center justify-between mt-2">
                                         <div className="flex gap-1">
-                                            {note.tags?.map(tag => (
+                                            {note.tags?.map((tag) => (
                                                 <span
                                                     key={tag}
                                                     className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded"
@@ -237,18 +274,20 @@ export function NotesWidget({ instance, onConfigChange }: WidgetProps) {
                             )}
                         </motion.div>
                     ))}
-                    
+
                     {filteredNotes.length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                             <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                             <p>No notes found</p>
                             <p className="text-sm">
-                                {searchQuery ? 'Try a different search term' : 'Create your first note'}
+                                {searchQuery
+                                    ? 'Try a different search term'
+                                    : 'Create your first note'}
                             </p>
                         </div>
                     )}
                 </div>
-                
+
                 {notes.length > maxNotes && (
                     <div className="text-center">
                         <Button variant="ghost" size="sm" className="text-xs">

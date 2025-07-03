@@ -28,7 +28,8 @@ export function ProjectCreationStep() {
                         className="text-center py-8"
                     >
                         <p className="text-gray-600 dark:text-gray-300">
-                            Organization project creation will be implemented here
+                            Organization project creation will be implemented
+                            here
                         </p>
                     </motion.div>
                 </CardContent>

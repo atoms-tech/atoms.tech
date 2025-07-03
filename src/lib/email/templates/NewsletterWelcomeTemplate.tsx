@@ -1,5 +1,6 @@
+import { Button, Hr, Section, Text } from '@react-email/components';
 import React from 'react';
-import { Text, Section, Button, Hr } from '@react-email/components';
+
 import { BaseTemplate } from './BaseTemplate';
 
 interface NewsletterWelcomeTemplateProps {
@@ -14,18 +15,28 @@ export function NewsletterWelcomeTemplate({
     return (
         <BaseTemplate previewText="Welcome to ATOMS.TECH Newsletter!">
             <Text style={heading}>Welcome to ATOMS.TECH Newsletter! 🎉</Text>
-            
+
             <Text style={paragraph}>
-                Thank you for subscribing to our newsletter! We're excited to have you join our community of requirements management professionals.
+                Thank you for subscribing to our newsletter! We're excited to
+                have you join our community of requirements management
+                professionals.
             </Text>
 
             <Section style={benefitsSection}>
                 <Text style={subheading}>What you'll receive:</Text>
-                <Text style={benefitItem}>📊 Product updates and new features</Text>
-                <Text style={benefitItem}>💡 Best practices for requirements management</Text>
-                <Text style={benefitItem}>🔧 Tips and tricks to improve your workflow</Text>
+                <Text style={benefitItem}>
+                    📊 Product updates and new features
+                </Text>
+                <Text style={benefitItem}>
+                    💡 Best practices for requirements management
+                </Text>
+                <Text style={benefitItem}>
+                    🔧 Tips and tricks to improve your workflow
+                </Text>
                 <Text style={benefitItem}>📈 Industry insights and trends</Text>
-                <Text style={benefitItem}>🎯 Exclusive content and early access</Text>
+                <Text style={benefitItem}>
+                    🎯 Exclusive content and early access
+                </Text>
             </Section>
 
             <Section style={actionSection}>
@@ -41,7 +52,8 @@ export function NewsletterWelcomeTemplate({
 
             <Section style={footerSection}>
                 <Text style={footerText}>
-                    You're receiving this email because you subscribed to our newsletter with the email address: {email}
+                    You're receiving this email because you subscribed to our
+                    newsletter with the email address: {email}
                 </Text>
                 <Text style={footerText}>
                     Don't want to receive these emails? You can{' '}

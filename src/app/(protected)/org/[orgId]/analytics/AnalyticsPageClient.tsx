@@ -1,23 +1,28 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-    BarChart3,
+import {
     Activity,
-    History,
+    BarChart3,
     Download,
+    History,
     Settings,
-    TrendingUp
+    TrendingUp,
 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState } from 'react';
 
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import { AnalyticsDataGrid } from '@/components/analytics/AnalyticsDataGrid';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAnalyticsMetrics } from '@/hooks/queries/useAnalytics';
 import { Organization } from '@/types';
 
@@ -32,7 +37,7 @@ export function AnalyticsPageClient({
     orgId,
     organization,
     initialTab,
-    initialTimeRange
+    initialTimeRange,
 }: AnalyticsPageClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -42,7 +47,7 @@ export function AnalyticsPageClient({
     const { data: metrics, isLoading: metricsLoading } = useAnalyticsMetrics(
         orgId,
         undefined,
-        initialTimeRange
+        initialTimeRange,
     );
 
     const handleTabChange = (tab: string) => {
@@ -62,21 +67,21 @@ export function AnalyticsPageClient({
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Analytics
+                    </h1>
                     <p className="text-muted-foreground">
-                        Activity insights and version history for {organization.name}
+                        Activity insights and version history for{' '}
+                        {organization.name}
                     </p>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                     <Badge variant="outline" className="capitalize">
                         {organization.type} Organization
                     </Badge>
-                    
-                    <Button
-                        variant="outline"
-                        onClick={handleExportData}
-                    >
+
+                    <Button variant="outline" onClick={handleExportData}>
                         <Download className="h-4 w-4 mr-2" />
                         Export Data
                     </Button>
@@ -89,11 +94,16 @@ export function AnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <Activity className="h-4 w-4 text-blue-500" />
-                            <span className="ml-2 text-sm font-medium">Total Activities</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Total Activities
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalActivities.toLocaleString() || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalActivities.toLocaleString() ||
+                                      '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -103,11 +113,16 @@ export function AnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="ml-2 text-sm font-medium">This Month</span>
+                            <span className="ml-2 text-sm font-medium">
+                                This Month
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.activitiesThisMonth.toLocaleString() || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.activitiesThisMonth.toLocaleString() ||
+                                      '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -117,11 +132,15 @@ export function AnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <History className="h-4 w-4 text-purple-500" />
-                            <span className="ml-2 text-sm font-medium">Active Users</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Active Users
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalUsers || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalUsers || '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -131,11 +150,15 @@ export function AnalyticsPageClient({
                     <CardContent className="p-4">
                         <div className="flex items-center">
                             <BarChart3 className="h-4 w-4 text-orange-500" />
-                            <span className="ml-2 text-sm font-medium">Documents</span>
+                            <span className="ml-2 text-sm font-medium">
+                                Documents
+                            </span>
                         </div>
                         <div className="mt-2">
                             <div className="text-2xl font-bold">
-                                {metricsLoading ? '...' : (metrics?.totalDocuments || '0')}
+                                {metricsLoading
+                                    ? '...'
+                                    : metrics?.totalDocuments || '0'}
                             </div>
                         </div>
                     </CardContent>
@@ -143,17 +166,30 @@ export function AnalyticsPageClient({
             </div>
 
             {/* Main Content */}
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+            <Tabs
+                value={activeTab}
+                onValueChange={handleTabChange}
+                className="space-y-6"
+            >
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="dashboard"
+                        className="flex items-center gap-2"
+                    >
                         <BarChart3 className="h-4 w-4" />
                         Dashboard
                     </TabsTrigger>
-                    <TabsTrigger value="activity" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="activity"
+                        className="flex items-center gap-2"
+                    >
                         <Activity className="h-4 w-4" />
                         Activity Log
                     </TabsTrigger>
-                    <TabsTrigger value="history" className="flex items-center gap-2">
+                    <TabsTrigger
+                        value="history"
+                        className="flex items-center gap-2"
+                    >
                         <History className="h-4 w-4" />
                         Version History
                     </TabsTrigger>
@@ -167,7 +203,8 @@ export function AnalyticsPageClient({
                                 Analytics Dashboard
                             </CardTitle>
                             <CardDescription>
-                                Visual insights into organization activity and trends
+                                Visual insights into organization activity and
+                                trends
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -187,7 +224,8 @@ export function AnalyticsPageClient({
                                 Activity Log
                             </CardTitle>
                             <CardDescription>
-                                Complete history of all activities across the organization
+                                Complete history of all activities across the
+                                organization
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -209,16 +247,21 @@ export function AnalyticsPageClient({
                                 Version History
                             </CardTitle>
                             <CardDescription>
-                                Track changes and restore previous versions of documents and blocks
+                                Track changes and restore previous versions of
+                                documents and blocks
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="text-center py-12 text-muted-foreground">
                                     <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <h3 className="text-lg font-medium mb-2">Version History</h3>
+                                    <h3 className="text-lg font-medium mb-2">
+                                        Version History
+                                    </h3>
                                     <p className="text-sm max-w-md mx-auto">
-                                        Select a specific document or block from the activity log to view its version history and restore previous versions.
+                                        Select a specific document or block from
+                                        the activity log to view its version
+                                        history and restore previous versions.
                                     </p>
                                     <Button
                                         variant="outline"
@@ -239,11 +282,13 @@ export function AnalyticsPageClient({
                 <CardContent className="p-4">
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-4">
-                            <span>Last updated: {new Date().toLocaleString()}</span>
+                            <span>
+                                Last updated: {new Date().toLocaleString()}
+                            </span>
                             <span>•</span>
                             <span>Data retention: 90 days</span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                             <Settings className="h-4 w-4" />
                             <span>Analytics Settings</span>

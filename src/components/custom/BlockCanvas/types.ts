@@ -38,6 +38,7 @@ export interface BlockContent {
 export interface BlockCanvasProps {
     documentId: string;
     _useTanStackTables?: boolean;
+    _useGlideTables?: boolean;
 }
 
 export interface BlockWithRequirements extends Block {
@@ -75,7 +76,7 @@ export interface UseBlockActionsProps {
     blocks: BlockWithRequirements[] | undefined;
     setLocalBlocks: (
         updater: React.SetStateAction<BlockWithRequirements[]>,
-        trackingBlockId?: string
+        trackingBlockId?: string,
     ) => void;
     orgId: string;
     projectId: string;

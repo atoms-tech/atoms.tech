@@ -405,23 +405,30 @@ export function useDuplicateDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (params: DuplicateDocumentParams): Promise<DuplicateDocumentResponse> => {
-            const response = await fetch(`/api/documents/${params.documentId}/duplicate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
+        mutationFn: async (
+            params: DuplicateDocumentParams,
+        ): Promise<DuplicateDocumentResponse> => {
+            const response = await fetch(
+                `/api/documents/${params.documentId}/duplicate`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        targetProjectId: params.targetProjectId,
+                        newName: params.newName,
+                        includeRequirements: params.includeRequirements ?? true,
+                        includeProperties: params.includeProperties ?? true,
+                    }),
                 },
-                body: JSON.stringify({
-                    targetProjectId: params.targetProjectId,
-                    newName: params.newName,
-                    includeRequirements: params.includeRequirements ?? true,
-                    includeProperties: params.includeProperties ?? true,
-                }),
-            });
+            );
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to duplicate document');
+                throw new Error(
+                    errorData.error || 'Failed to duplicate document',
+                );
             }
 
             return response.json();
@@ -429,7 +436,9 @@ export function useDuplicateDocument() {
         onSuccess: (data, variables) => {
             // Invalidate queries for the target project
             queryClient.invalidateQueries({
-                queryKey: queryKeys.documents.byProject(variables.targetProjectId),
+                queryKey: queryKeys.documents.byProject(
+                    variables.targetProjectId,
+                ),
             });
 
             // Invalidate the general documents list

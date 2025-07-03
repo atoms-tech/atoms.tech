@@ -3,11 +3,11 @@ import { CookiesProvider } from 'next-client-cookies/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 
+import { KeyboardShortcutProvider } from '@/components/accessibility/KeyboardShortcutProvider';
+import { LiveRegionProvider } from '@/components/ui/live-region';
+import { DEFAULT_SKIP_LINKS, SkipLinks } from '@/components/ui/skip-link';
 import { QueryProvider } from '@/lib/providers/query.provider';
 import { ThemeProvider } from '@/lib/providers/theme.provider';
-import { LiveRegionProvider } from '@/components/ui/live-region';
-import { KeyboardShortcutProvider } from '@/components/accessibility/KeyboardShortcutProvider';
-import { SkipLinks, DEFAULT_SKIP_LINKS } from '@/components/ui/skip-link';
 
 import '@/styles/globals.css';
 import '@/styles/accessibility.css';
@@ -64,6 +64,16 @@ export default function RootLayout({
                             </QueryProvider>
                         </ThemeProvider>
                     </CookiesProvider>
+                    {/* Below Required for Glide overlays (e.g., dropdown editors) */}
+                    <div
+                        id="portal"
+                        style={{
+                            position: 'fixed',
+                            left: 0,
+                            top: 0,
+                            zIndex: 9999,
+                        }}
+                    />
                 </body>
             </html>
         </GlobalErrorBoundary>

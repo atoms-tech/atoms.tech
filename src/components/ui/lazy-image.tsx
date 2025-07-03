@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { cn } from '@/lib/utils';
 
 interface LazyImageProps {
@@ -20,7 +21,7 @@ export function LazyImage({
     fallback = '/placeholder-avatar.png',
     placeholder,
     onLoad,
-    onError
+    onError,
 }: LazyImageProps) {
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
@@ -30,7 +31,7 @@ export function LazyImage({
 
     useEffect(() => {
         const currentImg = imgRef.current;
-        
+
         if (!currentImg) return;
 
         // Create intersection observer for lazy loading
@@ -45,8 +46,8 @@ export function LazyImage({
             },
             {
                 rootMargin: '50px', // Start loading 50px before the image comes into view
-                threshold: 0.1
-            }
+                threshold: 0.1,
+            },
         );
 
         observerRef.current.observe(currentImg);
@@ -75,16 +76,18 @@ export function LazyImage({
         <div className={cn('relative overflow-hidden', className)}>
             {/* Placeholder while loading */}
             {!isLoaded && (
-                <div className={cn(
-                    'absolute inset-0 flex items-center justify-center bg-muted animate-pulse',
-                    className
-                )}>
+                <div
+                    className={cn(
+                        'absolute inset-0 flex items-center justify-center bg-muted animate-pulse',
+                        className,
+                    )}
+                >
                     {placeholder || (
                         <div className="w-8 h-8 bg-muted-foreground/20 rounded-full" />
                     )}
                 </div>
             )}
-            
+
             {/* Actual image */}
             <img
                 ref={imgRef}
@@ -93,7 +96,7 @@ export function LazyImage({
                 className={cn(
                     'transition-opacity duration-300',
                     isLoaded ? 'opacity-100' : 'opacity-0',
-                    className
+                    className,
                 )}
                 onLoad={handleLoad}
                 onError={handleError}

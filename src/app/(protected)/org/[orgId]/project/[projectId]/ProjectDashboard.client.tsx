@@ -208,7 +208,9 @@ export default function ProjectPage() {
     };
 
     const handleGoToAnalytics = () => {
-        router.push(`/org/${params?.orgId}/project/${params?.projectId}/analytics`);
+        router.push(
+            `/org/${params?.orgId}/project/${params?.projectId}/analytics`,
+        );
     };
 
     const handleDeleteProject = async () => {
@@ -457,7 +459,9 @@ export default function ProjectPage() {
                                         document={doc}
                                         userRole={userRole || 'viewer'}
                                         onEdit={() => handleEditDocument(doc)}
-                                        onDelete={() => setDocumentToDelete(doc)}
+                                        onDelete={() =>
+                                            setDocumentToDelete(doc)
+                                        }
                                     />
                                 </div>
                             </div>

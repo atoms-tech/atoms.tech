@@ -209,7 +209,7 @@
     .accessible-button {
         border: 2px solid;
     }
-    
+
     .accessible-table th,
     .accessible-table td {
         border: 2px solid;
@@ -229,7 +229,7 @@
         min-height: 44px;
         min-width: 44px;
     }
-    
+
     .touch-target {
         min-height: 44px;
         min-width: 44px;
@@ -242,11 +242,11 @@
     .focus-ring::after {
         display: none !important;
     }
-    
+
     .accessible-table {
         border-collapse: collapse;
     }
-    
+
     .accessible-table th,
     .accessible-table td {
         border: 1px solid #000;
@@ -282,7 +282,9 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    font-family:
+        ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono',
+        Menlo, monospace;
     font-size: 0.75rem;
     padding: 2px 6px;
     background: hsl(var(--muted));

@@ -44,5 +44,6 @@ next-env.d.ts
 
 .cursorrules
 .cursor/
+.history/
 
 bun.lock

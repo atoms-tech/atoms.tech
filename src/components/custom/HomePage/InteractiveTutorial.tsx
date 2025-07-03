@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    Play, 
-    X, 
-    ArrowRight, 
-    ArrowLeft, 
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+    ArrowLeft,
+    ArrowRight,
     CheckCircle,
     Lightbulb,
+    Play,
     Target,
-    Zap
+    X,
+    Zap,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 interface TutorialStep {
     id: string;
@@ -52,37 +52,41 @@ const tutorials: Tutorial[] = [
                 id: 'welcome',
                 title: 'Welcome to ATOMS.TECH',
                 description: 'Your modern requirements management platform',
-                content: 'ATOMS.TECH helps you write, organize, and manage requirements with AI assistance. Let\'s get you started with the basics.',
-                tip: 'Take your time to explore each feature as we go through them.'
+                content:
+                    "ATOMS.TECH helps you write, organize, and manage requirements with AI assistance. Let's get you started with the basics.",
+                tip: 'Take your time to explore each feature as we go through them.',
             },
             {
                 id: 'create-project',
                 title: 'Create Your First Project',
                 description: 'Projects help organize your requirements',
-                content: 'Click the "Create New Project" button to start. Projects are containers for all your requirements, documents, and team collaboration.',
+                content:
+                    'Click the "Create New Project" button to start. Projects are containers for all your requirements, documents, and team collaboration.',
                 action: {
                     label: 'Create Project',
-                    onClick: () => console.log('Navigate to project creation')
-                }
+                    onClick: () => console.log('Navigate to project creation'),
+                },
             },
             {
                 id: 'add-requirements',
                 title: 'Add Requirements',
                 description: 'Document what your system needs to do',
-                content: 'Requirements are the building blocks of your project. Write them in natural language - our AI will help you improve them.',
-                tip: 'Start with simple, clear statements about what your system should do.'
+                content:
+                    'Requirements are the building blocks of your project. Write them in natural language - our AI will help you improve them.',
+                tip: 'Start with simple, clear statements about what your system should do.',
             },
             {
                 id: 'ai-analysis',
                 title: 'Use AI Analysis',
                 description: 'Let AI improve your requirements',
-                content: 'Our AI can rewrite requirements for clarity, check compliance, and suggest improvements. Try it on any requirement.',
+                content:
+                    'Our AI can rewrite requirements for clarity, check compliance, and suggest improvements. Try it on any requirement.',
                 action: {
                     label: 'Try AI Demo',
-                    onClick: () => console.log('Navigate to AI demo')
-                }
-            }
-        ]
+                    onClick: () => console.log('Navigate to AI demo'),
+                },
+            },
+        ],
     },
     {
         id: 'ai-features',
@@ -96,28 +100,33 @@ const tutorials: Tutorial[] = [
                 id: 'ai-rewriting',
                 title: 'AI Rewriting',
                 description: 'Transform requirements into industry standards',
-                content: 'Our AI can rewrite requirements in EARS, INCOSE, or other formats. It also improves clarity and removes ambiguity.',
-                tip: 'Try different formats to see which works best for your project.'
+                content:
+                    'Our AI can rewrite requirements in EARS, INCOSE, or other formats. It also improves clarity and removes ambiguity.',
+                tip: 'Try different formats to see which works best for your project.',
             },
             {
                 id: 'compliance-checking',
                 title: 'Compliance Checking',
                 description: 'Ensure requirements meet regulations',
-                content: 'AI automatically checks requirements against industry regulations and standards, flagging potential issues before they become problems.',
+                content:
+                    'AI automatically checks requirements against industry regulations and standards, flagging potential issues before they become problems.',
             },
             {
                 id: 'test-generation',
                 title: 'Test Case Generation',
                 description: 'Generate test cases from requirements',
-                content: 'Automatically create structured test cases from your requirements, saving hours of manual work.',
-            }
-        ]
-    }
+                content:
+                    'Automatically create structured test cases from your requirements, saving hours of manual work.',
+            },
+        ],
+    },
 ];
 
 export function InteractiveTutorial() {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
+    const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(
+        null,
+    );
     const [currentStep, setCurrentStep] = useState(0);
     const [completedTutorials, setCompletedTutorials] = useState<string[]>([]);
 
@@ -128,7 +137,10 @@ export function InteractiveTutorial() {
     };
 
     const nextStep = () => {
-        if (selectedTutorial && currentStep < selectedTutorial.steps.length - 1) {
+        if (
+            selectedTutorial &&
+            currentStep < selectedTutorial.steps.length - 1
+        ) {
             setCurrentStep(currentStep + 1);
         } else {
             completeTutorial();
@@ -142,7 +154,10 @@ export function InteractiveTutorial() {
     };
 
     const completeTutorial = () => {
-        if (selectedTutorial && !completedTutorials.includes(selectedTutorial.id)) {
+        if (
+            selectedTutorial &&
+            !completedTutorials.includes(selectedTutorial.id)
+        ) {
             setCompletedTutorials([...completedTutorials, selectedTutorial.id]);
         }
         setIsOpen(false);
@@ -158,10 +173,14 @@ export function InteractiveTutorial() {
 
     const getDifficultyColor = (difficulty: string) => {
         switch (difficulty) {
-            case 'Beginner': return 'bg-green-500/20 text-green-400';
-            case 'Intermediate': return 'bg-yellow-500/20 text-yellow-400';
-            case 'Advanced': return 'bg-red-500/20 text-red-400';
-            default: return 'bg-gray-500/20 text-gray-400';
+            case 'Beginner':
+                return 'bg-green-500/20 text-green-400';
+            case 'Intermediate':
+                return 'bg-yellow-500/20 text-yellow-400';
+            case 'Advanced':
+                return 'bg-red-500/20 text-red-400';
+            default:
+                return 'bg-gray-500/20 text-gray-400';
         }
     };
 
@@ -190,7 +209,9 @@ export function InteractiveTutorial() {
                                             <h4 className="text-sm font-medium text-white">
                                                 {tutorial.title}
                                             </h4>
-                                            {completedTutorials.includes(tutorial.id) && (
+                                            {completedTutorials.includes(
+                                                tutorial.id,
+                                            ) && (
                                                 <CheckCircle className="h-4 w-4 text-green-400" />
                                             )}
                                         </div>
@@ -198,7 +219,12 @@ export function InteractiveTutorial() {
                                             {tutorial.description}
                                         </p>
                                         <div className="flex items-center gap-2 mt-1">
-                                            <Badge variant="outline" className={getDifficultyColor(tutorial.difficulty)}>
+                                            <Badge
+                                                variant="outline"
+                                                className={getDifficultyColor(
+                                                    tutorial.difficulty,
+                                                )}
+                                            >
                                                 {tutorial.difficulty}
                                             </Badge>
                                             <span className="text-xs text-gray-500">
@@ -212,7 +238,9 @@ export function InteractiveTutorial() {
                                     onClick={() => startTutorial(tutorial)}
                                     className="bg-purple-600 hover:bg-purple-700"
                                 >
-                                    {completedTutorials.includes(tutorial.id) ? 'Replay' : 'Start'}
+                                    {completedTutorials.includes(tutorial.id)
+                                        ? 'Replay'
+                                        : 'Start'}
                                 </Button>
                             </div>
                         ))}
@@ -248,7 +276,8 @@ export function InteractiveTutorial() {
                                     {selectedTutorial.title}
                                 </CardTitle>
                                 <p className="text-sm text-gray-400 mt-1">
-                                    Step {currentStep + 1} of {selectedTutorial.steps.length}
+                                    Step {currentStep + 1} of{' '}
+                                    {selectedTutorial.steps.length}
                                 </p>
                             </div>
                             <Button
@@ -277,7 +306,8 @@ export function InteractiveTutorial() {
                                     <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                                         <Target className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
                                         <p className="text-sm text-blue-300">
-                                            <strong>Tip:</strong> {currentStepData.tip}
+                                            <strong>Tip:</strong>{' '}
+                                            {currentStepData.tip}
                                         </p>
                                     </div>
                                 )}
@@ -312,8 +342,8 @@ export function InteractiveTutorial() {
                                                 index === currentStep
                                                     ? 'bg-purple-400'
                                                     : index < currentStep
-                                                    ? 'bg-green-400'
-                                                    : 'bg-gray-600'
+                                                      ? 'bg-green-400'
+                                                      : 'bg-gray-600'
                                             }`}
                                         />
                                     ))}
@@ -323,7 +353,9 @@ export function InteractiveTutorial() {
                                     className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
                                 >
                                     {isLastStep ? 'Complete' : 'Next'}
-                                    {!isLastStep && <ArrowRight className="h-4 w-4" />}
+                                    {!isLastStep && (
+                                        <ArrowRight className="h-4 w-4" />
+                                    )}
                                 </Button>
                             </div>
                         </CardContent>

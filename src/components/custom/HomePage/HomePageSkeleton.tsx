@@ -22,7 +22,10 @@ export function HomePageSkeleton() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {[1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className="flex items-center space-x-3">
+                                <div
+                                    key={i}
+                                    className="flex items-center space-x-3"
+                                >
                                     <div className="h-8 w-8 bg-muted animate-pulse rounded-full" />
                                     <div className="flex-1 space-y-1">
                                         <div className="h-4 w-full bg-muted animate-pulse rounded" />
@@ -70,7 +73,10 @@ export function HomePageSkeleton() {
                             <div className="h-2 w-full bg-muted animate-pulse rounded" />
                             <div className="space-y-3">
                                 {[1, 2, 3, 4, 5].map((i) => (
-                                    <div key={i} className="flex items-center space-x-2">
+                                    <div
+                                        key={i}
+                                        className="flex items-center space-x-2"
+                                    >
                                         <div className="h-4 w-4 bg-muted animate-pulse rounded" />
                                         <div className="h-4 w-full bg-muted animate-pulse rounded" />
                                     </div>
