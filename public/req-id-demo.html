@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REQ-ID Generation Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1f2937;
+        }
+        .button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .button:hover {
+            background-color: #2563eb;
+        }
+        .button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .result {
+            background-color: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-bottom: 8px;
+            border-left: 4px solid #10b981;
+        }
+        .result.error {
+            border-left-color: #ef4444;
+        }
+        .result.warning {
+            border-left-color: #f59e0b;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .info-box {
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .algorithm-step {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #1f2937; margin-bottom: 32px;">🎯 REQ-ID Generation Demo</h1>
+    
+    <div class="card">
+        <div class="card-title">✨ Automatic REQ-ID Generation Feature</div>
+        <div class="info-box">
+            <strong>Feature Overview:</strong> This demo showcases the automatic REQ-ID generation system that eliminates the need for users to manually create unique requirement identifiers.
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">🧪 REQ-ID Generation Tests</div>
+            <div class="info-box">
+                <strong>Mock Existing REQ-IDs:</strong><br>
+                <code>REQ-001, REQ-002, REQ-005, REQ-010</code>
+            </div>
+            <button class="button" onclick="runGenerationTests()">Run REQ-ID Generation Tests</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🔍 Custom REQ-ID Validation</div>
+            <input type="text" id="customReqId" class="input" placeholder="Enter REQ-ID to test (e.g., REQ-001)">
+            <button class="button" onclick="testCustomReqId()">Test Custom REQ-ID</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📋 Test Results</div>
+        <div id="results"></div>
+        <button class="button" onclick="clearResults()" style="margin-top: 16px;">Clear Results</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">⚙️ REQ-ID Generation Algorithm</div>
+        <div class="algorithm-step">
+            <strong>1. Format:</strong> REQ-XXX (where XXX is zero-padded 3-digit number)
+        </div>
+        <div class="algorithm-step">
+            <strong>2. Uniqueness:</strong> Query existing REQ-IDs in project scope
+        </div>
+        <div class="algorithm-step">
+            <strong>3. Sequential:</strong> Find highest existing number and increment by 1
+        </div>
+        <div class="algorithm-step">
+            <strong>4. Gap Handling:</strong> Always uses next highest number (doesn't fill gaps)
+        </div>
+        <div class="algorithm-step">
+            <strong>5. Concurrency:</strong> Retry logic with random delays for concurrent creation
+        </div>
+        <div class="algorithm-step">
+            <strong>6. Fallback:</strong> Timestamp-based ID if all retries fail
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🛠️ Implementation Details</div>
+        <div style="font-size: 14px;">
+            <div style="margin-bottom: 16px;">
+                <strong>Files Modified:</strong>
+                <ul style="margin-top: 8px;">
+                    <li><code>src/lib/utils/reqIdGenerator.ts</code> - REQ-ID generation utilities</li>
+                    <li><code>src/hooks/mutations/useRequirementMutations.ts</code> - Updated create mutation</li>
+                    <li><code>src/components/custom/BlockCanvas/hooks/useRequirementActions.ts</code> - Updated table actions</li>
+                </ul>
+            </div>
+            <div>
+                <strong>Key Features:</strong>
+                <ul style="margin-top: 8px;">
+                    <li>Automatic REQ-ID generation on requirement creation</li>
+                    <li>Project-scoped uniqueness</li>
+                    <li>Format validation (REQ-XXX pattern)</li>
+                    <li>Concurrent creation handling</li>
+                    <li>Backward compatibility with existing requirements</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock existing REQ-IDs for testing
+        const mockExistingReqIds = ['REQ-001', 'REQ-002', 'REQ-005', 'REQ-010'];
+
+        // REQ-ID validation function
+        function isValidReqIdFormat(reqId) {
+            return /^REQ-\d{3,}$/.test(reqId);
+        }
+
+        // Generate next REQ-ID
+        function generateNextReqId(existingIds) {
+            const numbers = existingIds
+                .map(id => {
+                    const match = id.match(/^REQ-(\d+)$/);
+                    return match ? parseInt(match[1], 10) : 0;
+                })
+                .filter(num => !isNaN(num) && num > 0);
+
+            let nextNumber = 1;
+            if (numbers.length > 0) {
+                const maxNumber = Math.max(...numbers);
+                nextNumber = maxNumber + 1;
+            }
+
+            return `REQ-${nextNumber.toString().padStart(3, '0')}`;
+        }
+
+        // Add result to display
+        function addResult(message, type = 'success') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.textContent = message;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        // Clear results
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Run generation tests
+        function runGenerationTests() {
+            clearResults();
+            
+            // Test 1: Generate next REQ-ID
+            const nextId = generateNextReqId(mockExistingReqIds);
+            addResult(`✅ Generated next REQ-ID: ${nextId}`);
+
+            // Test 2: Validate REQ-ID formats
+            const testIds = ['REQ-001', 'REQ-123', 'INVALID', 'REQ-1', 'REQ-12345', 'req-001', 'REQ-ABC'];
+            testIds.forEach(id => {
+                const isValid = isValidReqIdFormat(id);
+                addResult(`${isValid ? '✅' : '❌'} Format validation for "${id}": ${isValid}`, isValid ? 'success' : 'error');
+            });
+
+            // Test 3: Check uniqueness
+            const duplicateTest = mockExistingReqIds.includes(nextId);
+            addResult(`${duplicateTest ? '❌' : '✅'} Uniqueness check for "${nextId}": ${!duplicateTest ? 'unique' : 'duplicate'}`, duplicateTest ? 'error' : 'success');
+
+            // Test 4: Sequential generation
+            const testSequence = [];
+            let currentIds = [...mockExistingReqIds];
+            for (let i = 0; i < 5; i++) {
+                const newId = generateNextReqId(currentIds);
+                testSequence.push(newId);
+                currentIds.push(newId);
+            }
+            addResult(`✅ Sequential generation: ${testSequence.join(', ')}`);
+
+            // Test 5: Gap handling
+            const gappedIds = ['REQ-001', 'REQ-003', 'REQ-007'];
+            const nextAfterGap = generateNextReqId(gappedIds);
+            addResult(`✅ Next ID after gaps [${gappedIds.join(', ')}]: ${nextAfterGap}`);
+
+            // Test 6: Edge cases
+            addResult(`✅ Empty list generates: ${generateNextReqId([])}`);
+            addResult(`✅ Single item list generates: ${generateNextReqId(['REQ-005'])}`);
+        }
+
+        // Test custom REQ-ID
+        function testCustomReqId() {
+            const customReqId = document.getElementById('customReqId').value.trim();
+            if (!customReqId) return;
+            
+            const isValid = isValidReqIdFormat(customReqId);
+            const isDuplicate = mockExistingReqIds.includes(customReqId);
+            
+            addResult(`${isValid ? '✅' : '❌'} Format validation for "${customReqId}": ${isValid}`, isValid ? 'success' : 'error');
+            addResult(`${isDuplicate ? '⚠️' : '✅'} Uniqueness check for "${customReqId}": ${isDuplicate ? 'duplicate' : 'unique'}`, isDuplicate ? 'warning' : 'success');
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runGenerationTests, 500);
+        });
+    </script>
+</body>
+</html>
