@@ -30,6 +30,15 @@ import {
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 interface ComplianceSummary {
     totalControls: number;
@@ -179,6 +188,73 @@ export default function SOC2Dashboard() {
                 return <Shield className="h-4 w-4" />;
         }
     };
+
+    const openImplementationModal = (feature: string) => {
+        setModalFeature(feature);
+        setShowImplementationModal(true);
+    };
+
+    const ImplementationBadge = ({ feature }: { feature: string }) => (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="h-6 text-xs bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100">
+                    <Construction className="h-3 w-3 mr-1" />
+                    Requires Implementation
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Construction className="h-5 w-5 text-amber-600" />
+                        Implementation Required
+                    </DialogTitle>
+                    <DialogDescription>
+                        This feature requires Supabase database integration to display real data.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                    <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                        <h4 className="font-medium text-amber-800 mb-2">Feature: {feature}</h4>
+                        <p className="text-sm text-amber-700 mb-3">
+                            This feature currently shows mock data. To enable real-time data:
+                        </p>
+                        <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                            <li>Set up Supabase audit logging tables</li>
+                            <li>Implement real-time data synchronization</li>
+                            <li>Configure proper database permissions</li>
+                            <li>Add API endpoints for data retrieval</li>
+                        </ul>
+                    </div>
+                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                            <Database className="h-4 w-4" />
+                            Database Schema Available
+                        </h4>
+                        <p className="text-sm text-blue-700">
+                            The required database schema is already defined in the types system. 
+                            Integration requires connecting to existing audit_logs and usage_logs tables.
+                        </p>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+
+    const DataSourceIndicator = ({ isReal, source }: { isReal: boolean; source: string }) => (
+        <div className="flex items-center gap-2 text-xs">
+            {isReal ? (
+                <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-green-700">Live Data: {source}</span>
+                </>
+            ) : (
+                <>
+                    <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                    <span className="text-amber-700">Mock Data</span>
+                </>
+            )}
+        </div>
+    );
 
     if (loading) {
         return (
@@ -587,14 +663,63 @@ export default function SOC2Dashboard() {
 
                                                         {/* Action Buttons */}
                                                         <div className="flex gap-2 mt-3">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                <FileText className="h-3 w-3 mr-1" />
-                                                                View Details
-                                                            </Button>
+                                                            <Dialog>
+                                                                <DialogTrigger asChild>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        className="text-xs"
+                                                                    >
+                                                                        <FileText className="h-3 w-3 mr-1" />
+                                                                        View Details
+                                                                    </Button>
+                                                                </DialogTrigger>
+                                                                <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+                                                                    <DialogHeader>
+                                                                        <DialogTitle className="flex items-center gap-2">
+                                                                            {getFamilyIcon(control.family)}
+                                                                            {control.id} - {control.name}
+                                                                        </DialogTitle>
+                                                                        <DialogDescription>
+                                                                            Detailed information about this SOC2 control
+                                                                        </DialogDescription>
+                                                                    </DialogHeader>
+                                                                    <div className="space-y-4 pr-2">
+                                                                        <div>
+                                                                            <h4 className="font-medium mb-2">Description</h4>
+                                                                            <p className="text-sm text-gray-600">{control.description}</p>
+                                                                        </div>
+                                                                        <Separator />
+                                                                        <div>
+                                                                            <h4 className="font-medium mb-2">Evidence Documentation</h4>
+                                                                            <div className="space-y-2">
+                                                                                {control.evidence.map((evidence, index) => (
+                                                                                    <div key={index} className="flex items-center gap-2 text-sm">
+                                                                                        <FileText className="h-4 w-4 text-gray-400" />
+                                                                                        {evidence}
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                        {control.issues.length > 0 && (
+                                                                            <>
+                                                                                <Separator />
+                                                                                <div>
+                                                                                    <h4 className="font-medium mb-2 text-red-800">Open Issues</h4>
+                                                                                    <div className="space-y-2">
+                                                                                        {control.issues.map((issue) => (
+                                                                                            <div key={issue.id} className="p-3 border border-red-200 rounded bg-red-50">
+                                                                                                <p className="font-medium text-red-800 text-sm">{issue.title}</p>
+                                                                                                <p className="text-red-600 text-xs mt-1">{issue.description}</p>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </DialogContent>
+                                                            </Dialog>
                                                             <Button
                                                                 size="sm"
                                                                 variant="outline"
@@ -691,7 +816,7 @@ export default function SOC2Dashboard() {
                     <TabsContent value="audit" className="space-y-4">
                         {/* Audit Trail Summary */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <Card>
+                            <Card className="relative">
                                 <CardContent className="p-4">
                                     <div className="flex items-center gap-2">
                                         <Activity className="h-5 w-5 text-blue-600" />
@@ -704,6 +829,8 @@ export default function SOC2Dashboard() {
                                             </p>
                                         </div>
                                     </div>
+                                    <div className="mt-2">
+                                        </div>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -771,7 +898,7 @@ export default function SOC2Dashboard() {
                             </Card>
                         </div>
 
-                        <Card>
+                        <Card className="relative">
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     <span>Audit Trail</span>
@@ -786,9 +913,8 @@ export default function SOC2Dashboard() {
                                         </Button>
                                     </div>
                                 </CardTitle>
-                                <CardDescription>
-                                    Real-time system access and change
-                                    monitoring for compliance
+                                <CardDescription className="flex items-center justify-between">
+                                    <span>Real-time system access and change monitoring for compliance</span>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -994,15 +1120,14 @@ export default function SOC2Dashboard() {
                     <TabsContent value="reports" className="space-y-4">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             {/* Report Generation */}
-                            <Card>
+                            <Card className="relative">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <FileText className="h-5 w-5" />
                                         Generate Reports
                                     </CardTitle>
-                                    <CardDescription>
-                                        Create comprehensive compliance reports
-                                        for auditors and stakeholders
+                                    <CardDescription className="flex items-center justify-between">
+                                        <span>Create comprehensive compliance reports for auditors and stakeholders</span>
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -1115,15 +1240,15 @@ export default function SOC2Dashboard() {
                             </Card>
 
                             {/* Report History */}
-                            <Card>
+                            <Card className="relative">
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <Clock className="h-5 w-5" />
                                         Recent Reports
                                     </CardTitle>
-                                    <CardDescription>
-                                        Previously generated compliance reports
-                                    </CardDescription>
+                                    <CardDescription className="flex items-center justify-between">
+                                        <span>Previously generated compliance reports</span>
+                                        </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
@@ -1179,14 +1304,14 @@ export default function SOC2Dashboard() {
                         </div>
 
                         {/* Compliance Metrics Overview */}
-                        <Card>
+                        <Card className="relative">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <BarChart3 className="h-5 w-5" />
                                     Compliance Metrics Trends
                                 </CardTitle>
-                                <CardDescription>
-                                    Historical compliance performance and trends
+                                <CardDescription className="flex items-center justify-between">
+                                    <span>Historical compliance performance and trends</span>
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
