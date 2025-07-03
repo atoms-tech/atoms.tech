@@ -7,6 +7,27 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { TablesInsert } from '@/types/base/database.types';
 import { Document } from '@/types/base/documents.types';
 
+// Types for document duplication
+interface DuplicateDocumentParams {
+    documentId: string;
+    targetProjectId: string;
+    newName?: string;
+    includeRequirements?: boolean;
+    includeProperties?: boolean;
+}
+
+interface DuplicateDocumentResponse {
+    success: boolean;
+    document: Document;
+    progress: {
+        step: string;
+        progress: number;
+        total: number;
+        message: string;
+    };
+    message: string;
+}
+
 // Define PropertyCreateData based on how it's used
 interface PropertyCreateData {
     name: string;
@@ -376,6 +397,62 @@ export function useCreateDocumentWithDefaultSchemas() {
                 await createDocumentMutation.mutateAsync(document);
 
             return createdDocument;
+        },
+    });
+}
+
+export function useDuplicateDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (
+            params: DuplicateDocumentParams,
+        ): Promise<DuplicateDocumentResponse> => {
+            const response = await fetch(
+                `/api/documents/${params.documentId}/duplicate`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        targetProjectId: params.targetProjectId,
+                        newName: params.newName,
+                        includeRequirements: params.includeRequirements ?? true,
+                        includeProperties: params.includeProperties ?? true,
+                    }),
+                },
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.error || 'Failed to duplicate document',
+                );
+            }
+
+            return response.json();
+        },
+        onSuccess: (data, variables) => {
+            // Invalidate queries for the target project
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.byProject(
+                    variables.targetProjectId,
+                ),
+            });
+
+            // Invalidate the general documents list
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.root,
+            });
+
+            // Invalidate blocks for the new document
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.blocks.byDocument(data.document.id),
+            });
+        },
+        onError: (error) => {
+            console.error('Document duplication failed:', error);
         },
     });
 }

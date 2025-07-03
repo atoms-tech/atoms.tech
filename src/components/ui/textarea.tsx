@@ -5,7 +5,9 @@ import { cn } from '@/lib/utils';
 const Textarea = ({
     className,
     ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) => {
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+    placeholder?: string;
+}) => {
     return (
         <textarea
             className={cn(

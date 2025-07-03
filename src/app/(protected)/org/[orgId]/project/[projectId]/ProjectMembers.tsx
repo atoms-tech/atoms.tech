@@ -19,21 +19,21 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import {
-    PROJECT_ROLE_ARRAY,
-    ProjectRole,
-    hasProjectPermission,
-} from '@/lib/auth/permissions';
 import { getProjectMembers } from '@/lib/db/client/projects.client';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { EProjectRole } from '@/types';
 
 interface ProjectMembersProps {
     projectId: string;
 }
 
-const getRoleColor = (role: ProjectRole) => {
+const getRoleColor = (role: EProjectRole) => {
     switch (role) {
+        case 'admin':
+            return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+        case 'maintainer':
+            return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
         case 'editor':
             return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
         case 'viewer':
@@ -48,11 +48,11 @@ const getRoleColor = (role: ProjectRole) => {
 export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     const { user } = useUser();
     const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
-    const [selectedRole, setSelectedRole] = useState<ProjectRole | null>(null);
+    const [selectedRole, setSelectedRole] = useState<EProjectRole | null>(null);
     const [isRolePromptOpen, setIsRolePromptOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [roleFilters, setRoleFilters] = useState<ProjectRole[]>([]);
+    const [roleFilters, setRoleFilters] = useState<EProjectRole[]>([]);
 
     const {
         data: members = [],
@@ -63,8 +63,26 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         queryFn: () => getProjectMembers(projectId),
     });
 
-    const userRole = (members.find((member) => member.id === user?.id)?.role ||
-        null) as ProjectRole | null;
+    // Define rolePermissions with explicit type
+    const rolePermissions: Record<
+        'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer',
+        string[]
+    > = {
+        owner: ['changeRole', 'removeMember'],
+        admin: ['removeMember'],
+        maintainer: [],
+        editor: [],
+        viewer: [],
+    };
+
+    // Explicitly type userRole
+    const userRole: keyof typeof rolePermissions =
+        (members.find((member) => member.id === user?.id)
+            ?.role as keyof typeof rolePermissions) || 'viewer';
+
+    const canPerformAction = (action: string) => {
+        return rolePermissions[userRole].includes(action);
+    };
 
     const sortedMembers = [...members].sort((a, b) => {
         if (a.role === 'owner') return -1;
@@ -80,13 +98,13 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             member.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length > 0
-                ? roleFilters.includes(member.role as ProjectRole)
+                ? roleFilters.includes(member.role as EProjectRole)
                 : true;
         return matchesSearch && matchesRoles;
     });
 
     const handleRemoveMember = async (memberId: string) => {
-        if (!hasProjectPermission(userRole, 'removeMember')) {
+        if (!canPerformAction('removeMember')) {
             setErrorMessage('You do not have permission to remove members.');
             return;
         }
@@ -117,7 +135,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     };
 
     const handleChangeRole = async () => {
-        if (!hasProjectPermission(userRole, 'changeRole')) {
+        if (!canPerformAction('changeRole')) {
             setErrorMessage('You do not have permission to change roles.');
             return;
         }
@@ -174,17 +192,23 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {PROJECT_ROLE_ARRAY.map((role) => (
+                            {[
+                                'admin',
+                                'maintainer',
+                                'editor',
+                                'viewer',
+                                'owner',
+                            ].map((role) => (
                                 <DropdownMenuItem
                                     key={role}
                                     onSelect={(e) => e.preventDefault()} // Prevent menu from closing
                                     onClick={() => {
                                         setRoleFilters((prev) =>
-                                            prev.includes(role as ProjectRole)
+                                            prev.includes(role as EProjectRole)
                                                 ? prev.filter((r) => r !== role)
                                                 : [
                                                       ...prev,
-                                                      role as ProjectRole,
+                                                      role as EProjectRole,
                                                   ],
                                         );
                                     }}
@@ -192,7 +216,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     <span
                                         className={`mr-2 inline-block w-4 h-4 rounded-full ${
                                             roleFilters.includes(
-                                                role as ProjectRole,
+                                                role as EProjectRole,
                                             )
                                                 ? 'bg-primary'
                                                 : 'bg-gray-200'
@@ -253,14 +277,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as ProjectRole)}`}
+                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as EProjectRole)}`}
                                     >
                                         {member.role}
                                     </span>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'changeRole',
-                                    ) &&
+                                    {canPerformAction('changeRole') &&
                                         member.role !== 'owner' && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -285,8 +306,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                                     >
                                                         Change role
                                                     </DropdownMenuItem>
-                                                    {hasProjectPermission(
-                                                        userRole,
+                                                    {canPerformAction(
                                                         'removeMember',
                                                     ) && (
                                                         <DropdownMenuItem
@@ -343,12 +363,17 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                         </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        {['editor', 'viewer'].map((role) => (
+                                        {[
+                                            'admin',
+                                            'maintainer',
+                                            'editor',
+                                            'viewer',
+                                        ].map((role) => (
                                             <DropdownMenuItem
                                                 key={role}
                                                 onClick={() =>
                                                     setSelectedRole(
-                                                        role as ProjectRole,
+                                                        role as EProjectRole,
                                                     )
                                                 }
                                             >

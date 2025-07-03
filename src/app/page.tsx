@@ -8,7 +8,11 @@ import { GridBackground } from '@/components/custom/LandingPage/grid-background'
 import { Hero } from '@/components/custom/LandingPage/hero';
 import { Industries } from '@/components/custom/LandingPage/industries';
 import { Navbar } from '@/components/custom/LandingPage/navbar';
+import { NewsletterSignup } from '@/components/custom/LandingPage/newsletter-signup';
 import { ProblemSnapshot } from '@/components/custom/LandingPage/problem-snapshot';
+import { SocialProof } from '@/components/custom/LandingPage/social-proof';
+import { Stats } from '@/components/custom/LandingPage/stats';
+import { Testimonials } from '@/components/custom/LandingPage/testimonials';
 import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
 import { ProfilerWrapper } from '@/components/custom/ProfilerWrapper';
 
@@ -18,30 +22,37 @@ export default async function Home() {
             <div className="min-h-screen bg-[#0f0f0f] text-[#B5B5B5] relative">
                 <div className="relative z-10">
                     <Navbar />
-                    <main className="space-y-64">
+                    <main className="space-y-0">
                         <Hero />
-                        <div className="section-divider">
-                            <ProblemSnapshot
-                                painPoint="Writing compliant requirements is slow, error‑prone—and bogged down by bloated legacy tools."
-                                solution="A Word‑simple, spreadsheet‑smart workspace with built‑in AI that cuts effort by 50%—checking compliance, sharpening language, and keeping everything traceable."
-                            />
-                        </div>
-                        <div className="section-divider">
-                            <Features />
-                        </div>
-                        <div className="section-divider">
-                            <FeatureDemo />
-                        </div>
+                        <ProblemSnapshot
+                            painPoint="Writing compliant requirements is slow, error‑prone—and bogged down by bloated legacy tools."
+                            solution="A Word‑simple, spreadsheet‑smart workspace with built‑in AI that cuts effort by 50%—checking compliance, sharpening language, and keeping everything traceable."
+                        />
+                        <SocialProof />
+                        <Features />
+                        <FeatureDemo />
+                        <Stats />
                         <TimeSavingEdge />
-                        <div className="section-divider">
-                            <Industries />
+                        <Testimonials />
+                        <Industries />
+                        <div className="py-24 bg-black">
+                            <div className="container mx-auto px-4">
+                                <div className="max-w-2xl mx-auto">
+                                    <div className="text-center mb-8">
+                                        <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+                                            STAY IN THE LOOP
+                                        </h2>
+                                        <p className="text-gray-300">
+                                            Get updates on new features, tips,
+                                            and industry insights
+                                        </p>
+                                    </div>
+                                    <NewsletterSignup />
+                                </div>
+                            </div>
                         </div>
-                        <div className="section-divider">
-                            <CTA />
-                        </div>
-                        <div className="section-divider">
-                            <Contact />
-                        </div>
+                        <CTA />
+                        <Contact />
                     </main>
                     <Footer />
                 </div>

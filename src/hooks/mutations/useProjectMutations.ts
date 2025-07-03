@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
@@ -44,14 +43,11 @@ export function useCreateProject() {
                 .single();
 
             if (projectError) {
-                throw new Error(
-                    `Failed to create project, Supabase insert error: '${projectError.message || 'Unknown error'}`,
-                );
+                console.error('Failed to create project', projectError);
+                throw projectError;
             }
             if (!project) {
-                throw new Error(
-                    'Failed to create project, insert returned no data.',
-                );
+                throw new Error('Failed to create project');
             }
 
             return project;
@@ -88,7 +84,7 @@ export function useCreateProjectMember() {
         }: {
             userId: string;
             projectId: string;
-            role: ProjectRole;
+            role: 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
             orgId: string; // Add orgId to the parameters
         }) => {
             const { data, error } = await supabase

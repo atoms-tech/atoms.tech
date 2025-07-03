@@ -336,18 +336,20 @@ export const useBlockActions = ({
             const { content, ...otherFields } = updates;
 
             // Update local state first for optimistic updates
-            setLocalBlocks((prevBlocks) =>
-                prevBlocks.map((block) =>
-                    block.id === blockId
-                        ? {
-                              ...block,
-                              ...(content ? { content } : {}),
-                              ...otherFields,
-                              updated_by: userProfile.id,
-                              updated_at: new Date().toISOString(),
-                          }
-                        : block,
-                ),
+            setLocalBlocks(
+                (prevBlocks) =>
+                    prevBlocks.map((block) =>
+                        block.id === blockId
+                            ? {
+                                  ...block,
+                                  ...(content ? { content } : {}),
+                                  ...otherFields,
+                                  updated_by: userProfile.id,
+                                  updated_at: new Date().toISOString(),
+                              }
+                            : block,
+                    ),
+                blockId, // Pass blockId for tracking
             );
 
             // Then update the server

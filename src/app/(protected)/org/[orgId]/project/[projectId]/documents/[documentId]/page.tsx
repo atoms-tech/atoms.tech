@@ -29,6 +29,7 @@ export default function DocumentPage() {
 
     //scroll to requirement if requirementId is in sessionStorage
     useEffect(() => {
+        // Only run on client side
         if (typeof window === 'undefined') return;
 
         //get requirementId from sessionStorage
@@ -44,40 +45,46 @@ export default function DocumentPage() {
                     'Attempting to find element with ID:',
                     `requirement-${requirementId}`,
                 );
-                const element = document.getElementById(
-                    `requirement-${requirementId}`,
-                );
 
-                if (element) {
-                    //clear the requirementId from sessionStorage only after finding the element
-                    sessionStorage.removeItem('jumpToRequirementId');
-                    console.log(
-                        'Element found, cleared sessionStorage, scrolling to it',
+                // Additional check to ensure document is available
+                if (typeof document !== 'undefined') {
+                    const element = document.getElementById(
+                        `requirement-${requirementId}`,
                     );
 
-                    //scroll to element
-                    element.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                    });
+                    if (element) {
+                        //clear the requirementId from sessionStorage only after finding the element
+                        sessionStorage.removeItem('jumpToRequirementId');
+                        console.log(
+                            'Element found, cleared sessionStorage, scrolling to it',
+                        );
 
-                    setTimeout(() => {
-                        console.log('Adding highlight class');
-                        element.style.backgroundColor =
-                            'rgba(153, 59, 246, 0.3)';
-                        element.classList.add('highlight-requirement');
+                        //scroll to element
+                        element.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                        });
 
                         setTimeout(() => {
-                            console.log('Removing highlight');
-                            element.style.backgroundColor = '';
-                            element.classList.remove('highlight-requirement');
-                        }, 3000);
-                    }, 100);
-                } else {
-                    console.log(
-                        'Element not found for requirementId:',
-                        requirementId,
-                    );
+                            console.log('Adding highlight class');
+                            element.style.backgroundColor =
+                                'rgba(153, 59, 246, 0.3)';
+                            element.classList.add('highlight-requirement');
+
+                            setTimeout(() => {
+                                console.log('Removing highlight');
+                                element.style.backgroundColor = '';
+                                element.classList.remove(
+                                    'highlight-requirement',
+                                );
+                            }, 3000);
+                        }, 100);
+                    } else {
+                        console.log(
+                            'Element not found for requirementId:',
+                            requirementId,
+                        );
+                    }
                 }
             }, 1500);
 

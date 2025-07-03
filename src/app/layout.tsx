@@ -3,10 +3,14 @@ import { CookiesProvider } from 'next-client-cookies/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 
+import { KeyboardShortcutProvider } from '@/components/accessibility/KeyboardShortcutProvider';
+import { LiveRegionProvider } from '@/components/ui/live-region';
+import { DEFAULT_SKIP_LINKS, SkipLinks } from '@/components/ui/skip-link';
 import { QueryProvider } from '@/lib/providers/query.provider';
 import { ThemeProvider } from '@/lib/providers/theme.provider';
 
 import '@/styles/globals.css';
+import '@/styles/accessibility.css';
 
 import GlobalErrorBoundary from './global-error';
 
@@ -42,6 +46,7 @@ export default function RootLayout({
                 <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
                 >
+                    <SkipLinks links={DEFAULT_SKIP_LINKS} />
                     <CookiesProvider>
                         <ThemeProvider
                             attribute="class"
@@ -50,8 +55,12 @@ export default function RootLayout({
                             disableTransitionOnChange
                         >
                             <QueryProvider>
-                                {children}
-                                <Toaster position="bottom-right" />
+                                <LiveRegionProvider>
+                                    <KeyboardShortcutProvider>
+                                        {children}
+                                        <Toaster position="bottom-right" />
+                                    </KeyboardShortcutProvider>
+                                </LiveRegionProvider>
                             </QueryProvider>
                         </ThemeProvider>
                     </CookiesProvider>
