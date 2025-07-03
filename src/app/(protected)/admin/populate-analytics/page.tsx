@@ -1,19 +1,13 @@
 'use client';
 
-import { Activity, BarChart3, Database, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { Loader2, Database, BarChart3, Activity } from 'lucide-react';
 
 export default function PopulateAnalyticsPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -21,21 +15,7 @@ export default function PopulateAnalyticsPage() {
     const [projectId, setProjectId] = useState('');
     const [daysBack, setDaysBack] = useState(30);
     const [activitiesPerDay, setActivitiesPerDay] = useState(20);
-    const [result, setResult] = useState<{
-        message: string;
-        details?: {
-            orgId: string;
-            projectId?: string;
-            daysBack: number;
-            activitiesPerDay: number;
-            documentsFound: number;
-            blocksFound: number;
-            usersFound: number;
-            timestampsGenerated: number;
-            auditLogsCreated: number;
-            auditLogsInserted: number;
-        };
-    } | null>(null);
+    const [result, setResult] = useState<any>(null);
     const { toast } = useToast();
 
     const handlePopulate = async () => {
@@ -43,7 +23,7 @@ export default function PopulateAnalyticsPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Organization ID is required',
+                description: 'Organization ID is required'
             });
             return;
         }
@@ -55,39 +35,35 @@ export default function PopulateAnalyticsPage() {
             const response = await fetch('/api/populate-analytics', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     orgId,
                     projectId: projectId || undefined,
                     daysBack,
-                    activitiesPerDay,
-                }),
+                    activitiesPerDay
+                })
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(
-                    data.error || 'Failed to populate analytics data',
-                );
+                throw new Error(data.error || 'Failed to populate analytics data');
             }
 
             setResult(data);
             toast({
                 variant: 'default',
                 title: 'Success!',
-                description: data.message,
+                description: data.message
             });
+
         } catch (error) {
             console.error('Error:', error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to populate analytics data',
+                description: error instanceof Error ? error.message : 'Failed to populate analytics data'
             });
         } finally {
             setIsLoading(false);
@@ -100,12 +76,10 @@ export default function PopulateAnalyticsPage() {
                 <Database className="w-6 h-6" />
                 <h1 className="text-3xl font-bold">Populate Analytics Data</h1>
             </div>
-
+            
             <p className="text-muted-foreground">
-                This tool generates realistic audit log entries to populate the
-                analytics dashboard with sample data. It creates various types
-                of activities (created, updated, viewed, etc.) spread across the
-                specified time period.
+                This tool generates realistic audit log entries to populate the analytics dashboard with sample data.
+                It creates various types of activities (created, updated, viewed, etc.) spread across the specified time period.
             </p>
 
             <Card>
@@ -129,11 +103,9 @@ export default function PopulateAnalyticsPage() {
                                 placeholder="46bddba6-f612-4bb8-b5d0-5b0be00c945c"
                             />
                         </div>
-
+                        
                         <div className="space-y-2">
-                            <Label htmlFor="projectId">
-                                Project ID (optional)
-                            </Label>
+                            <Label htmlFor="projectId">Project ID (optional)</Label>
                             <Input
                                 id="projectId"
                                 value={projectId}
@@ -141,42 +113,34 @@ export default function PopulateAnalyticsPage() {
                                 placeholder="Leave empty for all projects"
                             />
                         </div>
-
+                        
                         <div className="space-y-2">
                             <Label htmlFor="daysBack">Days Back</Label>
                             <Input
                                 id="daysBack"
                                 type="number"
                                 value={daysBack}
-                                onChange={(e) =>
-                                    setDaysBack(parseInt(e.target.value) || 30)
-                                }
+                                onChange={(e) => setDaysBack(parseInt(e.target.value) || 30)}
                                 min="1"
                                 max="365"
                             />
                         </div>
-
+                        
                         <div className="space-y-2">
-                            <Label htmlFor="activitiesPerDay">
-                                Activities Per Day
-                            </Label>
+                            <Label htmlFor="activitiesPerDay">Activities Per Day</Label>
                             <Input
                                 id="activitiesPerDay"
                                 type="number"
                                 value={activitiesPerDay}
-                                onChange={(e) =>
-                                    setActivitiesPerDay(
-                                        parseInt(e.target.value) || 20,
-                                    )
-                                }
+                                onChange={(e) => setActivitiesPerDay(parseInt(e.target.value) || 20)}
                                 min="1"
                                 max="100"
                             />
                         </div>
                     </div>
-
-                    <Button
-                        onClick={handlePopulate}
+                    
+                    <Button 
+                        onClick={handlePopulate} 
                         disabled={isLoading || !orgId}
                         className="w-full"
                     >
@@ -198,95 +162,40 @@ export default function PopulateAnalyticsPage() {
             {result && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-green-600">
-                            Success!
-                        </CardTitle>
-                        <CardDescription>
-                            Analytics data has been populated
-                        </CardDescription>
+                        <CardTitle className="text-green-600">Success!</CardTitle>
+                        <CardDescription>Analytics data has been populated</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
-                            <p>
-                                <strong>Message:</strong> {result.message}
-                            </p>
-
+                            <p><strong>Message:</strong> {result.message}</p>
+                            
                             {result.details && (
                                 <div className="mt-4">
-                                    <h4 className="font-semibold mb-2">
-                                        Details:
-                                    </h4>
+                                    <h4 className="font-semibold mb-2">Details:</h4>
                                     <div className="grid grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            Organization ID:{' '}
-                                            {result.details.orgId}
-                                        </div>
-                                        <div>
-                                            Project ID:{' '}
-                                            {result.details.projectId ||
-                                                'All projects'}
-                                        </div>
-                                        <div>
-                                            Days Back: {result.details.daysBack}
-                                        </div>
-                                        <div>
-                                            Activities Per Day:{' '}
-                                            {result.details.activitiesPerDay}
-                                        </div>
-                                        <div>
-                                            Documents Found:{' '}
-                                            {result.details.documentsFound}
-                                        </div>
-                                        <div>
-                                            Blocks Found:{' '}
-                                            {result.details.blocksFound}
-                                        </div>
-                                        <div>
-                                            Users Found:{' '}
-                                            {result.details.usersFound}
-                                        </div>
-                                        <div>
-                                            Timestamps Generated:{' '}
-                                            {result.details.timestampsGenerated}
-                                        </div>
-                                        <div>
-                                            Audit Logs Created:{' '}
-                                            {result.details.auditLogsCreated}
-                                        </div>
-                                        <div>
-                                            Audit Logs Inserted:{' '}
-                                            {result.details.auditLogsInserted}
-                                        </div>
+                                        <div>Organization ID: {result.details.orgId}</div>
+                                        <div>Project ID: {result.details.projectId || 'All projects'}</div>
+                                        <div>Days Back: {result.details.daysBack}</div>
+                                        <div>Activities Per Day: {result.details.activitiesPerDay}</div>
+                                        <div>Documents Found: {result.details.documentsFound}</div>
+                                        <div>Blocks Found: {result.details.blocksFound}</div>
+                                        <div>Users Found: {result.details.usersFound}</div>
+                                        <div>Timestamps Generated: {result.details.timestampsGenerated}</div>
+                                        <div>Audit Logs Created: {result.details.auditLogsCreated}</div>
+                                        <div>Audit Logs Inserted: {result.details.auditLogsInserted}</div>
                                     </div>
                                 </div>
                             )}
                         </div>
-
+                        
                         <div className="mt-4 p-4 bg-green-50 rounded-lg">
                             <p className="text-green-800 font-medium">
-                                🎉 Analytics data has been populated! You can
-                                now visit the analytics pages to see real data:
+                                🎉 Analytics data has been populated! You can now visit the analytics pages to see real data:
                             </p>
                             <ul className="mt-2 space-y-1 text-green-700">
-                                <li>
-                                    •{' '}
-                                    <a
-                                        href={`/org/${orgId}/analytics`}
-                                        className="underline hover:text-green-900"
-                                    >
-                                        Organization Analytics
-                                    </a>
-                                </li>
+                                <li>• <a href={`/org/${orgId}/analytics`} className="underline hover:text-green-900">Organization Analytics</a></li>
                                 {result.details?.projectId && (
-                                    <li>
-                                        •{' '}
-                                        <a
-                                            href={`/org/${orgId}/project/${result.details.projectId}/analytics`}
-                                            className="underline hover:text-green-900"
-                                        >
-                                            Project Analytics
-                                        </a>
-                                    </li>
+                                    <li>• <a href={`/org/${orgId}/project/${result.details.projectId}/analytics`} className="underline hover:text-green-900">Project Analytics</a></li>
                                 )}
                             </ul>
                         </div>
@@ -297,9 +206,7 @@ export default function PopulateAnalyticsPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Activity Types Generated</CardTitle>
-                    <CardDescription>
-                        The following types of activities will be created
-                    </CardDescription>
+                    <CardDescription>The following types of activities will be created</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
