@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { emailService } from '@/lib/email/emailService';
 import { ContactFormTemplate } from '@/lib/email/templates/ContactFormTemplate';
 
@@ -14,10 +15,10 @@ const contactSubmissionSchema = z.object({
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-
+        
         // Validate the request body
         const validatedData = contactSubmissionSchema.parse(body);
-
+        
         // For now, just log the contact submission
         // TODO: Store in database when contact_submissions table is created
         console.log('Contact form submission:', {
@@ -47,12 +48,9 @@ export async function POST(request: NextRequest) {
 
         // Log email result
         if (!emailResult.success) {
-            console.error(
-                'Failed to send contact form email:',
-                emailResult.error,
-            );
+            console.error('Failed to send contact form email:', emailResult.error);
         }
-
+        
         return NextResponse.json(
             {
                 success: true,
@@ -60,24 +58,25 @@ export async function POST(request: NextRequest) {
                 id: submissionId,
                 emailSent: emailResult.success,
             },
-            { status: 201 },
+            { status: 201 }
         );
+        
     } catch (error) {
         console.error('Contact form submission error:', error);
-
+        
         if (error instanceof z.ZodError) {
             return NextResponse.json(
-                {
-                    error: 'Validation failed',
-                    details: error.errors,
+                { 
+                    error: 'Validation failed', 
+                    details: error.errors 
                 },
-                { status: 400 },
+                { status: 400 }
             );
         }
-
+        
         return NextResponse.json(
             { error: 'Internal server error' },
-            { status: 500 },
+            { status: 500 }
         );
     }
 }
