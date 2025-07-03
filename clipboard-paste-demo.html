@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard Paste Demo - ATOMS.tech</title>
+    <script src="https://unpkg.com/papaparse@5.5.3/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .instructions {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1d4ed8;
+        }
+        
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        
+        button.secondary {
+            background: #64748b;
+        }
+        
+        button.secondary:hover {
+            background: #475569;
+        }
+        
+        .table-container {
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            min-height: 200px;
+        }
+        
+        .table-container.edit-mode {
+            border-color: #2563eb;
+        }
+        
+        .table-container.pasting {
+            pointer-events: none;
+        }
+        
+        .paste-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .paste-message {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        tr:hover {
+            background: #e2e8f0;
+        }
+        
+        .status {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .sample-data {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .result-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .result-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .result-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Clipboard Paste Demo</h1>
+            <p>Test Excel/Google Sheets clipboard paste functionality for ATOMS.tech</p>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h3>🚀 How to Test</h3>
+                <ol>
+                    <li><strong>Enable Edit Mode:</strong> Click "Enter Edit Mode" to enable paste functionality</li>
+                    <li><strong>Copy Data:</strong> Use "Copy Sample Data" or copy from Excel/Google Sheets</li>
+                    <li><strong>Paste:</strong> Click on the table and press Ctrl+V (Cmd+V on Mac)</li>
+                    <li><strong>Verify:</strong> Check that data was pasted and mapped correctly</li>
+                </ol>
+            </div>
+            
+            <div class="controls">
+                <button id="editModeBtn" onclick="toggleEditMode()">Enter Edit Mode</button>
+                <button id="copySampleBtn" onclick="copySampleData()" class="secondary">Copy Sample Data</button>
+                <button onclick="resetTable()" class="secondary">Reset Table</button>
+                <button onclick="clearTable()" class="secondary">Clear Table</button>
+            </div>
+            
+            <div class="status">
+                <span class="badge info" id="editStatus">Edit Mode: OFF</span>
+                <span class="badge warning" id="pasteStatus">Paste Ready: NO</span>
+            </div>
+            
+            <div class="results">
+                <div class="result-card">
+                    <div class="result-number" id="pasteAttempts">0</div>
+                    <div class="result-label">Paste Attempts</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number" id="successfulPastes">0</div>
+                    <div class="result-label">Successful Pastes</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-number" id="totalRows">2</div>
+                    <div class="result-label">Total Rows</div>
+                </div>
+            </div>
+            
+            <div class="table-container" id="tableContainer" tabindex="0">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Category</th>
+                            <th>Effort (hrs)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td>User Authentication</td>
+                            <td>Implement secure user login and registration</td>
+                            <td>High</td>
+                            <td>In Progress</td>
+                            <td>Security</td>
+                            <td>8</td>
+                        </tr>
+                        <tr>
+                            <td>Data Export</td>
+                            <td>Allow users to export data in multiple formats</td>
+                            <td>Medium</td>
+                            <td>Planned</td>
+                            <td>Features</td>
+                            <td>5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="sample-data">
+                <strong>Sample Excel/Sheets Data (Tab-separated):</strong><br>
+Title	Description	Priority	Status	Category	Effort (hrs)
+API Integration	Connect to external payment gateway	High	Planned	Features	12
+Mobile Responsive	Make application mobile-friendly	Medium	In Progress	UI/UX	6
+Performance Optimization	Improve page load times	High	Review	Performance	8
+User Dashboard	Create personalized user dashboard	Medium	Planned	Features	10
+Security Audit	Comprehensive security review	Critical	Planned	Security	16
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+        let isPasting = false;
+        let pasteAttempts = 0;
+        let successfulPastes = 0;
+        
+        const sampleData = `Title	Description	Priority	Status	Category	Effort (hrs)
+API Integration	Connect to external payment gateway	High	Planned	Features	12
+Mobile Responsive	Make application mobile-friendly	Medium	In Progress	UI/UX	6
+Performance Optimization	Improve page load times	High	Review	Performance	8
+User Dashboard	Create personalized user dashboard	Medium	Planned	Features	10
+Security Audit	Comprehensive security review	Critical	Planned	Security	16`;
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            updateUI();
+            
+            if (isEditMode) {
+                document.getElementById('tableContainer').focus();
+                showToast('Edit mode enabled. You can now paste data!', 'success');
+            } else {
+                showToast('Edit mode disabled.', 'info');
+            }
+        }
+        
+        function updateUI() {
+            const editBtn = document.getElementById('editModeBtn');
+            const editStatus = document.getElementById('editStatus');
+            const pasteStatus = document.getElementById('pasteStatus');
+            const tableContainer = document.getElementById('tableContainer');
+            
+            editBtn.textContent = isEditMode ? 'Exit Edit Mode' : 'Enter Edit Mode';
+            editBtn.style.background = isEditMode ? '#dc2626' : '#2563eb';
+            
+            editStatus.textContent = `Edit Mode: ${isEditMode ? 'ON' : 'OFF'}`;
+            editStatus.className = `badge ${isEditMode ? 'success' : 'info'}`;
+            
+            pasteStatus.textContent = `Paste Ready: ${isEditMode ? 'YES' : 'NO'}`;
+            pasteStatus.className = `badge ${isEditMode ? 'success' : 'warning'}`;
+            
+            if (isEditMode) {
+                tableContainer.classList.add('edit-mode');
+            } else {
+                tableContainer.classList.remove('edit-mode');
+            }
+        }
+        
+        async function copySampleData() {
+            try {
+                await navigator.clipboard.writeText(sampleData);
+                pasteAttempts++;
+                updateStats();
+                showToast('Sample data copied to clipboard! Now paste it into the table.', 'success');
+            } catch (error) {
+                showToast('Failed to copy sample data to clipboard', 'error');
+            }
+        }
+        
+        function resetTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td>User Authentication</td>
+                    <td>Implement secure user login and registration</td>
+                    <td>High</td>
+                    <td>In Progress</td>
+                    <td>Security</td>
+                    <td>8</td>
+                </tr>
+                <tr>
+                    <td>Data Export</td>
+                    <td>Allow users to export data in multiple formats</td>
+                    <td>Medium</td>
+                    <td>Planned</td>
+                    <td>Features</td>
+                    <td>5</td>
+                </tr>
+            `;
+            updateStats();
+            showToast('Table reset to original data', 'info');
+        }
+        
+        function clearTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            updateStats();
+            showToast('Table cleared', 'info');
+        }
+        
+        function updateStats() {
+            const tableBody = document.getElementById('tableBody');
+            const rowCount = tableBody.children.length;
+            
+            document.getElementById('pasteAttempts').textContent = pasteAttempts;
+            document.getElementById('successfulPastes').textContent = successfulPastes;
+            document.getElementById('totalRows').textContent = rowCount;
+        }
+        
+        function showToast(message, type = 'info') {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 6px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                font-size: 14px;
+                max-width: 300px;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Paste event handler
+        document.getElementById('tableContainer').addEventListener('paste', async function(e) {
+            if (!isEditMode) {
+                showToast('Enable edit mode first to paste data', 'warning');
+                return;
+            }
+            
+            e.preventDefault();
+            
+            if (isPasting) return;
+            
+            isPasting = true;
+            showPasteOverlay();
+            
+            try {
+                const clipboardText = e.clipboardData.getData('text/plain');
+                
+                if (!clipboardText.trim()) {
+                    showToast('No data found in clipboard', 'error');
+                    return;
+                }
+                
+                // Parse with PapaParse
+                const parseResult = Papa.parse(clipboardText, {
+                    delimiter: '\t',
+                    header: true,
+                    skipEmptyLines: true,
+                    trimHeaders: true,
+                    dynamicTyping: true
+                });
+                
+                if (parseResult.errors && parseResult.errors.length > 0) {
+                    console.warn('Parse warnings:', parseResult.errors);
+                }
+                
+                const data = parseResult.data;
+                
+                if (!data || data.length === 0) {
+                    showToast('No valid data rows found', 'error');
+                    return;
+                }
+                
+                // Add data to table
+                const tableBody = document.getElementById('tableBody');
+                
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.Title || ''}</td>
+                        <td>${row.Description || ''}</td>
+                        <td>${row.Priority || ''}</td>
+                        <td>${row.Status || ''}</td>
+                        <td>${row.Category || ''}</td>
+                        <td>${row['Effort (hrs)'] || ''}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+                
+                successfulPastes++;
+                updateStats();
+                showToast(`Successfully pasted ${data.length} rows!`, 'success');
+                
+            } catch (error) {
+                console.error('Paste error:', error);
+                showToast('Failed to paste data: ' + error.message, 'error');
+            } finally {
+                isPasting = false;
+                hidePasteOverlay();
+            }
+        });
+        
+        function showPasteOverlay() {
+            const tableContainer = document.getElementById('tableContainer');
+            tableContainer.classList.add('pasting');
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'paste-overlay';
+            overlay.id = 'pasteOverlay';
+            overlay.innerHTML = `
+                <div class="paste-message">
+                    <div class="spinner"></div>
+                    <span>Pasting data from clipboard...</span>
+                </div>
+            `;
+            tableContainer.appendChild(overlay);
+        }
+        
+        function hidePasteOverlay() {
+            const tableContainer = document.getElementById('tableContainer');
+            const overlay = document.getElementById('pasteOverlay');
+            
+            tableContainer.classList.remove('pasting');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        // Initialize
+        updateUI();
+        updateStats();
+        
+        // Focus hint
+        document.getElementById('tableContainer').addEventListener('focus', function() {
+            if (isEditMode) {
+                showToast('Table focused. Press Ctrl+V to paste data!', 'info');
+            }
+        });
+    </script>
+</body>
+</html>

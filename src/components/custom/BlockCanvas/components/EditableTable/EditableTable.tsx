@@ -13,15 +13,15 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
-import { useClipboard } from '@/hooks/useClipboard';
-// import {
-//     SHORTCUT_CATEGORIES,
-//     createShortcut,
-//     useKeyboardShortcuts,
-// } from '@/hooks/useKeyboardShortcuts';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+import {
+    handleClipboardPaste,
+    transformDataForTable,
+    validateClipboardData
+} from '@/lib/utils/clipboardParser';
+import { toast } from 'react-hot-toast';
 
 import {
     AddRowPlaceholder,
@@ -83,6 +83,9 @@ export function EditableTable<
     const [isHoveringTable, setIsHoveringTable] = useState(false);
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
+    // Paste functionality state
+    const [isPasting, setIsPasting] = useState(false);
+
     // Use the extracted custom hooks
     const { sortedData, handleSort } = useTableSort(data, sortKey);
     const { user } = useUser();
@@ -92,17 +95,6 @@ export function EditableTable<
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
-
-    // Clipboard functionality
-    const {
-        copyTableData,
-        pasteFromClipboard,
-        isCopied: _isCopied,
-    } = useClipboard({
-        onCopy: () => console.log('Table data copied to clipboard'),
-        onPaste: () => console.log('Data pasted from clipboard'),
-        onError: (error) => console.error(`Clipboard error: ${error.message}`),
-    });
 
     // Function to save pending changes
     const savePendingChanges = useCallback(async () => {
@@ -166,6 +158,97 @@ export function EditableTable<
             }
         },
         [isEditMode, savePendingChanges],
+    );
+
+    // Handle paste events for clipboard data
+    const handlePaste = useCallback(
+        async (e: React.ClipboardEvent<HTMLDivElement>) => {
+            // Only handle paste in edit mode
+            if (!isEditMode) return;
+
+            e.preventDefault();
+            setIsPasting(true);
+
+            try {
+                // Get existing column names
+                const existingColumns = columns.map(col => col.accessor as string);
+
+                // Parse clipboard data
+                const result = await handleClipboardPaste(existingColumns, {
+                    hasHeaders: true,
+                    delimiter: '\t', // Excel/Sheets use tabs
+                    skipEmptyLines: true,
+                    maxRows: 100 // Limit for performance
+                });
+
+                if (!result.success) {
+                    toast.error(`Paste failed: ${result.errors.join(', ')}`);
+                    return;
+                }
+
+                if (result.warnings.length > 0) {
+                    toast.warning(`Paste warnings: ${result.warnings.join(', ')}`);
+                }
+
+                // Transform data to match table structure
+                const transformedData = transformDataForTable(
+                    result.data,
+                    result.columnMapping,
+                    existingColumns
+                );
+
+                // Validate the transformed data
+                const validation = validateClipboardData(transformedData);
+                if (!validation.isValid) {
+                    toast.error(`Data validation failed: ${validation.errors.join(', ')}`);
+                    return;
+                }
+
+                // Add the pasted data as new rows
+                const newRows = transformedData.map((rowData, index) => {
+                    const newItem = { ...rowData } as T;
+                    newItem.id = `paste-${Date.now()}-${index}`;
+                    return newItem;
+                });
+
+                // Add to editing data for immediate display
+                const newEditingData = { ...editingData };
+                newRows.forEach(row => {
+                    newEditingData[row.id] = row;
+                });
+                dispatch({
+                    type: 'SET_INITIAL_EDIT_DATA',
+                    payload: newEditingData,
+                });
+
+                // Save each new row
+                if (onSave) {
+                    for (const row of newRows) {
+                        try {
+                            const { id: _tempId, ...itemWithoutId } = row;
+                            await onSave(itemWithoutId as T, true);
+                        } catch (error) {
+                            console.error('Failed to save pasted row:', error);
+                            toast.error('Failed to save some pasted rows');
+                        }
+                    }
+
+                    // Refresh data after saving
+                    if (onPostSave) {
+                        await onPostSave();
+                    }
+                }
+
+                toast.success(`Successfully pasted ${newRows.length} rows`);
+
+            } catch (error) {
+                console.error('Paste error:', error);
+                toast.error('Failed to paste data');
+            } finally {
+                setIsPasting(false);
+            }
+        },
+        [isEditMode, columns, editingData, onSave, onPostSave],
     );
 
     if (!projectId) {
@@ -265,6 +348,60 @@ export function EditableTable<
         };
     }, []);
 
+    // Handle keyboard navigation
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            if (!selectedCell || !sortedData.length || !isEditMode) return;
+
+            const maxRow = sortedData.length - 1;
+            const maxCol = columns.length - 1;
+            let newRow = selectedCell.row;
+            let newCol = selectedCell.col;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    newRow = Math.max(0, selectedCell.row - 1);
+                    break;
+                case 'ArrowDown':
+                    newRow = Math.min(maxRow, selectedCell.row + 1);
+                    break;
+                case 'ArrowLeft':
+                    newCol = Math.max(0, selectedCell.col - 1);
+                    break;
+                case 'ArrowRight':
+                    newCol = Math.min(maxCol, selectedCell.col + 1);
+                    break;
+                default:
+                    return;
+            }
+
+            e.preventDefault();
+            dispatch({
+                type: 'SET_SELECTED_CELL',
+                payload: { row: newRow, col: newCol },
+            });
+        },
+        [selectedCell, sortedData.length, columns.length, isEditMode],
+    );
+
+    // Reset selected cell when exiting edit mode
+    useEffect(() => {
+        if (!isEditMode) {
+            dispatch({
+                type: 'SET_SELECTED_CELL',
+                payload: null,
+            });
+        }
+    }, [isEditMode]);
+
+    // Add keyboard event listener
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleKeyDown]);
+
     // Handle cell change
     const handleCellChange = useCallback(
         async (rowId: string, columnId: string, newValue: CellValue) => {
@@ -292,182 +429,6 @@ export function EditableTable<
             handleCellChange(itemId, accessor as string, value);
         },
         [handleCellChange],
-    );
-
-    // Delete selected cell content
-    const handleDeleteCell = useCallback(() => {
-        if (!isEditMode || !selectedCell) return;
-
-        if (
-            selectedCell.row < sortedData.length &&
-            selectedCell.col < columns.length
-        ) {
-            const item = sortedData[selectedCell.row];
-            const column = columns[selectedCell.col];
-
-            if (item && column) {
-                handleCellChange(
-                    item.id as string,
-                    column.accessor as string,
-                    '',
-                );
-                console.log('Deleted cell content');
-            }
-        }
-    }, [isEditMode, selectedCell, sortedData, columns, handleCellChange]);
-
-    // Handle keyboard navigation within table
-    const handleTableKeyDown = useCallback(
-        (e: React.KeyboardEvent) => {
-            if (!selectedCell || !sortedData.length || !isEditMode) return;
-
-            const maxRow = sortedData.length - 1;
-            const maxCol = columns.length - 1;
-            let newRow = selectedCell.row;
-            let newCol = selectedCell.col;
-
-            switch (e.key) {
-                case 'ArrowUp':
-                    e.preventDefault();
-                    newRow = Math.max(0, selectedCell.row - 1);
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    newRow = Math.min(maxRow, selectedCell.row + 1);
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    newCol = Math.max(0, selectedCell.col - 1);
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    newCol = Math.min(maxCol, selectedCell.col + 1);
-                    break;
-                case 'Delete':
-                case 'Backspace':
-                    e.preventDefault();
-                    handleDeleteCell();
-                    return;
-                default:
-                    return;
-            }
-
-            dispatch({
-                type: 'SET_SELECTED_CELL',
-                payload: { row: newRow, col: newCol },
-            });
-        },
-        [
-            selectedCell,
-            sortedData.length,
-            columns.length,
-            isEditMode,
-            handleDeleteCell,
-        ],
-    );
-
-    // Reset selected cell when exiting edit mode
-    useEffect(() => {
-        if (!isEditMode) {
-            dispatch({
-                type: 'SET_SELECTED_CELL',
-                payload: null,
-            });
-        }
-    }, [isEditMode]);
-
-    // Remove the global keyboard event listener since we'll handle it locally
-
-    // Copy selected cell or entire table
-    const handleCopy = useCallback(
-        async (e?: React.KeyboardEvent) => {
-            if (!isEditMode) return;
-
-            try {
-                if (
-                    selectedCell &&
-                    selectedCell.row < sortedData.length &&
-                    selectedCell.col < columns.length
-                ) {
-                    // Copy selected cell
-                    const item = sortedData[selectedCell.row];
-                    const column = columns[selectedCell.col];
-                    const cellValue = String(item[column.accessor] || '');
-                    await copyTableData([[cellValue]], [column.header]);
-                    console.log('Copied cell:', cellValue);
-                } else {
-                    // Copy entire table
-                    const headers = columns.map((col) => col.header);
-                    const tableData = sortedData.map((item) =>
-                        columns.map((col) => String(item[col.accessor] || '')),
-                    );
-                    await copyTableData(tableData, headers);
-                    console.log('Copied entire table');
-                }
-                if (e) e.preventDefault();
-            } catch (error) {
-                console.error('Copy failed:', error);
-            }
-        },
-        [isEditMode, selectedCell, sortedData, columns, copyTableData],
-    );
-
-    // Paste data into selected cell
-    const handlePaste = useCallback(
-        async (e?: React.KeyboardEvent) => {
-            if (!isEditMode || !selectedCell) return;
-
-            try {
-                const data = await pasteFromClipboard();
-                if (
-                    data?.text &&
-                    selectedCell.row < sortedData.length &&
-                    selectedCell.col < columns.length
-                ) {
-                    const item = sortedData[selectedCell.row];
-                    const column = columns[selectedCell.col];
-
-                    if (item && column) {
-                        handleCellChange(
-                            item.id as string,
-                            column.accessor as string,
-                            data.text,
-                        );
-                        console.log('Pasted:', data.text);
-                    }
-                }
-                if (e) e.preventDefault();
-            } catch (error) {
-                console.error('Paste failed:', error);
-            }
-        },
-        [
-            isEditMode,
-            selectedCell,
-            sortedData,
-            columns,
-            pasteFromClipboard,
-            handleCellChange,
-        ],
-    );
-
-    // Handle keyboard shortcuts within table context
-    const handleTableShortcuts = useCallback(
-        (e: React.KeyboardEvent) => {
-            if (!isEditMode) return;
-
-            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
-
-            if (cmdOrCtrl && e.key.toLowerCase() === 'c') {
-                e.preventDefault();
-                handleCopy(e);
-            } else if (cmdOrCtrl && e.key.toLowerCase() === 'v') {
-                e.preventDefault();
-                handlePaste(e);
-            }
-        },
-        [isEditMode, handleCopy, handlePaste],
     );
 
     // Action handlers
@@ -591,11 +552,8 @@ export function EditableTable<
                 style={{ maxWidth: '100%' }}
                 ref={tableRef}
                 onBlur={handleTableBlur}
-                onKeyDown={handleTableKeyDown}
-                onKeyUp={handleTableShortcuts}
-                tabIndex={isEditMode ? 0 : -1}
-                role={isEditMode ? 'grid' : undefined}
-                aria-label={isEditMode ? 'Editable data table' : undefined}
+                onPaste={handlePaste}
+                tabIndex={-1}
             >
                 <div
                     style={{
@@ -658,7 +616,20 @@ export function EditableTable<
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Paste loading indicator */}
+                {isPasting && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="bg-card border rounded-lg p-4 shadow-lg">
+                            <div className="flex items-center space-x-3">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                <span className="text-sm font-medium">Pasting data from clipboard...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
+
             {/* Delete confirmation */}
             <DeleteConfirmDialog
                 open={deleteConfirmOpen}

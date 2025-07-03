@@ -30,6 +30,12 @@ import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+import {
+    handleClipboardPaste,
+    transformDataForTable,
+    validateClipboardData
+} from '@/lib/utils/clipboardParser';
+import { toast } from 'react-hot-toast';
 
 import { TanStackCellRenderer } from './TanStackCellRenderer';
 import { CellValue, EditableTableProps } from './types';
@@ -83,6 +89,13 @@ export function TanStackEditableTable<
     const [optimisticUpdates, setOptimisticUpdates] = useState<
         OptimisticUpdate[]
     >([]);
+
+    // Paste functionality state
+    const [isPasting, setIsPasting] = useState(false);
+    const [pastePreview, setPastePreview] = useState<{
+        data: Record<string, any>[];
+        columnMapping: Record<string, string>;
+    } | null>(null);
 
     // Enhanced error handling for failed saves
     const handleSaveError = useCallback(
@@ -386,6 +399,94 @@ export function TanStackEditableTable<
         [isEditMode, savePendingChanges],
     );
 
+    // Handle paste events for clipboard data
+    const handlePaste = useCallback(
+        async (e: React.ClipboardEvent<HTMLDivElement>) => {
+            // Only handle paste in edit mode
+            if (!isEditMode) return;
+
+            e.preventDefault();
+            setIsPasting(true);
+
+            try {
+                // Get existing column names
+                const existingColumns = columns.map(col => col.accessor as string);
+
+                // Parse clipboard data
+                const result = await handleClipboardPaste(existingColumns, {
+                    hasHeaders: true,
+                    delimiter: '\t', // Excel/Sheets use tabs
+                    skipEmptyLines: true,
+                    maxRows: 100 // Limit for performance
+                });
+
+                if (!result.success) {
+                    toast.error(`Paste failed: ${result.errors.join(', ')}`);
+                    return;
+                }
+
+                if (result.warnings.length > 0) {
+                    toast.warning(`Paste warnings: ${result.warnings.join(', ')}`);
+                }
+
+                // Transform data to match table structure
+                const transformedData = transformDataForTable(
+                    result.data,
+                    result.columnMapping,
+                    existingColumns
+                );
+
+                // Validate the transformed data
+                const validation = validateClipboardData(transformedData);
+                if (!validation.isValid) {
+                    toast.error(`Data validation failed: ${validation.errors.join(', ')}`);
+                    return;
+                }
+
+                // Add the pasted data as new rows
+                const newRows = transformedData.map((rowData, index) => {
+                    const newItem = { ...rowData } as T;
+                    newItem.id = `paste-${Date.now()}-${index}`;
+                    return newItem;
+                });
+
+                // Add to editing data for immediate display
+                const newEditingData = { ...editingData };
+                newRows.forEach(row => {
+                    newEditingData[row.id] = row;
+                });
+                setEditingData(newEditingData);
+
+                // Save each new row
+                if (onSave) {
+                    for (const row of newRows) {
+                        try {
+                            const { id: _tempId, ...itemWithoutId } = row;
+                            await onSave(itemWithoutId as T, true);
+                        } catch (error) {
+                            console.error('Failed to save pasted row:', error);
+                            toast.error('Failed to save some pasted rows');
+                        }
+                    }
+
+                    // Refresh data after saving
+                    if (onPostSave) {
+                        await onPostSave();
+                    }
+                }
+
+                toast.success(`Successfully pasted ${newRows.length} rows`);
+
+            } catch (error) {
+                console.error('Paste error:', error);
+                toast.error('Failed to paste data');
+            } finally {
+                setIsPasting(false);
+            }
+        },
+        [isEditMode, columns, editingData, setEditingData, onSave, onPostSave],
+    );
+
     // Effect to init edit data when entering edit mode
     useEffect(() => {
         if (isEditMode && data.length > 0) {
@@ -625,6 +726,7 @@ export function TanStackEditableTable<
                 style={{ maxWidth: '100%' }}
                 ref={tableRef}
                 onBlur={handleTableBlur}
+                onPaste={handlePaste}
                 tabIndex={-1}
             >
                 <div
@@ -690,7 +792,20 @@ export function TanStackEditableTable<
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Paste loading indicator */}
+                {isPasting && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                        <div className="bg-card border rounded-lg p-4 shadow-lg">
+                            <div className="flex items-center space-x-3">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                <span className="text-sm font-medium">Pasting data from clipboard...</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
+
             {/* Delete confirmation */}
             <DeleteConfirmDialog
                 open={deleteConfirmOpen}
