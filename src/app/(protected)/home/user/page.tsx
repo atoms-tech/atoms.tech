@@ -82,9 +82,19 @@ export default function UserDashboard() {
 
         fetchOrganizations();
 
-        // Refetch organizations whenever the query is invalidated
-        const unsubscribe = queryClient.getQueryCache().subscribe(() => {
-            fetchOrganizations();
+        // Use a more React-friendly approach to listen for query updates
+        const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+            // Only update if it's specifically our organizations query
+            if (
+                event?.query?.queryKey?.[0] === 'organizations' &&
+                event?.query?.queryKey?.[1] === 'byMembership' &&
+                event?.query?.queryKey?.[2] === user?.id
+            ) {
+                // Use setTimeout to defer the state update to avoid render conflicts
+                setTimeout(() => {
+                    fetchOrganizations();
+                }, 0);
+            }
         });
 
         return () => {
