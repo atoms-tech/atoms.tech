@@ -224,8 +224,7 @@ export function ProjectSelectionGrid({
                                                                   project.last_accessed,
                                                               ),
                                                               {
-                                                                  addSuffix:
-                                                                      true,
+                                                                  addSuffix: true,
                                                               },
                                                           )
                                                         : 'Never accessed'}
