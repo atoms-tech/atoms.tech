@@ -14,19 +14,11 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateProject } from '@/hooks/mutations/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectStore } from '@/store/project.store';
-import { ProjectStatus, Visibility } from '@/types';
 
 const projectFormSchema = z.object({
     name: z
@@ -43,15 +35,11 @@ const projectFormSchema = z.object({
             'Project name can only contain letters, numbers, spaces, hyphens and underscores',
         ),
     description: z.string().optional(),
-    status: z.nativeEnum(ProjectStatus),
-    visibility: z.nativeEnum(Visibility),
 });
 
 type ProjectFormValues = z.infer<typeof projectFormSchema>;
 
 const defaultValues: Partial<ProjectFormValues> = {
-    status: ProjectStatus.active,
-    visibility: Visibility.private,
     name: '',
 };
 
@@ -98,9 +86,9 @@ export default function ProjectForm({
 
             const project = await createProject({
                 name: trimmedName,
-                status: data.status,
+                status: 'active',
                 description: data.description || null,
-                visibility: data.visibility,
+                visibility: 'private',
                 organization_id:
                     organizationId ||
                     userProfile.current_organization_id ||
@@ -172,78 +160,6 @@ export default function ProjectForm({
                                     {...field}
                                 />
                             </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Status</FormLabel>
-                            <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select project status" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value={ProjectStatus.active}>
-                                        Active
-                                    </SelectItem>
-                                    <SelectItem value={ProjectStatus.draft}>
-                                        Draft
-                                    </SelectItem>
-                                    <SelectItem value={ProjectStatus.archived}>
-                                        Archived
-                                    </SelectItem>
-                                    {/* Commented out for now, prob safe to remove.
-                                    <SelectItem value={ProjectStatus.deleted}>
-                                        Deleted
-                                    </SelectItem>
-                                    */}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                <FormField
-                    control={form.control}
-                    name="visibility"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Visibility</FormLabel>
-                            <Select
-                                onValueChange={field.onChange}
-                                value={field.value}
-                            >
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select project visibility" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value={Visibility.public}>
-                                        Public
-                                    </SelectItem>
-                                    <SelectItem value={Visibility.private}>
-                                        Private
-                                    </SelectItem>
-                                    <SelectItem value={Visibility.team}>
-                                        Team
-                                    </SelectItem>
-                                    <SelectItem value={Visibility.organization}>
-                                        Organization
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
                             <FormMessage />
                         </FormItem>
                     )}
