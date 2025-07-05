@@ -8,6 +8,8 @@ import {
     BlockCanvas,
     BlockCanvasGlide,
     BlockCanvasTanStack,
+    BlockCanvasMaterialUI,
+    BlockCanvasMantine,
 } from '@/components/custom/BlockCanvas/indexExport';
 import {
     Select,
@@ -24,7 +26,7 @@ export default function DocumentPage() {
     const documentId = params?.documentId as string;
     //const [useTanStackTable, setUseTanStackTable] = useState(false);
     const [tableType, setTableType] = useState<
-        'default' | 'tanstack' | 'glide'
+        'default' | 'tanstack' | 'glide' | 'materialui' | 'mantine'
     >('default');
 
     //scroll to requirement if requirementId is in sessionStorage
@@ -92,6 +94,10 @@ export default function DocumentPage() {
                 return <BlockCanvasTanStack documentId={documentId} />;
             case 'glide':
                 return <BlockCanvasGlide documentId={documentId} />;
+            case 'materialui':
+                return <BlockCanvasMaterialUI documentId={documentId} />;
+            case 'mantine':
+                return <BlockCanvasMantine documentId={documentId} />;
             case 'default':
             default:
                 return <BlockCanvas documentId={documentId} />;
@@ -121,6 +127,12 @@ export default function DocumentPage() {
                             </SelectItem>
                             <SelectItem value="glide">
                                 Glide Table (Demo)
+                            </SelectItem>
+                            <SelectItem value="materialui">
+                                Material UI Table
+                            </SelectItem>
+                            <SelectItem value="mantine">
+                                Mantine Table
                             </SelectItem>
                         </SelectContent>
                     </Select>

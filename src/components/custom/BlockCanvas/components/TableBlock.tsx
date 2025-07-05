@@ -219,7 +219,7 @@ export const TableBlock: React.FC<BlockProps> = ({
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
     // Use the document store for edit mode state
-    const { isEditMode, useTanStackTables } = useDocumentStore();
+    const { isEditMode, tableType, useTanStackTables, useGlideTables } = useDocumentStore();
 
     // Initialize requirement actions with properties
     const {
@@ -388,7 +388,10 @@ export const TableBlock: React.FC<BlockProps> = ({
                 refreshRequirements={refreshRequirements}
                 isEditMode={isEditMode}
                 alwaysShowAddRow={isEditMode}
-                useTanStackTables={useTanStackTables}
+                useTanStackTables={useTanStackTables || tableType === 'tanstack'}
+                useGlideTables={useGlideTables || tableType === 'glide'}
+                useMaterialUITables={tableType === 'materialui'}
+                useMantineTables={tableType === 'mantine'}
             />
         );
     };

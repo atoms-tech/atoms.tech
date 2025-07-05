@@ -42,6 +42,8 @@ export function BlockCanvas({
     documentId,
     _useTanStackTables = false,
     _useGlideTables = false,
+    _useMaterialUITables = false,
+    _useMantineTables = false,
 }: BlockCanvasProps) {
     const rolePermissions = React.useMemo(
         () =>
@@ -65,7 +67,7 @@ export function BlockCanvas({
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } =
+    const { reorderBlocks, setUseTanStackTables, setUseGlideTables, setTableType } =
         useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const { userProfile } = useAuth();
@@ -300,6 +302,21 @@ export function BlockCanvas({
     };
 
     // Set the use flag for selected table in the document store when it changes
+    useEffect(() => {
+        if (_useMaterialUITables) {
+            setTableType('materialui');
+        } else if (_useMantineTables) {
+            setTableType('mantine');
+        } else if (_useTanStackTables) {
+            setTableType('tanstack');
+        } else if (_useGlideTables) {
+            setTableType('glide');
+        } else {
+            setTableType('default');
+        }
+    }, [_useTanStackTables, _useGlideTables, _useMaterialUITables, _useMantineTables, setTableType]);
+
+    // Legacy support for boolean flags
     useEffect(() => {
         setUseTanStackTables(_useTanStackTables);
     }, [_useTanStackTables, setUseTanStackTables]);

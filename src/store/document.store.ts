@@ -5,11 +5,15 @@ import { create } from 'zustand';
 
 import { Block, Document } from '@/types/base/documents.types';
 
+export type TableType = 'default' | 'tanstack' | 'glide' | 'materialui' | 'mantine';
+
 interface DocumentState {
     currentDocument: Document | null;
     blocks: Block[];
     selectedBlockId: string | null;
     isEditMode: boolean;
+    tableType: TableType;
+    // Legacy boolean flags for backward compatibility
     useTanStackTables: boolean;
     useGlideTables: boolean;
 
@@ -27,6 +31,7 @@ interface DocumentState {
     setIsEditMode: (isEditMode: boolean) => void;
 
     // Table implementation
+    setTableType: (tableType: TableType) => void;
     setUseTanStackTables: (useTanStackTables: boolean) => void;
     setUseGlideTables: (useGlideTables: boolean) => void;
 }
@@ -36,6 +41,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     blocks: [],
     selectedBlockId: null,
     isEditMode: false,
+    tableType: 'default',
     useTanStackTables: false,
     useGlideTables: false,
 
@@ -113,6 +119,24 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     setIsEditMode: (isEditMode) => set({ isEditMode }),
 
     // Table implementation(s)
-    setUseTanStackTables: (useTanStackTables) => set({ useTanStackTables }),
-    setUseGlideTables: (useGlideTables) => set({ useGlideTables }),
+    setTableType: (tableType) => {
+        set({
+            tableType,
+            // Update legacy flags for backward compatibility
+            useTanStackTables: tableType === 'tanstack',
+            useGlideTables: tableType === 'glide',
+        });
+    },
+    setUseTanStackTables: (useTanStackTables) => {
+        set({
+            useTanStackTables,
+            tableType: useTanStackTables ? 'tanstack' : 'default'
+        });
+    },
+    setUseGlideTables: (useGlideTables) => {
+        set({
+            useGlideTables,
+            tableType: useGlideTables ? 'glide' : 'default'
+        });
+    },
 }));

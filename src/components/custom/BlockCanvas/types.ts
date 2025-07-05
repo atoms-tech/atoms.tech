@@ -39,6 +39,8 @@ export interface BlockCanvasProps {
     documentId: string;
     _useTanStackTables?: boolean;
     _useGlideTables?: boolean;
+    _useMaterialUITables?: boolean;
+    _useMantineTables?: boolean;
 }
 
 export interface BlockWithRequirements extends Block {

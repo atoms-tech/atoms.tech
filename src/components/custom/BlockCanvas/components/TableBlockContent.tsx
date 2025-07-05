@@ -4,6 +4,8 @@ import {
     EditableTable,
     GlideEditableTable,
     TanStackEditableTable,
+    MaterialUIEditableTable,
+    MantineEditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
 import {
     EditableColumn,
@@ -28,6 +30,8 @@ interface TableBlockContentProps {
     alwaysShowAddRow?: boolean;
     useTanStackTables?: boolean;
     useGlideTables?: boolean;
+    useMaterialUITables?: boolean;
+    useMantineTables?: boolean;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -41,26 +45,34 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         alwaysShowAddRow = false,
         useTanStackTables = false,
         useGlideTables = false,
+        useMaterialUITables = false,
+        useMantineTables = false,
     }) => {
         // Get global setting from doc store as fallback
         const {
+            tableType,
             useTanStackTables: globalUseTanStackTables = false,
             useGlideTables: globalUseGlideTables = false,
         } = useDocumentStore();
 
-        // Use prop value if provided, otherwise fall back to global setting
+        // Use prop value if provided, otherwise fall back to global setting or tableType
         const shouldUseTanStackTables =
-            useTanStackTables || globalUseTanStackTables;
-
-        // Added implementation for Glide bool, should change for an enum system later.
-        const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
+            useTanStackTables || globalUseTanStackTables || tableType === 'tanstack';
+        const shouldUseGlideTables =
+            useGlideTables || globalUseGlideTables || tableType === 'glide';
+        const shouldUseMaterialUITables =
+            useMaterialUITables || tableType === 'materialui';
+        const shouldUseMantineTables =
+            useMantineTables || tableType === 'mantine';
 
         // Memoize the table component selection
         const TableComponent = useMemo(() => {
+            if (shouldUseMantineTables) return MantineEditableTable;
+            if (shouldUseMaterialUITables) return MaterialUIEditableTable;
             if (shouldUseGlideTables) return GlideEditableTable;
             if (shouldUseTanStackTables) return TanStackEditableTable;
             return EditableTable;
-        }, [shouldUseGlideTables, shouldUseTanStackTables]) as React.FC<
+        }, [shouldUseGlideTables, shouldUseTanStackTables, shouldUseMaterialUITables, shouldUseMantineTables]) as React.FC<
             typeof tableProps
         >;
 

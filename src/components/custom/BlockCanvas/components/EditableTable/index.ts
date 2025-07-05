@@ -1,6 +1,8 @@
 export { EditableTable } from './EditableTable';
 export { TanStackEditableTable } from './TanStackEditableTable';
 export { GlideEditableTable } from './GlideEditableTable';
+export { MaterialUIEditableTable } from './MaterialUIEditableTable';
+export { MantineEditableTable } from './MantineEditableTable';
 export * from './types';
 export * from './hooks';
 export * from './reducers';
