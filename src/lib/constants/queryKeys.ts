@@ -48,6 +48,8 @@ export const queryKeys = {
             ] as const,
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'requirements'] as const,
+        byProject: (projectId: string) =>
+            [...queryKeys.projects.detail(projectId), 'requirements'] as const,
     },
 
     // New properties query keys

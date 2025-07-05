@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import '@excalidraw/excalidraw/index.css';
+import '@/styles/excalidraw-custom.css';
 
 import {
     convertToExcalidrawElements,
@@ -24,6 +25,8 @@ import { useTheme } from 'next-themes';
 import { usePathname, useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
+import { CustomContextMenu } from '@/components/custom/Excalidraw/CustomContextMenu';
+import { RequirementSearchModal } from '@/components/custom/Excalidraw/RequirementSearchModal';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -33,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/lib/providers/user.provider';
+import { Requirement } from '@/types/base/requirements.types';
 
 const LAST_DIAGRAM_ID_KEY = 'lastExcalidrawDiagramId';
 
@@ -130,10 +134,124 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     const { theme, resolvedTheme } = useTheme();
     const [isDarkMode, setIsDarkMode] = useState(false);
 
+    // Context menu and requirement linking state
+    const [contextMenu, setContextMenu] = useState<{
+        x: number;
+        y: number;
+        elementId: string | null;
+    } | null>(null);
+    const [isRequirementSearchOpen, setIsRequirementSearchOpen] = useState(false);
+    const [selectedElementForLinking, setSelectedElementForLinking] = useState<string | null>(null);
+
+    // Helper functions for element metadata
+    const getElementRequirementLink = (
+        elementId: string,
+    ): { requirement: Requirement; url: string } | null => {
+        if (!excalidrawApiRef.current) return null;
+
+        const elements = excalidrawApiRef.current.getSceneElements();
+        const element = elements.find((el) => el.id === elementId);
+
+        if (!element || !element.customData?.requirementLink) return null;
+
+        return element.customData.requirementLink;
+    };
+
+    const setElementRequirementLink = (
+        elementId: string,
+        requirement: Requirement,
+        url: string,
+    ) => {
+        if (!excalidrawApiRef.current) return;
+
+        const elements = excalidrawApiRef.current.getSceneElements();
+        const elementIndex = elements.findIndex((el) => el.id === elementId);
+
+        if (elementIndex === -1) return;
+
+        const updatedElements = [...elements];
+        updatedElements[elementIndex] = {
+            ...updatedElements[elementIndex],
+            customData: {
+                ...updatedElements[elementIndex].customData,
+                requirementLink: { requirement, url },
+            },
+        };
+
+        excalidrawApiRef.current.updateScene({ elements: updatedElements });
+    };
+
     // Update dark mode state whenever theme changes
     useEffect(() => {
         setIsDarkMode(theme === 'dark' || resolvedTheme === 'dark');
     }, [theme, resolvedTheme]);
+
+    // Handle right-click for context menu
+    const handlePointerDown = useCallback(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (activeTool: any, pointerDownState: any) => {
+            // Check if it's a right-click
+            if (pointerDownState.button === 2) {
+                const { x, y } = pointerDownState.origin;
+
+                // Get the element at this position
+                const elements =
+                    excalidrawApiRef.current?.getSceneElements() || [];
+                const hitElement = elements.find((element) => {
+                    // Simple hit detection - you might want to use Excalidraw's built-in hit detection
+                    return (
+                        x >= element.x &&
+                        x <= element.x + element.width &&
+                        y >= element.y &&
+                        y <= element.y + element.height
+                    );
+                });
+
+                setContextMenu({
+                    x: pointerDownState.clientX,
+                    y: pointerDownState.clientY,
+                    elementId: hitElement?.id || null,
+                });
+            }
+        },
+        [],
+    );
+
+    // Handle requirement linking
+    const handleLinkToRequirement = useCallback(() => {
+        if (contextMenu?.elementId) {
+            setSelectedElementForLinking(contextMenu.elementId);
+            setIsRequirementSearchOpen(true);
+        }
+        setContextMenu(null);
+    }, [contextMenu]);
+
+    // Handle requirement selection
+    const handleRequirementSelect = useCallback(
+        (requirement: Requirement, url: string) => {
+            if (selectedElementForLinking) {
+                setElementRequirementLink(
+                    selectedElementForLinking,
+                    requirement,
+                    url,
+                );
+            }
+            setIsRequirementSearchOpen(false);
+            setSelectedElementForLinking(null);
+        },
+        [selectedElementForLinking],
+    );
+
+    // Handle opening external requirement link
+    const handleOpenExternalLink = useCallback(() => {
+        if (contextMenu?.elementId) {
+            const link = getElementRequirementLink(contextMenu.elementId);
+            if (link?.url) {
+                window.open(link.url, '_blank');
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu]);
 
     const { user } = useUser();
     const organizationId = usePathname().split('/')[2];
@@ -158,6 +276,8 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         height: number;
         requirementId: string;
     } | null>(null);
+
+
 
     // Add refs to track previous scroll and zoom state
     const prevScrollXRef = useRef<number | null>(null);
@@ -1065,7 +1185,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     }
 
     return (
-        <div className="h-full w-full min-h-[500px] relative">
+        <div className="h-full w-full min-h-[500px] relative excalidraw-wrapper">
             <div className="absolute top-2.5 right-2.5 flex items-center gap-2.5 z-[1000]">
                 <Button
                     variant="outline"
@@ -1100,11 +1220,28 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     appState: {
                         ...(initialData?.appState || {}),
                         theme: isDarkMode ? 'dark' : 'light',
+                        viewBackgroundColor: isDarkMode
+                            ? 'hsl(240, 10%, 3.9%)'
+                            : 'hsl(0, 0%, 100%)',
                     },
                 }}
                 theme={isDarkMode ? 'dark' : 'light'}
                 excalidrawAPI={(api) => {
                     excalidrawApiRef.current = api;
+                }}
+                onPointerDown={handlePointerDown}
+                UIOptions={{
+                    canvasActions: {
+                        changeViewBackgroundColor: true,
+                        clearCanvas: true,
+                        export: {
+                            saveFileToDisk: true,
+                        },
+                        loadScene: true,
+                        saveToActiveFile: true,
+                        toggleTheme: false, // We handle theme via our own system
+                        saveAsImage: true,
+                    },
                 }}
             >
                 <MainMenu>
@@ -1113,6 +1250,21 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     <MainMenu.DefaultItems.SaveAsImage />
                     <MainMenu.DefaultItems.ClearCanvas />
                     <MainMenu.DefaultItems.Export />
+                    <MainMenu.Item
+                        onSelect={() => {
+                            if (excalidrawApiRef.current) {
+                                excalidrawApiRef.current.updateScene({
+                                    appState: {
+                                        viewBackgroundColor: isDarkMode
+                                            ? 'hsl(240, 10%, 3.9%)'
+                                            : 'hsl(0, 0%, 100%)',
+                                    },
+                                });
+                            }
+                        }}
+                    >
+                        Reset Background
+                    </MainMenu.Item>
                 </MainMenu>
             </Excalidraw>
 
@@ -1204,6 +1356,40 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     }}
                 />
             )}
+
+            {/* Custom Context Menu */}
+            {contextMenu && (
+                <CustomContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onClose={() => setContextMenu(null)}
+                    onLinkToRequirement={handleLinkToRequirement}
+                    onOpenExternalLink={handleOpenExternalLink}
+                    hasExistingLink={
+                        !!getElementRequirementLink(contextMenu.elementId || '')
+                    }
+                    existingLinkUrl={
+                        getElementRequirementLink(contextMenu.elementId || '')
+                            ?.url
+                    }
+                />
+            )}
+
+            {/* Requirement Search Modal */}
+            <RequirementSearchModal
+                isOpen={isRequirementSearchOpen}
+                onClose={() => {
+                    setIsRequirementSearchOpen(false);
+                    setSelectedElementForLinking(null);
+                }}
+                onSelectRequirement={handleRequirementSelect}
+                currentLink={
+                    selectedElementForLinking
+                        ? getElementRequirementLink(selectedElementForLinking)
+                              ?.url
+                        : undefined
+                }
+            />
         </div>
     );
 };

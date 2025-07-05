@@ -1,0 +1,434 @@
+/* Custom Excalidraw Styling to Match UI Design System */
+
+/* Override Excalidraw CSS variables to match our design system */
+.excalidraw-wrapper {
+    /* Light mode variables */
+    --color-primary: hsl(var(--primary));
+    --color-primary-darker: hsl(var(--primary));
+    --color-primary-darkest: hsl(var(--primary));
+    --color-primary-light: hsl(var(--primary) / 0.1);
+
+    --color-white: hsl(var(--background));
+    --color-gray-10: hsl(var(--muted));
+    --color-gray-20: hsl(var(--muted));
+    --color-gray-30: hsl(var(--border));
+    --color-gray-40: hsl(var(--border));
+    --color-gray-50: hsl(var(--muted-foreground));
+    --color-gray-60: hsl(var(--foreground) / 0.6);
+    --color-gray-70: hsl(var(--foreground) / 0.7);
+    --color-gray-80: hsl(var(--foreground) / 0.8);
+    --color-gray-90: hsl(var(--foreground));
+
+    /* Background colors */
+    --island-bg-color: hsl(var(--card));
+    --popup-bg-color: hsl(var(--popover));
+    --dialog-bg-color: hsl(var(--card));
+
+    /* Border and shadow */
+    --default-border-color: hsl(var(--border));
+    --focus-outline-color: hsl(var(--ring));
+    --theme-filter: none;
+
+    /* Button colors */
+    --button-gray-1: hsl(var(--secondary));
+    --button-gray-2: hsl(var(--muted));
+
+    /* Text colors */
+    --text-primary-color: hsl(var(--foreground));
+    --text-secondary-color: hsl(var(--muted-foreground));
+
+    /* Border radius - match your zero radius design */
+    --space-factor: 1;
+    --border-radius-small: 0px;
+    --border-radius-medium: 0px;
+    --border-radius-large: 0px;
+    --border-radius-xl: 0px;
+}
+
+/* Dark mode overrides */
+.dark .excalidraw-wrapper {
+    --color-primary: hsl(var(--primary));
+    --color-primary-darker: hsl(var(--primary));
+    --color-primary-darkest: hsl(var(--primary));
+    --color-primary-light: hsl(var(--primary) / 0.2);
+
+    --color-white: hsl(var(--background));
+    --color-gray-10: hsl(var(--muted));
+    --color-gray-20: hsl(var(--muted));
+    --color-gray-30: hsl(var(--border));
+    --color-gray-40: hsl(var(--border));
+    --color-gray-50: hsl(var(--muted-foreground));
+    --color-gray-60: hsl(var(--foreground) / 0.6);
+    --color-gray-70: hsl(var(--foreground) / 0.7);
+    --color-gray-80: hsl(var(--foreground) / 0.8);
+    --color-gray-90: hsl(var(--foreground));
+
+    --island-bg-color: hsl(var(--card));
+    --popup-bg-color: hsl(var(--popover));
+    --dialog-bg-color: hsl(var(--card));
+
+    --default-border-color: hsl(var(--border));
+    --focus-outline-color: hsl(var(--ring));
+}
+
+/* Main Excalidraw container styling */
+.excalidraw-wrapper .excalidraw {
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: inherit;
+}
+
+/* Toolbar and UI elements */
+.excalidraw-wrapper .Island {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    box-shadow:
+        0 1px 3px 0 rgb(0 0 0 / 0.1),
+        0 1px 2px -1px rgb(0 0 0 / 0.1) !important;
+}
+
+/* Buttons */
+.excalidraw-wrapper .ToolIcon,
+.excalidraw-wrapper button {
+    border-radius: 0px !important;
+    background: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.excalidraw-wrapper .ToolIcon:hover,
+.excalidraw-wrapper button:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
+.excalidraw-wrapper .ToolIcon.is-active,
+.excalidraw-wrapper .ToolIcon[aria-pressed='true'] {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Main Menu */
+.excalidraw-wrapper .dropdown-menu {
+    background: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.excalidraw-wrapper .dropdown-menu-item {
+    color: hsl(var(--popover-foreground)) !important;
+    border-radius: 0px !important;
+}
+
+.excalidraw-wrapper .dropdown-menu-item:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Input fields */
+.excalidraw-wrapper input,
+.excalidraw-wrapper textarea {
+    background: hsl(var(--input)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+.excalidraw-wrapper input:focus,
+.excalidraw-wrapper textarea:focus {
+    outline: 2px solid hsl(var(--ring)) !important;
+    outline-offset: 2px !important;
+}
+
+/* Dialogs and modals */
+.excalidraw-wrapper .Modal {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+}
+
+/* Context menu */
+.excalidraw-wrapper .context-menu {
+    background: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+.excalidraw-wrapper .context-menu-item {
+    color: hsl(var(--popover-foreground)) !important;
+    border-radius: 0px !important;
+}
+
+.excalidraw-wrapper .context-menu-item:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Scrollbars */
+.excalidraw-wrapper ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.excalidraw-wrapper ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+}
+
+.excalidraw-wrapper ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground));
+    border-radius: 0px;
+}
+
+.excalidraw-wrapper ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--foreground));
+}
+
+/* Canvas background */
+.excalidraw-wrapper .excalidraw__canvas {
+    background: hsl(var(--background)) !important;
+}
+
+/* Stats dialog */
+.excalidraw-wrapper .Stats {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+}
+
+/* Library panel */
+.excalidraw-wrapper .library-menu {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+}
+
+/* Color picker */
+.excalidraw-wrapper .color-picker {
+    background: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+}
+
+/* Zoom controls */
+.excalidraw-wrapper .zoom-actions {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+}
+
+/* Help dialog */
+.excalidraw-wrapper .help-dialog {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+}
+
+/* Toast notifications */
+.excalidraw-wrapper .toast {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+}
+
+/* Selection box */
+.excalidraw-wrapper .selection-box {
+    border: 2px solid hsl(var(--primary)) !important;
+}
+
+/* Grid */
+.excalidraw-wrapper .grid {
+    stroke: hsl(var(--border)) !important;
+    opacity: 0.3 !important;
+}
+
+/* Additional specific overrides for better integration */
+
+/* Toolbar icons and buttons - more specific targeting */
+.excalidraw-wrapper .App-toolbar .ToolIcon,
+.excalidraw-wrapper .App-toolbar button,
+.excalidraw-wrapper .Stack .ToolIcon,
+.excalidraw-wrapper .Stack button {
+    background: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.excalidraw-wrapper .App-toolbar .ToolIcon:hover,
+.excalidraw-wrapper .App-toolbar button:hover,
+.excalidraw-wrapper .Stack .ToolIcon:hover,
+.excalidraw-wrapper .Stack button:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
+.excalidraw-wrapper .App-toolbar .ToolIcon.is-active,
+.excalidraw-wrapper .App-toolbar .ToolIcon[aria-pressed='true'],
+.excalidraw-wrapper .Stack .ToolIcon.is-active,
+.excalidraw-wrapper .Stack .ToolIcon[aria-pressed='true'] {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Shape library and panels */
+.excalidraw-wrapper .layer-ui__wrapper {
+    background: hsl(var(--background)) !important;
+}
+
+.excalidraw-wrapper .panelColumn {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+}
+
+/* Property panels */
+.excalidraw-wrapper .properties-panel {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+}
+
+/* Slider components */
+.excalidraw-wrapper .slider {
+    background: hsl(var(--muted)) !important;
+}
+
+.excalidraw-wrapper .slider-thumb {
+    background: hsl(var(--primary)) !important;
+    border: 2px solid hsl(var(--primary-foreground)) !important;
+    border-radius: 0px !important;
+}
+
+/* Dropdown menus - more specific */
+.excalidraw-wrapper .dropdown-menu,
+.excalidraw-wrapper .context-menu,
+.excalidraw-wrapper .ContextMenu {
+    background: hsl(var(--popover)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+    color: hsl(var(--popover-foreground)) !important;
+}
+
+.excalidraw-wrapper .dropdown-menu-item,
+.excalidraw-wrapper .context-menu-item,
+.excalidraw-wrapper .ContextMenu-item {
+    color: hsl(var(--popover-foreground)) !important;
+    border-radius: 0px !important;
+    padding: 8px 12px !important;
+    font-family: inherit !important;
+    font-size: 14px !important;
+}
+
+.excalidraw-wrapper .dropdown-menu-item:hover,
+.excalidraw-wrapper .context-menu-item:hover,
+.excalidraw-wrapper .ContextMenu-item:hover {
+    background: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Text input styling */
+.excalidraw-wrapper input[type='text'],
+.excalidraw-wrapper input[type='number'],
+.excalidraw-wrapper textarea,
+.excalidraw-wrapper .text-input {
+    background: hsl(var(--input)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--foreground)) !important;
+    font-family: inherit !important;
+    padding: 8px 12px !important;
+}
+
+.excalidraw-wrapper input[type='text']:focus,
+.excalidraw-wrapper input[type='number']:focus,
+.excalidraw-wrapper textarea:focus,
+.excalidraw-wrapper .text-input:focus {
+    outline: 2px solid hsl(var(--ring)) !important;
+    outline-offset: 2px !important;
+    border-color: hsl(var(--ring)) !important;
+}
+
+/* Modal and dialog styling */
+.excalidraw-wrapper .Modal,
+.excalidraw-wrapper .Dialog {
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    color: hsl(var(--card-foreground)) !important;
+    box-shadow:
+        0 10px 15px -3px rgb(0 0 0 / 0.1),
+        0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+}
+
+.excalidraw-wrapper .Modal h1,
+.excalidraw-wrapper .Modal h2,
+.excalidraw-wrapper .Modal h3,
+.excalidraw-wrapper .Dialog h1,
+.excalidraw-wrapper .Dialog h2,
+.excalidraw-wrapper .Dialog h3 {
+    color: hsl(var(--card-foreground)) !important;
+    font-family: inherit !important;
+}
+
+/* Checkbox and radio button styling */
+.excalidraw-wrapper input[type='checkbox'],
+.excalidraw-wrapper input[type='radio'] {
+    accent-color: hsl(var(--primary)) !important;
+}
+
+/* Tab styling */
+.excalidraw-wrapper .tab,
+.excalidraw-wrapper .Tab {
+    background: hsl(var(--secondary)) !important;
+    color: hsl(var(--secondary-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    font-family: inherit !important;
+}
+
+.excalidraw-wrapper .tab.active,
+.excalidraw-wrapper .Tab.active,
+.excalidraw-wrapper .tab[aria-selected='true'],
+.excalidraw-wrapper .Tab[aria-selected='true'] {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Loading spinner */
+.excalidraw-wrapper .spinner {
+    border-color: hsl(var(--muted)) !important;
+    border-top-color: hsl(var(--primary)) !important;
+}
+
+/* Tooltip styling */
+.excalidraw-wrapper .tooltip,
+.excalidraw-wrapper .Tooltip {
+    background: hsl(var(--popover)) !important;
+    color: hsl(var(--popover-foreground)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: 0px !important;
+    font-family: inherit !important;
+    font-size: 12px !important;
+    box-shadow:
+        0 4px 6px -1px rgb(0 0 0 / 0.1),
+        0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
