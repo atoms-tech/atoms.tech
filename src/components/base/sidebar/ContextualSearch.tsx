@@ -7,7 +7,6 @@ import {
     Command,
     CommandEmpty,
     CommandGroup,
-    CommandInput,
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
@@ -38,7 +37,7 @@ interface ContextualSearchProps {
 
 export function ContextualSearch({
     placeholder,
-    scope,
+    scope: _scope,
     className,
     onSearch,
     onSelect,
@@ -56,13 +55,13 @@ export function ContextualSearch({
         }
 
         setIsLoading(true);
-        
+
         // Simulate API call
         setTimeout(() => {
             const mockResults: SearchResult[] = [
                 {
                     id: '1',
-                    type: 'project',
+                    type: 'project' as const,
                     title: 'API Requirements',
                     subtitle: 'Updated 2 hours ago',
                     context: 'Engineering Team',
@@ -70,7 +69,7 @@ export function ContextualSearch({
                 },
                 {
                     id: '2',
-                    type: 'document',
+                    type: 'document' as const,
                     title: 'Security Review Notes',
                     subtitle: 'Updated yesterday',
                     context: 'Project Alpha',
@@ -78,43 +77,60 @@ export function ContextualSearch({
                 },
                 {
                     id: '3',
-                    type: 'requirement',
+                    type: 'requirement' as const,
                     title: 'Database Schema Updates',
                     subtitle: 'High priority',
                     context: 'Backend Team',
                     url: '/org/123/requirements/101',
                 },
-            ].filter(result => 
-                result.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                result.context?.toLowerCase().includes(searchQuery.toLowerCase())
+            ].filter(
+                (result) =>
+                    result.title
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                    result.context
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()),
             );
-            
+
             setResults(mockResults);
             setIsLoading(false);
         }, 300);
     }, []);
 
-    const handleQueryChange = useCallback((value: string) => {
-        setQuery(value);
-        onSearch?.(value);
-        performSearch(value);
-    }, [onSearch, performSearch]);
+    const handleQueryChange = useCallback(
+        (value: string) => {
+            setQuery(value);
+            onSearch?.(value);
+            performSearch(value);
+        },
+        [onSearch, performSearch],
+    );
 
-    const handleSelect = useCallback((result: SearchResult) => {
-        onSelect?.(result);
-        setOpen(false);
-        setQuery('');
-        setResults([]);
-    }, [onSelect]);
+    const handleSelect = useCallback(
+        (result: SearchResult) => {
+            onSelect?.(result);
+            setOpen(false);
+            setQuery('');
+            setResults([]);
+        },
+        [onSelect],
+    );
 
     const getTypeIcon = (type: SearchResult['type']) => {
         switch (type) {
-            case 'organization': return '🏢';
-            case 'project': return '📁';
-            case 'document': return '📄';
-            case 'requirement': return '📋';
-            case 'member': return '👤';
-            default: return '📄';
+            case 'organization':
+                return '🏢';
+            case 'project':
+                return '📁';
+            case 'document':
+                return '📄';
+            case 'requirement':
+                return '📋';
+            case 'member':
+                return '👤';
+            default:
+                return '📄';
         }
     };
 
@@ -124,7 +140,7 @@ export function ContextualSearch({
                 <div
                     className={cn(
                         'flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background hover:bg-accent/50 cursor-pointer transition-colors',
-                        className
+                        className,
                     )}
                 >
                     <Search className="h-4 w-4 text-muted-foreground" />

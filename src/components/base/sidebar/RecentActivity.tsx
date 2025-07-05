@@ -5,7 +5,7 @@ import { Clock, FileText, Folder, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-import { activityService, ActivityItem } from '@/lib/services/activity.service';
+import { ActivityItem, activityService } from '@/lib/services/activity.service';
 import { cn } from '@/lib/utils';
 
 interface RecentActivityProps {
@@ -13,7 +13,10 @@ interface RecentActivityProps {
     maxItems?: number;
 }
 
-export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps) {
+export function RecentActivity({
+    className,
+    maxItems = 8,
+}: RecentActivityProps) {
     const [recentItems, setRecentItems] = useState<ActivityItem[]>([]);
 
     useEffect(() => {
@@ -57,7 +60,11 @@ export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps)
 
     const groupedItems = useMemo(() => {
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const today = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+        );
         const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
         const thisWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -72,7 +79,7 @@ export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps)
             const itemDate = new Date(
                 item.lastAccessed.getFullYear(),
                 item.lastAccessed.getMonth(),
-                item.lastAccessed.getDate()
+                item.lastAccessed.getDate(),
             );
 
             if (itemDate.getTime() === today.getTime()) {
@@ -119,7 +126,7 @@ export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps)
                             href={item.url}
                             className={cn(
                                 'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent/50 transition-colors group',
-                                item.isActive && 'bg-accent/30'
+                                item.isActive && 'bg-accent/30',
                             )}
                         >
                             <div className="text-muted-foreground group-hover:text-foreground transition-colors">
@@ -136,7 +143,9 @@ export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps)
                                 )}
                             </div>
                             <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                                {formatDistanceToNow(item.lastAccessed, { addSuffix: true })}
+                                {formatDistanceToNow(item.lastAccessed, {
+                                    addSuffix: true,
+                                })}
                             </div>
                         </Link>
                     ))}
@@ -145,7 +154,9 @@ export function RecentActivity({ className, maxItems = 8 }: RecentActivityProps)
         );
     };
 
-    const hasAnyItems = Object.values(groupedItems).some(group => group.length > 0);
+    const hasAnyItems = Object.values(groupedItems).some(
+        (group) => group.length > 0,
+    );
 
     if (!hasAnyItems) {
         return (

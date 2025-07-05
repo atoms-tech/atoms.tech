@@ -11,10 +11,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { WorkspaceContext } from '@/hooks/useWorkspaceContext';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { cn } from '@/lib/utils';
-
-import { WorkspaceContext } from '../../../hooks/useWorkspaceContext';
 
 interface ContextHeaderProps {
     context: WorkspaceContext;
@@ -35,7 +34,11 @@ export function ContextHeader({ context, className }: ContextHeaderProps) {
         }
 
         // For org contexts, show org switcher
-        if (context.level === 'org' || context.level === 'project' || context.level === 'document') {
+        if (
+            context.level === 'org' ||
+            context.level === 'project' ||
+            context.level === 'document'
+        ) {
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -46,18 +49,24 @@ export function ContextHeader({ context, className }: ContextHeaderProps) {
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 rounded bg-primary/10 flex items-center justify-center">
                                     <span className="text-xs font-medium">
-                                        {currentOrganization?.name?.charAt(0) || '?'}
+                                        {currentOrganization?.name?.charAt(0) ||
+                                            '?'}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <span className="text-sm font-medium truncate max-w-[120px]">
-                                        {currentOrganization?.name || 'Organization'}
+                                        {currentOrganization?.name ||
+                                            'Organization'}
                                     </span>
                                     {context.level !== 'org' && (
                                         <>
-                                            <span className="text-muted-foreground">›</span>
+                                            <span className="text-muted-foreground">
+                                                ›
+                                            </span>
                                             <span className="text-sm text-muted-foreground">
-                                                {context.level === 'project' ? 'Project' : 'Document'}
+                                                {context.level === 'project'
+                                                    ? 'Project'
+                                                    : 'Document'}
                                             </span>
                                         </>
                                     )}
@@ -68,7 +77,9 @@ export function ContextHeader({ context, className }: ContextHeaderProps) {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
                         <div className="px-2 py-1.5">
-                            <p className="text-xs text-muted-foreground">Switch Organization</p>
+                            <p className="text-xs text-muted-foreground">
+                                Switch Organization
+                            </p>
                         </div>
                         <DropdownMenuSeparator />
                         {organizations.map((org) => (

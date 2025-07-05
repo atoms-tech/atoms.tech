@@ -21,7 +21,11 @@ export function IntelligentSidebar({ className }: IntelligentSidebarProps) {
         // TODO: Implement actual search functionality
     };
 
-    const handleSearchSelect = (result: any) => {
+    const handleSearchSelect = (result: {
+        id: string;
+        url: string;
+        title: string;
+    }) => {
         console.log('Selected search result:', result);
         // TODO: Navigate to selected result
     };

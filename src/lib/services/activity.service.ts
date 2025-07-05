@@ -30,12 +30,12 @@ class ActivityService {
 
     private loadFromStorage(): void {
         if (typeof window === 'undefined') return;
-        
+
         try {
             const stored = localStorage.getItem(this.STORAGE_KEY);
             if (stored) {
-                const parsed = JSON.parse(stored);
-                this.activities = parsed.map((item: any) => ({
+                const parsed = JSON.parse(stored) as ActivityItem[];
+                this.activities = parsed.map((item) => ({
                     ...item,
                     lastAccessed: new Date(item.lastAccessed),
                 }));
@@ -48,9 +48,12 @@ class ActivityService {
 
     private saveToStorage(): void {
         if (typeof window === 'undefined') return;
-        
+
         try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.activities));
+            localStorage.setItem(
+                this.STORAGE_KEY,
+                JSON.stringify(this.activities),
+            );
         } catch (error) {
             console.error('Failed to save activity to storage:', error);
         }
@@ -59,7 +62,7 @@ class ActivityService {
     trackActivity(item: Omit<ActivityItem, 'id' | 'lastAccessed'>): void {
         const now = new Date();
         const existingIndex = this.activities.findIndex(
-            (activity) => activity.url === item.url
+            (activity) => activity.url === item.url,
         );
 
         if (existingIndex >= 0) {
@@ -93,16 +96,25 @@ class ActivityService {
             .slice(0, maxItems);
     }
 
-    getActivityByContext(context: {
-        orgId?: string;
-        projectId?: string;
-        type?: ActivityItem['type'];
-    }, maxItems: number = 10): ActivityItem[] {
+    getActivityByContext(
+        context: {
+            orgId?: string;
+            projectId?: string;
+            type?: ActivityItem['type'];
+        },
+        maxItems: number = 10,
+    ): ActivityItem[] {
         return this.activities
             .filter((activity) => {
-                if (context.orgId && activity.orgId !== context.orgId) return false;
-                if (context.projectId && activity.projectId !== context.projectId) return false;
-                if (context.type && activity.type !== context.type) return false;
+                if (context.orgId && activity.orgId !== context.orgId)
+                    return false;
+                if (
+                    context.projectId &&
+                    activity.projectId !== context.projectId
+                )
+                    return false;
+                if (context.type && activity.type !== context.type)
+                    return false;
                 return true;
             })
             .sort((a, b) => b.lastAccessed.getTime() - a.lastAccessed.getTime())
@@ -115,7 +127,9 @@ class ActivityService {
     }
 
     removeActivity(id: string): void {
-        this.activities = this.activities.filter((activity) => activity.id !== id);
+        this.activities = this.activities.filter(
+            (activity) => activity.id !== id,
+        );
         this.saveToStorage();
     }
 }

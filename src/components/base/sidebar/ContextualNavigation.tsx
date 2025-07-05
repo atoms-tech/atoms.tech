@@ -13,9 +13,8 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { WorkspaceContext } from '@/hooks/useWorkspaceContext';
 import { cn } from '@/lib/utils';
-
-import { WorkspaceContext } from '../../../hooks/useWorkspaceContext';
 
 interface NavigationItem {
     id: string;
@@ -38,7 +37,7 @@ export function ContextualNavigation({
 }: ContextualNavigationProps) {
     const pathname = usePathname();
     const [expandedSections, setExpandedSections] = useState<Set<string>>(
-        new Set(['main'])
+        new Set(['main']),
     );
 
     const toggleSection = (sectionId: string) => {
@@ -117,7 +116,9 @@ export function ContextualNavigation({
                         label: 'Overview',
                         url: `/org/${context.orgId}/project/${context.projectId}`,
                         icon: Folder,
-                        isActive: pathname === `/org/${context.orgId}/project/${context.projectId}`,
+                        isActive:
+                            pathname ===
+                            `/org/${context.orgId}/project/${context.projectId}`,
                     },
                     {
                         id: 'documents',
@@ -209,7 +210,7 @@ export function ContextualNavigation({
                         className={cn(
                             'flex items-center gap-2 px-2 py-1.5 rounded-md text-sm hover:bg-accent/50 transition-colors flex-1',
                             item.isActive && 'bg-accent text-accent-foreground',
-                            !hasChildren && 'ml-7'
+                            !hasChildren && 'ml-7',
                         )}
                         style={{ paddingLeft: `${level * 12 + 8}px` }}
                     >
@@ -227,7 +228,7 @@ export function ContextualNavigation({
                 {hasChildren && isExpanded && (
                     <div className="ml-4 mt-1 space-y-1">
                         {item.children!.map((child) =>
-                            renderNavigationItem(child, level + 1)
+                            renderNavigationItem(child, level + 1),
                         )}
                     </div>
                 )}

@@ -40,7 +40,7 @@ export function useWorkspaceContext(): WorkspaceContext {
             // Project context
             if (params.projectId) {
                 const projectId = params.projectId as string;
-                
+
                 // Document context
                 if (params.documentId) {
                     return {

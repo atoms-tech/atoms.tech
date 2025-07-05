@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter, Clock, User, AlertCircle } from 'lucide-react';
+import { AlertCircle, Clock, Filter, User } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,8 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { WorkspaceContext } from '@/hooks/useWorkspaceContext';
 import { cn } from '@/lib/utils';
-
-import { WorkspaceContext } from '../../../hooks/useWorkspaceContext';
 
 interface SmartFilter {
     id: string;
@@ -114,10 +113,13 @@ export function SmartFilters({ context, className }: SmartFiltersProps) {
                     >
                         <div className="flex items-center gap-2">
                             <Filter className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Smart Filters</span>
+                            <span className="text-sm font-medium">
+                                Smart Filters
+                            </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            {activeFilters.size > 0 && `${activeFilters.size} active`}
+                            {activeFilters.size > 0 &&
+                                `${activeFilters.size} active`}
                         </div>
                     </Button>
                 </CollapsibleTrigger>
@@ -128,7 +130,8 @@ export function SmartFilters({ context, className }: SmartFiltersProps) {
                             variant="ghost"
                             className={cn(
                                 'w-full justify-start h-auto p-2 hover:bg-accent/50',
-                                filter.isActive && 'bg-accent text-accent-foreground'
+                                filter.isActive &&
+                                    'bg-accent text-accent-foreground',
                             )}
                             onClick={() => toggleFilter(filter.id)}
                         >
@@ -143,7 +146,7 @@ export function SmartFilters({ context, className }: SmartFiltersProps) {
                             </div>
                         </Button>
                     ))}
-                    
+
                     {activeFilters.size > 0 && (
                         <Button
                             variant="ghost"
