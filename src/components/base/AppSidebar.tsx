@@ -30,12 +30,15 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { OrganizationType } from '@/types';
+
+import { IntelligentSidebar } from './sidebar/IntelligentSidebar';
 
 interface MenuItem {
     title: string;
@@ -167,8 +170,9 @@ function AppSidebar() {
 
     return (
         <SidebarContainer variant="sidebar" collapsible="offcanvas">
-            <SidebarContent className="px-3 py-2">
-                <SidebarGroup>
+            <SidebarContent className="flex flex-col h-full">
+                {/* Logo Header */}
+                <SidebarGroup className="px-3 py-2">
                     <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-4">
                         <Link href="/" className="flex items-center gap-2">
                             <Image
@@ -183,6 +187,17 @@ function AppSidebar() {
                             </span>
                         </Link>
                     </SidebarGroupLabel>
+                </SidebarGroup>
+
+                {/* Intelligent Sidebar - Context-aware content */}
+                <div className="flex-1 overflow-hidden">
+                    <IntelligentSidebar />
+                </div>
+
+                <SidebarSeparator />
+
+                {/* Baseline Navigation - Always visible */}
+                <SidebarGroup className="px-3 py-2">
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem className="mb-0.5">
@@ -270,12 +285,6 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             )} */}
 
-                            {/* <CreatePanel
-                                isOpen={isCreatePanelOpen}
-                                onClose={() => setIsCreatePanelOpen(false)}
-                                showTabs={createPanelType}
-                                initialTab={createPanelType}
-                            /> */}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
