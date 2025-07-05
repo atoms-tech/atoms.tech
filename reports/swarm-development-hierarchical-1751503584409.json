@@ -1,0 +1,13 @@
+{
+  "objective": "Production preparation task",
+  "strategy": "development",
+  "mode": "hierarchical",
+  "maxAgents": 15,
+  "timeout": 180,
+  "parallel": true,
+  "monitor": false,
+  "output": "json",
+  "outputDir": "./reports",
+  "timestamp": "2025-07-03T00:46:24.407Z",
+  "id": "swarm-development-hierarchical-1751503584409"
+}

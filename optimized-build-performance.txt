@@ -1,0 +1,10 @@
+
+> atoms.tech@0.1.0 build:fast
+> NODE_OPTIONS='--max-old-space-size=8192' next build --no-lint
+
+ ⚠ Linting is disabled.
+ ⨯ Failed to load next.config.ts, see more info here https://nextjs.org/docs/messages/next-config-error
+
+> Build error occurred
+ReferenceError: module is not defined
+    at <unknown> (webpack-performance-plugin.js:151:1)

@@ -1,0 +1,26 @@
+
+> atoms.tech@0.1.0 build
+> NODE_OPTIONS='--max-old-space-size=8192' next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production, .env
+   - Experiments (use with caution):
+     ⨯ reactCompiler
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 24.0s
+   Skipping linting
+   Checking validity of types ...
+Failed to compile.
+
+./src/components/custom/Dashboard/WidgetRenderer.tsx:194:21
+Type error: Not all code paths return a value.
+
+[0m [90m 192 |[39m[0m
+[0m [90m 193 |[39m     [90m// Add global mouse event listeners for dragging[39m[0m
+[0m[31m[1m>[22m[39m[90m 194 |[39m     [33mReact[39m[33m.[39museEffect(() [33m=>[39m {[0m
+[0m [90m     |[39m                     [31m[1m^[22m[39m[0m
+[0m [90m 195 |[39m         [36mif[39m (isDragging) {[0m
+[0m [90m 196 |[39m             document[33m.[39maddEventListener([32m'mousemove'[39m[33m,[39m handleMouseMove)[33m;[39m[0m
+[0m [90m 197 |[39m             document[33m.[39maddEventListener([32m'mouseup'[39m[33m,[39m handleMouseUp)[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

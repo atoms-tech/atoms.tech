@@ -1,0 +1,112 @@
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Profile } from '@/types';
+
+export function useAuth() {
+    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [userProfile, setUserProfile] = useState<Profile | null>(null);
+    const router = useRouter();
+
+    const fetchUserProfile = async (userId: string) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                throw error;
+            }
+            setUserProfile(profile);
+        } catch (error) {
+            console.error('Error fetching user profile:', error);
+            setUserProfile(null);
+        }
+    };
+
+    useEffect(() => {
+        const checkUser = async () => {
+            try {
+                console.log('useAuth: Checking session...');
+                const {
+                    data: { session },
+                    error,
+                } = await supabase.auth.getSession();
+
+                console.log('useAuth: Session check result:', {
+                    session: !!session,
+                    error,
+                });
+
+                if (error) {
+                    console.error('useAuth: Session error:', error);
+                    throw error;
+                }
+
+                setIsAuthenticated(!!session);
+                if (session?.user) {
+                    console.log(
+                        'useAuth: Fetching user profile for:',
+                        session.user.id,
+                    );
+                    await fetchUserProfile(session.user.id);
+                } else {
+                    console.log('useAuth: No session, clearing profile');
+                    setUserProfile(null);
+                }
+            } catch (error) {
+                console.error('useAuth: Error checking auth session:', error);
+                setIsAuthenticated(false);
+                setUserProfile(null);
+            } finally {
+                console.log('useAuth: Setting loading to false');
+                setIsLoading(false);
+            }
+        };
+
+        // Check initial session state
+        checkUser();
+
+        // Listen for auth state changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state change:', event, !!session);
+            setIsAuthenticated(!!session);
+            if (session?.user) {
+                await fetchUserProfile(session.user.id);
+            } else {
+                setUserProfile(null);
+            }
+            // Ensure loading state is set to false after auth state change
+            setIsLoading(false);
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [router]);
+
+    const signOut = async () => {
+        try {
+            await supabase.auth.signOut();
+            setUserProfile(null);
+            setIsAuthenticated(false);
+            router.push('/login');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
+    return {
+        isAuthenticated,
+        isLoading,
+        signOut,
+        userProfile,
+    };
+}
