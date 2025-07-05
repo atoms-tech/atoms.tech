@@ -3,25 +3,59 @@
 /**
  * MantineEditableTable Component
  *
- * A Mantine implementation using Mantine React Table (MRT)
+ * A Mantine styled implementation that follows the same pattern as EditableTable
  * This component provides the same API surface as other table implementations
- * while using Mantine components and styling
+ * while using Mantine components for styling
  */
-import { useMemo, useState, useCallback, useEffect } from 'react';
-import {
-    MantineReactTable,
-    useMantineReactTable,
-    type MRT_ColumnDef,
-    type MRT_Row,
-} from 'mantine-react-table';
+import React, { useReducer, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { Box, ActionIcon, Tooltip, Group } from '@mantine/core';
-import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
+import {
+    Table as MantineTable,
+    Paper,
+    MantineProvider,
+    createTheme,
+    Group,
+    ActionIcon,
+    Tooltip
+} from '@mantine/core';
+import { IconTrash, IconChevronUp, IconChevronDown } from '@tabler/icons-react';
 
 import { useUser } from '@/lib/providers/user.provider';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+import {
+    AddRowPlaceholder,
+    DeleteConfirmDialog,
+    NewRowForm,
+    TableControls,
+    TableLoadingSkeleton,
+} from './components';
+// import { CellRenderer } from './CellRenderer'; // Removed for now
+import { tableReducer, TableState } from './reducers/tableReducer';
+import { CellValue, EditableTableProps, EditableColumn } from './types';
 
-import { CellValue, EditableTableProps } from './types';
+// Create Mantine theme for consistent styling
+const mantineTheme = createTheme({
+    components: {
+        Table: {
+            styles: {
+                td: {
+                    borderRight: '1px solid var(--mantine-color-gray-3)',
+                    '&:last-child': {
+                        borderRight: 'none',
+                    },
+                    padding: '4px 8px',
+                },
+                th: {
+                    borderRight: '1px solid var(--mantine-color-gray-3)',
+                    '&:last-child': {
+                        borderRight: 'none',
+                    },
+                    padding: '4px 8px',
+                },
+            },
+        },
+    },
+});
 
 export function MantineEditableTable<
     T extends Record<string, CellValue> & {
@@ -45,216 +79,248 @@ export function MantineEditableTable<
     const { user } = useUser();
     const _userId = user?.id || '';
     const params = useParams();
-    const _projectId = params?.projectId || '';
+    const projectId = Array.isArray(params?.projectId) ? params.projectId[0] : params?.projectId || '';
+    const orgId = Array.isArray(params?.orgId) ? params.orgId[0] : params?.orgId || '';
+    const documentId = Array.isArray(params?.documentId) ? params.documentId[0] : params?.documentId || '';
 
-    // Local state for optimistic updates
-    const [localData, setLocalData] = useState<T[]>([]);
-    const [pendingSaves, setPendingSaves] = useState<Set<string>>(new Set());
-    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+    // Initialize the state with useReducer (same as EditableTable)
+    const initialState: TableState<T> = {
+        editingData: {},
+        isAddingNew: false,
+        sortKey: null,
+        sortOrder: 'asc',
+        hoveredCell: null,
+        itemToDelete: null,
+        deleteConfirmOpen: false,
+        editingTimeouts: {},
+        selectedCell: null,
+    };
 
-    // Initialize local data
-    useEffect(() => {
-        setLocalData(data);
-    }, [data]);
+    const [state, dispatch] = useReducer(tableReducer<T>, initialState);
 
-    // Convert columns to Mantine React Table format
-    const mantineColumns = useMemo<MRT_ColumnDef<T>[]>(() => {
-        return columns.map((col) => ({
-            accessorKey: col.accessor as string,
-            header: col.header,
-            enableEditing: isEditMode,
-            mantineEditTextInputProps: ({ row }) => ({
-                required: col.required,
-                type: col.type === 'number' ? 'number' : 'text',
-                error: validationErrors[`${row.id}-${String(col.accessor)}`],
-                onBlur: (event) => {
-                    handleCellEdit(row.original, String(col.accessor), event.target.value);
-                },
-            }),
-            Cell: ({ cell }) => {
-                const value = cell.getValue();
-                
-                // Handle different cell types
-                if (col.type === 'select' && col.options) {
-                    return <span>{value as string}</span>;
-                }
-                
-                if (col.type === 'date' && value) {
-                    return <span>{new Date(value as string).toLocaleDateString()}</span>;
-                }
-                
-                return <span>{value as string}</span>;
-            },
-        }));
-    }, [columns, isEditMode, validationErrors]);
+    // Merge data with editing data (same logic as EditableTable)
+    const mergedData = useMemo(() => {
+        if (!isEditMode) return data;
 
-    // Handle cell editing
-    const handleCellEdit = useCallback(async (
-        item: T,
-        field: string,
-        newValue: CellValue
-    ) => {
-        if (!isEditMode || !onSave) return;
+        return data.map((item) => {
+            const editedItem = state.editingData[item.id];
+            return editedItem ? { ...item, ...editedItem } : item;
+        });
+    }, [data, state.editingData, isEditMode]);
 
-        // Validate the new value
-        const column = columns.find(col => col.accessor === field);
-        if (column?.required && (!newValue || newValue === '')) {
-            setValidationErrors(prev => ({
-                ...prev,
-                [`${item.id}-${field}`]: `${column.header} is required`
-            }));
-            return;
-        }
+    // Handle cell changes (same logic as EditableTable)
+    const _handleCellChange = (itemId: string, accessor: keyof T, value: CellValue) => {
+        if (!isEditMode) return;
 
-        // Clear validation error
-        setValidationErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors[`${item.id}-${field}`];
-            return newErrors;
+        dispatch({
+            type: 'SET_CELL_VALUE',
+            payload: { itemId, accessor, value },
         });
 
-        // Update local data optimistically
-        const updatedItem = { ...item, [field]: newValue };
-        setLocalData(prev => prev.map(row => 
-            row.id === item.id ? updatedItem : row
-        ));
-
-        // Mark as pending save
-        setPendingSaves(prev => new Set(prev).add(item.id));
-
-        try {
-            await onSave(updatedItem, false);
-            setPendingSaves(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(item.id);
-                return newSet;
-            });
-            
-            if (onPostSave) {
-                await onPostSave();
-            }
-        } catch (error) {
-            console.error('Failed to save:', error);
-            // Revert optimistic update
-            setLocalData(prev => prev.map(row => 
-                row.id === item.id ? item : row
-            ));
-            setPendingSaves(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(item.id);
-                return newSet;
-            });
+        // Clear any existing timeout for this item
+        if (state.editingTimeouts[itemId]) {
+            clearTimeout(state.editingTimeouts[itemId]);
         }
-    }, [isEditMode, onSave, onPostSave, columns]);
 
-    // Handle row deletion
-    const handleDelete = useCallback(async (row: MRT_Row<T>) => {
-        if (!onDelete) return;
+        // Set new timeout for debounced save
+        const timeoutId = setTimeout(async () => {
+            try {
+                const editedItem = {
+                    ...state.editingData[itemId],
+                    [accessor]: value,
+                };
 
-        try {
-            await onDelete(row.original);
-            setLocalData(prev => prev.filter(item => item.id !== row.original.id));
-            
-            if (onPostSave) {
-                await onPostSave();
+                await onSave?.(editedItem, false);
+                await onPostSave?.();
+            } catch (error) {
+                console.error('Failed to save:', error);
             }
+        }, 500);
+
+        dispatch({
+            type: 'SET_TIMEOUT',
+            payload: { itemId, timeoutId },
+        });
+    };
+
+    // Handle sorting (same logic as EditableTable)
+    const handleSort = (key: keyof T) => {
+        const newOrder = state.sortKey === key && state.sortOrder === 'asc' ? 'desc' : 'asc';
+        dispatch({
+            type: 'SET_SORT',
+            payload: { key: key as string, order: newOrder },
+        });
+    };
+
+    // Handle delete
+    const handleDelete = async (item: T) => {
+        try {
+            await onDelete?.(item);
+            await onPostSave?.();
+            dispatch({ type: 'CLOSE_DELETE_CONFIRM' });
         } catch (error) {
             console.error('Failed to delete:', error);
         }
-    }, [onDelete, onPostSave]);
+    };
 
-    // Handle adding new row
-    const handleAddRow = useCallback(() => {
-        // This would typically open a modal or add an empty row
-        // For now, we'll just log the action
-        console.log('Add new row clicked');
-    }, []);
+    // Sort data
+    const sortedData = useMemo(() => {
+        if (!state.sortKey) return mergedData;
 
-    // Configure the Mantine React Table
-    const table = useMantineReactTable({
-        columns: mantineColumns,
-        data: localData,
-        enableEditing: isEditMode,
-        editDisplayMode: 'cell', // Enable cell-level editing
-        enableRowActions: isEditMode,
-        enableColumnFilters: showFilter,
-        enableGlobalFilter: showFilter,
-        enableSorting: true,
-        enablePagination: true,
-        initialState: {
-            pagination: { pageSize: 10, pageIndex: 0 },
-            showColumnFilters: showFilter,
-        },
-        state: {
-            isLoading,
-        },
-        mantineTableBodyCellProps: ({ row }) => ({
-            style: {
-                backgroundColor: pendingSaves.has(row.original.id) ? 'rgba(255, 193, 7, 0.1)' : 'inherit',
-                cursor: isEditMode ? 'pointer' : 'default',
-            },
-        }),
-        renderRowActions: ({ row }) => (
-            <Group gap="xs">
-                {isEditMode && (
-                    <>
-                        <Tooltip label="Edit">
-                            <ActionIcon
-                                size="sm"
-                                variant="subtle"
-                                onClick={() => {
-                                    // Handle edit action
-                                    console.log('Edit row:', row.original);
-                                }}
-                            >
-                                <IconEdit size={16} />
-                            </ActionIcon>
-                        </Tooltip>
-                        <Tooltip label="Delete">
-                            <ActionIcon
-                                size="sm"
-                                variant="subtle"
-                                color="red"
-                                onClick={() => handleDelete(row)}
-                            >
-                                <IconTrash size={16} />
-                            </ActionIcon>
-                        </Tooltip>
-                    </>
-                )}
-            </Group>
-        ),
-        renderTopToolbarCustomActions: () => (
-            <Group>
-                {isEditMode && alwaysShowAddRow && (
-                    <Tooltip label="Add New Row">
-                        <ActionIcon onClick={handleAddRow}>
-                            <IconPlus size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-                )}
-            </Group>
-        ),
-        mantineTableProps: {
-            style: {
-                '& td': {
-                    borderRight: '1px solid var(--mantine-color-gray-3)',
-                },
-                '& td:last-child': {
-                    borderRight: 'none',
-                },
-            },
-        },
-    });
+        return [...mergedData].sort((a, b) => {
+            const aVal = a[state.sortKey as keyof T];
+            const bVal = b[state.sortKey as keyof T];
+
+            if (aVal === bVal) return 0;
+            if (aVal === null || aVal === undefined) return 1;
+            if (bVal === null || bVal === undefined) return -1;
+
+            const comparison = aVal < bVal ? -1 : 1;
+            return state.sortOrder === 'asc' ? comparison : -comparison;
+        });
+    }, [mergedData, state.sortKey, state.sortOrder]);
+
+    if (isLoading) {
+        return <TableLoadingSkeleton columns={columns.length} />;
+    }
 
     return (
-        <Box w="100%">
-            {filterComponent && showFilter && (
-                <Box mb="md">
-                    {filterComponent}
-                </Box>
-            )}
-            <MantineReactTable table={table} />
-        </Box>
+        <MantineProvider theme={mantineTheme}>
+            <div className="w-full">
+                {/* Table Controls */}
+                <TableControls
+                    showFilter={showFilter}
+                    filterComponent={filterComponent}
+                    onNewRow={() => dispatch({ type: 'START_ADD_ROW' })}
+                    onEnterEditMode={() => {
+                        // This would be handled by parent component
+                    }}
+                    isVisible={isEditMode}
+                    orgId={orgId}
+                    projectId={projectId}
+                    documentId={documentId}
+                />
+
+                {/* Mantine Table */}
+                <Paper shadow="xs" p="md">
+                    <MantineTable striped highlightOnHover withTableBorder>
+                        <MantineTable.Thead>
+                            <MantineTable.Tr>
+                                {columns.map((column) => (
+                                    <MantineTable.Th
+                                        key={column.accessor as string}
+                                        onClick={() => handleSort(column.accessor)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            userSelect: 'none',
+                                        }}
+                                    >
+                                        <Group gap="xs">
+                                            {column.header}
+                                            {state.sortKey === column.accessor && (
+                                                state.sortOrder === 'asc' ?
+                                                    <IconChevronUp size={14} /> :
+                                                    <IconChevronDown size={14} />
+                                            )}
+                                        </Group>
+                                    </MantineTable.Th>
+                                ))}
+                                {isEditMode && <MantineTable.Th>Actions</MantineTable.Th>}
+                            </MantineTable.Tr>
+                        </MantineTable.Thead>
+                        <MantineTable.Tbody>
+                            {sortedData.map((item, rowIndex) => (
+                                <MantineTable.Tr key={item.id}>
+                                    {columns.map((column, colIndex) => (
+                                        <MantineTable.Td
+                                            key={column.accessor as string}
+                                            style={{
+                                                position: 'relative',
+                                                cursor: isEditMode ? 'pointer' : 'default',
+                                            }}
+                                            onClick={() => {
+                                                if (isEditMode) {
+                                                    dispatch({
+                                                        type: 'SET_SELECTED_CELL',
+                                                        payload: { row: rowIndex, col: colIndex },
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            {/* Simple cell rendering for now */}
+                                            <div style={{ padding: '4px 8px' }}>
+                                                {item[column.accessor] !== null && item[column.accessor] !== undefined
+                                                    ? String(item[column.accessor])
+                                                    : ''}
+                                            </div>
+                                        </MantineTable.Td>
+                                    ))}
+                                    {isEditMode && (
+                                        <MantineTable.Td>
+                                            <Group gap="xs">
+                                                <Tooltip label="Delete">
+                                                    <ActionIcon
+                                                        size="sm"
+                                                        variant="subtle"
+                                                        color="red"
+                                                        onClick={() =>
+                                                            dispatch({
+                                                                type: 'OPEN_DELETE_CONFIRM',
+                                                                payload: item,
+                                                            })
+                                                        }
+                                                    >
+                                                        <IconTrash size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                            </Group>
+                                        </MantineTable.Td>
+                                    )}
+                                </MantineTable.Tr>
+                            ))}
+
+                            {/* Add new row */}
+                            {!state.isAddingNew && isEditMode && (alwaysShowAddRow || isEditMode) && (
+                                <AddRowPlaceholder
+                                    columns={columns as EditableColumn<unknown>[]}
+                                    onClick={() => dispatch({ type: 'START_ADD_ROW' })}
+                                    isEditMode={isEditMode}
+                                />
+                            )}
+                        </MantineTable.Tbody>
+                    </MantineTable>
+                </Paper>
+
+                {/* New Row Form */}
+                {state.isAddingNew && (
+                    <NewRowForm
+                        columns={columns as EditableColumn<unknown>[]}
+                        editingData={state.editingData}
+                        onCellChange={(itemId, accessor, value) => {
+                            dispatch({
+                                type: 'SET_CELL_VALUE',
+                                payload: { itemId, accessor, value },
+                            });
+                        }}
+                        onSave={async () => {
+                            // Handle save logic here
+                            dispatch({ type: 'CANCEL_ADD_ROW' });
+                        }}
+                        onCancel={() => dispatch({ type: 'CANCEL_ADD_ROW' })}
+                    />
+                )}
+
+                {/* Delete Confirmation Dialog */}
+                <DeleteConfirmDialog
+                    open={state.deleteConfirmOpen}
+                    onOpenChange={(open) => !open && dispatch({ type: 'CLOSE_DELETE_CONFIRM' })}
+                    onConfirm={() => {
+                        if (state.itemToDelete) {
+                            handleDelete(state.itemToDelete);
+                        }
+                    }}
+                />
+            </div>
+        </MantineProvider>
     );
 }
