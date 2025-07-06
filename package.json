@@ -100,7 +100,13 @@
             "marked": "$marked",
             "react": "$react",
             "react-dom": "$react-dom"
-        }
+        },
+        "strip-ansi-cjs": "npm:strip-ansi@^6.0.1",
+        "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0"
+    },
+    "resolutions": {
+        "strip-ansi-cjs": "npm:strip-ansi@^6.0.1",
+        "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3.3.1",
