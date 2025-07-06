@@ -1,6 +1,12 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
+import {
+    Code2,
+    Link as LinkIcon,
+    Loader2,
+    MessageSquare,
+    Trash2,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -63,21 +69,85 @@ export function Hero() {
             <div className="absolute inset-0 bg-black opacity-80" />
             <div className="container mx-auto px-4 py-32 relative z-20">
                 <h2 className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[80px] xl:text-[96px] font-black leading-none text-white">
-                    REQUIREMENT TOOLS SUCK
+                    YOUR REQUIREMENTS WERE DEAD
                 </h2>
                 <h2 className="text-[36px] sm:text-[48px] md:text-[64px] lg:text-[80px] xl:text-[96px] font-black leading-none mb-16 text-white">
-                    OURS DOESN&apos;T
+                    WE BROUGHT THEM TO LIFE
                 </h2>
-                <div className="space-y-4 mb-16">
-                    <p className="text-xl sm:text-2xl md:text-3xl font-bold">
-                        WRITE LIKE WORD
+                <div className="space-y-6 mb-16">
+                    <p className="text-xl sm:text-2xl md:text-3xl font-bold mb-8">
+                        WRITE LIKE WORD · ORGANIZE LIKE EXCEL · AUTOMATE
+                        EVERYTHING ELSE
                     </p>
-                    <p className="text-xl sm:text-2xl md:text-3xl font-bold">
-                        ORGANIZE LIKE EXCEL
-                    </p>
-                    <p className="text-xl sm:text-2xl md:text-3xl font-bold">
-                        LET AI HANDLE PRECISION, COMPLIANCE, AND TRACEABILITY
-                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-blue-500/8 hover:to-blue-600/4 hover:border-blue-400/20 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                            <div className="flex items-start gap-3 h-full">
+                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-blue-500/20 transition-colors duration-300 flex-shrink-0">
+                                    <MessageSquare className="h-4 w-4 text-gray-300 group-hover:text-blue-200 transition-colors duration-300" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-blue-200 transition-colors duration-300">
+                                        Chat
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
+                                        Your specs speak human now—ask
+                                        questions, rewrite, fix nonsense
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-red-500/8 hover:to-red-600/4 hover:border-red-400/20 hover:scale-105 hover:shadow-lg hover:shadow-red-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                            <div className="flex items-start gap-3 h-full">
+                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-red-500/20 transition-colors duration-300 flex-shrink-0">
+                                    <Trash2 className="h-4 w-4 text-gray-300 group-hover:text-red-200 transition-colors duration-300" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-red-200 transition-colors duration-300">
+                                        Clean
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
+                                        Duplicates and contradictions? Destroyed
+                                        before QA or customers notice
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-emerald-500/8 hover:to-emerald-600/4 hover:border-emerald-400/20 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                            <div className="flex items-start gap-3 h-full">
+                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors duration-300 flex-shrink-0">
+                                    <Code2 className="h-4 w-4 text-gray-300 group-hover:text-emerald-200 transition-colors duration-300" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-emerald-200 transition-colors duration-300">
+                                        Code
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
+                                        Real code, straight from your system
+                                        design. Not vibes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-violet-500/8 hover:to-violet-600/4 hover:border-violet-400/20 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                            <div className="flex items-start gap-3 h-full">
+                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-violet-500/20 transition-colors duration-300 flex-shrink-0">
+                                    <LinkIcon className="h-4 w-4 text-gray-300 group-hover:text-violet-200 transition-colors duration-300" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-violet-200 transition-colors duration-300">
+                                        Connect
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-300 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
+                                        Emails, tickets, docs—in one place. Stop
+                                        creating meetings; start saving hours
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex flex-col sm:flex-row justify-start items-start space-y-4 sm:space-y-0 sm:space-x-6">
                     <Button
