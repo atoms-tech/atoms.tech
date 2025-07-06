@@ -8,13 +8,15 @@ import { z } from 'zod';
 // Environment variable schema
 const envSchema = z.object({
     // App Configuration
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z
+        .enum(['development', 'test', 'production'])
+        .default('development'),
     NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-    
+
     // Supabase Configuration
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-    
+
     // Optional API Keys (can be undefined in development)
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_API_URL: z.string().url().optional(),
@@ -23,26 +25,47 @@ const envSchema = z.object({
     NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID: z.string().optional(),
-    
+
     NEXT_PUBLIC_CHUNKR_API_KEY: z.string().optional(),
     NEXT_PUBLIC_CHUNKR_API_URL: z.string().url().optional(),
-    
+
     // Email Configuration (server-side only)
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM_EMAIL: z.string().email().optional(),
     ADMIN_EMAIL: z.string().email().optional(),
-    
+
     // Feature Flags
-    NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING: z.string().transform(val => val === 'true').default('false'),
-    NEXT_PUBLIC_ENABLE_ERROR_TRACKING: z.string().transform(val => val === 'true').default('false'),
-    NEXT_PUBLIC_ENABLE_ANALYTICS: z.string().transform(val => val === 'true').default('false'),
-    NEXT_PUBLIC_CSP_ENABLED: z.string().transform(val => val === 'true').default('true'),
-    NEXT_PUBLIC_SECURITY_HEADERS_ENABLED: z.string().transform(val => val === 'true').default('true'),
-    
+    NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
+    NEXT_PUBLIC_ENABLE_ERROR_TRACKING: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
+    NEXT_PUBLIC_ENABLE_ANALYTICS: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
+    NEXT_PUBLIC_CSP_ENABLED: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('true'),
+    NEXT_PUBLIC_SECURITY_HEADERS_ENABLED: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('true'),
+
     // Logging
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-    ENABLE_REQUEST_LOGGING: z.string().transform(val => val === 'true').default('false'),
-    ENABLE_DEBUG_LOGGING: z.string().transform(val => val === 'true').default('false'),
+    ENABLE_REQUEST_LOGGING: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
+    ENABLE_DEBUG_LOGGING: z
+        .string()
+        .transform((val) => val === 'true')
+        .default('false'),
 });
 
 // Production-specific schema
@@ -62,26 +85,28 @@ export type EnvConfig = z.infer<typeof envSchema>;
 export function validateEnv(): EnvConfig {
     const env = process.env;
     const isProduction = env.NODE_ENV === 'production';
-    
+
     try {
         // Use production schema in production, regular schema otherwise
         const schema = isProduction ? productionEnvSchema : envSchema;
         return schema.parse(env);
     } catch (error) {
         console.error('❌ Environment validation failed:');
-        
+
         if (error instanceof z.ZodError) {
             error.errors.forEach((err) => {
                 console.error(`  - ${err.path.join('.')}: ${err.message}`);
             });
         }
-        
+
         if (isProduction) {
             // In production, fail hard
             process.exit(1);
         } else {
             // In development, warn but continue
-            console.warn('⚠️  Continuing with invalid environment in development mode');
+            console.warn(
+                '⚠️  Continuing with invalid environment in development mode',
+            );
             // Return partial config for development
             return envSchema.parse(env);
         }
@@ -123,18 +148,21 @@ export const apiConfig = {
     },
     gumloop: {
         apiKey: env.NEXT_PUBLIC_GUMLOOP_API_KEY,
-        apiUrl: env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1',
+        apiUrl:
+            env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1',
         userId: env.NEXT_PUBLIC_GUMLOOP_USER_ID,
         flows: {
             fileConvert: env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID,
             reqAnalysis: env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-            reqAnalysisReasoning: env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+            reqAnalysisReasoning:
+                env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
             textToMermaid: env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
         },
     },
     chunkr: {
         apiKey: env.NEXT_PUBLIC_CHUNKR_API_KEY,
-        apiUrl: env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1',
+        apiUrl:
+            env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1',
     },
     email: {
         apiKey: env.RESEND_API_KEY,
@@ -161,13 +189,13 @@ export function checkRequiredEnvVars() {
         'NEXT_PUBLIC_SUPABASE_URL',
         'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     ];
-    
-    const missing = required.filter(key => !process.env[key]);
-    
+
+    const missing = required.filter((key) => !process.env[key]);
+
     if (missing.length > 0) {
         console.error('Missing required environment variables:', missing);
         return false;
     }
-    
+
     return true;
 }

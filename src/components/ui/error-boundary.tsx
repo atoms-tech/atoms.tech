@@ -1,9 +1,16 @@
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from './button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
 import { AlertCircle, RotateCcw } from 'lucide-react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+
+import { Button } from './button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from './card';
 
 interface ErrorBoundaryProps {
     children: ReactNode;
@@ -22,7 +29,10 @@ interface ErrorBoundaryState {
  * Enhanced Error Boundary component for React 19
  * Provides better error handling with recovery mechanisms
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+    ErrorBoundaryProps,
+    ErrorBoundaryState
+> {
     private resetTimeoutId: number | null = null;
 
     constructor(props: ErrorBoundaryProps) {
@@ -47,7 +57,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
         // Log the error to console and external services
         console.error('ErrorBoundary caught an error:', error, errorInfo);
-        
+
         this.setState({
             error,
             errorInfo,
@@ -66,8 +76,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
         // Reset error state if resetKeys change
         if (hasError && resetKeys && resetKeys !== prevProps.resetKeys) {
-            const hasResetKeyChanged = resetKeys.some((key, index) => 
-                prevProps.resetKeys?.[index] !== key
+            const hasResetKeyChanged = resetKeys.some(
+                (key, index) => prevProps.resetKeys?.[index] !== key,
             );
 
             if (hasResetKeyChanged) {
@@ -127,30 +137,32 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                                 Something went wrong
                             </CardTitle>
                             <CardDescription>
-                                An unexpected error occurred while rendering this component.
+                                An unexpected error occurred while rendering
+                                this component.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {process.env.NODE_ENV === 'development' && error && (
-                                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-                                        Error details:
-                                    </p>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
-                                        {error.message}
-                                    </p>
-                                </div>
-                            )}
+                            {process.env.NODE_ENV === 'development' &&
+                                error && (
+                                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                                            Error details:
+                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 font-mono">
+                                            {error.message}
+                                        </p>
+                                    </div>
+                                )}
                             <div className="flex flex-col space-y-2">
-                                <Button 
+                                <Button
                                     onClick={this.handleRetry}
                                     className="w-full"
                                 >
                                     <RotateCcw className="w-4 h-4 mr-2" />
                                     Try Again
                                 </Button>
-                                <Button 
-                                    variant="outline" 
+                                <Button
+                                    variant="outline"
                                     onClick={() => window.location.reload()}
                                     className="w-full"
                                 >
@@ -172,7 +184,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
  */
 export function withErrorBoundary<P extends object>(
     Component: React.ComponentType<P>,
-    errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
+    errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>,
 ) {
     const WrappedComponent = (props: P) => (
         <ErrorBoundary {...errorBoundaryProps}>
@@ -181,7 +193,7 @@ export function withErrorBoundary<P extends object>(
     );
 
     WrappedComponent.displayName = `withErrorBoundary(${Component.displayName || Component.name})`;
-    
+
     return WrappedComponent;
 }
 
