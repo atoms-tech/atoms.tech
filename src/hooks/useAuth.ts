@@ -45,15 +45,36 @@ export function useAuth() {
                 console.log('useAuth: Checking session...');
                 setInitialized(true);
 
-                // In development, skip session check if it's likely to fail due to atoms.tech routing
+                // In development, try to get user from cookies first
                 if (isDevelopment) {
                     console.log(
-                        'useAuth: Development mode - skipping initial session check due to atoms.tech routing issue',
+                        'useAuth: Development mode - checking for user_id cookie',
                     );
-                    setIsAuthenticated(false);
-                    setUserProfile(null);
-                    setIsLoading(false);
-                    return;
+
+                    // Try to get user_id from cookie
+                    const userIdCookie = document.cookie
+                        .split('; ')
+                        .find((row) => row.startsWith('user_id='))
+                        ?.split('=')[1];
+
+                    if (userIdCookie) {
+                        console.log(
+                            'useAuth: Found user_id in cookie:',
+                            userIdCookie,
+                        );
+                        setIsAuthenticated(true);
+                        await fetchUserProfile(userIdCookie);
+                        setIsLoading(false);
+                        return;
+                    } else {
+                        console.log(
+                            'useAuth: No user_id cookie found in development',
+                        );
+                        setIsAuthenticated(false);
+                        setUserProfile(null);
+                        setIsLoading(false);
+                        return;
+                    }
                 }
 
                 // Add timeout to prevent hanging in production

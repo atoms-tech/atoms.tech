@@ -41,7 +41,6 @@ import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import {
     useDeleteProject,
     useDuplicateProject,
-    useUpdateProject,
 } from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import {
@@ -110,7 +109,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     // Project action mutations
     const { mutateAsync: duplicateProject } = useDuplicateProject();
     const { mutateAsync: deleteProject } = useDeleteProject();
-    const { mutateAsync: updateProject } = useUpdateProject('');
 
     // State for project actions
     const [isEditingProject, setIsEditingProject] = useState<string | null>(
@@ -259,14 +257,23 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         setEditingProjectName(project.name);
     };
 
-    const handleSaveProjectEdit = async (_project: Project) => {
+    const handleSaveProjectEdit = async (project: Project) => {
         if (!user?.id || !editingProjectName.trim()) return;
 
         try {
-            await updateProject({
-                name: editingProjectName.trim(),
-                updated_by: user.id,
-            });
+            // Use Supabase directly for the update
+            const { error } = await supabase
+                .from('projects')
+                .update({
+                    name: editingProjectName.trim(),
+                    updated_by: user.id,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', project.id)
+                .select()
+                .single();
+
+            if (error) throw error;
 
             setIsEditingProject(null);
             setEditingProjectName('');
@@ -276,6 +283,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 title: 'Success',
                 description: 'Project updated successfully',
             });
+
+            // Manually trigger a refetch of projects
+            window.location.reload();
         } catch (error) {
             console.error('Error updating project:', error);
             toast({

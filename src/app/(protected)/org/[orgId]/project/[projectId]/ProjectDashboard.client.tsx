@@ -3,6 +3,7 @@
 import {
     Beaker,
     Clock,
+    Copy,
     FileText,
     FolderOpen,
     MoreVertical,
@@ -16,6 +17,7 @@ import { useEffect, useState } from 'react';
 
 import EditDocumentForm from '@/components/base/forms/EditDocumentForm';
 import EditProjectForm from '@/components/base/forms/EditProjectForm';
+import DuplicateDocumentModal from '@/components/base/modals/DuplicateDocumentModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -87,6 +89,8 @@ export default function ProjectPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const { mutateAsync: deleteProject } = useDeleteProject();
     const [documentToEdit, setDocumentToEdit] = useState<Document | null>(null);
+    const [documentToDuplicate, setDocumentToDuplicate] =
+        useState<Document | null>(null);
 
     console.log(userRole, 'userRole');
 
@@ -491,6 +495,23 @@ export default function ProjectPage() {
                                                             )}
                                                             {hasProjectPermission(
                                                                 userRole,
+                                                                'addDocument',
+                                                            ) && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        setDocumentToDuplicate(
+                                                                            doc,
+                                                                        )
+                                                                    }
+                                                                    className="gap-3 py-2.5"
+                                                                >
+                                                                    <Copy className="h-4 w-4" />
+                                                                    Duplicate
+                                                                    Document
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {hasProjectPermission(
+                                                                userRole,
                                                                 'deleteDocument',
                                                             ) && (
                                                                 <DropdownMenuItem
@@ -711,6 +732,16 @@ export default function ProjectPage() {
                         setDocumentToEdit(null);
                     }}
                     canDelete={hasProjectPermission(userRole, 'deleteDocument')}
+                />
+            )}
+
+            {documentToDuplicate && user?.id && params?.orgId && (
+                <DuplicateDocumentModal
+                    document={documentToDuplicate}
+                    isOpen={true}
+                    onClose={() => setDocumentToDuplicate(null)}
+                    organizationId={params.orgId}
+                    userId={user.id}
                 />
             )}
         </div>

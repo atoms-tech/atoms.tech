@@ -12,6 +12,7 @@ export function useTableEdit<
     columns: EditableColumn<T>[],
     onSave?: (item: T, isNew: boolean) => Promise<void>,
     onDelete?: (item: T) => Promise<void>,
+    onPostSave?: () => Promise<void>,
     isEditMode: boolean = false,
 ) {
     const [editingData, setEditingData] = useState<Record<string, T>>({});
@@ -138,7 +139,7 @@ export function useTableEdit<
         [editingData, editingTimeouts, onSave],
     );
 
-    const handleAddRow = useCallback(() => {
+    const handleAddRow = useCallback(async () => {
         const newItem = columns.reduce((acc, col) => {
             switch (col.type) {
                 case 'select':
@@ -150,7 +151,13 @@ export function useTableEdit<
                     acc[col.accessor as keyof T] = [] as unknown as T[keyof T];
                     break;
                 case 'text':
-                    acc[col.accessor as keyof T] = '' as T[keyof T];
+                    // For external_id field, generate a REQ-ID instead of empty string
+                    if (String(col.accessor).toLowerCase() === 'external_id') {
+                        acc[col.accessor as keyof T] =
+                            'GENERATING...' as T[keyof T];
+                    } else {
+                        acc[col.accessor as keyof T] = '' as T[keyof T];
+                    }
                     break;
                 case 'number':
                     acc[col.accessor as keyof T] = null as T[keyof T];
@@ -165,6 +172,66 @@ export function useTableEdit<
         }, {} as T);
 
         newItem.id = 'new';
+
+        // Generate REQ-ID for external_id field if it exists
+        const externalIdColumn = columns.find(
+            (col) => String(col.accessor).toLowerCase() === 'external_id',
+        );
+
+        if (externalIdColumn) {
+            try {
+                // Import the generator function dynamically to avoid circular dependencies
+                const { generateNextRequirementId } = await import(
+                    '@/lib/utils/requirementIdGenerator'
+                );
+                const { supabase } = await import(
+                    '@/lib/supabase/supabaseBrowser'
+                );
+
+                // Get organization ID from the current document
+                const urlParts = window.location.pathname.split('/');
+                const orgIndex = urlParts.indexOf('org');
+                const docIndex = urlParts.indexOf('documents');
+
+                if (
+                    orgIndex !== -1 &&
+                    docIndex !== -1 &&
+                    urlParts[orgIndex + 1] &&
+                    urlParts[docIndex + 1]
+                ) {
+                    const documentId = urlParts[docIndex + 1];
+
+                    // Get organization ID from document
+                    const { data: document } = await supabase
+                        .from('documents')
+                        .select(
+                            `
+                            project_id,
+                            projects!inner(organization_id)
+                        `,
+                        )
+                        .eq('id', documentId)
+                        .single();
+
+                    const organizationId = (
+                        document as { projects?: { organization_id?: string } }
+                    )?.projects?.organization_id;
+
+                    if (organizationId) {
+                        const reqId =
+                            await generateNextRequirementId(organizationId);
+                        newItem[externalIdColumn.accessor as keyof T] =
+                            reqId as T[keyof T];
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to generate REQ-ID:', error);
+                // Fall back to empty string if generation fails
+                newItem[externalIdColumn.accessor as keyof T] =
+                    '' as T[keyof T];
+            }
+        }
+
         setEditingData((prev) => ({
             ...prev,
             new: newItem,
@@ -173,15 +240,42 @@ export function useTableEdit<
     }, [columns]);
 
     const handleSaveRow = useCallback(async () => {
+        console.log('🎯 STEP 2: handleSaveRow called in useTableEdit');
         const newItem = editingData['new'];
-        if (!newItem || !onSave) return;
+        if (!newItem || !onSave) {
+            console.log('❌ STEP 2: No newItem or onSave, returning early');
+            return;
+        }
 
         try {
             // Remove the temporary id before saving
             const { id: _tempId, ...itemWithoutId } = newItem;
-            await onSave(itemWithoutId as T, true);
+            console.log(
+                '🎯 STEP 3a: Removed temporary ID, preparing to save:',
+                itemWithoutId,
+            );
 
-            // Clear editing state after successful save
+            console.log(
+                '🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)',
+            );
+            await onSave(itemWithoutId as T, true);
+            console.log('✅ STEP 3b: Parent onSave completed successfully');
+
+            // Call onPostSave after successfully saving to refresh data
+            if (onPostSave) {
+                console.log(
+                    '🎯 STEP 3c: Calling onPostSave (refreshRequirements)',
+                );
+                await onPostSave();
+                console.log('✅ STEP 3c: onPostSave completed successfully');
+            } else {
+                console.log(
+                    '⚠️ STEP 3c: No onPostSave provided, skipping refresh',
+                );
+            }
+
+            // Clear editing state only after successful save
+            console.log('🎯 STEP 3d: Clearing editing state');
             setIsAddingNew(false);
             setEditingData((prev) => {
                 const { new: _newItem, ...rest } = prev;
@@ -190,10 +284,15 @@ export function useTableEdit<
 
             // Reset local edit mode to match global edit mode
             setLocalIsEditMode(false);
+            console.log(
+                '✅ STEP 3d: Editing state cleared, new row form should disappear',
+            );
         } catch (error) {
-            console.error('Failed to save new row:', error);
+            console.error('❌ STEP 3: Failed to save new row:', error);
+            // Don't clear the editing state on error - keep the row visible for user to retry
+            // TODO: Add user-visible error message/toast
         }
-    }, [editingData, onSave]);
+    }, [editingData, onSave, onPostSave]);
 
     const handleCancelEdit = useCallback(() => {
         setIsAddingNew(false);
