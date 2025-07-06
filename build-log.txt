@@ -1,0 +1,14 @@
+
+> atoms.tech@0.1.0 build
+> NODE_OPTIONS='--max-old-space-size=8192' next build
+
+   ▲ Next.js 15.3.4
+   - Environments: .env.local, .env.production, .env
+   - Experiments (use with caution):
+     ⨯ reactCompiler
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (100kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled successfully in 4.1min
+   Skipping linting
+   Checking validity of types ...

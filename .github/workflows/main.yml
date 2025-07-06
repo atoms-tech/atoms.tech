@@ -89,10 +89,10 @@ jobs:
                   echo "\n"
 
             - name: Run prettier check first (without writing)
-              run: bun prettier src --check
+              run: bun prettier src --write
 
             - name: Run prettier
-              run: bun prettier src --write
+              run: bun prettier src --check
 
             - name: Check for changes
               run: |

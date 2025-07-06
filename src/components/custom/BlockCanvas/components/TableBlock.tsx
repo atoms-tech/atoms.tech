@@ -2,7 +2,7 @@
 
 import { GripVertical, MoreVertical, Plus } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import {
@@ -63,7 +63,6 @@ const TableHeader: React.FC<{
         propertyId: string,
         defaultValue: string,
     ) => void;
-    _onAddRow: () => void;
     onDelete: () => void;
     dragActivators?: React.ComponentProps<typeof Button>;
     orgId: string;
@@ -75,7 +74,6 @@ const TableHeader: React.FC<{
     onNameChange,
     onAddColumn,
     onAddColumnFromProperty,
-    _onAddRow,
     onDelete,
     dragActivators,
     orgId,
@@ -199,6 +197,14 @@ export const TableBlock: React.FC<BlockProps> = ({
     onDelete,
     dragActivators,
 }) => {
+    console.log('🔍 TableBlock render:', {
+        blockId: block.id,
+        blockType: block.type,
+        hasColumns: !!block.columns,
+        columnsLength: block.columns?.length,
+        columns: block.columns,
+    });
+
     const { userProfile } = useAuth();
     const params = useParams();
     const { currentOrganization } = useOrganization();
@@ -247,11 +253,13 @@ export const TableBlock: React.FC<BlockProps> = ({
     };
 
     // Fetch fresh requirements when exiting edit mode
-    useEffect(() => {
-        if (!isEditMode) {
-            refreshRequirements();
-        }
-    }, [isEditMode, refreshRequirements]);
+    // Note: Disabled this automatic refresh as it causes race conditions with new row creation
+    // The table components handle their own refresh via onPostSave after successful operations
+    // useEffect(() => {
+    //     if (!isEditMode) {
+    //         refreshRequirements();
+    //     }
+    // }, [isEditMode, refreshRequirements]);
 
     // Get table columns from block columns
     const getColumnsFromProperties = useCallback(() => {
@@ -345,29 +353,40 @@ export const TableBlock: React.FC<BlockProps> = ({
         }
     };
 
-    const handleAddRow = () => {};
-
     // Create wrapper functions to handle the user ID
     const handleSaveRequirement = async (
         dynamicReq: DynamicRequirement,
         isNew: boolean,
     ) => {
-        if (!userProfile?.id) return;
+        console.log('🎯 STEP 4: handleSaveRequirement called in TableBlock', {
+            isNew,
+            dynamicReq,
+            userId: userProfile?.id,
+        });
+
+        if (!userProfile?.id) {
+            console.log('❌ STEP 4: No userProfile.id, returning early');
+            return;
+        }
+
+        console.log(
+            '🎯 STEP 4: Calling saveRequirement from useRequirementActions',
+        );
         await saveRequirement(
             dynamicReq,
             isNew,
             userProfile.id,
             userProfile.full_name || '',
         );
-        // Refresh requirements after save
-        await refreshRequirements();
+        console.log('✅ STEP 4: saveRequirement completed successfully');
+        // Note: No need to refresh here as saveRequirement already updates local state
+        // and the table components will call onPostSave if needed
     };
 
     const handleDeleteRequirement = async (dynamicReq: DynamicRequirement) => {
         if (!userProfile?.id) return;
         await deleteRequirement(dynamicReq, userProfile.id);
-        // Refresh requirements after delete
-        await refreshRequirements();
+        // Note: No need to refresh here as deleteRequirement already updates local state
     };
 
     // Handle deleting the entire block
@@ -402,7 +421,6 @@ export const TableBlock: React.FC<BlockProps> = ({
                     onNameChange={handleNameChange}
                     onAddColumn={handleAddColumn}
                     onAddColumnFromProperty={handleAddColumnFromProperty}
-                    _onAddRow={handleAddRow}
                     onDelete={handleBlockDelete}
                     dragActivators={dragActivators}
                     orgId={currentOrganization?.id || ''}
@@ -410,14 +428,20 @@ export const TableBlock: React.FC<BlockProps> = ({
                     documentId={params.documentId as string}
                 />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
-                    {!block.columns ? (
-                        <TableBlockLoadingState
-                            isLoading={true}
-                            isError={false}
-                            error={null}
-                        />
+                    {!block.columns ||
+                    !Array.isArray(block.columns) ||
+                    block.columns.length === 0 ? (
+                        <>
+                            <TableBlockLoadingState
+                                isLoading={true}
+                                isError={false}
+                                error={null}
+                            />
+                        </>
                     ) : (
-                        <TableContent />
+                        <>
+                            <TableContent />
+                        </>
                     )}
                 </div>
             </div>
