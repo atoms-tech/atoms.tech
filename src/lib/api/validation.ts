@@ -252,3 +252,4 @@ export const securitySchemas = {
         .string()
         .refine((val) => !/[';\\]/g.test(val), 'Invalid characters detected'),
 };
+// Force reformat
