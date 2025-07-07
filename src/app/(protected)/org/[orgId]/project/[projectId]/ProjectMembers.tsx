@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Filter, MoreHorizontal, Users } from 'lucide-react';
+import { ArrowBigDownIcon, Filter, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -35,21 +35,18 @@ interface ProjectMembersProps {
 const getRoleColor = (role: ProjectRole) => {
     switch (role) {
         case 'editor':
-            return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+            return 'bg-green-100 text-green-800';
         case 'viewer':
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+            return 'bg-gray-100 text-gray-800';
         case 'owner':
-            return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+            return 'bg-purple-100 text-purple-800';
         default:
-            return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
+            return 'bg-gray-100 text-gray-800';
     }
 };
 
 export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     const { user } = useUser();
-    const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
-    const [selectedRole, setSelectedRole] = useState<ProjectRole | null>(null);
-    const [isRolePromptOpen, setIsRolePromptOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<ProjectRole[]>([]);
@@ -116,13 +113,16 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
     };
 
-    const handleChangeRole = async () => {
+    const handleChangeRole = async (
+        memberId: string,
+        selectedRole: ProjectRole,
+    ) => {
         if (!hasProjectPermission(userRole, 'changeRole')) {
             setErrorMessage('You do not have permission to change roles.');
             return;
         }
 
-        if (!activeMemberId || !selectedRole) {
+        if (!memberId || !selectedRole) {
             setErrorMessage('Invalid operation. Please select a role.');
             return;
         }
@@ -132,7 +132,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                 .from('project_members')
                 .update({ role: selectedRole })
                 .eq('project_id', projectId)
-                .eq('user_id', activeMemberId);
+                .eq('user_id', memberId);
 
             if (error) {
                 console.error('Error updating project member role:', error);
@@ -141,9 +141,6 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
             setErrorMessage(null); // Clear error message on success
             refetch();
-            setIsRolePromptOpen(false);
-            setActiveMemberId(null);
-            setSelectedRole(null);
         } catch (error) {
             console.error('Error changing role:', error);
             setErrorMessage('Failed to change role. Please try again.');
@@ -251,59 +248,62 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as ProjectRole)}`}
-                                    >
-                                        {member.role}
-                                    </span>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'changeRole',
-                                    ) &&
-                                        member.role !== 'owner' && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            setActiveMemberId(
-                                                                member.id,
-                                                            );
-                                                            setIsRolePromptOpen(
-                                                                true,
-                                                            );
-                                                        }}
-                                                    >
-                                                        Change role
-                                                    </DropdownMenuItem>
-                                                    {hasProjectPermission(
-                                                        userRole,
-                                                        'removeMember',
-                                                    ) && (
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                handleRemoveMember(
-                                                                    member.id,
-                                                                );
-                                                            }}
-                                                            className="text-red-600"
-                                                        >
-                                                            Remove
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as ProjectRole)} 
+                                                ${member.id === user?.id || !hasProjectPermission(userRole, 'changeRole') ? 'pointer-events-none' : ''}`}
+                                        >
+                                            {member.id === user?.id ||
+                                            !hasProjectPermission(
+                                                userRole,
+                                                'changeRole',
+                                            ) ? (
+                                                member.role
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    {member.role}
+                                                    <ArrowBigDownIcon className="h-4 w-4" />
+                                                </div>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {['editor', 'viewer'].map((role) => (
+                                            <DropdownMenuItem
+                                                key={role}
+                                                onClick={() => {
+                                                    handleChangeRole(
+                                                        member.id,
+                                                        role as ProjectRole,
+                                                    );
+                                                }}
+                                            >
+                                                {role.charAt(0).toUpperCase() +
+                                                    role.slice(1)}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        {hasProjectPermission(
+                                            userRole,
+                                            'removeMember',
+                                        ) && (
+                                            <>
+                                                <hr></hr>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        handleRemoveMember(
+                                                            member.id,
+                                                        )
+                                                    }
+                                                    className="text-red-600"
+                                                >
+                                                    Remove
+                                                </DropdownMenuItem>
+                                            </>
                                         )}
-                                </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         ))}
                     </div>
@@ -319,70 +319,6 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                     </div>
                 )}
             </CardContent>
-
-            {isRolePromptOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-black-300 dark:border-gray-700 rounded-lg">
-                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
-                            Change Role
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                                    Select Role
-                                </label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline">
-                                            {selectedRole
-                                                ? selectedRole
-                                                      .charAt(0)
-                                                      .toUpperCase() +
-                                                  selectedRole.slice(1)
-                                                : 'Choose a role'}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {['editor', 'viewer'].map((role) => (
-                                            <DropdownMenuItem
-                                                key={role}
-                                                onClick={() =>
-                                                    setSelectedRole(
-                                                        role as ProjectRole,
-                                                    )
-                                                }
-                                            >
-                                                {role.charAt(0).toUpperCase() +
-                                                    role.slice(1)}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
-                                onClick={() => {
-                                    setIsRolePromptOpen(false);
-                                    setSelectedRole(null);
-                                    setActiveMemberId(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
-                                onClick={handleChangeRole}
-                                disabled={!selectedRole}
-                            >
-                                Confirm
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </Card>
     );
 }
