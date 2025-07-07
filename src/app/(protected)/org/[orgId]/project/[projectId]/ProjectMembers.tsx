@@ -1,7 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowBigDownIcon, Filter, Users } from 'lucide-react';
+import { ArrowBigDownIcon, Filter, Plus, Users } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
 import {
     PROJECT_ROLE_ARRAY,
     ProjectRole,
@@ -46,9 +48,12 @@ const getRoleColor = (role: ProjectRole) => {
 };
 
 export default function ProjectMembers({ projectId }: ProjectMembersProps) {
+    const params = useParams<{ orgId: string }>();
     const { user } = useUser();
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [emailInput, setEmailInput] = useState('');
+    const [roleInput, setRoleInput] = useState<ProjectRole>('viewer');
     const [roleFilters, setRoleFilters] = useState<ProjectRole[]>([]);
 
     const {
@@ -147,6 +152,122 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
     };
 
+    const handleAddMember = async (
+        memberEmail: string,
+        selectedRole: ProjectRole,
+    ) => {
+        if (!hasProjectPermission(userRole, 'assignToProject')) {
+            toast({
+                title: 'Error',
+                description:
+                    'You do not have permission to assign members to projects.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (!memberEmail || !selectedRole) {
+            setErrorMessage('Please input email and/or role.');
+            return;
+        }
+
+        try {
+            // Check if the email exists in the profiles table
+            const { data: member, error: profileError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', memberEmail.trim())
+                .single();
+
+            if (profileError) {
+                if (profileError.code === 'PGRST116') {
+                    setErrorMessage(
+                        'This email does not belong to any user. Please ask the user to sign up first.',
+                    );
+                    return;
+                }
+                console.error(
+                    'Error checking email in profiles:',
+                    profileError,
+                );
+                throw profileError;
+            }
+
+            const {
+                data: existingMember,
+                error: checkError,
+                status,
+            } = await supabase
+                .from('project_members')
+                .select('id')
+                .eq('user_id', member?.id || '')
+                .eq('project_id', projectId)
+                .single();
+
+            if (checkError && status !== 406) {
+                console.error('Error checking project membership:', checkError);
+                throw checkError;
+            }
+
+            if (existingMember) {
+                setErrorMessage('User is already a part of this project.');
+                return;
+            }
+
+            const {
+                data: existingOrgMember,
+                error: checkOrgError,
+                status: orgStatus,
+            } = await supabase
+                .from('organization_members')
+                .select('id')
+                .eq('user_id', member?.id || '')
+                .eq('organization_id', params?.orgId || '')
+                .single();
+
+            if (checkOrgError && orgStatus !== 406) {
+                console.error(
+                    'Error checking organization membership:',
+                    checkError,
+                );
+                throw checkError;
+            }
+
+            if (!existingOrgMember) {
+                setErrorMessage('User is not a part of this organization.');
+                return;
+            }
+
+            const { error } = await supabase
+                .from('project_members')
+                .insert({
+                    user_id: member?.id || '',
+                    project_id: projectId,
+                    role: selectedRole,
+                    org_id: params?.orgId || '',
+                    status: 'active',
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Failed to assign user to project', error);
+                throw error;
+            }
+
+            toast({
+                title: 'Success',
+                description: 'User assigned to project successfully!',
+                variant: 'default',
+            });
+            setErrorMessage(null);
+            refetch();
+        } catch (error) {
+            console.error('Error assigning user to project:', error);
+            setErrorMessage('Failed to assign user to project.');
+        }
+    };
+
     return (
         <Card>
             <CardHeader className="flex flex-col gap-4 pb-0">
@@ -156,6 +277,51 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                         Manage members of your project
                     </CardDescription>
                 </div>
+                {hasProjectPermission(userRole, 'changeRole') && (
+                    <div className="flex w-full md:w-auto space-x-2 pb-3">
+                        <Button
+                            variant="ghost"
+                            className="w-9 h-9"
+                            onClick={() =>
+                                handleAddMember(emailInput, roleInput)
+                            }
+                        >
+                            <Plus></Plus>
+                        </Button>
+                        <Input
+                            type="text"
+                            placeholder="Invite by email"
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                        />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(roleInput as ProjectRole)}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {roleInput}
+                                        <ArrowBigDownIcon className="h-4 w-4" />
+                                    </div>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {['editor', 'viewer'].map((role) => (
+                                    <DropdownMenuItem
+                                        key={role}
+                                        onClick={() => {
+                                            setRoleInput(role as ProjectRole);
+                                        }}
+                                    >
+                                        {role.charAt(0).toUpperCase() +
+                                            role.slice(1)}
+                                    </DropdownMenuItem>
+                                ))}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                )}
                 <div className="flex w-full md:w-auto space-x-2 pb-3">
                     <Input
                         type="text"

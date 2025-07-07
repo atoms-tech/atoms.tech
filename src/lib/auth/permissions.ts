@@ -49,6 +49,7 @@ export function hasOrganizationPermission(
 
 const PROJECT_ROLES = {
     owner: [
+        'assignToProject',
         'changeRole',
         'removeMember',
         'addDocument',
