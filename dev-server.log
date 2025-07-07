@@ -1,4 +1,21 @@
+$ next dev
+   ▲ Next.js 15.3.5
+   - Local:        http://localhost:3000
+   - Network:      http://172.17.0.2:3000
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ✓ reactCompiler
 
-> atoms.tech@0.1.0 dev
-> next dev
-
+ ✓ Starting...
+ ✓ Ready in 1817ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 1036ms (180 modules)
+ ○ Compiling / ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (100kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled / in 11.7s (2257 modules)
+ ⚠ The "images.domains" configuration is deprecated. Please use "images.remotePatterns" configuration instead.
+ ✓ Compiled in 1282ms (1030 modules)
+ GET / 200 in 13054ms
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 3.3s (1225 modules)
+ GET /favicon.ico 200 in 3389ms
