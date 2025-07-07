@@ -5,7 +5,13 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
+.pnp.json
+/public
+/.history
+/reports/
+/memory/
+/.claude
+/.kwatch
 
 # testing
 /coverage

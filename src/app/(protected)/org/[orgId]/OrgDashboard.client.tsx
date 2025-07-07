@@ -4,11 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
     Brain,
     Building,
+    Copy,
     FileBox,
     Folder,
     FolderArchive,
     ListTodo,
+    MoreVertical,
     PenTool,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -27,11 +31,17 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
+import {
+    useDeleteProject,
+    useDuplicateProject,
+} from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import {
     OrganizationRole,
@@ -90,6 +100,17 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     >(null);
     const { user } = useUser();
     const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const { toast } = useToast();
+
+    // Project action mutations
+    const { mutateAsync: duplicateProject } = useDuplicateProject();
+    const { mutateAsync: deleteProject } = useDeleteProject();
+
+    // State for project actions
+    const [isEditingProject, setIsEditingProject] = useState<string | null>(
+        null,
+    );
+    const [editingProjectName, setEditingProjectName] = useState('');
 
     const { data: documents } = useQuery({
         queryKey: ['documents', selectedProjectId],
@@ -201,6 +222,110 @@ export default function OrgDashboard(props: OrgDashboardProps) {
             setActiveTab(tabFromUrl);
         }
     }, [searchParams, activeTab]);
+
+    // Project action handlers
+    const handleDuplicateProject = async (project: Project) => {
+        if (!user?.id) return;
+
+        try {
+            await duplicateProject({
+                projectId: project.id,
+                userId: user.id,
+            });
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: `Project "${project.name}" duplicated successfully`,
+            });
+        } catch (error) {
+            console.error('Error duplicating project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to duplicate project. Please try again.',
+            });
+        }
+    };
+
+    const handleEditProject = (project: Project) => {
+        setIsEditingProject(project.id);
+        setEditingProjectName(project.name);
+    };
+
+    const handleSaveProjectEdit = async (project: Project) => {
+        if (!user?.id || !editingProjectName.trim()) return;
+
+        try {
+            // Use Supabase directly for the update
+            const { error } = await supabase
+                .from('projects')
+                .update({
+                    name: editingProjectName.trim(),
+                    updated_by: user.id,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', project.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            setIsEditingProject(null);
+            setEditingProjectName('');
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: 'Project updated successfully',
+            });
+
+            // TODO: Make it refetch projects rather than reloading page
+            window.location.reload();
+        } catch (error) {
+            console.error('Error updating project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to update project. Please try again.',
+            });
+        }
+    };
+
+    const handleCancelProjectEdit = () => {
+        setIsEditingProject(null);
+        setEditingProjectName('');
+    };
+
+    const handleDeleteProject = async (project: Project) => {
+        if (!user?.id) return;
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
+        );
+
+        if (!confirmed) return;
+
+        try {
+            await deleteProject({
+                projectId: project.id,
+                userId: user.id,
+            });
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: `Project "${project.name}" deleted successfully`,
+            });
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to delete project. Please try again.',
+            });
+        }
+    };
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -435,22 +560,170 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 .map((project) => (
                                     <Card
                                         key={project.id}
-                                        className="cursor-pointer hover:shadow-md transition-shadow"
-                                        onClick={() =>
-                                            props.onProjectClick(project)
-                                        }
+                                        className="group relative hover:shadow-md transition-shadow"
                                     >
-                                        <CardHeader>
-                                            <CardTitle>
-                                                {project.name}
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-sm text-muted-foreground line-clamp-2">
-                                                {project.description ||
-                                                    'No description provided'}
-                                            </p>
-                                        </CardContent>
+                                        <div
+                                            className="cursor-pointer"
+                                            onClick={() =>
+                                                props.onProjectClick(project)
+                                            }
+                                        >
+                                            <CardHeader className="relative">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        {isEditingProject ===
+                                                        project.id ? (
+                                                            <div className="space-y-2">
+                                                                <Input
+                                                                    value={
+                                                                        editingProjectName
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setEditingProjectName(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    onKeyDown={(
+                                                                        e,
+                                                                    ) => {
+                                                                        if (
+                                                                            e.key ===
+                                                                            'Enter'
+                                                                        ) {
+                                                                            handleSaveProjectEdit(
+                                                                                project,
+                                                                            );
+                                                                        } else if (
+                                                                            e.key ===
+                                                                            'Escape'
+                                                                        ) {
+                                                                            handleCancelProjectEdit();
+                                                                        }
+                                                                    }}
+                                                                    className="text-lg font-semibold"
+                                                                    autoFocus
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) =>
+                                                                        e.stopPropagation()
+                                                                    }
+                                                                />
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            handleSaveProjectEdit(
+                                                                                project,
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        Save
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            handleCancelProjectEdit();
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <CardTitle>
+                                                                {project.name}
+                                                            </CardTitle>
+                                                        )}
+                                                    </div>
+
+                                                    {/* 3-dot menu */}
+                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0"
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) =>
+                                                                        e.stopPropagation()
+                                                                    }
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleDuplicateProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <Copy className="h-4 w-4 mr-2" />
+                                                                    Duplicate
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleEditProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <Pencil className="h-4 w-4 mr-2" />
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                    className="text-destructive"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+
+                                            {isEditingProject !==
+                                                project.id && (
+                                                <CardContent>
+                                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                                        {project.description ||
+                                                            'No description provided'}
+                                                    </p>
+                                                </CardContent>
+                                            )}
+                                        </div>
                                     </Card>
                                 ))}
                         </div>

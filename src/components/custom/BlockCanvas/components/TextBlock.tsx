@@ -153,6 +153,8 @@ export const TextBlock: React.FC<BlockProps> = ({
 
     // Add click outside handler
     React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+
         const handleClickOutside = (event: MouseEvent) => {
             if (
                 editorRef.current &&

@@ -6,6 +6,7 @@ import {
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Requirement } from '@/types';
 import { TablesInsert } from '@/types/base/database.types';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
@@ -28,6 +29,41 @@ export function useCreateRequirement() {
         mutationFn: async (input: CreateRequirementInput) => {
             console.log('Creating requirement', input);
 
+            // Get the organization ID from the document
+            const { data: document, error: docError } = await supabase
+                .from('documents')
+                .select(
+                    `
+                    project_id,
+                    projects!inner(organization_id)
+                `,
+                )
+                .eq('id', input.document_id)
+                .single();
+
+            if (docError) {
+                console.error('Error fetching document for org ID:', docError);
+                throw new Error('Failed to fetch document information');
+            }
+
+            // Generate the next requirement ID for this organization
+            const organizationId = (
+                document as { projects?: { organization_id?: string } }
+            )?.projects?.organization_id;
+            let externalId = 'REQ-001'; // fallback
+
+            if (organizationId) {
+                try {
+                    externalId =
+                        await generateNextRequirementId(organizationId);
+                } catch (error) {
+                    console.error('Error generating requirement ID:', error);
+                    // Use fallback ID with timestamp
+                    const timestamp = Date.now().toString().slice(-6);
+                    externalId = `REQ-${timestamp}`;
+                }
+            }
+
             const insertData: TablesInsert<'requirements'> = {
                 block_id: input.block_id,
                 document_id: input.document_id,
@@ -35,7 +71,7 @@ export function useCreateRequirement() {
                 ai_analysis: input.ai_analysis,
                 description: input.description,
                 enchanced_requirement: input.enchanced_requirement,
-                external_id: 'REQ-001',
+                external_id: externalId,
                 format: input.format,
                 level: input.level,
                 original_requirement: input.original_requirement,

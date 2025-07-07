@@ -32,6 +32,7 @@ export function Navbar() {
         billing: false,
     });
     const [, setPreferredOrgId] = useState<string | null>(null);
+    const [_showLoadingSkeleton, _setShowLoadingSkeleton] = useState(false);
 
     useEffect(() => {
         const cookieOrgId = cookies.get('preferred_org_id');
@@ -208,7 +209,7 @@ export function Navbar() {
                         {/* Mobile Menu Button */}
                         <div className="flex items-center gap-2 sm:gap-4">
                             {isLoading ? (
-                                <div className="h-9 w-24 bg-muted animate-pulse"></div>
+                                <div className="h-9 w-24 bg-muted/30 animate-pulse rounded hidden lg:block"></div>
                             ) : isAuthenticated ? (
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -300,6 +301,7 @@ export function Navbar() {
                                 </Button>
                             )}
                             <button
+                                type="button"
                                 className="lg:hidden text-white p-1.5 sm:p-2 hover:bg-white/10 transition-colors touch-manipulation"
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                                 aria-label={

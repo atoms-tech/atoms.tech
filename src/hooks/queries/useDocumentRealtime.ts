@@ -74,6 +74,12 @@ export const useDocumentRealtime = ({
             const tableBlocks = blocksData.filter(
                 (block) => block.type === 'table',
             );
+            console.log(
+                '🔍 Table blocks found:',
+                tableBlocks.length,
+                tableBlocks.map((b) => b.id),
+            );
+
             const { data: columnsData, error: columnsError } = await supabase
                 .from('columns')
                 .select('*, property:properties(*)')
@@ -82,7 +88,15 @@ export const useDocumentRealtime = ({
                     tableBlocks.map((block) => block.id),
                 );
 
-            if (columnsError) throw columnsError;
+            if (columnsError) {
+                console.error('❌ Columns fetch error:', columnsError);
+                throw columnsError;
+            }
+            console.log(
+                '✅ Columns fetched:',
+                columnsData?.length || 0,
+                columnsData,
+            );
 
             // Group requirements by block_id
             const requirementsByBlock = requirementsData.reduce(
@@ -110,15 +124,27 @@ export const useDocumentRealtime = ({
                 },
                 {},
             );
+            console.log('🔍 Columns grouped by block:', columnsByBlock);
 
             // Combine blocks with their requirements and columns
             const blocksWithRequirements: BlockWithRequirements[] =
-                blocksData.map((block: Block) => ({
-                    ...block,
-                    order: block.position || 0,
-                    requirements: requirementsByBlock[block.id] || [],
-                    columns: columnsByBlock[block.id] || [],
-                }));
+                blocksData.map((block: Block) => {
+                    const blockColumns = columnsByBlock[block.id] || [];
+                    console.log('🔍 Block data assembly:', {
+                        blockId: block.id,
+                        blockType: block.type,
+                        hasColumnsData: !!columnsByBlock[block.id],
+                        columnsCount: blockColumns.length,
+                        columns: blockColumns,
+                    });
+
+                    return {
+                        ...block,
+                        order: block.position || 0,
+                        requirements: requirementsByBlock[block.id] || [],
+                        columns: blockColumns,
+                    };
+                });
 
             setBlocks(blocksWithRequirements);
             setError(null);

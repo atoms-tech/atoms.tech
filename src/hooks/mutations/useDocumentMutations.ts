@@ -107,6 +107,9 @@ export function useUpdateDocument() {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.documents.detail(data.id),
             });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.byProject(data.project_id),
+            });
         },
     });
 }
@@ -135,6 +138,67 @@ export function useDeleteDocument() {
 
             if (error) throw error;
             return data as Document;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.documents.byProject(data.project_id),
+            });
+        },
+    });
+}
+
+export function useDuplicateDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            documentId,
+            destinationProjectId,
+            newName,
+            userId,
+        }: {
+            documentId: string;
+            destinationProjectId: string;
+            newName: string;
+            userId: string;
+        }) => {
+            // Get the original document
+            const { data: originalDocument, error: fetchError } = await supabase
+                .from('documents')
+                .select('*')
+                .eq('id', documentId)
+                .single();
+
+            if (fetchError) throw fetchError;
+            if (!originalDocument) throw new Error('Document not found');
+
+            // Create a new document with duplicated data
+            const duplicatedDocument = {
+                name: newName,
+                slug: `${originalDocument.slug}-copy-${Date.now()}`,
+                description: originalDocument.description,
+                project_id: destinationProjectId,
+                tags: originalDocument.tags,
+                created_by: userId,
+                updated_by: userId,
+                id: uuidv4(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_deleted: false,
+                version: 1,
+            };
+
+            const { data: newDocument, error: createError } = await supabase
+                .from('documents')
+                .insert(duplicatedDocument)
+                .select()
+                .single();
+
+            if (createError) throw createError;
+            if (!newDocument)
+                throw new Error('Failed to create duplicated document');
+
+            return newDocument as Document;
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({

@@ -44,10 +44,28 @@ export function NewRowForm<
             ))}
             <TableCell>
                 <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={onSave}>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                            console.log(
+                                '🎯 STEP 1: Check button clicked in NewRowForm',
+                            );
+                            onSave();
+                        }}
+                    >
                         <Check className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={onCancel}>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                            console.log(
+                                '❌ Cancel button clicked in NewRowForm',
+                            );
+                            onCancel();
+                        }}
+                    >
                         <X className="h-4 w-4" />
                     </Button>
                 </div>

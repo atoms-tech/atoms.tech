@@ -33,7 +33,7 @@ export async function login(formData: FormData) {
             authData.user.id,
         );
 
-        let redirectUrl = '/home/user'; // Default fallback
+        let redirectUrl = '/home'; // Default fallback - route to /home by default
 
         // Find enterprise organization first
         const enterpriseOrg = organizations.find(
