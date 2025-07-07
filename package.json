@@ -64,6 +64,7 @@
         "@tiptap/react": "^2.11.7",
         "@tiptap/starter-kit": "^2.11.7",
         "@types/uuid": "^10.0.0",
+        "base64-js": "^1.5.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
