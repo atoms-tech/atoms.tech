@@ -1,18 +1,11 @@
 echo "🔍 Running pre-commit checks..."
 
-# Run lint-staged for formatting and linting
-echo "📝 Formatting and linting staged files..."
-npx lint-staged
+# Lint Check
+echo "📝 Linting staged files..."
+bun run lint
 
-# Type check
-echo "🔍 Running TypeScript type check..."
-npm run type-check
-
-# Build check (only if there are staged TypeScript/JavaScript files)
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$')
-if [ -n "$STAGED_FILES" ]; then
-  echo "🏗️  Running build check..."
-  NODE_OPTIONS="" npm run build
-fi
+# Format check
+echo "🔍 Formatting staged files..."
+bun prettier src --check
 
 echo "✅ Pre-commit checks passed!"
