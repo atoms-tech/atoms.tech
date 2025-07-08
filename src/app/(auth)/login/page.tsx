@@ -138,7 +138,16 @@ function LoginForm() {
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={() => router.push('/auth/github')}
+                            onClick={() => {
+                                try {
+                                    router.push('/auth/github');
+                                } catch (error) {
+                                    console.error('GitHub OAuth error:', error);
+                                    setError(
+                                        'Failed to connect to GitHub. Please try again.',
+                                    );
+                                }
+                            }}
                         >
                             <SiGithub className="mr-2 h-4 w-4" />
                             GitHub
