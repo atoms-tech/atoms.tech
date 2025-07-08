@@ -1,526 +1,475 @@
 {
-  "nodes": [
-    {
-      "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "query"
-            }
-          ]
-        }
-      },
-      "id": "475242ba-da2d-4b6b-b32d-7f406a20185f",
-      "typeVersion": 1.1,
-      "name": "project_overview",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "position": [
-        -200,
-        520
-      ]
-    },
-    {
-      "parameters": {
-        "useCustomSchema": true,
-        "operation": "get",
-        "tableId": "projects",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "organization_id",
-              "keyValue": "=f747dd98-e326-4ca8-95b2-43530ea9887a"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        -20,
-        640
-      ],
-      "id": "0c767b46-b598-40f5-9abb-6397f8d2e459",
-      "name": "Pull Org Project Lists",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "LDfTyVc5kKgtlyZL",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.id);\n\nconst description = $input.all().map(item => item.json.description);\n\n\nreturn [\n  {\n    json: {\n      project_ids: ids,\n      project_names: names,\n      project_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        120,
-        460
-      ],
-      "id": "37914f24-bf1a-4c3d-9d80-c58640e57527",
-      "name": "Extract Project's ids",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "useCustomSchema": true,
-        "operation": "getAll",
-        "tableId": "documents",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "project_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.target_project_ids }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        920,
-        460
-      ],
-      "id": "d3e6d295-c62b-4a18-b8be-52cba1234c5a",
-      "name": "Get Documents in Single Project",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "LDfTyVc5kKgtlyZL",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "project_ids, project_names, project_descriptions",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        260,
-        640
-      ],
-      "id": "7f387ee8-115c-472d-a842-a5153c1f9553",
-      "name": "Split Out - project_ids"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "id, name, project_id, project_name",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        1060,
-        640
-      ],
-      "id": "486aa45d-551f-479c-948b-aaf5b76bc88c",
-      "name": "Split Out - documnet-ids",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "requirements",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "document_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.id }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        1200,
-        460
-      ],
-      "id": "360690ca-647d-4954-bc1d-014ca16e1382",
-      "name": "Get All documents",
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "LDfTyVc5kKgtlyZL",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// 제거할 최상위 레벨 키 목록\nconst keysToRemove = [\n  \"block_id\",\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\", // properties도 제거 목록에 추가\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    // Email 값을 최상위 레벨로 추가\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    // 지정된 키들 제거 (properties 포함)\n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1340,
-        620
-      ],
-      "id": "eeb5e540-1416-4985-af5e-760c0527a37e",
-      "name": "Refine Dataset"
-    },
-    {
-      "parameters": {
-        "jsCode": "const allObjectStrings = [];\n\nfor (const item of $input.all()) {\n  const currentObject = item.json;\n  const fieldStrings = [];\n\n  // Ensure the name comes first with the correct formatting\n  if (currentObject.name) {\n    fieldStrings.push(`# ${currentObject.name}\\n`); // Add name as a header (for LLM readability)\n  }\n\n  // Add description if available\n  if (currentObject.description) {\n    fieldStrings.push(`Description: ${currentObject.description}\\n\\n`);\n  }\n\n  // Add content.text if available\n  if (currentObject['content.text']) {\n    fieldStrings.push(`Content:\\n${currentObject['content.text']}\\n\\n`);\n  }\n\n  allObjectStrings.push(fieldStrings.join(''));\n}\n\nconst finalCombinedString = allObjectStrings.join('\\n\\n');\n\nreturn {\n  all_documents: finalCombinedString,\n  username: $('Extract Project\\'s ids').first().json.username,\n  conversationHistory: $('Extract Project\\'s ids').first().json.conversationHistory,\n  message: $('Extract Project\\'s ids').first().json.message\n};\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2060,
-        620
-      ],
-      "id": "2300f10c-5148-4f8d-9b8e-255ab0e177b6",
-      "name": "Documents under one value"
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "=project_ids: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\nproject_names: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\nproject_descriptions: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\nuser's message: {{ $('Extract Project\\'s ids').item.json.message }}",
-        "hasOutputParser": true,
-        "options": {
-          "systemMessage": "Check the project_names and project_descriptions above, and based on the user's goal, think about which projects should be selected. Then, return the most appropriate project_ids as a list."
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2,
-      "position": [
-        440,
-        460
-      ],
-      "id": "c5e666c0-2fcf-42ad-a878-bc049c99141f",
-      "name": "Agent Checked DB",
-      "alwaysOutputData": true,
-      "executeOnce": true,
-      "retryOnFail": true,
-      "maxTries": 5
-    },
-    {
-      "parameters": {
-        "modelName": "models/gemini-2.5-pro-preview-06-05",
-        "options": {
-          "maxOutputTokens": 2048,
-          "temperature": 0.3,
-          "topP": 0.9
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1,
-      "position": [
-        440,
-        640
-      ],
-      "id": "5bafdd35-d1eb-4851-b64e-52399396062d",
-      "name": "gemini 2.5 06-05 1",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "AwJrPOk3HV2bX5Ki",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "blocks",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "document_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.document_id }}"
-            }
-          ]
-        }
-      },
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        1480,
-        460
-      ],
-      "id": "a5555816-bf22-47b7-8a1c-80d570dd954c",
-      "name": "blocks_from_document_ids",
-      "executeOnce": true,
-      "alwaysOutputData": true,
-      "credentials": {
-        "supabaseApi": {
-          "id": "LDfTyVc5kKgtlyZL",
-          "name": "Supabase account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
-        "height": 360,
-        "width": 400
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        -360,
-        40
-      ],
-      "id": "2c234a2f-fc71-4611-9e09-06f5b7e27342",
-      "name": "Sticky Note"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "document_id, content.text",
-        "include": "=",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        1640,
-        620
-      ],
-      "id": "2d8e6b24-17b4-407c-a994-5cfd93f4283c",
-      "name": "Split Out - ids,context.text"
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "advanced": true,
-        "mergeByFields": {
-          "values": [
-            {
-              "field1": "document_id",
-              "field2": "document_id"
-            }
-          ]
+    "nodes": [
+        {
+            "parameters": {
+                "workflowInputs": {
+                    "values": [
+                        {
+                            "name": "query"
+                        }
+                    ]
+                }
+            },
+            "id": "475242ba-da2d-4b6b-b32d-7f406a20185f",
+            "typeVersion": 1.1,
+            "name": "project_overview",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "position": [-200, 520]
         },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.1,
-      "position": [
-        1860,
-        460
-      ],
-      "id": "052db330-d64a-4299-b46b-8c0ed85e6ade",
-      "name": "Merge",
-      "alwaysOutputData": true
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "operation": "get",
+                "tableId": "projects",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "organization_id",
+                            "keyValue": "=f747dd98-e326-4ca8-95b2-43530ea9887a"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [-20, 640],
+            "id": "0c767b46-b598-40f5-9abb-6397f8d2e459",
+            "name": "Pull Org Project Lists",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "LDfTyVc5kKgtlyZL",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.id);\n\nconst description = $input.all().map(item => item.json.description);\n\n\nreturn [\n  {\n    json: {\n      project_ids: ids,\n      project_names: names,\n      project_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [120, 460],
+            "id": "37914f24-bf1a-4c3d-9d80-c58640e57527",
+            "name": "Extract Project's ids",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "useCustomSchema": true,
+                "operation": "getAll",
+                "tableId": "documents",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "project_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.target_project_ids }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [920, 460],
+            "id": "d3e6d295-c62b-4a18-b8be-52cba1234c5a",
+            "name": "Get Documents in Single Project",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "LDfTyVc5kKgtlyZL",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "project_ids, project_names, project_descriptions",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [260, 640],
+            "id": "7f387ee8-115c-472d-a842-a5153c1f9553",
+            "name": "Split Out - project_ids"
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "id, name, project_id, project_name",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [1060, 640],
+            "id": "486aa45d-551f-479c-948b-aaf5b76bc88c",
+            "name": "Split Out - documnet-ids",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "requirements",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "document_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [1200, 460],
+            "id": "360690ca-647d-4954-bc1d-014ca16e1382",
+            "name": "Get All documents",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "LDfTyVc5kKgtlyZL",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// 제거할 최상위 레벨 키 목록\nconst keysToRemove = [\n  \"block_id\",\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\", // properties도 제거 목록에 추가\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    // Email 값을 최상위 레벨로 추가\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    // 지정된 키들 제거 (properties 포함)\n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [1340, 620],
+            "id": "eeb5e540-1416-4985-af5e-760c0527a37e",
+            "name": "Refine Dataset"
+        },
+        {
+            "parameters": {
+                "jsCode": "const allObjectStrings = [];\n\nfor (const item of $input.all()) {\n  const currentObject = item.json;\n  const fieldStrings = [];\n\n  // Ensure the name comes first with the correct formatting\n  if (currentObject.name) {\n    fieldStrings.push(`# ${currentObject.name}\\n`); // Add name as a header (for LLM readability)\n  }\n\n  // Add description if available\n  if (currentObject.description) {\n    fieldStrings.push(`Description: ${currentObject.description}\\n\\n`);\n  }\n\n  // Add content.text if available\n  if (currentObject['content.text']) {\n    fieldStrings.push(`Content:\\n${currentObject['content.text']}\\n\\n`);\n  }\n\n  allObjectStrings.push(fieldStrings.join(''));\n}\n\nconst finalCombinedString = allObjectStrings.join('\\n\\n');\n\nreturn {\n  all_documents: finalCombinedString,\n  username: $('Extract Project\\'s ids').first().json.username,\n  conversationHistory: $('Extract Project\\'s ids').first().json.conversationHistory,\n  message: $('Extract Project\\'s ids').first().json.message\n};\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [2060, 620],
+            "id": "2300f10c-5148-4f8d-9b8e-255ab0e177b6",
+            "name": "Documents under one value"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "=project_ids: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\nproject_names: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\nproject_descriptions: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\nuser's message: {{ $('Extract Project\\'s ids').item.json.message }}",
+                "hasOutputParser": true,
+                "options": {
+                    "systemMessage": "Check the project_names and project_descriptions above, and based on the user's goal, think about which projects should be selected. Then, return the most appropriate project_ids as a list."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2,
+            "position": [440, 460],
+            "id": "c5e666c0-2fcf-42ad-a878-bc049c99141f",
+            "name": "Agent Checked DB",
+            "alwaysOutputData": true,
+            "executeOnce": true,
+            "retryOnFail": true,
+            "maxTries": 5
+        },
+        {
+            "parameters": {
+                "modelName": "models/gemini-2.5-pro-preview-06-05",
+                "options": {
+                    "maxOutputTokens": 2048,
+                    "temperature": 0.3,
+                    "topP": 0.9
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [440, 640],
+            "id": "5bafdd35-d1eb-4851-b64e-52399396062d",
+            "name": "gemini 2.5 06-05 1",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "AwJrPOk3HV2bX5Ki",
+                    "name": "Google Gemini(PaLM) Api account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "blocks",
+                "returnAll": true,
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "document_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $json.document_id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [1480, 460],
+            "id": "a5555816-bf22-47b7-8a1c-80d570dd954c",
+            "name": "blocks_from_document_ids",
+            "executeOnce": true,
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "LDfTyVc5kKgtlyZL",
+                    "name": "Supabase account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
+                "height": 360,
+                "width": 400
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [-360, 40],
+            "id": "2c234a2f-fc71-4611-9e09-06f5b7e27342",
+            "name": "Sticky Note"
+        },
+        {
+            "parameters": {
+                "fieldToSplitOut": "document_id, content.text",
+                "include": "=",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.splitOut",
+            "typeVersion": 1,
+            "position": [1640, 620],
+            "id": "2d8e6b24-17b4-407c-a994-5cfd93f4283c",
+            "name": "Split Out - ids,context.text"
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "advanced": true,
+                "mergeByFields": {
+                    "values": [
+                        {
+                            "field1": "document_id",
+                            "field2": "document_id"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3.1,
+            "position": [1860, 460],
+            "id": "052db330-d64a-4299-b46b-8c0ed85e6ade",
+            "name": "Merge",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "jsonSchemaExample": "[\n  {\n  \t\"target_project_ids\": \"adsfadgadsg1\"\n  },\n  {\n  \t\"target_project_ids\": \"asdh5262ssaq\"\n  }\n]"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.2,
+            "position": [600, 640],
+            "id": "36694eb9-ad97-46c3-b385-f974a8829609",
+            "name": "Structured Output Parser"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_project_ids from the output array\n    const targetProjectIds = item.json.output.map(o => ({ target_project_ids: o.target_project_ids }));\n    \n    // Add the extracted target_project_ids to the result\n    result = result.concat(targetProjectIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [780, 640],
+            "id": "9fb164b2-21e0-4802-b213-eb1960b7de78",
+            "name": "extract target_project_ids"
+        }
+    ],
+    "connections": {
+        "project_overview": {
+            "main": [
+                [
+                    {
+                        "node": "Pull Org Project Lists",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Pull Org Project Lists": {
+            "main": [
+                [
+                    {
+                        "node": "Extract Project's ids",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Extract Project's ids": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out - project_ids",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Documents in Single Project": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out - documnet-ids",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Out - project_ids": {
+            "main": [
+                [
+                    {
+                        "node": "Agent Checked DB",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Out - documnet-ids": {
+            "main": [
+                [
+                    {
+                        "node": "Get All documents",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get All documents": {
+            "main": [
+                [
+                    {
+                        "node": "Refine Dataset",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Refine Dataset": {
+            "main": [
+                [
+                    {
+                        "node": "blocks_from_document_ids",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Agent Checked DB": {
+            "main": [
+                [
+                    {
+                        "node": "extract target_project_ids",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "gemini 2.5 06-05 1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Agent Checked DB",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "blocks_from_document_ids": {
+            "main": [
+                [
+                    {
+                        "node": "Split Out - ids,context.text",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Split Out - ids,context.text": {
+            "main": [
+                [
+                    {
+                        "node": "Merge",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Merge": {
+            "main": [
+                [
+                    {
+                        "node": "Documents under one value",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Agent Checked DB",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "extract target_project_ids": {
+            "main": [
+                [
+                    {
+                        "node": "Get Documents in Single Project",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
     },
-    {
-      "parameters": {
-        "jsonSchemaExample": "[\n  {\n  \t\"target_project_ids\": \"adsfadgadsg1\"\n  },\n  {\n  \t\"target_project_ids\": \"asdh5262ssaq\"\n  }\n]"
-      },
-      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-      "typeVersion": 1.2,
-      "position": [
-        600,
-        640
-      ],
-      "id": "36694eb9-ad97-46c3-b385-f974a8829609",
-      "name": "Structured Output Parser"
+    "pinData": {
+        "project_overview": [
+            {
+                "query": "list all requirements on projects"
+            }
+        ]
     },
-    {
-      "parameters": {
-        "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_project_ids from the output array\n    const targetProjectIds = item.json.output.map(o => ({ target_project_ids: o.target_project_ids }));\n    \n    // Add the extracted target_project_ids to the result\n    result = result.concat(targetProjectIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        780,
-        640
-      ],
-      "id": "9fb164b2-21e0-4802-b213-eb1960b7de78",
-      "name": "extract target_project_ids"
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "0d71b622322a5065a1d05eb8df0488a161a137b6ca1d05c8af04e8f6b2d48412"
     }
-  ],
-  "connections": {
-    "project_overview": {
-      "main": [
-        [
-          {
-            "node": "Pull Org Project Lists",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pull Org Project Lists": {
-      "main": [
-        [
-          {
-            "node": "Extract Project's ids",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Project's ids": {
-      "main": [
-        [
-          {
-            "node": "Split Out - project_ids",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Documents in Single Project": {
-      "main": [
-        [
-          {
-            "node": "Split Out - documnet-ids",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out - project_ids": {
-      "main": [
-        [
-          {
-            "node": "Agent Checked DB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out - documnet-ids": {
-      "main": [
-        [
-          {
-            "node": "Get All documents",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get All documents": {
-      "main": [
-        [
-          {
-            "node": "Refine Dataset",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Refine Dataset": {
-      "main": [
-        [
-          {
-            "node": "blocks_from_document_ids",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agent Checked DB": {
-      "main": [
-        [
-          {
-            "node": "extract target_project_ids",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "gemini 2.5 06-05 1": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Agent Checked DB",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "blocks_from_document_ids": {
-      "main": [
-        [
-          {
-            "node": "Split Out - ids,context.text",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Split Out - ids,context.text": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Documents under one value",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Structured Output Parser": {
-      "ai_outputParser": [
-        [
-          {
-            "node": "Agent Checked DB",
-            "type": "ai_outputParser",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "extract target_project_ids": {
-      "main": [
-        [
-          {
-            "node": "Get Documents in Single Project",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {
-    "project_overview": [
-      {
-        "query": "list all requirements on projects"
-      }
-    ]
-  },
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "0d71b622322a5065a1d05eb8df0488a161a137b6ca1d05c8af04e8f6b2d48412"
-  }
 }
