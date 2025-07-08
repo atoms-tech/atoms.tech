@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       try {
         errorText = await response.text();
         console.log('N8N Proxy - Error response:', errorText);
-      } catch (e) {
+      } catch (_e) {
         console.log('N8N Proxy - Could not read error response');
       }
       
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     try {
       responseData = await response.json();
       console.log('N8N Proxy - Success response:', responseData);
-    } catch (e) {
+    } catch (_e) {
       // If response is not JSON, treat as text
       const responseText = await response.text();
       console.log('N8N Proxy - Non-JSON response:', responseText);

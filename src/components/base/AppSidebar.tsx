@@ -47,7 +47,7 @@ interface MenuItem {
 const _items: MenuItem[] = [
     {
         title: 'Home',
-        url: '/home/user',
+        url: '/home',
         icon: Home,
     },
 ];

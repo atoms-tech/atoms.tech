@@ -5,7 +5,13 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
+.pnp.json
+/public
+/.history
+/reports/
+/memory/
+/.claude
+/.kwatch
 
 # testing
 /coverage
@@ -45,13 +51,4 @@ next-env.d.ts
 .cursorrules
 .cursor/
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
 bun.lock
-
-# n8n agent
-agent.json

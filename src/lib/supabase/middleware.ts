@@ -39,18 +39,62 @@ export async function updateSession(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser();
 
+    // Ignore pages that don't need authentication
     if (
-        !user &&
         request.nextUrl.pathname !== '/' &&
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
-        !request.nextUrl.pathname.startsWith('/signup') &&
-        !request.nextUrl.pathname.startsWith('/demo')
+        !request.nextUrl.pathname.startsWith('/signup')
     ) {
         // no user, potentially respond by redirecting the user to the login page
-        const url = request.nextUrl.clone();
-        url.pathname = '/login';
-        return NextResponse.redirect(url);
+        if (!user) {
+            const url = request.nextUrl.clone();
+            url.pathname = '/login';
+            return NextResponse.redirect(url);
+        }
+        const segments = request.nextUrl.pathname.split('/').filter(Boolean);
+        if (segments.length > 1 && segments[0] === 'org') {
+            // Check if user has a role in organization
+            const { data, error } = await supabase
+                .from('organization_members')
+                .select('role')
+                .eq('organization_id', segments[1] || '')
+                .eq('user_id', user.id || '')
+                .single();
+            if (error || !data) {
+                // unauthorized to see organization
+                const url = request.nextUrl.clone();
+                url.pathname = '/home/user';
+                const myNewResponse = NextResponse.redirect(url);
+                supabaseResponse.cookies
+                    .getAll()
+                    .forEach(({ name, value }) =>
+                        myNewResponse.cookies.set(name, value),
+                    );
+                return myNewResponse;
+            }
+        }
+        if (segments.length > 3 && segments[2] === 'project') {
+            // Check if user has a role in project
+            const { data, error } = await supabase
+                .from('project_members')
+                .select('role')
+                .eq('project_id', segments[3] || '')
+                .eq('user_id', user.id || '')
+                .single();
+            if (error || !data) {
+                // unauthorized to see project
+                const url = request.nextUrl.clone();
+                url.pathname = '/org/' + segments[1];
+                const myNewResponse = NextResponse.redirect(url);
+                supabaseResponse.cookies
+                    .getAll()
+                    .forEach(({ name, value }) =>
+                        myNewResponse.cookies.set(name, value),
+                    );
+                return myNewResponse;
+            }
+        }
     }
 
     // IMPORTANT: You *must* return the supabaseResponse object as it is.

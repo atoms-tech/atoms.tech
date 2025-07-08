@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Filter, MoreHorizontal, Users } from 'lucide-react';
+import { ArrowBigDownIcon, Filter, Users } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -22,11 +22,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
-import { useCreateProjectMember } from '@/hooks/mutations/useProjectMutations';
+import {
+    ORGANIZATION_ROLE_ARRAY,
+    OrganizationRole,
+    hasOrganizationPermission,
+} from '@/lib/auth/permissions';
 import { getOrganizationMembers } from '@/lib/db/client';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { EProjectRole, EUserRoleType } from '@/types';
 
 interface OrgMembersProps {
     className?: string;
@@ -37,38 +40,10 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
-    const { mutateAsync: createProjectMember } = useCreateProjectMember();
-    const [activeMemberId, setActiveMemberId] = useState<string | null>(null);
-    const [selectedRole, setSelectedRole] = useState<EUserRoleType | null>(
-        null,
-    );
-    const [isRolePromptOpen, setIsRolePromptOpen] = useState(false);
-    const [isAssignPromptOpen, setIsAssignPromptOpen] = useState(false);
-    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-        null,
-    );
-    const [assignRole, setAssignRole] = useState<
-        EUserRoleType | EProjectRole | null
-    >(null);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [roleFilters, setRoleFilters] = useState<EUserRoleType[]>([]);
+    const [roleFilters, setRoleFilters] = useState<OrganizationRole[]>([]);
 
-    // Define rolePermissions with explicit type
-    const rolePermissions: Record<
-        'owner' | 'super_admin' | 'admin' | 'member',
-        string[]
-    > = {
-        owner: ['assignToProject', 'changeRole', 'removeMember'],
-        super_admin: ['assignToProject', 'changeRole', 'removeMember'],
-        admin: ['assignToProject'],
-        member: [],
-    };
-
-    // Explicitly type userRole
-    const [userRole, setUserRole] = useState<
-        'owner' | 'super_admin' | 'admin' | 'member' | null
-    >(null);
+    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
 
     const {
         data: members = [],
@@ -79,25 +54,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         queryFn: () =>
             params ? getOrganizationMembers(params.orgId) : Promise.resolve([]),
         enabled: params?.orgId ? true : false,
-    });
-
-    const { data: projects = [] } = useQuery({
-        queryKey: ['organization-projects', params?.orgId || ''],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('projects')
-                .select('id, name')
-                .eq('organization_id', params?.orgId || '')
-                .eq('is_deleted', false);
-
-            if (error) {
-                console.error('Error fetching projects:', error);
-                throw error;
-            }
-
-            return data || [];
-        },
-        enabled: !!params?.orgId,
     });
 
     useEffect(() => {
@@ -120,34 +76,11 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         fetchUserRole();
     }, [params?.orgId, user?.id]);
 
-    const canPerformAction = (action: string) => {
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'member'
-        ].includes(action);
-    };
-
     const handleRemoveMember = async (memberId: string) => {
-        if (!canPerformAction('removeMember')) {
+        if (!hasOrganizationPermission(userRole, 'removeMember')) {
             toast({
                 title: 'Error',
                 description: 'You do not have permission to remove members.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        const targetMember = members.find((member) => member.id === memberId);
-
-        // Restrict super_admin from removing owner or other super_admins
-        if (
-            userRole === 'super_admin' &&
-            (targetMember?.role === 'owner' ||
-                targetMember?.role === 'super_admin')
-        ) {
-            toast({
-                title: 'Error',
-                description:
-                    'You cannot remove the owner or another super_admin.',
                 variant: 'destructive',
             });
             return;
@@ -193,8 +126,11 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
     };
 
-    const handleChangeRole = async () => {
-        if (!canPerformAction('changeRole')) {
+    const handleChangeRole = async (
+        memberId: string,
+        selectedRole: OrganizationRole,
+    ) => {
+        if (!hasOrganizationPermission(userRole, 'changeRole')) {
             toast({
                 title: 'Error',
                 description: 'You do not have permission to change roles.',
@@ -203,42 +139,10 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             return;
         }
 
-        if (!activeMemberId || !params?.orgId || !selectedRole) {
+        if (!memberId || !params?.orgId || !selectedRole) {
             toast({
                 title: 'Error',
                 description: 'Invalid operation. Please select a role.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        const targetMember = members.find(
-            (member) => member.id === activeMemberId,
-        );
-
-        // Restrict super_admin from changing roles of owner or other super_admins
-        if (
-            userRole === 'super_admin' &&
-            (targetMember?.role === 'owner' ||
-                targetMember?.role === 'super_admin')
-        ) {
-            toast({
-                title: 'Error',
-                description:
-                    'You cannot change the role of an owner or another super_admin.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        // Restrict super_admin to only assign member or admin roles
-        if (
-            userRole === 'super_admin' &&
-            !['member', 'admin'].includes(selectedRole)
-        ) {
-            toast({
-                title: 'Error',
-                description: 'You can only assign roles of member or admin.',
                 variant: 'destructive',
             });
             return;
@@ -249,7 +153,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                 .from('organization_members')
                 .update({ role: selectedRole })
                 .eq('organization_id', params.orgId)
-                .eq('user_id', activeMemberId);
+                .eq('user_id', memberId);
 
             if (error) {
                 console.error(
@@ -266,9 +170,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             });
 
             refetch();
-            setIsRolePromptOpen(false);
-            setActiveMemberId(null);
-            setSelectedRole(null);
         } catch (error) {
             console.error('Error changing role:', error);
             toast({
@@ -276,67 +177,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                 description: 'Failed to change role. Please try again.',
                 variant: 'destructive',
             });
-        }
-    };
-
-    const handleAssignToProject = async () => {
-        if (!canPerformAction('assignToProject')) {
-            toast({
-                title: 'Error',
-                description:
-                    'You do not have permission to assign members to projects.',
-                variant: 'destructive',
-            });
-            return;
-        }
-
-        if (!activeMemberId || !selectedProjectId || !assignRole) {
-            setErrorMessage('Please select a project and role.');
-            return;
-        }
-
-        try {
-            const {
-                data: existingMember,
-                error: checkError,
-                status,
-            } = await supabase
-                .from('project_members')
-                .select('id')
-                .eq('user_id', activeMemberId)
-                .eq('project_id', selectedProjectId)
-                .single();
-
-            if (checkError && status !== 406) {
-                console.error('Error checking project membership:', checkError);
-                throw checkError;
-            }
-
-            if (existingMember) {
-                setErrorMessage('User is already a part of this project.');
-                return;
-            }
-
-            await createProjectMember({
-                userId: activeMemberId,
-                projectId: selectedProjectId,
-                role: assignRole as EProjectRole,
-                orgId: params?.orgId || '',
-            });
-
-            toast({
-                title: 'Success',
-                description: 'User assigned to project successfully!',
-                variant: 'default',
-            });
-
-            setIsAssignPromptOpen(false);
-            setActiveMemberId(null);
-            setSelectedProjectId(null);
-            setAssignRole(null);
-        } catch (error) {
-            console.error('Error assigning user to project:', error);
-            setErrorMessage('Failed to assign user to project.');
         }
     };
 
@@ -358,7 +198,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             member.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length === 0 ||
-            roleFilters.includes(member.role as EUserRoleType);
+            roleFilters.includes(member.role as OrganizationRole);
         return matchesSearch && matchesRoles;
     });
 
@@ -386,42 +226,36 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {['owner', 'admin', 'member', 'super_admin'].map(
-                                (role) => (
-                                    <DropdownMenuItem
-                                        key={role}
-                                        onSelect={(e) => e.preventDefault()}
-                                        onClick={() =>
-                                            setRoleFilters((prev) =>
-                                                prev.includes(
-                                                    role as EUserRoleType,
-                                                )
-                                                    ? prev.filter(
-                                                          (r) => r !== role,
-                                                      )
-                                                    : [
-                                                          ...prev,
-                                                          role as EUserRoleType,
-                                                      ],
+                            {ORGANIZATION_ROLE_ARRAY.map((role) => (
+                                <DropdownMenuItem
+                                    key={role}
+                                    onSelect={(e) => e.preventDefault()}
+                                    onClick={() =>
+                                        setRoleFilters((prev) =>
+                                            prev.includes(
+                                                role as OrganizationRole,
                                             )
-                                        }
-                                    >
-                                        <span
-                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                roleFilters.includes(
-                                                    role as EUserRoleType,
-                                                )
-                                                    ? 'bg-primary'
-                                                    : 'bg-gray-200'
-                                            }`}
-                                        ></span>
-                                        {role === 'super_admin'
-                                            ? 'Super Admin'
-                                            : role.charAt(0).toUpperCase() +
-                                              role.slice(1)}
-                                    </DropdownMenuItem>
-                                ),
-                            )}
+                                                ? prev.filter((r) => r !== role)
+                                                : [
+                                                      ...prev,
+                                                      role as OrganizationRole,
+                                                  ],
+                                        )
+                                    }
+                                >
+                                    <span
+                                        className={`mr-2 inline-block w-4 h-4 rounded-full ${
+                                            roleFilters.includes(
+                                                role as OrganizationRole,
+                                            )
+                                                ? 'bg-primary'
+                                                : 'bg-gray-200'
+                                        }`}
+                                    ></span>
+                                    {role.charAt(0).toUpperCase() +
+                                        role.slice(1)}
+                                </DropdownMenuItem>
+                            ))}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -466,100 +300,67 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-0">
-                                    <span
-                                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                            member.role === 'owner'
-                                                ? 'bg-purple-100 text-purple-800'
-                                                : member.role === 'admin'
-                                                  ? 'bg-blue-100 text-blue-800'
-                                                  : member.role ===
-                                                      'super_admin'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : 'bg-green-100 text-green-800'
-                                        }`}
-                                    >
-                                        {member.role}
-                                    </span>
-                                    {(canPerformAction('changeRole') ||
-                                        canPerformAction('assignToProject') ||
-                                        canPerformAction('removeMember')) &&
-                                        member.id !== user?.id && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-8 w-8 p-0"
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    {canPerformAction(
-                                                        'changeRole',
-                                                    ) &&
-                                                        (userRole === 'owner' ||
-                                                            (userRole ===
-                                                                'super_admin' &&
-                                                                member.role !==
-                                                                    'owner' &&
-                                                                member.role !==
-                                                                    'super_admin')) && (
-                                                            <DropdownMenuItem
-                                                                onClick={() => {
-                                                                    setActiveMemberId(
-                                                                        member.id,
-                                                                    );
-                                                                    setIsRolePromptOpen(
-                                                                        true,
-                                                                    );
-                                                                }}
-                                                            >
-                                                                Change role
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                    {canPerformAction(
-                                                        'assignToProject',
-                                                    ) && (
-                                                        <DropdownMenuItem
-                                                            onClick={() => {
-                                                                setActiveMemberId(
-                                                                    member.id,
-                                                                );
-                                                                setIsAssignPromptOpen(
-                                                                    true,
-                                                                );
-                                                            }}
-                                                        >
-                                                            Assign to Project
-                                                        </DropdownMenuItem>
-                                                    )}
-                                                    {canPerformAction(
-                                                        'removeMember',
-                                                    ) &&
-                                                        (userRole === 'owner' ||
-                                                            (userRole ===
-                                                                'super_admin' &&
-                                                                member.role !==
-                                                                    'owner' &&
-                                                                member.role !==
-                                                                    'super_admin')) && (
-                                                            <DropdownMenuItem
-                                                                onClick={() =>
-                                                                    handleRemoveMember(
-                                                                        member.id,
-                                                                    )
-                                                                }
-                                                                className="text-red-600"
-                                                            >
-                                                                Remove
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                member.role === 'owner'
+                                                    ? 'bg-purple-100 text-purple-800'
+                                                    : member.role === 'admin'
+                                                      ? 'bg-blue-100 text-blue-800'
+                                                      : 'bg-green-100 text-green-800'
+                                            } ${member.id === user?.id || !hasOrganizationPermission(userRole, 'changeRole') ? 'pointer-events-none' : ''}`}
+                                        >
+                                            {member.id === user?.id ||
+                                            !hasOrganizationPermission(
+                                                userRole,
+                                                'changeRole',
+                                            ) ? (
+                                                member.role
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    {member.role}
+                                                    <ArrowBigDownIcon className="h-4 w-4" />
+                                                </div>
+                                            )}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {['member', 'admin'].map((role) => (
+                                            <DropdownMenuItem
+                                                key={role}
+                                                onClick={() => {
+                                                    handleChangeRole(
+                                                        member.id,
+                                                        role as OrganizationRole,
+                                                    );
+                                                }}
+                                            >
+                                                {role.charAt(0).toUpperCase() +
+                                                    role.slice(1)}
+                                            </DropdownMenuItem>
+                                        ))}
+                                        {hasOrganizationPermission(
+                                            userRole,
+                                            'removeMember',
+                                        ) && (
+                                            <>
+                                                <hr></hr>
+                                                <DropdownMenuItem
+                                                    onClick={() =>
+                                                        handleRemoveMember(
+                                                            member.id,
+                                                        )
+                                                    }
+                                                    className="text-red-600"
+                                                >
+                                                    Remove
+                                                </DropdownMenuItem>
+                                            </>
                                         )}
-                                </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         ))}
                     </div>
@@ -575,192 +376,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                     </div>
                 )}
             </CardContent>
-
-            {isRolePromptOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
-                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
-                            Change Role
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                                    Select Role
-                                </label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline">
-                                            {selectedRole
-                                                ? selectedRole
-                                                      .charAt(0)
-                                                      .toUpperCase() +
-                                                  selectedRole.slice(1)
-                                                : 'Choose a role'}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {[
-                                            'member',
-                                            'admin',
-                                            ...(userRole === 'owner'
-                                                ? ['super_admin']
-                                                : []),
-                                        ].map((role) => (
-                                            <DropdownMenuItem
-                                                key={role}
-                                                onClick={() =>
-                                                    setSelectedRole(
-                                                        role as EUserRoleType,
-                                                    )
-                                                }
-                                            >
-                                                {role === 'super_admin'
-                                                    ? 'Super Admin'
-                                                    : role
-                                                          .charAt(0)
-                                                          .toUpperCase() +
-                                                      role.slice(1)}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
-                                onClick={() => {
-                                    setIsRolePromptOpen(false);
-                                    setSelectedRole(null);
-                                    setActiveMemberId(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
-                                onClick={() => {
-                                    handleChangeRole();
-                                }}
-                                disabled={!selectedRole}
-                            >
-                                Confirm
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {isAssignPromptOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
-                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
-                            Assign to Project
-                        </h3>
-                        <div className="space-y-4">
-                            {errorMessage && (
-                                <div className="text-primary text-sm mb-4">
-                                    {errorMessage}
-                                </div>
-                            )}
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                                    Select Project
-                                </label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline">
-                                            {selectedProjectId
-                                                ? projects.find(
-                                                      (p) =>
-                                                          p.id ===
-                                                          selectedProjectId,
-                                                  )?.name
-                                                : 'Choose a project'}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {projects.map((project) => (
-                                            <DropdownMenuItem
-                                                key={project.id}
-                                                onClick={() =>
-                                                    setSelectedProjectId(
-                                                        project.id,
-                                                    )
-                                                }
-                                            >
-                                                {project.name}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-gray-100">
-                                    Select Role
-                                </label>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-half"
-                                        >
-                                            {assignRole
-                                                ? assignRole
-                                                      .charAt(0)
-                                                      .toUpperCase() +
-                                                  assignRole.slice(1)
-                                                : 'Choose a role'}
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        {[
-                                            'admin',
-                                            'maintainer',
-                                            'editor',
-                                            'viewer',
-                                        ].map((role) => (
-                                            <DropdownMenuItem
-                                                key={role}
-                                                onClick={() =>
-                                                    setAssignRole(
-                                                        role as EProjectRole,
-                                                    )
-                                                }
-                                            >
-                                                {role.charAt(0).toUpperCase() +
-                                                    role.slice(1)}
-                                            </DropdownMenuItem>
-                                        ))}
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
-                                onClick={() => {
-                                    setIsAssignPromptOpen(false);
-                                    setSelectedProjectId(null);
-                                    setAssignRole(null);
-                                    setErrorMessage(null); // Clear error message on cancel
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
-                                onClick={handleAssignToProject}
-                                disabled={!selectedProjectId || !assignRole}
-                            >
-                                Confirm
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </Card>
     );
 }

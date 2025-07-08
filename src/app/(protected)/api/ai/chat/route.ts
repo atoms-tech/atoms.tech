@@ -11,7 +11,7 @@ interface ChatMessage {
 interface ChatRequest {
   message: string;
   conversationHistory?: ChatMessage[];
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export async function POST(request: NextRequest) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 async function generateResponse(
   message: string, 
   history: ChatMessage[], 
-  context: Record<string, any>
+  _context: Record<string, unknown>
 ): Promise<string> {
   // This is a placeholder implementation
   // In production, this would integrate with:

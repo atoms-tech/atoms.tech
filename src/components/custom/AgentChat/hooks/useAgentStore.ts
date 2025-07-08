@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useUser } from '@/lib/providers/user.provider';
+
 
 interface Message {
   id: string;
@@ -54,12 +54,12 @@ interface AgentStore {
   }) => void;
   
   // N8N Integration methods
-  sendToN8n: (data: any) => Promise<any>;
+  sendToN8n: (data: Omit<N8nRequestData, 'secureContext'>) => Promise<Record<string, unknown>>;
   initializeConnection: () => Promise<void>;
 }
 
 // Add pinnedOrganizationId to SecureUserContext
-type PinnedOrganizationId = string | undefined;
+type _PinnedOrganizationId = string | undefined;
 
 interface SecureUserContext {
   userId: string;
@@ -74,9 +74,9 @@ interface SecureUserContext {
 
 interface N8nRequestData {
   type: string;
-  message: string;
-  conversationHistory: any[];
-  timestamp: string;
+  message?: string;
+  conversationHistory?: Message[];
+  timestamp?: string;
   secureContext: SecureUserContext;
 }
 

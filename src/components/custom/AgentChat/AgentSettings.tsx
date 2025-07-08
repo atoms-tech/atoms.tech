@@ -33,7 +33,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
   const [apiKey, setApiKey] = useState(n8nApiKey || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     try {
@@ -189,11 +189,11 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
             <h3 className="text-sm font-medium mb-2">N8N Integration Guide</h3>
             <div className="text-xs text-muted-foreground space-y-2">
               <p>1. Create a new workflow in your N8N instance</p>
-              <p>2. Add a "Webhook" node as the trigger</p>
+              <p>2. Add a &quot;Webhook&quot; node as the trigger</p>
               <p>3. Configure the webhook to accept POST requests</p>
               <p>4. Copy the webhook URL and paste it above</p>
               <p>5. Add your processing nodes (AI, database, etc.)</p>
-              <p>6. Return a response with a "reply" field for the agent</p>
+              <p>6. Return a response with a &quot;reply&quot; field for the agent</p>
             </div>
           </div>
         </div>

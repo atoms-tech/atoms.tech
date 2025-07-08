@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 
 import { getUserOrganizationsServer } from '@/lib/db/server';
 import { createClient } from '@/lib/supabase/supabaseServer';
+import { COOKIE_NAME } from '@/lib/utils/cookieUtils';
 import { OrganizationType } from '@/types';
 
 export async function login(formData: FormData) {
@@ -32,7 +33,7 @@ export async function login(formData: FormData) {
             authData.user.id,
         );
 
-        let redirectUrl = '/home/user'; // Default fallback
+        let redirectUrl = '/home'; // Default fallback - route to /home by default
 
         // Find enterprise organization first
         const enterpriseOrg = organizations.find(
@@ -146,12 +147,7 @@ export async function signOut() {
 
         // Clear auth cookies on server side
         const cookieStore = await cookies();
-        [
-            'preferred_org_id',
-            'user_id',
-            'sb-access-token',
-            'sb-refresh-token',
-        ].forEach((name) => {
+        Object.values(COOKIE_NAME).forEach((name) => {
             cookieStore.set(name, '', {
                 expires: new Date(0),
                 path: '/',

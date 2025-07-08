@@ -7,12 +7,13 @@ import { Suspense } from 'react';
 
 import LayoutManager from '@/components/base/LayoutManager';
 import { Button } from '@/components/ui/button';
+import { LiveRegionProvider } from '@/components/ui/live-region';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { AgentInterface } from '@/components/custom/AgentChat';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserProjectsServer } from '@/lib/db/server';
 import { prefetchUserDashboard } from '@/lib/db/utils/prefetchData';
+import { AccessibilityProvider } from '@/lib/providers/accessibility.provider';
 import { OrganizationProvider } from '@/lib/providers/organization.provider';
 import { UserProvider } from '@/lib/providers/user.provider';
 import { Organization } from '@/types/base/organizations.types';
@@ -59,18 +60,15 @@ export default async function ProtectedLayout({
             <HydrationBoundary state={dehydrate(queryClient)}>
                 <UserProvider initialUser={user} initialProfile={profile}>
                     <OrganizationProvider initialOrganizations={organizations}>
-                        <div className="flex h-screen w-full">
-                            {/* Main Content */}
-                            <div className="flex-1 relative">
+                        <LiveRegionProvider>
+                            <AccessibilityProvider>
                                 <LayoutManager>
                                     <Suspense fallback={<RootLayoutSkeleton />}>
                                         {children}
                                     </Suspense>
                                 </LayoutManager>
-                                {/* Agent Interface (client component) */}
-                                <AgentInterface />
-                            </div>
-                        </div>
+                            </AccessibilityProvider>
+                        </LiveRegionProvider>
                     </OrganizationProvider>
                 </UserProvider>
             </HydrationBoundary>

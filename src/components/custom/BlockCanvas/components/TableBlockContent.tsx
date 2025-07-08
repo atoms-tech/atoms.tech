@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 
 import {
     EditableTable,
+    GlideEditableTable,
     TanStackEditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
 import {
@@ -26,6 +27,7 @@ interface TableBlockContentProps {
     isEditMode: boolean;
     alwaysShowAddRow?: boolean;
     useTanStackTables?: boolean;
+    useGlideTables?: boolean;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -38,21 +40,29 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         isEditMode,
         alwaysShowAddRow = false,
         useTanStackTables = false,
+        useGlideTables = false,
     }) => {
         // Get global setting from doc store as fallback
-        const { useTanStackTables: globalUseTanStackTables = false } =
-            useDocumentStore();
+        const {
+            useTanStackTables: globalUseTanStackTables = false,
+            useGlideTables: globalUseGlideTables = false,
+        } = useDocumentStore();
 
         // Use prop value if provided, otherwise fall back to global setting
         const shouldUseTanStackTables =
             useTanStackTables || globalUseTanStackTables;
 
+        // Added implementation for Glide bool, should change for an enum system later.
+        const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
+
         // Memoize the table component selection
-        const TableComponent = useMemo(
-            () =>
-                shouldUseTanStackTables ? TanStackEditableTable : EditableTable,
-            [shouldUseTanStackTables],
-        );
+        const TableComponent = useMemo(() => {
+            if (shouldUseGlideTables) return GlideEditableTable;
+            if (shouldUseTanStackTables) return TanStackEditableTable;
+            return EditableTable;
+        }, [shouldUseGlideTables, shouldUseTanStackTables]) as React.FC<
+            typeof tableProps
+        >;
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(

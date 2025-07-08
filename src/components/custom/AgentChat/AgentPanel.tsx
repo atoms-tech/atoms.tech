@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, MessageSquare, Mic, MicOff, Send, Settings, Download, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import jsPDF from 'jspdf';
+// import jsPDF from 'jspdf'; // Commented out due to missing dependency
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAgentStore } from './hooks/useAgentStore';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import { useAuth } from '@/hooks/useAuth';
+
 import { useUser } from '@/lib/providers/user.provider';
 
 interface Message {
@@ -32,7 +32,7 @@ interface AgentPanelProps {
 
 export const AgentPanel: React.FC<AgentPanelProps> = ({
   isOpen,
-  onToggle,
+  onToggle: _onToggle,
   onClose,
   onSettingsClick,
 }) => {
@@ -310,105 +310,8 @@ ${'='.repeat(50)}
   };
 
   const downloadChatHistoryPDF = () => {
-    if (messages.length === 0) {
-      return;
-    }
-
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const maxWidth = pageWidth - 2 * margin;
-    let yPosition = 30;
-
-    // Add title
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Chat History Report', margin, yPosition);
-    yPosition += 15;
-
-    // Add metadata
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, yPosition);
-    yPosition += 7;
-    doc.text(`Total Messages: ${messages.length}`, margin, yPosition);
-    yPosition += 7;
-    if (currentUsername) {
-      doc.text(`User: ${currentUsername}`, margin, yPosition);
-      yPosition += 7;
-    }
-
-    // Add separator line
-    yPosition += 5;
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 15;
-
-    // Add messages
-    messages.forEach((msg, index) => {
-      // Check if we need a new page
-      if (yPosition > pageHeight - 40) {
-        doc.addPage();
-        yPosition = 30;
-      }
-
-      // Message header
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      const sender = msg.role === 'user' ? 'User' : 'AI Agent';
-      const timestamp = msg.timestamp.toLocaleString();
-      const voiceIndicator = msg.type === 'voice' ? ' (Voice)' : '';
-      
-      doc.text(`${sender}${voiceIndicator} - ${timestamp}`, margin, yPosition);
-      yPosition += 10;
-
-      // Message content
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      
-      // Clean markdown for PDF
-      const cleanContent = msg.content
-        .replace(/\*\*(.*?)\*\*/g, '$1')
-        .replace(/\*(.*?)\*/g, '$1')
-        .replace(/`(.*?)`/g, '$1')
-        .replace(/#{1,6}\s?(.*)/g, '$1')
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        .replace(/^\s*[-*+]\s+/gm, '• ')
-        .replace(/^\s*\d+\.\s+/gm, (match) => {
-          const number = match.match(/\d+/)?.[0] || '1';
-          return `${number}. `;
-        });
-
-      // Split text into lines that fit the page width
-      const lines = doc.splitTextToSize(cleanContent, maxWidth);
-      
-      // Add each line
-      lines.forEach((line: string) => {
-        if (yPosition > pageHeight - 20) {
-          doc.addPage();
-          yPosition = 30;
-        }
-        doc.text(line, margin, yPosition);
-        yPosition += 6;
-      });
-
-      // Add spacing between messages
-      yPosition += 10;
-
-      // Add light separator line between messages
-      if (index < messages.length - 1) {
-        doc.setLineWidth(0.1);
-        doc.setDrawColor(200, 200, 200);
-        doc.line(margin, yPosition - 5, pageWidth - margin, yPosition - 5);
-      }
-    });
-
-    // Generate filename with timestamp
-    const filename = `chat-history-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.pdf`;
-    
-    // Save the PDF
-    doc.save(filename);
+    // PDF functionality removed due to missing jsPDF dependency
+    alert('PDF download functionality is currently disabled. Please use the TXT download option instead.');
   };
 
   return (

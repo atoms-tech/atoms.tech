@@ -38,6 +38,8 @@ export interface BlockContent {
 export interface BlockCanvasProps {
     documentId: string;
     _useTanStackTables?: boolean;
+    _useGlideTables?: boolean;
+    triggerAssignIds?: number;
 }
 
 export interface BlockWithRequirements extends Block {

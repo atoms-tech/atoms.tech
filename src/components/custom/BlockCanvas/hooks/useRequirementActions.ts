@@ -8,6 +8,7 @@ import {
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Json } from '@/types/base/database.types';
 import {
     ERequirementPriority,
@@ -48,7 +49,22 @@ export const useRequirementActions = ({
 
     // Function to refresh requirements from the database
     const refreshRequirements = useCallback(async () => {
+        console.log('🎯 STEP 6: refreshRequirements called');
         try {
+            // Add a small delay to handle potential database replication lag
+            console.log(
+                '🎯 STEP 6a: Waiting 100ms for database replication lag',
+            );
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            console.log('✅ STEP 6a: Delay completed, fetching from database');
+
+            console.log(
+                '🎯 STEP 6b: Fetching fresh requirements from database',
+                {
+                    blockId,
+                    documentId,
+                },
+            );
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('*')
@@ -57,12 +73,28 @@ export const useRequirementActions = ({
                 .eq('is_deleted', false)
                 .order('position', { ascending: true });
 
-            if (error) throw error;
-            if (!requirements) return;
+            if (error) {
+                console.error('❌ STEP 6b: Database fetch failed:', error);
+                throw error;
+            }
+            if (!requirements) {
+                console.log(
+                    '⚠️ STEP 6b: No requirements returned from database',
+                );
+                return;
+            }
 
+            console.log(
+                '✅ STEP 6b: Database fetch successful. Count:',
+                requirements.length,
+            );
+            console.log('🎯 STEP 6c: Replacing local state with database data');
             setLocalRequirements(requirements);
+            console.log(
+                '✅ STEP 6c: Local state replaced with fresh database data',
+            );
         } catch (error) {
-            console.error('Error refreshing requirements:', error);
+            console.error('❌ STEP 6: Error refreshing requirements:', error);
         }
     }, [blockId, documentId, setLocalRequirements]);
 
@@ -245,10 +277,27 @@ export const useRequirementActions = ({
         userId: string,
         userName: string,
     ) => {
+        console.log(
+            '🎯 STEP 5: saveRequirement called in useRequirementActions',
+            {
+                isNew,
+                userId,
+                userName,
+                dynamicReq,
+            },
+        );
+
         try {
+            console.log(
+                '🎯 STEP 5a: Creating properties object from dynamic requirement',
+            );
             // Create properties object and extract natural fields
             const { propertiesObj, naturalFields } =
                 await createPropertiesObjectFromDynamicReq(dynamicReq);
+            console.log('✅ STEP 5a: Properties object created:', {
+                propertiesObj,
+                naturalFields,
+            });
 
             // Initialize with an empty history object
             let analysis_history: RequirementAiAnalysis = {
@@ -318,13 +367,68 @@ export const useRequirementActions = ({
 
             let savedRequirement: Requirement;
             if (isNew) {
+                console.log('🎯 STEP 5b: Processing new requirement');
                 // Get the last position for new requirements
+                console.log(
+                    '🎯 STEP 5c: Getting last position for new requirement',
+                );
                 const position = await getLastPosition();
+                console.log('✅ STEP 5c: Got position:', position);
+
+                // Generate auto requirement ID if not provided
+                let externalId = naturalFields?.external_id;
+                if (
+                    !externalId ||
+                    (typeof externalId === 'string' &&
+                        externalId.trim() === '') ||
+                    externalId === 'GENERATING...'
+                ) {
+                    try {
+                        // Get organization ID from document
+                        const { data: document, error: docError } =
+                            await supabase
+                                .from('documents')
+                                .select(
+                                    `
+                                project_id,
+                                projects!inner(organization_id)
+                            `,
+                                )
+                                .eq('id', documentId)
+                                .single();
+
+                        if (!docError && document) {
+                            const organizationId = (
+                                document as {
+                                    projects?: { organization_id?: string };
+                                }
+                            )?.projects?.organization_id;
+                            if (organizationId) {
+                                externalId =
+                                    await generateNextRequirementId(
+                                        organizationId,
+                                    );
+                            }
+                        }
+                    } catch (error) {
+                        console.error(
+                            'Error generating requirement ID:',
+                            error,
+                        );
+                    }
+
+                    // Fallback if auto-generation fails
+                    if (!externalId) {
+                        const timestamp = Date.now().toString().slice(-6);
+                        externalId = `REQ-${timestamp}`;
+                    }
+                }
 
                 const newRequirementData = {
                     ...requirementData,
                     created_by: userId,
                     name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    external_id: externalId,
                     position, // Add the position field
                     // Ensure ai_analysis is properly initialized
                     ai_analysis: {
@@ -338,18 +442,45 @@ export const useRequirementActions = ({
                     },
                 };
 
+                console.log(
+                    '🎯 STEP 5d: Inserting new requirement into database:',
+                    newRequirementData,
+                );
                 const { data, error } = await supabase
                     .from('requirements')
                     .insert(newRequirementData)
                     .select()
                     .single();
 
-                if (error) throw error;
-                if (!data) throw new Error('No data returned from insert');
+                if (error) {
+                    console.error(
+                        '❌ STEP 5d: Database insertion failed:',
+                        error,
+                    );
+                    throw error;
+                }
+                if (!data) {
+                    console.error('❌ STEP 5d: No data returned from insert');
+                    throw new Error('No data returned from insert');
+                }
                 savedRequirement = data;
+                console.log(
+                    '✅ STEP 5d: Database insertion successful:',
+                    savedRequirement,
+                );
 
                 // Update local state with the new requirement
-                setLocalRequirements((prev) => [...prev, savedRequirement]);
+                console.log(
+                    '🎯 STEP 5e: Updating local state with new requirement',
+                );
+                setLocalRequirements((prev) => {
+                    const newState = [...prev, savedRequirement];
+                    console.log(
+                        '✅ STEP 5e: Local state updated. New count:',
+                        newState.length,
+                    );
+                    return newState;
+                });
             } else {
                 // For updates, only include fields that have values to avoid nullifying existing data
                 const updateData: Partial<Requirement> = {
@@ -382,8 +513,9 @@ export const useRequirementActions = ({
             }
 
             return savedRequirement;
+            console.log('🎉 STEP 5: saveRequirement completed successfully');
         } catch (error) {
-            console.error('Error saving requirement:', error);
+            console.error('❌ STEP 5: Error saving requirement:', error);
             throw error;
         }
     };

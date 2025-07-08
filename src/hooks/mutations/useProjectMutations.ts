@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
@@ -87,7 +88,7 @@ export function useCreateProjectMember() {
         }: {
             userId: string;
             projectId: string;
-            role: 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
+            role: ProjectRole;
             orgId: string; // Add orgId to the parameters
         }) => {
             const { data, error } = await supabase
@@ -162,6 +163,101 @@ export function useUpdateProject(projectId: string) {
             }
 
             return project;
+        },
+        onSuccess: (data) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.list({}),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.byOrg(data.organization_id),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.projects.detail(data.id),
+            });
+        },
+    });
+}
+
+export function useDuplicateProject() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            projectId,
+            userId,
+            newName,
+        }: {
+            projectId: string;
+            userId: string;
+            newName?: string;
+        }) => {
+            // First, get the original project
+            const { data: originalProject, error: fetchError } = await supabase
+                .from('projects')
+                .select('*')
+                .eq('id', projectId)
+                .single();
+
+            if (fetchError) {
+                console.error('Failed to fetch original project', fetchError);
+                throw fetchError;
+            }
+            if (!originalProject) {
+                throw new Error('Original project not found');
+            }
+
+            // Create a new project with duplicated data
+            const duplicatedProject = {
+                name: newName || `${originalProject.name} (Copy)`,
+                slug: `${originalProject.slug}-copy-${Date.now()}`,
+                description: originalProject.description,
+                organization_id: originalProject.organization_id,
+                visibility: originalProject.visibility,
+                status: originalProject.status,
+                metadata: originalProject.metadata,
+                created_by: userId,
+                updated_by: userId,
+                owned_by: userId,
+            };
+
+            const { data: newProject, error: createError } = await supabase
+                .from('projects')
+                .insert(duplicatedProject)
+                .select()
+                .single();
+
+            if (createError) {
+                console.error(
+                    'Failed to create duplicated project',
+                    createError,
+                );
+                throw createError;
+            }
+            if (!newProject) {
+                throw new Error('Failed to create duplicated project');
+            }
+
+            // Add the user as owner of the new project
+            const { error: memberError } = await supabase
+                .from('project_members')
+                .insert({
+                    user_id: userId,
+                    project_id: newProject.id,
+                    role: 'owner',
+                    org_id: originalProject.organization_id,
+                    status: 'active',
+                });
+
+            if (memberError) {
+                console.error(
+                    'Failed to add user as project member',
+                    memberError,
+                );
+                // Don't throw here as the project was created successfully
+            }
+
+            return newProject;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries

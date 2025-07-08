@@ -4,11 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
     Brain,
     Building,
+    Copy,
     FileBox,
     Folder,
     FolderArchive,
     ListTodo,
+    MoreVertical,
     PenTool,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -32,8 +36,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
+import {
+    useDeleteProject,
+    useDuplicateProject,
+} from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import {
+    OrganizationRole,
+    hasOrganizationPermission,
+} from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
@@ -66,10 +79,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [visibilityFilter, setVisibilityFilter] = useState<string | null>(
-        null,
-    );
-    const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [_totalUsage, setTotalUsage] = useState(0); // Track total usage
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
@@ -90,7 +99,18 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         string | null
     >(null);
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const { toast } = useToast();
+
+    // Project action mutations
+    const { mutateAsync: duplicateProject } = useDuplicateProject();
+    const { mutateAsync: deleteProject } = useDeleteProject();
+
+    // State for project actions
+    const [isEditingProject, setIsEditingProject] = useState<string | null>(
+        null,
+    );
+    const [editingProjectName, setEditingProjectName] = useState('');
 
     const { data: documents } = useQuery({
         queryKey: ['documents', selectedProjectId],
@@ -187,47 +207,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         }
     };
 
-    const canPerformAction = (action: string) => {
-        const rolePermissions = {
-            owner: [
-                'assignToProject',
-                'changeRole',
-                'uploadDeleteDocs',
-                'invitePeople',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            super_admin: [
-                'assignToProject',
-                'changeRole',
-                'uploadDeleteDocs',
-                'invitePeople',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            admin: [
-                'assignToProject',
-                'uploadDeleteDocs',
-                'createProjects',
-                'goToCanvas',
-                'goToAiAnalysis',
-                'viewProjects',
-                'viewDocs',
-            ],
-            member: ['viewProjects', 'viewDocs'],
-        };
-
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'member'
-        ].includes(action);
-    };
-
     // Update URL when tab changes
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
@@ -243,6 +222,110 @@ export default function OrgDashboard(props: OrgDashboardProps) {
             setActiveTab(tabFromUrl);
         }
     }, [searchParams, activeTab]);
+
+    // Project action handlers
+    const handleDuplicateProject = async (project: Project) => {
+        if (!user?.id) return;
+
+        try {
+            await duplicateProject({
+                projectId: project.id,
+                userId: user.id,
+            });
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: `Project "${project.name}" duplicated successfully`,
+            });
+        } catch (error) {
+            console.error('Error duplicating project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to duplicate project. Please try again.',
+            });
+        }
+    };
+
+    const handleEditProject = (project: Project) => {
+        setIsEditingProject(project.id);
+        setEditingProjectName(project.name);
+    };
+
+    const handleSaveProjectEdit = async (project: Project) => {
+        if (!user?.id || !editingProjectName.trim()) return;
+
+        try {
+            // Use Supabase directly for the update
+            const { error } = await supabase
+                .from('projects')
+                .update({
+                    name: editingProjectName.trim(),
+                    updated_by: user.id,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', project.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            setIsEditingProject(null);
+            setEditingProjectName('');
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: 'Project updated successfully',
+            });
+
+            // TODO: Make it refetch projects rather than reloading page
+            window.location.reload();
+        } catch (error) {
+            console.error('Error updating project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to update project. Please try again.',
+            });
+        }
+    };
+
+    const handleCancelProjectEdit = () => {
+        setIsEditingProject(null);
+        setEditingProjectName('');
+    };
+
+    const handleDeleteProject = async (project: Project) => {
+        if (!user?.id) return;
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${project.name}"? This action cannot be undone.`,
+        );
+
+        if (!confirmed) return;
+
+        try {
+            await deleteProject({
+                projectId: project.id,
+                userId: user.id,
+            });
+
+            toast({
+                variant: 'default',
+                title: 'Success',
+                description: `Project "${project.name}" deleted successfully`,
+            });
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to delete project. Please try again.',
+            });
+        }
+    };
 
     return (
         <div className="container mx-auto p-6 space-y-6">
@@ -277,9 +360,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 <TabsList
                     className={`grid ${
                         props.organization?.type === 'enterprise'
-                            ? ['admin', 'member'].includes(userRole || '')
-                                ? 'grid-cols-3'
-                                : 'grid-cols-4'
+                            ? hasOrganizationPermission(
+                                  userRole,
+                                  'invitePeople',
+                              )
+                                ? 'grid-cols-4'
+                                : 'grid-cols-3'
                             : 'grid-cols-3'
                     } w-full`}
                 >
@@ -305,7 +391,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         <span>Regulation Documents</span>
                     </TabsTrigger>
                     {props.organization?.type === 'enterprise' &&
-                        !['admin', 'member'].includes(userRole || '') && (
+                        hasOrganizationPermission(userRole, 'invitePeople') && (
                             <TabsTrigger
                                 value="invitations"
                                 className="flex items-center gap-2"
@@ -397,110 +483,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full md:w-64"
                             />
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="default"
-                                        className="w-9 h-9"
-                                    >
-                                        <FolderArchive className="w-4 h-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                        onClick={() =>
-                                            setVisibilityFilter(null)
-                                        }
-                                    >
-                                        <span
-                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                visibilityFilter === null
-                                                    ? 'bg-primary'
-                                                    : 'bg-gray-200'
-                                            }`}
-                                        ></span>
-                                        All Visibility
-                                    </DropdownMenuItem>
-                                    {[
-                                        'private',
-                                        'team',
-                                        'organization',
-                                        'public',
-                                    ].map((visibility) => (
-                                        <DropdownMenuItem
-                                            key={visibility}
-                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                            onClick={() =>
-                                                setVisibilityFilter(
-                                                    visibilityFilter ===
-                                                        visibility
-                                                        ? null
-                                                        : visibility,
-                                                )
-                                            }
-                                        >
-                                            <span
-                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                    visibilityFilter ===
-                                                    visibility
-                                                        ? 'bg-primary'
-                                                        : 'bg-gray-200'
-                                                }`}
-                                            ></span>
-                                            {visibility
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                visibility.slice(1)}
-                                        </DropdownMenuItem>
-                                    ))}
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                        onClick={() => setStatusFilter(null)}
-                                    >
-                                        <span
-                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                statusFilter === null
-                                                    ? 'bg-primary'
-                                                    : 'bg-gray-200'
-                                            }`}
-                                        ></span>
-                                        All Status
-                                    </DropdownMenuItem>
-                                    {[
-                                        'active',
-                                        'archived',
-                                        'draft',
-                                        'deleted',
-                                    ].map((status) => (
-                                        <DropdownMenuItem
-                                            key={status}
-                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                            onClick={() =>
-                                                setStatusFilter(
-                                                    statusFilter === status
-                                                        ? null
-                                                        : status,
-                                                )
-                                            }
-                                        >
-                                            <span
-                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                    statusFilter === status
-                                                        ? 'bg-primary'
-                                                        : 'bg-gray-200'
-                                                }`}
-                                            ></span>
-                                            {status.charAt(0).toUpperCase() +
-                                                status.slice(1)}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                         <div className="flex items-center space-x-2">
-                            {canPerformAction('createProjects') && (
+                            {hasOrganizationPermission(
+                                userRole,
+                                'createProjects',
+                            ) && (
                                 <Button
                                     className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                                     onClick={handleCreateProject}
@@ -509,7 +497,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     <Folder className="w-4 h-4" />
                                 </Button>
                             )}
-                            {canPerformAction('goToCanvas') && (
+                            {hasOrganizationPermission(
+                                userRole,
+                                'goToCanvas',
+                            ) && (
                                 <Button
                                     variant="outline"
                                     className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -520,7 +511,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 </Button>
                             )}
                             {props.organization?.type !== 'personal' &&
-                                canPerformAction('goToAiAnalysis') && (
+                                hasOrganizationPermission(
+                                    userRole,
+                                    'goToAiAnalysis',
+                                ) && (
                                     <Button
                                         variant="outline"
                                         className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -558,72 +552,178 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                     ) : props.projects && props.projects.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {props.projects
-                                .filter(
-                                    (project) =>
-                                        project.name
-                                            .toLowerCase()
-                                            .includes(
-                                                searchQuery.toLowerCase(),
-                                            ) &&
-                                        (!visibilityFilter ||
-                                            project.visibility ===
-                                                visibilityFilter) &&
-                                        (!statusFilter ||
-                                            project.status === statusFilter),
+                                .filter((project) =>
+                                    project.name
+                                        .toLowerCase()
+                                        .includes(searchQuery.toLowerCase()),
                                 )
                                 .map((project) => (
                                     <Card
                                         key={project.id}
-                                        className="cursor-pointer hover:shadow-md transition-shadow"
-                                        onClick={() =>
-                                            props.onProjectClick(project)
-                                        }
+                                        className="group relative hover:shadow-md transition-shadow"
                                     >
-                                        <CardHeader>
-                                            <CardTitle>
-                                                {project.name}
-                                            </CardTitle>
-                                            <CardDescription>
-                                                <span
-                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                        project.status ===
-                                                        'active'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : project.status ===
-                                                                'archived'
-                                                              ? 'bg-gray-100 text-gray-800'
-                                                              : 'bg-yellow-100 text-yellow-800'
-                                                    }`}
-                                                >
-                                                    {project.status}
-                                                </span>
-                                                <span
-                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${
-                                                        project.visibility ===
-                                                        'private'
-                                                            ? 'bg-red-100 text-red-800'
-                                                            : project.visibility ===
-                                                                'team'
-                                                              ? 'bg-blue-100 text-blue-800'
-                                                              : project.visibility ===
-                                                                  'organization'
-                                                                ? 'bg-purple-100 text-purple-800'
-                                                                : project.visibility ===
-                                                                    'public'
-                                                                  ? 'bg-green-100 text-green-800'
-                                                                  : 'bg-gray-100 text-gray-800'
-                                                    }`}
-                                                >
-                                                    {project.visibility}
-                                                </span>
-                                            </CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <p className="text-sm text-muted-foreground line-clamp-2">
-                                                {project.description ||
-                                                    'No description provided'}
-                                            </p>
-                                        </CardContent>
+                                        <div
+                                            className="cursor-pointer"
+                                            onClick={() =>
+                                                props.onProjectClick(project)
+                                            }
+                                        >
+                                            <CardHeader className="relative">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        {isEditingProject ===
+                                                        project.id ? (
+                                                            <div className="space-y-2">
+                                                                <Input
+                                                                    value={
+                                                                        editingProjectName
+                                                                    }
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) =>
+                                                                        setEditingProjectName(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        )
+                                                                    }
+                                                                    onKeyDown={(
+                                                                        e,
+                                                                    ) => {
+                                                                        if (
+                                                                            e.key ===
+                                                                            'Enter'
+                                                                        ) {
+                                                                            handleSaveProjectEdit(
+                                                                                project,
+                                                                            );
+                                                                        } else if (
+                                                                            e.key ===
+                                                                            'Escape'
+                                                                        ) {
+                                                                            handleCancelProjectEdit();
+                                                                        }
+                                                                    }}
+                                                                    className="text-lg font-semibold"
+                                                                    autoFocus
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) =>
+                                                                        e.stopPropagation()
+                                                                    }
+                                                                />
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            handleSaveProjectEdit(
+                                                                                project,
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        Save
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline"
+                                                                        onClick={(
+                                                                            e,
+                                                                        ) => {
+                                                                            e.stopPropagation();
+                                                                            handleCancelProjectEdit();
+                                                                        }}
+                                                                    >
+                                                                        Cancel
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <CardTitle>
+                                                                {project.name}
+                                                            </CardTitle>
+                                                        )}
+                                                    </div>
+
+                                                    {/* 3-dot menu */}
+                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger
+                                                                asChild
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0"
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) =>
+                                                                        e.stopPropagation()
+                                                                    }
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleDuplicateProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <Copy className="h-4 w-4 mr-2" />
+                                                                    Duplicate
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleEditProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <Pencil className="h-4 w-4 mr-2" />
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteProject(
+                                                                            project,
+                                                                        );
+                                                                    }}
+                                                                    className="text-destructive"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+
+                                            {isEditingProject !==
+                                                project.id && (
+                                                <CardContent>
+                                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                                        {project.description ||
+                                                            'No description provided'}
+                                                    </p>
+                                                </CardContent>
+                                            )}
+                                        </div>
                                     </Card>
                                 ))}
                         </div>
@@ -653,7 +753,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
                 <TabsContent value="invitations" className="space-y-6">
                     {props.organization?.type === 'enterprise' &&
-                        !['admin', 'member'].includes(userRole || '') && (
+                        hasOrganizationPermission(userRole, 'invitePeople') && (
                             <OrgInvitations orgId={props.orgId} />
                         )}
                 </TabsContent>

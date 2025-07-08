@@ -3,7 +3,7 @@
 import {
     Beaker,
     Clock,
-    FileText,
+    Copy,
     FolderOpen,
     MoreVertical,
     Pencil,
@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 
 import EditDocumentForm from '@/components/base/forms/EditDocumentForm';
 import EditProjectForm from '@/components/base/forms/EditProjectForm';
+import DuplicateDocumentModal from '@/components/base/modals/DuplicateDocumentModal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -76,7 +78,7 @@ export default function ProjectPage() {
     );
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<ProjectRole | null>(null);
     const {
         data: documents,
         isLoading: documentsLoading,
@@ -86,6 +88,8 @@ export default function ProjectPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const { mutateAsync: deleteProject } = useDeleteProject();
     const [documentToEdit, setDocumentToEdit] = useState<Document | null>(null);
+    const [documentToDuplicate, setDocumentToDuplicate] =
+        useState<Document | null>(null);
 
     console.log(userRole, 'userRole');
 
@@ -122,38 +126,8 @@ export default function ProjectPage() {
         fetchUserRole();
     }, [params?.projectId, user?.id]);
 
-    const canPerformAction = (action: string) => {
-        const rolePermissions = {
-            owner: [
-                'changeRole',
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-                'deleteProject',
-            ],
-            admin: [
-                'removeMember',
-                'addDocument',
-                'viewDocument',
-                'deleteDocument',
-                'editDocument',
-                'editProject',
-            ],
-            maintainer: ['addDocument', 'viewDocument', 'editDocument'],
-            editor: ['addDocument', 'viewDocument', 'editDocument'],
-            viewer: ['viewDocument'],
-        };
-
-        return rolePermissions[
-            (userRole as keyof typeof rolePermissions) || 'viewer'
-        ].includes(action);
-    };
-
     const handleDocumentClick = (doc: Document) => {
-        if (!canPerformAction('viewDocument')) {
+        if (!hasProjectPermission(userRole, 'viewDocument')) {
             return; // Do nothing if the user does not have permission
         }
         router.push(
@@ -166,7 +140,7 @@ export default function ProjectPage() {
     };
 
     const handleDeleteDocument = async () => {
-        if (!canPerformAction('deleteDocument')) {
+        if (!hasProjectPermission(userRole, 'deleteDocument')) {
             return; // Do nothing if the user does not have permission
         }
 
@@ -295,7 +269,21 @@ export default function ProjectPage() {
                         value="documents"
                         className="flex items-center gap-2"
                     >
-                        <FileText className="h-4 w-4" />
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="black"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <line x1="9" y1="9" x2="15" y2="9" />
+                            <line x1="9" y1="13" x2="15" y2="13" />
+                            <line x1="9" y1="17" x2="13" y2="17" />
+                        </svg>
                         <span>Requirements Documents</span>
                     </TabsTrigger>
                 </TabsList>
@@ -313,7 +301,10 @@ export default function ProjectPage() {
                                             Basic information about your project
                                         </CardDescription>
                                     </div>
-                                    {canPerformAction('editProject') &&
+                                    {hasProjectPermission(
+                                        userRole,
+                                        'editProject',
+                                    ) &&
                                         !isEditing && (
                                             <Button
                                                 variant="outline"
@@ -412,7 +403,7 @@ export default function ProjectPage() {
                             className="w-full max-w-xs"
                         />
                         <div className="flex items-center gap-2">
-                            {canPerformAction('addDocument') && (
+                            {hasProjectPermission(userRole, 'addDocument') && (
                                 <Button
                                     variant="outline"
                                     onClick={() =>
@@ -454,29 +445,20 @@ export default function ProjectPage() {
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
 
                                     <div className="flex flex-col h-full p-3 relative z-10">
-                                        {/* Header with Icon and Actions */}
+                                        {/* Header with Title and Actions */}
                                         <div className="flex items-start justify-between mb-3">
-                                            {/* Document Icon */}
-                                            <div className="flex-shrink-0">
-                                                <div className="relative">
-                                                    {/* Back papers for stack effect */}
-                                                    <div className="absolute top-0.5 left-0.5 w-6 h-7 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 border border-gray-300 dark:border-gray-600 rounded-sm opacity-50"></div>
-
-                                                    {/* Main document */}
-                                                    <div className="relative w-6 h-7 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border border-blue-200 dark:border-blue-700 rounded-sm flex items-center justify-center shadow-sm">
-                                                        <FileText className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-
-                                                        {/* Folded corner effect */}
-                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-white dark:bg-gray-800 border-l border-b border-blue-200 dark:border-blue-700 rounded-bl-md transform rotate-0"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {/* Document Title - Top Left */}
+                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight flex-1 pr-2">
+                                                {doc.name}
+                                            </h3>
 
                                             {/* Actions Menu */}
-                                            {(canPerformAction(
+                                            {(hasProjectPermission(
+                                                userRole,
                                                 'editDocument',
                                             ) ||
-                                                canPerformAction(
+                                                hasProjectPermission(
+                                                    userRole,
                                                     'deleteDocument',
                                                 )) && (
                                                 <div className="flex-shrink-0">
@@ -496,7 +478,8 @@ export default function ProjectPage() {
                                                             align="end"
                                                             className="w-44"
                                                         >
-                                                            {canPerformAction(
+                                                            {hasProjectPermission(
+                                                                userRole,
                                                                 'editDocument',
                                                             ) && (
                                                                 <DropdownMenuItem
@@ -512,7 +495,25 @@ export default function ProjectPage() {
                                                                     Document
                                                                 </DropdownMenuItem>
                                                             )}
-                                                            {canPerformAction(
+                                                            {hasProjectPermission(
+                                                                userRole,
+                                                                'addDocument',
+                                                            ) && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() =>
+                                                                        setDocumentToDuplicate(
+                                                                            doc,
+                                                                        )
+                                                                    }
+                                                                    className="gap-3 py-2.5"
+                                                                >
+                                                                    <Copy className="h-4 w-4" />
+                                                                    Duplicate
+                                                                    Document
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {hasProjectPermission(
+                                                                userRole,
                                                                 'deleteDocument',
                                                             ) && (
                                                                 <DropdownMenuItem
@@ -541,10 +542,6 @@ export default function ProjectPage() {
                                                 handleDocumentClick(doc)
                                             }
                                         >
-                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors mb-1 line-clamp-2 leading-tight">
-                                                {doc.name}
-                                            </h3>
-
                                             {doc.description && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
                                                     {doc.description}
@@ -582,26 +579,8 @@ export default function ProjectPage() {
 
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-1">
-                                                        <div
-                                                            className={`w-2 h-2 rounded-full ${
-                                                                doc.is_deleted
-                                                                    ? 'bg-red-500'
-                                                                    : 'bg-green-500'
-                                                            }`}
-                                                        ></div>
-                                                        <span
-                                                            className={`text-xs font-medium ${
-                                                                doc.is_deleted
-                                                                    ? 'text-red-600 dark:text-red-400'
-                                                                    : 'text-green-600 dark:text-green-400'
-                                                            }`}
-                                                        >
-                                                            {doc.is_deleted
-                                                                ? 'Archived'
-                                                                : 'Active'}
-                                                        </span>
+                                                        {/* Status dot and text removed as per request */}
                                                     </div>
-
                                                     {doc.tags &&
                                                         doc.tags.length > 0 && (
                                                             <div className="text-xs text-primary font-medium truncate">
@@ -627,7 +606,24 @@ export default function ProjectPage() {
                                     <div className="relative mx-auto mb-6">
                                         {/* Stacked empty documents */}
                                         <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
-                                            <FileText className="h-10 w-10 text-gray-400 dark:text-gray-500" />
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="40"
+                                                height="40"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="text-black dark:text-white"
+                                            >
+                                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                                                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                                                <path d="M10 9H8" />
+                                                <path d="M16 13H8" />
+                                                <path d="M16 17H8" />
+                                            </svg>
                                         </div>
                                         <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
                                     </div>
@@ -639,7 +635,10 @@ export default function ProjectPage() {
                                         requirement document to organize and
                                         manage your project requirements
                                     </p>
-                                    {canPerformAction('addDocument') && (
+                                    {hasProjectPermission(
+                                        userRole,
+                                        'addDocument',
+                                    ) && (
                                         <Button
                                             variant="default"
                                             onClick={() =>
@@ -729,7 +728,17 @@ export default function ProjectPage() {
                         setDocumentToDelete(documentToEdit);
                         setDocumentToEdit(null);
                     }}
-                    canDelete={canPerformAction('deleteDocument')}
+                    canDelete={hasProjectPermission(userRole, 'deleteDocument')}
+                />
+            )}
+
+            {documentToDuplicate && user?.id && params?.orgId && (
+                <DuplicateDocumentModal
+                    document={documentToDuplicate}
+                    isOpen={true}
+                    onClose={() => setDocumentToDuplicate(null)}
+                    organizationId={params.orgId}
+                    userId={user.id}
                 />
             )}
         </div>
