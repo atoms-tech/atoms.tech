@@ -103,7 +103,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
           {getConnectionStatusBadge()}
         </div>
         <CardDescription>
-          Configure your AI agent's connection to N8N workflow automation platform
+          Configure your AI agent&apos;s connection to N8N workflow automation platform
         </CardDescription>
       </CardHeader>
       

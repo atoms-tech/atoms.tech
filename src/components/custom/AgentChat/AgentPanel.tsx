@@ -50,7 +50,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
   const {
     messages,
     addMessage,
-    clearMessages,
+    clearMessages: _clearMessages,
     isConnected,
     connectionStatus,
     sendToN8n,
