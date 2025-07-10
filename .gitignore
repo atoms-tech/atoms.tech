@@ -8,15 +8,10 @@
 .pnp.json
 /public
 /.history
-.env
-.env.local
 /reports/
 /memory/
-/coverage/
 /.claude
 /.kwatch
-bun.lock
-package-lock.json
 
 # testing
 /coverage

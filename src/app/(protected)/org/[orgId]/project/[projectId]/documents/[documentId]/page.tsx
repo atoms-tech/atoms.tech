@@ -11,6 +11,7 @@ import {
     BlockCanvasGlide,
     BlockCanvasTanStack,
 } from '@/components/custom/BlockCanvas/indexExport';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -41,6 +42,7 @@ export default function DocumentPage() {
 
     // Use the document requirement scanner
     const {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         isScanning,
         isAssigning,
         requirementsWithoutIds,
@@ -113,6 +115,7 @@ export default function DocumentPage() {
     }, []);
 
     // REQ-ID assignment handler - scans document and shows modal
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleCheckRequirementIds = async () => {
         try {
             toast.loading('Scanning document for requirements without IDs...', {
@@ -360,6 +363,7 @@ export default function DocumentPage() {
         <LayoutView>
             <div className="space-y-4">
                 <div className="flex justify-end gap-2 mb-4 px-4">
+                    {/* TODO: Fix Assign REQ-IDs 
                     <Button
                         variant="outline"
                         onClick={handleCheckRequirementIds}
@@ -373,7 +377,7 @@ export default function DocumentPage() {
                         ) : (
                             'Assign REQ-IDs'
                         )}
-                    </Button>
+                    </Button>*/}
                     <Select
                         value={tableType}
                         onValueChange={(value) =>

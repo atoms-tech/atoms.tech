@@ -79,10 +79,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [visibilityFilter, setVisibilityFilter] = useState<string | null>(
-        null,
-    );
-    const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [_totalUsage, setTotalUsage] = useState(0); // Track total usage
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
@@ -284,7 +280,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 description: 'Project updated successfully',
             });
 
-            // Manually trigger a refetch of projects
+            // TODO: Make it refetch projects rather than reloading page
             window.location.reload();
         } catch (error) {
             console.error('Error updating project:', error);
@@ -487,107 +483,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="w-full md:w-64"
                             />
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button
-                                        variant="default"
-                                        className="w-9 h-9"
-                                    >
-                                        <FolderArchive className="w-4 h-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                        onClick={() =>
-                                            setVisibilityFilter(null)
-                                        }
-                                    >
-                                        <span
-                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                visibilityFilter === null
-                                                    ? 'bg-primary'
-                                                    : 'bg-gray-200'
-                                            }`}
-                                        ></span>
-                                        All Visibility
-                                    </DropdownMenuItem>
-                                    {[
-                                        'private',
-                                        'team',
-                                        'organization',
-                                        'public',
-                                    ].map((visibility) => (
-                                        <DropdownMenuItem
-                                            key={visibility}
-                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                            onClick={() =>
-                                                setVisibilityFilter(
-                                                    visibilityFilter ===
-                                                        visibility
-                                                        ? null
-                                                        : visibility,
-                                                )
-                                            }
-                                        >
-                                            <span
-                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                    visibilityFilter ===
-                                                    visibility
-                                                        ? 'bg-primary'
-                                                        : 'bg-gray-200'
-                                                }`}
-                                            ></span>
-                                            {visibility
-                                                .charAt(0)
-                                                .toUpperCase() +
-                                                visibility.slice(1)}
-                                        </DropdownMenuItem>
-                                    ))}
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                        onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                        onClick={() => setStatusFilter(null)}
-                                    >
-                                        <span
-                                            className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                statusFilter === null
-                                                    ? 'bg-primary'
-                                                    : 'bg-gray-200'
-                                            }`}
-                                        ></span>
-                                        All Status
-                                    </DropdownMenuItem>
-                                    {[
-                                        'active',
-                                        'archived',
-                                        'draft',
-                                        'deleted',
-                                    ].map((status) => (
-                                        <DropdownMenuItem
-                                            key={status}
-                                            onSelect={(e) => e.preventDefault()} // Prevent menu from closing
-                                            onClick={() =>
-                                                setStatusFilter(
-                                                    statusFilter === status
-                                                        ? null
-                                                        : status,
-                                                )
-                                            }
-                                        >
-                                            <span
-                                                className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                                    statusFilter === status
-                                                        ? 'bg-primary'
-                                                        : 'bg-gray-200'
-                                                }`}
-                                            ></span>
-                                            {status.charAt(0).toUpperCase() +
-                                                status.slice(1)}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
                         </div>
                         <div className="flex items-center space-x-2">
                             {hasOrganizationPermission(
@@ -657,18 +552,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                     ) : props.projects && props.projects.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {props.projects
-                                .filter(
-                                    (project) =>
-                                        project.name
-                                            .toLowerCase()
-                                            .includes(
-                                                searchQuery.toLowerCase(),
-                                            ) &&
-                                        (!visibilityFilter ||
-                                            project.visibility ===
-                                                visibilityFilter) &&
-                                        (!statusFilter ||
-                                            project.status === statusFilter),
+                                .filter((project) =>
+                                    project.name
+                                        .toLowerCase()
+                                        .includes(searchQuery.toLowerCase()),
                                 )
                                 .map((project) => (
                                     <Card
@@ -825,44 +712,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                         </DropdownMenu>
                                                     </div>
                                                 </div>
-
-                                                {isEditingProject !==
-                                                    project.id && (
-                                                    <CardDescription>
-                                                        <span
-                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                                project.status ===
-                                                                'active'
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : project.status ===
-                                                                        'archived'
-                                                                      ? 'bg-gray-100 text-gray-800'
-                                                                      : 'bg-yellow-100 text-yellow-800'
-                                                            }`}
-                                                        >
-                                                            {project.status}
-                                                        </span>
-                                                        <span
-                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-2 ${
-                                                                project.visibility ===
-                                                                'private'
-                                                                    ? 'bg-red-100 text-red-800'
-                                                                    : project.visibility ===
-                                                                        'team'
-                                                                      ? 'bg-blue-100 text-blue-800'
-                                                                      : project.visibility ===
-                                                                          'organization'
-                                                                        ? 'bg-purple-100 text-purple-800'
-                                                                        : project.visibility ===
-                                                                            'public'
-                                                                          ? 'bg-green-100 text-green-800'
-                                                                          : 'bg-gray-100 text-gray-800'
-                                                            }`}
-                                                        >
-                                                            {project.visibility}
-                                                        </span>
-                                                    </CardDescription>
-                                                )}
                                             </CardHeader>
 
                                             {isEditingProject !==

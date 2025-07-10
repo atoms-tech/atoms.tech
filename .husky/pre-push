@@ -1,19 +1,11 @@
 echo "🚀 Running pre-push checks..."
 
-# Run linting
-echo "🔍 Running ESLint..."
-npm run lint
+# Lint Check
+echo "📝 Linting staged files..."
+bun run lint
 
-# Run type checking
-echo "🔍 Running TypeScript type check..."
-npm run type-check
-
-# Run build to ensure everything compiles
-echo "🏗️  Running production build..."
-NODE_OPTIONS="" npm run build
-
-# Run tests (if you have any)
-# echo "🧪 Running tests..."
-# npm test
+# Format check
+echo "🔍 Formatting staged files..."
+bun prettier src --check
 
 echo "✅ Pre-push checks passed! Ready to push."

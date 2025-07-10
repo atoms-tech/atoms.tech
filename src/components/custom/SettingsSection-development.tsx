@@ -59,7 +59,7 @@ const InProgressOverlay = ({
     );
 };
 
-export function SettingsSection() {
+export function SettingsSectionDevelopment() {
     const { user, profile } = useUser();
     const { theme, setTheme } = useTheme();
     const { announce } = useLiveRegion();
