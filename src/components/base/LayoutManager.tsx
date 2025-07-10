@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
 import AppSidebar from '@/components/base/AppSidebar';
+import { AgentDemo } from '@/components/custom/AgentChat';
 import { EditModeFloatingToggle } from '@/components/custom/BlockCanvas/components/EditModeToggle';
 import HorizontalToolbar from '@/components/custom/HorizontalToolbar';
 import VerticalToolbar from '@/components/custom/VerticalToolbar';
@@ -88,6 +89,9 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
 
             {/* Horizontal toolbar - only on mobile/tablet */}
             {showHorizontalToolbar && <HorizontalToolbar />}
+
+            {/* Agent Demo - positioned on the right side */}
+            <AgentDemo autoInit={true} />
         </Sidebar>
     );
 };
