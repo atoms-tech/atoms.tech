@@ -26,7 +26,6 @@ interface AgentSettingsProps {
 export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     const {
         n8nWebhookUrl,
-        n8nApiKey,
         connectionStatus,
         setN8nConfig,
         initializeConnection,
@@ -38,7 +37,6 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     const { user, profile } = useUser();
 
     const [webhookUrl, setWebhookUrl] = useState(n8nWebhookUrl || '');
-    const [apiKey, setApiKey] = useState(n8nApiKey || '');
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [_loading, setLoading] = useState(false);
@@ -55,7 +53,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                 username: profile?.full_name || user?.email?.split('@')[0],
             });
 
-            setN8nConfig(webhookUrl, apiKey);
+            setN8nConfig(webhookUrl);
             // Auto-test connection after saving
             if (webhookUrl) {
                 await testConnection();
@@ -143,21 +141,6 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                         <p className="text-xs text-muted-foreground">
                             The webhook URL from your N8N workflow that will
                             receive agent messages
-                        </p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="api-key">API Key (Optional)</Label>
-                        <Input
-                            id="api-key"
-                            type="password"
-                            placeholder="Your N8N API key for authentication"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Optional API key for authenticated requests to your
-                            N8N instance
                         </p>
                     </div>
 

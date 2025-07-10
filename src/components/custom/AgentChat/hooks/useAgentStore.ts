@@ -23,7 +23,6 @@ interface AgentStore {
 
     // N8N Integration
     n8nWebhookUrl?: string;
-    n8nApiKey?: string;
 
     // User Context
     currentProjectId?: string;
@@ -42,7 +41,7 @@ interface AgentStore {
     clearMessages: () => void;
 
     setConnectionStatus: (status: AgentStore['connectionStatus']) => void;
-    setN8nConfig: (webhookUrl: string, apiKey: string) => void;
+    setN8nConfig: (webhookUrl: string) => void;
     setUserContext: (context: {
         projectId?: string;
         documentId?: string;
@@ -111,8 +110,8 @@ export const useAgentStore = create<AgentStore>()(
                     isConnected: connectionStatus === 'connected',
                 }),
 
-            setN8nConfig: (webhookUrl: string, apiKey: string) =>
-                set({ n8nWebhookUrl: webhookUrl, n8nApiKey: apiKey }),
+            setN8nConfig: (webhookUrl: string) =>
+                set({ n8nWebhookUrl: webhookUrl }),
 
             setUserContext: (context) =>
                 set({
@@ -128,7 +127,6 @@ export const useAgentStore = create<AgentStore>()(
             sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
                 const {
                     n8nWebhookUrl,
-                    n8nApiKey,
                     currentProjectId,
                     currentDocumentId,
                     currentUserId,
@@ -159,7 +157,7 @@ export const useAgentStore = create<AgentStore>()(
                         orgId: isTestConnection ? 'test-org' : currentOrgId!,
                         pinnedOrganizationId: currentPinnedOrganizationId,
                         timestamp: new Date().toISOString(),
-                        sessionToken: n8nApiKey || '',
+                        sessionToken: '',
                         username: isTestConnection
                             ? 'test-user'
                             : currentUsername || '',
@@ -256,7 +254,6 @@ export const useAgentStore = create<AgentStore>()(
                     timestamp: msg.timestamp.toISOString(),
                 })),
                 n8nWebhookUrl: state.n8nWebhookUrl,
-                n8nApiKey: state.n8nApiKey,
                 isMinimized: state.isMinimized,
             }),
             onRehydrateStorage: () => (state) => {
