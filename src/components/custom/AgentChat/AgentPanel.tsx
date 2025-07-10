@@ -14,7 +14,6 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-import { Badge } from '@/components/ui/badge';
 // import jsPDF from 'jspdf'; // Commented out due to missing dependency
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -62,8 +61,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         messages,
         addMessage,
         clearMessages: _clearMessages,
-        isConnected,
-        connectionStatus,
         sendToN8n,
         n8nWebhookUrl,
         currentUserId,
@@ -202,16 +199,45 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     // Try different possible response fields from N8N
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const response = n8nResponse as any;
+                    console.log(
+                        'AgentPanel - N8N Response received:',
+                        JSON.stringify(response, null, 2),
+                    );
+
+                    // Check each possible field and log what we find
+                    console.log(
+                        'AgentPanel - response.reply:',
+                        `"${response.reply}"`,
+                    );
+                    console.log(
+                        'AgentPanel - response.message:',
+                        `"${response.message}"`,
+                    );
+                    console.log(
+                        'AgentPanel - response.output:',
+                        `"${response.output}"`,
+                    );
+
                     reply =
-                        response.reply ||
-                        response.message ||
-                        response.output ||
-                        response.response ||
-                        (response.data && response.data.output) ||
-                        (response.data && response.data.reply) ||
-                        (response.data && response.data.message) ||
-                        JSON.stringify(n8nResponse) ||
-                        'N8N workflow completed successfully.';
+                        (response.reply && response.reply.trim()) ||
+                        (response.message && response.message.trim()) ||
+                        (response.output && response.output.trim()) ||
+                        (response.response && response.response.trim()) ||
+                        (response.data &&
+                            response.data.output &&
+                            response.data.output.trim()) ||
+                        (response.data &&
+                            response.data.reply &&
+                            response.data.reply.trim()) ||
+                        (response.data &&
+                            response.data.message &&
+                            response.data.message.trim()) ||
+                        (() => {
+                            console.log(
+                                'AgentPanel - No valid reply found, using fallback',
+                            );
+                            return 'N8N workflow completed but returned an empty response. Please check your N8N workflow configuration.';
+                        })();
                 } catch (n8nError) {
                     console.error('N8N error:', n8nError);
                     // If N8N fails, fall back to local AI
@@ -378,17 +404,6 @@ ${'='.repeat(50)}
                             <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">
                                 AI Agent
                             </h2>
-                            <Badge
-                                variant={isConnected ? 'default' : 'secondary'}
-                                className={cn(
-                                    'text-xs font-medium px-2 py-1 rounded-full',
-                                    isConnected
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                                )}
-                            >
-                                {connectionStatus}
-                            </Badge>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

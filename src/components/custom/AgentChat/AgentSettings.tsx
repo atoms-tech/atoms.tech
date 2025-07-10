@@ -1,9 +1,8 @@
 'use client';
 
-import { Save, Settings, TestTube, Trash2 } from 'lucide-react';
+import { Save, Settings, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -26,9 +25,7 @@ interface AgentSettingsProps {
 export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     const {
         n8nWebhookUrl,
-        connectionStatus,
         setN8nConfig,
-        initializeConnection,
         clearMessages,
         setUserContext,
         currentOrgId,
@@ -38,12 +35,10 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
 
     const [webhookUrl, setWebhookUrl] = useState(n8nWebhookUrl || '');
     const [isSaving, setIsSaving] = useState(false);
-    const [isTesting, setIsTesting] = useState(false);
-    const [_loading, setLoading] = useState(false);
 
     const handleSave = async () => {
         try {
-            setLoading(true);
+            setIsSaving(true);
 
             // Set user context including username
             setUserContext({
@@ -54,28 +49,10 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
             });
 
             setN8nConfig(webhookUrl);
-            // Auto-test connection after saving
-            if (webhookUrl) {
-                await testConnection();
-            }
         } catch (error) {
             console.error('Error saving configuration:', error);
         } finally {
-            setLoading(false);
             setIsSaving(false);
-        }
-    };
-
-    const testConnection = async () => {
-        if (!webhookUrl) return;
-
-        setIsTesting(true);
-        try {
-            await initializeConnection();
-        } catch (error) {
-            console.error('Connection test failed:', error);
-        } finally {
-            setIsTesting(false);
         }
     };
 
@@ -89,40 +66,15 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
         }
     };
 
-    const getConnectionStatusBadge = () => {
-        switch (connectionStatus) {
-            case 'connected':
-                return (
-                    <Badge variant="default" className="bg-green-600">
-                        Connected
-                    </Badge>
-                );
-            case 'connecting':
-                return (
-                    <Badge variant="secondary" className="bg-yellow-600">
-                        Connecting...
-                    </Badge>
-                );
-            case 'error':
-                return <Badge variant="destructive">Error</Badge>;
-            default:
-                return <Badge variant="secondary">Disconnected</Badge>;
-        }
-    };
-
     return (
         <Card className="w-full max-w-2xl">
             <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Settings className="h-5 w-5" />
-                        <CardTitle>Agent Settings</CardTitle>
-                    </div>
-                    {getConnectionStatusBadge()}
+                <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    <CardTitle>Agent Settings</CardTitle>
                 </div>
                 <CardDescription>
-                    Configure your AI agent&apos;s connection to N8N workflow
-                    automation platform
+                    Configure your AI agent&apos;s N8N webhook URL
                 </CardDescription>
             </CardHeader>
 
@@ -144,26 +96,14 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                         </p>
                     </div>
 
-                    <div className="flex gap-2">
-                        <Button
-                            onClick={handleSave}
-                            disabled={isSaving || !webhookUrl}
-                            className="flex items-center gap-2"
-                        >
-                            <Save className="h-4 w-4" />
-                            {isSaving ? 'Saving...' : 'Save Configuration'}
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            onClick={testConnection}
-                            disabled={isTesting || !webhookUrl}
-                            className="flex items-center gap-2"
-                        >
-                            <TestTube className="h-4 w-4" />
-                            {isTesting ? 'Testing...' : 'Test Connection'}
-                        </Button>
-                    </div>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isSaving || !webhookUrl}
+                        className="flex items-center gap-2"
+                    >
+                        <Save className="h-4 w-4" />
+                        {isSaving ? 'Saving...' : 'Save Configuration'}
+                    </Button>
                 </div>
 
                 <Separator />

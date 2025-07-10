@@ -55,13 +55,51 @@ export async function POST(request: NextRequest) {
 
         let responseData;
         try {
-            responseData = await response.json();
-            console.log('N8N Proxy - Success response:', responseData);
-        } catch {
-            // If response is not JSON, treat as text
+            // First read the response as text
             const responseText = await response.text();
-            console.log('N8N Proxy - Non-JSON response:', responseText);
-            responseData = { reply: responseText };
+            console.log('N8N Proxy - Raw response:', responseText);
+            console.log(
+                'N8N Proxy - Raw response length:',
+                responseText.length,
+            );
+            console.log('N8N Proxy - Raw response type:', typeof responseText);
+
+            // Then try to parse it as JSON
+            try {
+                responseData = JSON.parse(responseText);
+                console.log(
+                    'N8N Proxy - Parsed response:',
+                    JSON.stringify(responseData, null, 2),
+                );
+                console.log(
+                    'N8N Proxy - Response keys:',
+                    Object.keys(responseData),
+                );
+
+                // Check for empty reply field
+                if (responseData.reply !== undefined) {
+                    console.log(
+                        'N8N Proxy - Reply field found:',
+                        `"${responseData.reply}"`,
+                    );
+                    console.log(
+                        'N8N Proxy - Reply field length:',
+                        responseData.reply.length,
+                    );
+                    console.log(
+                        'N8N Proxy - Reply field type:',
+                        typeof responseData.reply,
+                    );
+                }
+            } catch (parseError) {
+                // If response is not JSON, treat as text
+                console.log('N8N Proxy - JSON parse error:', parseError);
+                console.log('N8N Proxy - Non-JSON response:', responseText);
+                responseData = { reply: responseText };
+            }
+        } catch (error) {
+            console.error('N8N Proxy - Failed to read response:', error);
+            responseData = { error: 'Failed to read response from N8N' };
         }
 
         return NextResponse.json(responseData);

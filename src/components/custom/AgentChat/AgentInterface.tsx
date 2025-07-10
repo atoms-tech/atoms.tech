@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
@@ -11,29 +11,14 @@ import { useAgentStore } from './hooks/useAgentStore';
 
 interface AgentInterfaceProps {
     className?: string;
-    autoInit?: boolean; // Whether to automatically initialize the connection
 }
 
 export const AgentInterface: React.FC<AgentInterfaceProps> = ({
     className,
-    autoInit = false,
 }) => {
-    const {
-        isOpen,
-        setIsOpen,
-        togglePanel,
-        initializeConnection,
-        connectionStatus,
-    } = useAgentStore();
+    const { isOpen, setIsOpen, togglePanel } = useAgentStore();
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-    // Auto-initialize connection if configured
-    useEffect(() => {
-        if (autoInit && connectionStatus === 'disconnected') {
-            initializeConnection();
-        }
-    }, [autoInit, connectionStatus, initializeConnection]);
 
     const handleToggle = () => {
         togglePanel();

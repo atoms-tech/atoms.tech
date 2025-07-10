@@ -1,6 +1,6 @@
 'use client';
 
-import { Bot, Sparkles, X } from 'lucide-react';
+import { Bot, X } from 'lucide-react';
 import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -20,23 +20,10 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     onClick,
     className,
 }) => {
-    const { messages, isConnected, connectionStatus } = useAgentStore();
+    const { messages } = useAgentStore();
 
     // Count unread messages (for future implementation)
     const unreadCount = 0; // This could be calculated based on read/unread status
-
-    const getStatusText = () => {
-        switch (connectionStatus) {
-            case 'connected':
-                return 'Online';
-            case 'connecting':
-                return 'Connecting...';
-            case 'error':
-                return 'Offline';
-            default:
-                return 'Ready';
-        }
-    };
 
     return (
         <div
@@ -66,43 +53,24 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                         'min-w-[100px] overflow-hidden',
                     )}
                 >
-                    {/* Header with Avatar and Status */}
+                    {/* Header with Avatar */}
                     <div className="flex items-center gap-3 p-4 pb-3">
                         <div className="relative">
                             <div
                                 className={cn(
                                     'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
                                     'bg-gradient-to-br from-blue-500 to-indigo-600 group-hover:from-blue-600 group-hover:to-indigo-700',
-                                    isConnected && 'animate-pulse',
                                 )}
                             >
                                 <Bot className="h-5 w-5 text-white" />
                             </div>
-                            {/* Status indicator */}
-                            <div
-                                className={cn(
-                                    'absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-700 dark:border-white',
-                                    isConnected
-                                        ? 'bg-emerald-500'
-                                        : connectionStatus === 'connecting'
-                                          ? 'bg-amber-500 animate-pulse'
-                                          : connectionStatus === 'error'
-                                            ? 'bg-red-500'
-                                            : 'bg-slate-400',
-                                )}
-                            />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1">
-                                <h3 className="font-semibold text-white dark:text-slate-900 text-sm">
-                                    Agent
-                                </h3>
-                                {isConnected && (
-                                    <Sparkles className="h-3 w-3 text-blue-500 animate-pulse" />
-                                )}
-                            </div>
+                            <h3 className="font-semibold text-white dark:text-slate-900 text-sm">
+                                Agent
+                            </h3>
                             <p className="text-xs text-slate-300 dark:text-slate-500 truncate">
-                                {getStatusText()}
+                                Ready to chat
                             </p>
                         </div>
                     </div>
