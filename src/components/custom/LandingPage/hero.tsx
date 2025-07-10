@@ -80,10 +80,10 @@ export function Hero() {
                         EVERYTHING ELSE
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-blue-500/8 hover:to-blue-600/4 hover:border-blue-400/20 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
                             <div className="flex items-start gap-3 h-full">
-                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-blue-500/20 transition-colors duration-300 flex-shrink-0">
-                                    <MessageSquare className="h-4 w-4 text-gray-300 group-hover:text-blue-200 transition-colors duration-300" />
+                                <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
+                                    <MessageSquare className="h-4 w-4 text-gray-300 transition-colors duration-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-blue-200 transition-colors duration-300">
@@ -97,10 +97,10 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-red-500/8 hover:to-red-600/4 hover:border-red-400/20 hover:scale-105 hover:shadow-lg hover:shadow-red-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
                             <div className="flex items-start gap-3 h-full">
-                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-red-500/20 transition-colors duration-300 flex-shrink-0">
-                                    <Trash2 className="h-4 w-4 text-gray-300 group-hover:text-red-200 transition-colors duration-300" />
+                                <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
+                                    <Trash2 className="h-4 w-4 text-gray-300 transition-colors duration-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-red-200 transition-colors duration-300">
@@ -114,10 +114,10 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-emerald-500/8 hover:to-emerald-600/4 hover:border-emerald-400/20 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
                             <div className="flex items-start gap-3 h-full">
-                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-emerald-500/20 transition-colors duration-300 flex-shrink-0">
-                                    <Code2 className="h-4 w-4 text-gray-300 group-hover:text-emerald-200 transition-colors duration-300" />
+                                <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
+                                    <Code2 className="h-4 w-4 text-gray-300 transition-colors duration-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-emerald-200 transition-colors duration-300">
@@ -131,10 +131,10 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:from-violet-500/8 hover:to-violet-600/4 hover:border-violet-400/20 hover:scale-105 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 rounded-xl px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
                             <div className="flex items-start gap-3 h-full">
-                                <div className="p-2 bg-white/10 rounded-lg group-hover:bg-violet-500/20 transition-colors duration-300 flex-shrink-0">
-                                    <LinkIcon className="h-4 w-4 text-gray-300 group-hover:text-violet-200 transition-colors duration-300" />
+                                <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
+                                    <LinkIcon className="h-4 w-4 text-gray-300 transition-colors duration-300" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="text-gray-200 font-bold text-sm sm:text-base mb-1 group-hover:text-violet-200 transition-colors duration-300">
