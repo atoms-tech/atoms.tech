@@ -12,4 +12,3 @@ build
 .env.production.local
 .env.test.local
 .prettierrc
-bun.lock
