@@ -38,7 +38,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                     onClick={onClick}
                     size="sm"
                     variant="outline"
-                    className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-slate-200 hover:bg-white"
+                    className="rounded-full h-10 w-10 shadow-lg hover:shadow-xl transition-all duration-300 bg-white/90 backdrop-blur-sm border-slate-200 hover:bg-white [&_svg]:pointer-events-auto"
                 >
                     <X className="h-4 w-4 text-slate-600" />
                 </Button>

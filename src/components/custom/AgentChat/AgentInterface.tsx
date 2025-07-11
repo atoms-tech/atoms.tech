@@ -22,12 +22,12 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-    // Auto-initialize the agent interface if autoInit is true
+    // Auto-initialize the agent interface if autoInit is true (only once on mount)
     useEffect(() => {
         if (autoInit && !isOpen) {
             setIsOpen(true);
         }
-    }, [autoInit, isOpen, setIsOpen]);
+    }, [autoInit]); // Remove isOpen and setIsOpen from dependencies
 
     const handleToggle = () => {
         togglePanel();
