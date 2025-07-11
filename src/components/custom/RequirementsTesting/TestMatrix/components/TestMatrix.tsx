@@ -254,7 +254,7 @@ function TestMatrixContent() {
                                 <h2 className="text-lg font-medium">
                                     {mode === 'edit-view'
                                         ? currentView?.name ||
-                                          'Test Matrix View'
+                                          'Test Matrix View - Dummy'
                                         : 'New Test Matrix View'}
                                 </h2>
                                 <div className="flex space-x-2">
