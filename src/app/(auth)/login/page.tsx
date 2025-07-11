@@ -131,7 +131,9 @@ function LoginForm() {
                     <div className="grid grid-cols-2 gap-3">
                         <Button
                             variant="outline"
-                            onClick={() => router.push('/auth/google')}
+                            onClick={() => {
+                                window.location.href = '/auth/google';
+                            }}
                         >
                             <Mail className="mr-2 h-4 w-4" />
                             Google
@@ -139,14 +141,7 @@ function LoginForm() {
                         <Button
                             variant="outline"
                             onClick={() => {
-                                try {
-                                    router.push('/auth/github');
-                                } catch (error) {
-                                    console.error('GitHub OAuth error:', error);
-                                    setError(
-                                        'Failed to connect to GitHub. Please try again.',
-                                    );
-                                }
+                                window.location.href = '/auth/github';
                             }}
                         >
                             <SiGithub className="mr-2 h-4 w-4" />
