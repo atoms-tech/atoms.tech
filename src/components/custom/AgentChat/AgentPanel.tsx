@@ -125,7 +125,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             'webkitSpeechRecognition' in window ||
             'SpeechRecognition' in window
         ) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const SpeechRecognition =
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (window as any).SpeechRecognition ||

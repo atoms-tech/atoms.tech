@@ -27,7 +27,8 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
         if (autoInit && !isOpen) {
             setIsOpen(true);
         }
-    }, [autoInit]); // Remove isOpen and setIsOpen from dependencies
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [autoInit]); // Intentionally exclude isOpen and setIsOpen to prevent auto-reopening
 
     const handleToggle = () => {
         togglePanel();
