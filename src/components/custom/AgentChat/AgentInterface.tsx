@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
@@ -11,14 +11,23 @@ import { useAgentStore } from './hooks/useAgentStore';
 
 interface AgentInterfaceProps {
     className?: string;
+    autoInit?: boolean;
 }
 
 export const AgentInterface: React.FC<AgentInterfaceProps> = ({
     className,
+    autoInit = false,
 }) => {
     const { isOpen, setIsOpen, togglePanel } = useAgentStore();
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Auto-initialize the agent interface if autoInit is true
+    useEffect(() => {
+        if (autoInit && !isOpen) {
+            setIsOpen(true);
+        }
+    }, [autoInit, isOpen, setIsOpen]);
 
     const handleToggle = () => {
         togglePanel();

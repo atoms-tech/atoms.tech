@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
     // Parse the incoming form data
     const formData = await req.formData();
     const file = formData.get('audio') as File;
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     fs.writeFileSync(tempFilePath, Buffer.from(arrayBuffer));
 
     // Call Python Whisper to transcribe the audio
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
         const python = spawn('python', [
             '-m',
             'whisper',
