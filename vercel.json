@@ -2,5 +2,16 @@
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "git": {
         "deploymentEnabled": false
+    },
+    "functions": {
+        "src/app/(protected)/api/n8n-proxy/route.{js,ts}": {
+            "maxDuration": 60
+        },
+        "src/app/(protected)/api/ai/chat/route.{js,ts}": {
+            "maxDuration": 30
+        },
+        "src/app/(protected)/api/**/route.{js,ts}": {
+            "maxDuration": 15
+        }
     }
 }

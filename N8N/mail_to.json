@@ -1,425 +1,473 @@
 {
     "nodes": [
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=If the information cannot be found, return \"email\": null.\n\nUser's request: \"{{ $json.query }}\"\"\n\nAnd here is all user's organization team member.\n\"\"\"\n{{ $json.profiles }}\n\"\"\"\n\nIf the user wants to send an email, and the recipient's name and email can be found from the Conversation History and the User's request, return a JSON file with the following structure:\n[{\n  \"name\": \"the recipient's name\",\n  \"email\": \"the recipient's email\",\n  \"Title\": \"the email subject\",\n  \"Context\": \"the content the user wants to send\"\n}]\n",
-                "hasOutputParser": true,
-                "options": {
-                    "systemMessage": "You must return json format which user requested."
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 2,
-            "position": [1780, 240],
-            "id": "c08fc384-9b42-4078-83e4-9b5395a7bb23",
-            "name": "Agent Sending Message",
-            "alwaysOutputData": true
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=If the information cannot be found, return \"email\": null.\n\nUser's request: \"{{ $json.query }}\"\"\n\nAnd here is all user's organization team member.\n\"\"\"\n{{ $json.profiles }}\n\"\"\"\n\nIf the user wants to send an email, and the recipient's name and email can be found from the Conversation History and the User's request, return a JSON file with the following structure:\n[{\n  \"name\": \"the recipient's name\",\n  \"email\": \"the recipient's email\",\n  \"Title\": \"the email subject\",\n  \"Context\": \"the content the user wants to send\"\n}]\n",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "You must return json format which user requested."
+          }
         },
-        {
-            "parameters": {
-                "sendTo": "={{ $json.email }}",
-                "subject": "={{ $json.Title }}",
-                "emailType": "text",
-                "message": "={{ $json.Context }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.gmail",
-            "typeVersion": 2.1,
-            "position": [2700, 320],
-            "id": "32054bee-1388-4f61-b6d2-3b864bbe31a5",
-            "name": "Gmail",
-            "webhookId": "22813492-1279-4d04-9fe5-3686f0485c42",
-            "credentials": {
-                "gmailOAuth2": {
-                    "id": "MQ8OEt3F7uYZM6PY",
-                    "name": "SONGJEONGJUN320@GMAIL.COM"
-                }
-            }
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          680,
+          -60
+        ],
+        "id": "a8e551e4-756f-4f1d-a5da-5a4c270eea8a",
+        "name": "Agent Sending Message",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Loop over input items and extract JSON from output field\nconst results = [];\n\nfor (const item of $input.all()) {\n  // Extract JSON content from the output field\n  const outputText = item.json.output;\n  \n  // Regular expression to extract content between ```json and ```\n  const jsonMatch = outputText.match(/```json\\n([\\s\\S]*?)\\n```/);\n  \n  if (jsonMatch) {\n    try {\n      // Parse the JSON string\n      const parsedJson = JSON.parse(jsonMatch[1]);\n      \n      // If it's an array, add myNewField to each item\n      if (Array.isArray(parsedJson)) {\n        for (const jsonItem of parsedJson) {\n          jsonItem.myNewField = 1;\n        }\n        results.push(...parsedJson);\n      } else {\n        // If it's a single object\n        parsedJson.myNewField = 1;\n        results.push(parsedJson);\n      }\n    } catch (error) {\n      console.error('JSON parsing error:', error);\n    }\n  }\n}\n\nreturn results;"
         },
-        {
-            "parameters": {
-                "jsCode": "// Loop over input items and extract JSON from output field\nconst results = [];\n\nfor (const item of $input.all()) {\n  // Extract JSON content from the output field\n  const outputText = item.json.output;\n  \n  // Regular expression to extract content between ```json and ```\n  const jsonMatch = outputText.match(/```json\\n([\\s\\S]*?)\\n```/);\n  \n  if (jsonMatch) {\n    try {\n      // Parse the JSON string\n      const parsedJson = JSON.parse(jsonMatch[1]);\n      \n      // If it's an array, add myNewField to each item\n      if (Array.isArray(parsedJson)) {\n        for (const jsonItem of parsedJson) {\n          jsonItem.myNewField = 1;\n        }\n        results.push(...parsedJson);\n      } else {\n        // If it's a single object\n        parsedJson.myNewField = 1;\n        results.push(parsedJson);\n      }\n    } catch (error) {\n      console.error('JSON parsing error:', error);\n    }\n  }\n}\n\nreturn results;"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [2080, 240],
-            "id": "9fd95416-8899-4f86-bfcb-3c06530c1dab",
-            "name": "Extract Email Json",
-            "alwaysOutputData": true
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          980,
+          -60
+        ],
+        "id": "2d0b1beb-13f6-4141-aa20-647fd5c28917",
+        "name": "Extract Email Json",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "name, email, Title, Context",
+          "options": {}
         },
-        {
-            "parameters": {
-                "fieldToSplitOut": "name, email, Title, Context",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitOut",
-            "typeVersion": 1,
-            "position": [2260, 240],
-            "id": "e5e37fce-fcd0-4a1c-ab87-e3139e2cb64c",
-            "name": "Split Out"
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          1160,
+          -60
+        ],
+        "id": "73eaad5f-23d6-4a29-a7b8-3dcac166d255",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "batchSize": 4,
+          "options": {}
         },
-        {
-            "parameters": {
-                "batchSize": 4,
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitInBatches",
-            "typeVersion": 3,
-            "position": [2500, 220],
-            "id": "095783b6-aa29-4243-8f26-686dcdf27dff",
-            "name": "Loop Over Items"
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          1400,
+          -80
+        ],
+        "id": "5070a2b4-1c94-43d1-8495-6547d5282d53",
+        "name": "Loop Over Items"
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-2.5-pro-preview-06-05",
+          "options": {
+            "maxOutputTokens": 2048,
+            "temperature": 0.3,
+            "topP": 0.9
+          }
         },
-        {
-            "parameters": {
-                "modelName": "models/gemini-2.5-pro-preview-06-05",
-                "options": {
-                    "maxOutputTokens": 2048,
-                    "temperature": 0.3,
-                    "topP": 0.9
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-            "typeVersion": 1,
-            "position": [1760, 360],
-            "id": "91e53039-3d74-4baf-adf9-71d778a268a1",
-            "name": "gemini 2.5 06-05",
-            "credentials": {
-                "googlePalmApi": {
-                    "id": "NvCtJOA0rSMuNBnB",
-                    "name": "Google Gemini(PaLM) Api account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "workflowInputs": {
-                    "values": [
-                        {
-                            "name": "query"
-                        }
-                    ]
-                }
-            },
-            "id": "c055762a-8fe7-4141-a639-df2372f30060",
-            "typeVersion": 1.1,
-            "name": "mail_to_from_mcp",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "position": [880, 300]
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=You sent email information below json file.\n\n{{ $('Agent Sending Message').item.json.output }}",
-                "options": {
-                    "systemMessage": "Briefly explain the content of the email you sent and to whom in one output.\n\nAlways write in a highly readable manner. Return markdown."
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 2,
-            "position": [2900, 200],
-            "id": "6c373bef-1d66-4a54-baed-a3a8c48df23c",
-            "name": "AI Agent1",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "modelName": "models/gemini-1.5-pro",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-            "typeVersion": 1,
-            "position": [2940, 340],
-            "id": "36669c27-1fb7-46f1-b2be-5cce8cc555f2",
-            "name": "gemini 1.5 pro",
-            "credentials": {
-                "googlePalmApi": {
-                    "id": "NvCtJOA0rSMuNBnB",
-                    "name": "Google Gemini(PaLM) Api account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsCode": "return {\n  \"reply\": JSON.stringify($json.output)\n}\n"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [3240, 200],
-            "id": "edbefccb-640b-4a22-83fb-bd6c02ccf2bb",
-            "name": "Code"
-        },
-        {
-            "parameters": {
-                "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
-                "height": 360,
-                "width": 400
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [740, 560],
-            "id": "1c292d19-e96a-459e-b3c7-47de3393c6ff",
-            "name": "Sticky Note"
-        },
-        {
-            "parameters": {
-                "operation": "getAll",
-                "tableId": "organization_members",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "organization_id",
-                            "condition": "eq",
-                            "keyValue": "5eafad37-34ab-4221-a8a5-d3d4f5bdb5b9"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [1040, 180],
-            "id": "afdd94e0-1611-4a45-9ee8-a0619d0535e0",
-            "name": "Pull organization members",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "XIA6SCX336tP4RqA",
-                    "name": "ATOMS Supabase"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "fieldToSplitOut": "user_id",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitOut",
-            "typeVersion": 1,
-            "position": [1160, 360],
-            "id": "f85e198c-e314-4c42-8465-eb075bdda8e4",
-            "name": "extract_user_id"
-        },
-        {
-            "parameters": {
-                "operation": "getAll",
-                "tableId": "profiles",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "id",
-                            "condition": "eq",
-                            "keyValue": "={{ $json.user_id }}"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [1280, 180],
-            "id": "a0250405-67f5-4e67-974f-65f42b7f59b4",
-            "name": "Load team member's profile",
-            "credentials": {
-                "supabaseApi": {
-                    "id": "XIA6SCX336tP4RqA",
-                    "name": "ATOMS Supabase"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "fieldToSplitOut": "id, full_name, email",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitOut",
-            "typeVersion": 1,
-            "position": [1400, 360],
-            "id": "01113ea1-bb67-4fa6-96ec-a2716515f097",
-            "name": "extract members' info"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Loop over input items and concatenate id, full_name, email into one string for output\nlet outputString = '';\n\nfor (const item of $input.all()) {\n  outputString += `id: ${item.json.id}, full_name: ${item.json.full_name}, email: ${item.json.email} \\n\\n`;\n}\n\n// Get the 'query' value from the first item of 'mail_to_from_mcp'\nconst query = $('mail_to_from_mcp').first().json.query;\n\n// Return the formatted result\nreturn [\n  {\n    profiles: outputString.trim(), // Concatenate and remove the last unnecessary newline\n    query: query\n  }\n];\n"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [1520, 180],
-            "id": "4b2bc41b-9539-4cff-846e-26f4499fbb7c",
-            "name": "Under one output"
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          660,
+          60
+        ],
+        "id": "3ec58818-31de-4580-ad80-8f1a60b49173",
+        "name": "gemini 2.5 06-05",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "AwJrPOk3HV2bX5Ki",
+            "name": "Google Gemini(PaLM) Api account"
+          }
         }
+      },
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "query"
+              }
+            ]
+          }
+        },
+        "id": "bf94f371-07c5-48b9-82e6-d7460e2c2fc3",
+        "typeVersion": 1.1,
+        "name": "mail_to_from_mcp",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "position": [
+          -220,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=You sent email information below json file.\n\n{{ $('Agent Sending Message').item.json.output }}",
+          "options": {
+            "systemMessage": "Briefly explain the content of the email you sent and to whom in one output.\n\nAlways write in a highly readable manner. Return markdown."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          1800,
+          -100
+        ],
+        "id": "09c54854-db6d-43dc-af66-9f7c78a92504",
+        "name": "AI Agent1",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-1.5-pro",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          1840,
+          40
+        ],
+        "id": "46bce32c-f295-4d30-adf8-cd99504f9f55",
+        "name": "gemini 1.5 pro",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "AwJrPOk3HV2bX5Ki",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "return {\n  \"reply\": JSON.stringify($json.output)\n}\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2140,
+          -100
+        ],
+        "id": "95aab034-f699-48bc-a52e-69c2402f49ac",
+        "name": "Code"
+      },
+      {
+        "parameters": {
+          "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
+          "height": 360,
+          "width": 400
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -360,
+          260
+        ],
+        "id": "fd70849e-6b74-4083-b00e-186c07fe0621",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "organization_members",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "organization_id",
+                "condition": "eq",
+                "keyValue": "5eafad37-34ab-4221-a8a5-d3d4f5bdb5b9"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -60,
+          -120
+        ],
+        "id": "8e9b973d-ce89-4a58-9a7e-f424f58d8045",
+        "name": "Pull organization members",
+        "credentials": {
+          "supabaseApi": {
+            "id": "LDfTyVc5kKgtlyZL",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "user_id",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          60,
+          60
+        ],
+        "id": "95c399eb-f503-4c6f-90df-ecb08e0880c9",
+        "name": "extract_user_id"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "profiles",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $json.user_id }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          180,
+          -120
+        ],
+        "id": "9d490998-201d-499b-8da7-eced46a09401",
+        "name": "Load team member's profile",
+        "credentials": {
+          "supabaseApi": {
+            "id": "LDfTyVc5kKgtlyZL",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "id, full_name, email",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          300,
+          60
+        ],
+        "id": "778efb86-dd53-43d6-9feb-29e4118f5c84",
+        "name": "extract members' info"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Loop over input items and concatenate id, full_name, email into one string for output\nlet outputString = '';\n\nfor (const item of $input.all()) {\n  outputString += `id: ${item.json.id}, full_name: ${item.json.full_name}, email: ${item.json.email} \\n\\n`;\n}\n\n// Get the 'query' value from the first item of 'mail_to_from_mcp'\nconst query = $('mail_to_from_mcp').first().json.query;\n\n// Return the formatted result\nreturn [\n  {\n    profiles: outputString.trim(), // Concatenate and remove the last unnecessary newline\n    query: query\n  }\n];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          420,
+          -120
+        ],
+        "id": "72068596-a81a-401d-b672-b166258f3e4a",
+        "name": "Under one output"
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $json.email }}",
+          "subject": "={{ $json.Title }}",
+          "emailType": "text",
+          "message": "={{ $json.Context }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.1,
+        "position": [
+          1600,
+          20
+        ],
+        "id": "33d0ab9c-86f6-4493-80a8-1ef4dffc1f24",
+        "name": "Send a message",
+        "webhookId": "22813492-1279-4d04-9fe5-3686f0485c42",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "7bmIyLM3bc5aZ4i9",
+            "name": "SONGJEONGJUN320@GMAIL.COM"
+          }
+        }
+      }
     ],
     "connections": {
-        "Agent Sending Message": {
-            "main": [
-                [
-                    {
-                        "node": "Extract Email Json",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Gmail": {
-            "main": [
-                [
-                    {
-                        "node": "Loop Over Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Extract Email Json": {
-            "main": [
-                [
-                    {
-                        "node": "Split Out",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Split Out": {
-            "main": [
-                [
-                    {
-                        "node": "Loop Over Items",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Loop Over Items": {
-            "main": [
-                [
-                    {
-                        "node": "AI Agent1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Gmail",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "gemini 2.5 06-05": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Agent Sending Message",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "mail_to_from_mcp": {
-            "main": [
-                [
-                    {
-                        "node": "Pull organization members",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "AI Agent1": {
-            "main": [
-                [
-                    {
-                        "node": "Code",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "gemini 1.5 pro": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "AI Agent1",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Pull organization members": {
-            "main": [
-                [
-                    {
-                        "node": "extract_user_id",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "extract_user_id": {
-            "main": [
-                [
-                    {
-                        "node": "Load team member's profile",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Load team member's profile": {
-            "main": [
-                [
-                    {
-                        "node": "extract members' info",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "extract members' info": {
-            "main": [
-                [
-                    {
-                        "node": "Under one output",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Under one output": {
-            "main": [
-                [
-                    {
-                        "node": "Agent Sending Message",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+      "Agent Sending Message": {
+        "main": [
+          [
+            {
+              "node": "Extract Email Json",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Email Json": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Loop Over Items": {
+        "main": [
+          [
+            {
+              "node": "AI Agent1",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Send a message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "gemini 2.5 06-05": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agent Sending Message",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "mail_to_from_mcp": {
+        "main": [
+          [
+            {
+              "node": "Pull organization members",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent1": {
+        "main": [
+          [
+            {
+              "node": "Code",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "gemini 1.5 pro": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent1",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Pull organization members": {
+        "main": [
+          [
+            {
+              "node": "extract_user_id",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extract_user_id": {
+        "main": [
+          [
+            {
+              "node": "Load team member's profile",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Load team member's profile": {
+        "main": [
+          [
+            {
+              "node": "extract members' info",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extract members' info": {
+        "main": [
+          [
+            {
+              "node": "Under one output",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Under one output": {
+        "main": [
+          [
+            {
+              "node": "Agent Sending Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send a message": {
+        "main": [
+          [
+            {
+              "node": "Loop Over Items",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
     },
     "pinData": {
-        "mail_to_from_mcp": [
-            {
-                "query": "Send an email to Jun regarding the recent changes and pull request for the requirements documents UI/UX improvements."
-            }
-        ]
+      "mail_to_from_mcp": [
+        {
+          "query": "Send an email to Jun regarding the recent changes and pull request for the requirements documents UI/UX improvements."
+        }
+      ]
     },
     "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "2d2b6c68ebaac87da4ee6e930f60aa5893932f41d2fd67edd543222b8ff72364"
+      "templateCredsSetupCompleted": true,
+      "instanceId": "0d71b622322a5065a1d05eb8df0488a161a137b6ca1d05c8af04e8f6b2d48412"
     }
-}
+  }
