@@ -5,13 +5,16 @@
     },
     "functions": {
         "src/app/(protected)/api/n8n-proxy/route.{js,ts}": {
-            "maxDuration": 60
+            "maxDuration": 120
         },
-        "src/app/(protected)/api/ai/chat/route.{js,ts}": {
+        "src/app/(protected)/api/upload/route.{js,ts}": {
             "maxDuration": 30
         },
+        "src/app/(protected)/api/ocr/route.{js,ts}": {
+            "maxDuration": 20
+        },
         "src/app/(protected)/api/**/route.{js,ts}": {
-            "maxDuration": 15
+            "maxDuration": 10
         }
     }
 }
