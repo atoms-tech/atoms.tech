@@ -13,6 +13,7 @@ interface AgentStore {
     // Panel state
     isOpen: boolean;
     isMinimized: boolean;
+    panelWidth: number;
 
     // Messages
     messages: Message[];
@@ -31,6 +32,7 @@ interface AgentStore {
     // Actions
     setIsOpen: (isOpen: boolean) => void;
     setIsMinimized: (isMinimized: boolean) => void;
+    setPanelWidth: (width: number) => void;
     togglePanel: () => void;
 
     addMessage: (message: Message) => void;
@@ -80,6 +82,7 @@ export const useAgentStore = create<AgentStore>()(
             // Initial state
             isOpen: false,
             isMinimized: false,
+            panelWidth: 400,
             messages: [],
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
@@ -87,6 +90,7 @@ export const useAgentStore = create<AgentStore>()(
             // Actions
             setIsOpen: (isOpen: boolean) => set({ isOpen }),
             setIsMinimized: (isMinimized: boolean) => set({ isMinimized }),
+            setPanelWidth: (width: number) => set({ panelWidth: width }),
             togglePanel: () => set((state) => ({ isOpen: !state.isOpen })),
 
             addMessage: (message: Message) =>
@@ -201,6 +205,7 @@ export const useAgentStore = create<AgentStore>()(
                 })),
                 n8nWebhookUrl: state.n8nWebhookUrl,
                 isMinimized: state.isMinimized,
+                panelWidth: state.panelWidth,
             }),
             onRehydrateStorage: () => (state) => {
                 if (state?.messages) {

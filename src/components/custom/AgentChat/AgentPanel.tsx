@@ -11,7 +11,7 @@ import {
     Settings,
     X,
 } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
 // import jsPDF from 'jspdf'; // Commented out due to missing dependency
@@ -47,15 +47,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 }) => {
     const [message, setMessage] = useState('');
     const [isListening, setIsListening] = useState(false);
-
     const [isLoading, setIsLoading] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(false);
     const [showPinGuide, setShowPinGuide] = useState(false);
+
+    // Resizable panel state
+    const [isResizing, setIsResizing] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [startWidth, setStartWidth] = useState(0);
+
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognitionRef = useRef<any>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastMessageRef = useRef<HTMLDivElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
 
     const {
         messages,
@@ -70,9 +76,68 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         currentPinnedOrganizationId,
         currentUsername,
         setUserContext,
+        panelWidth,
+        setPanelWidth,
     } = useAgentStore();
 
     const { user, profile } = useUser();
+
+    // Load saved panel width from localStorage
+    useEffect(() => {
+        const savedWidth = localStorage.getItem('agentPanelWidth');
+        if (savedWidth) {
+            const width = parseInt(savedWidth, 10);
+            if (width >= 300 && width <= 800) {
+                setPanelWidth(width);
+            }
+        }
+    }, [setPanelWidth]);
+
+    // Save panel width to localStorage
+    useEffect(() => {
+        localStorage.setItem('agentPanelWidth', panelWidth.toString());
+    }, [panelWidth]);
+
+    // Resize handlers
+    const handleResizeStart = useCallback(
+        (e: React.MouseEvent) => {
+            setIsResizing(true);
+            setStartX(e.clientX);
+            setStartWidth(panelWidth);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        },
+        [panelWidth],
+    );
+
+    const handleResizeMove = useCallback(
+        (e: MouseEvent) => {
+            if (!isResizing) return;
+
+            const deltaX = startX - e.clientX;
+            const newWidth = Math.max(300, Math.min(800, startWidth + deltaX));
+            setPanelWidth(newWidth);
+        },
+        [isResizing, startX, startWidth, setPanelWidth],
+    );
+
+    const handleResizeEnd = useCallback(() => {
+        setIsResizing(false);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    }, []);
+
+    // Mouse event listeners for resize
+    useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleResizeMove);
+            document.addEventListener('mouseup', handleResizeEnd);
+            return () => {
+                document.removeEventListener('mousemove', handleResizeMove);
+                document.removeEventListener('mouseup', handleResizeEnd);
+            };
+        }
+    }, [isResizing, handleResizeMove, handleResizeEnd]);
 
     // Set user context when component mounts
     useEffect(() => {
@@ -381,98 +446,109 @@ ${'='.repeat(50)}
             {/* Backdrop */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+                    className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
                     onClick={onClose}
                 />
             )}
             {/* Panel */}
             <div
+                ref={panelRef}
                 className={cn(
-                    'fixed right-0 top-0 h-full bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl z-50 transition-all duration-300 ease-out flex flex-col',
+                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-xl z-50 transition-all duration-300 ease-out flex flex-col',
                     isOpen ? 'translate-x-0' : 'translate-x-full',
-                    'w-[450px] md:w-[500px] lg:w-[550px]',
                 )}
+                style={{ width: `${panelWidth}px` }}
             >
+                {/* Resize Handle */}
+                <div
+                    className="absolute left-0 top-0 w-1 h-full cursor-col-resize hover:w-2 transition-all z-10 group bg-zinc-300 dark:bg-zinc-600 hover:bg-blue-500 dark:hover:bg-blue-400"
+                    onMouseDown={handleResizeStart}
+                >
+                    {/* Visual indicator for resize */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-zinc-400 dark:bg-zinc-500 rounded-full group-hover:bg-blue-600 dark:group-hover:bg-blue-300 transition-colors" />
+                </div>
+
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-blue-500/10 dark:bg-blue-400/10">
-                            <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
+                        <MessageSquare className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
                         <div>
-                            <h2 className="font-bold text-slate-900 dark:text-slate-100 text-lg">
-                                AI Agent
+                            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                Agent Chat
                             </h2>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                AI Assistant
+                            </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={downloadChatHistory}
                             disabled={messages.length === 0}
-                            className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             title="Download as TXT"
                         >
-                            <Download className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                            <Download className="h-4 w-4" />
                         </Button>
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={downloadChatHistoryPDF}
                             disabled={messages.length === 0}
-                            className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             title="Download as PDF"
                         >
-                            <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                            <FileText className="h-4 w-4" />
                         </Button>
                         {onSettingsClick && (
                             <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"
                                 onClick={onSettingsClick}
-                                className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                             >
-                                <Settings className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                <Settings className="h-4 w-4" />
                             </Button>
                         )}
                         <Button
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={onClose}
-                            className="h-9 w-9 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors [&_svg]:pointer-events-auto"
+                            className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                         >
-                            <X className="h-4 w-4 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400" />
+                            <X className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
+
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-6 bg-slate-50/50 dark:bg-slate-900/50">
+                <ScrollArea className="flex-1 bg-zinc-50 dark:bg-zinc-900/50">
                     <ScrollAreaPrimitive.Viewport
                         ref={scrollAreaRef}
                         className="h-full w-full rounded-[inherit]"
                     >
-                        <div className="space-y-6">
+                        <div className="p-4 space-y-4">
                             {showPinGuide && (
                                 <div className="flex justify-center">
-                                    <Card className="bg-yellow-100 text-yellow-900 p-3 border border-yellow-300">
-                                        <p className="text-sm">
+                                    <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 p-3">
+                                        <p className="text-sm text-amber-800 dark:text-amber-200">
                                             Please pin an organization in your
                                             profile settings before using the
-                                            agent. After pinning, try sending
-                                            your message again.
+                                            agent.
                                         </p>
                                     </Card>
                                 </div>
                             )}
                             {messages.length === 0 ? (
-                                <div className="text-center text-muted-foreground py-8">
-                                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="text-sm">
-                                        Start a conversation with the AI agent
+                                <div className="text-center py-8">
+                                    <MessageSquare className="h-8 w-8 mx-auto mb-3 text-zinc-400 dark:text-zinc-500" />
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                        Start a conversation
                                     </p>
-                                    <p className="text-xs mt-1">
-                                        Type a message or use voice input
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-500 mt-1">
+                                        Type a message below to get started
                                     </p>
                                 </div>
                             ) : (
@@ -485,80 +561,62 @@ ${'='.repeat(50)}
                                                 : undefined
                                         }
                                         className={cn(
-                                            'flex gap-3',
+                                            'flex',
                                             msg.role === 'user'
                                                 ? 'justify-end'
                                                 : 'justify-start',
                                         )}
                                     >
-                                        <Card
+                                        <div
                                             className={cn(
-                                                'max-w-[85%] p-4 shadow-lg border-0 transition-all duration-200',
+                                                'max-w-[80%] p-3 rounded-lg',
                                                 msg.role === 'user'
-                                                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl rounded-br-md ml-auto'
-                                                    : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700',
+                                                    ? 'bg-blue-500 text-white'
+                                                    : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
-                                                // User message - clean and simple
-                                                <div className="text-sm leading-relaxed font-medium">
-                                                    <p className="whitespace-pre-wrap">
-                                                        {msg.content}
-                                                    </p>
-                                                </div>
+                                                <p className="text-sm">
+                                                    {msg.content}
+                                                </p>
                                             ) : (
-                                                // Agent message - professional and readable
-                                                <div className="text-sm font-mono prose prose-sm dark:prose-invert max-w-none leading-relaxed">
+                                                <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                                                     <ReactMarkdown
                                                         components={{
                                                             p: ({
                                                                 children,
                                                             }) => (
-                                                                <p className="mb-3 last:mb-0 leading-relaxed text-slate-700 dark:text-slate-300">
+                                                                <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300">
                                                                     {children}
                                                                 </p>
                                                             ),
                                                             strong: ({
                                                                 children,
                                                             }) => (
-                                                                <strong className="font-bold text-slate-900 dark:text-slate-100">
+                                                                <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
                                                                     {children}
                                                                 </strong>
                                                             ),
-                                                            em: ({
+                                                            code: ({
                                                                 children,
                                                             }) => (
-                                                                <em className="italic text-slate-600 dark:text-slate-400">
+                                                                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-xs">
                                                                     {children}
-                                                                </em>
+                                                                </code>
                                                             ),
                                                             ul: ({
                                                                 children,
                                                             }) => (
-                                                                <ul className="list-disc ml-5 mb-3 space-y-1 text-slate-700 dark:text-slate-300">
+                                                                <ul className="list-disc ml-4 space-y-1">
                                                                     {children}
                                                                 </ul>
                                                             ),
                                                             ol: ({
                                                                 children,
                                                             }) => (
-                                                                <ol className="list-decimal ml-5 mb-3 space-y-1 text-slate-700 dark:text-slate-300">
+                                                                <ol className="list-decimal ml-4 space-y-1">
                                                                     {children}
                                                                 </ol>
-                                                            ),
-                                                            li: ({
-                                                                children,
-                                                            }) => (
-                                                                <li className="mb-1 leading-relaxed">
-                                                                    {children}
-                                                                </li>
-                                                            ),
-                                                            code: ({
-                                                                children,
-                                                            }) => (
-                                                                <code className="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-1 rounded-md text-xs font-mono">
-                                                                    {children}
-                                                                </code>
                                                             ),
                                                         }}
                                                     >
@@ -566,39 +624,33 @@ ${'='.repeat(50)}
                                                     </ReactMarkdown>
                                                 </div>
                                             )}
-                                            <p
-                                                className={cn(
-                                                    'text-xs mt-3 pt-3 border-t font-medium',
-                                                    msg.role === 'user'
-                                                        ? 'text-blue-100 border-blue-400/30'
-                                                        : 'text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-600',
-                                                )}
-                                            >
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                                                 {msg.timestamp.toLocaleTimeString()}
                                                 {msg.type === 'voice' && ' 🎤'}
                                             </p>
-                                        </Card>
+                                        </div>
                                     </div>
                                 ))
                             )}
                             {isLoading && (
                                 <div className="flex justify-start">
-                                    <Card className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl rounded-bl-md shadow-sm border border-slate-200 dark:border-slate-700 p-4 max-w-[85%]">
-                                        <div className="flex items-center gap-3 font-mono">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-200 dark:border-blue-800 border-t-blue-500 dark:border-t-blue-400"></div>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                                                AI is thinking...
+                                    <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-zinc-300 dark:border-zinc-600 border-t-blue-500"></div>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                                Thinking...
                                             </p>
                                         </div>
-                                    </Card>
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </ScrollAreaPrimitive.Viewport>
                 </ScrollArea>
+
                 {/* Input Area */}
-                <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
-                    <div className="flex gap-3">
+                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <div className="flex gap-2">
                         <div className="flex-1 relative">
                             <Textarea
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -610,44 +662,44 @@ ${'='.repeat(50)}
                                     )
                                 }
                                 onKeyDown={handleKeyPress}
-                                placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
-                                className="min-h-[48px] max-h-[200px] resize-none pr-10 rounded-xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                                placeholder="Type your message..."
+                                className="min-h-[40px] max-h-[120px] resize-none border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
                                 disabled={isLoading}
                             />
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant={isListening ? 'destructive' : 'ghost'}
-                                className={cn(
-                                    'absolute right-6 top-2 h-8 w-8 rounded-lg transition-colors',
-                                    isListening
-                                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                                        : 'hover:bg-slate-100 dark:hover:bg-slate-600',
-                                )}
-                                onClick={toggleVoiceInput}
-                                disabled={isLoading || !speechSupported}
-                            >
-                                {isListening ? (
-                                    <MicOff className="h-4 w-4" />
-                                ) : (
-                                    <Mic className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                                )}
-                            </Button>
+                            {speechSupported && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    className={cn(
+                                        'absolute right-2 top-2 h-6 w-6 rounded-md',
+                                        isListening
+                                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                            : 'hover:bg-zinc-100 dark:hover:bg-zinc-700',
+                                    )}
+                                    onClick={toggleVoiceInput}
+                                    disabled={isLoading}
+                                >
+                                    {isListening ? (
+                                        <MicOff className="h-4 w-4" />
+                                    ) : (
+                                        <Mic className="h-4 w-4" />
+                                    )}
+                                </Button>
+                            )}
                         </div>
                         <Button
                             onClick={handleSendMessage}
                             disabled={!message.trim() || isLoading}
-                            className="h-[48px] px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="h-10 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
                         >
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 px-1">
-                        {speechSupported
-                            ? isListening
-                                ? '🎤 Listening... Click the microphone again to stop.'
-                                : '💬 Type or click the microphone for voice input.'
-                            : '⚠️ Voice input not supported in this browser.'}
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                        {isListening
+                            ? 'Listening...'
+                            : 'Press Enter to send, Shift+Enter for new line'}
                     </p>
                 </div>
             </div>
