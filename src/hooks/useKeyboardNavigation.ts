@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
+// Import the agent store for toggle functionality
+import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
+
 export interface KeyboardShortcut {
     key: string;
     ctrlKey?: boolean;
@@ -37,7 +40,10 @@ export function useKeyboardNavigation(
         enableEscapeHandling = true,
     } = options;
 
-    // Toggle help dialog with Shift + ?
+    // Get the agent store toggle function
+    const { togglePanel } = useAgentStore();
+
+    // Toggle help dialog - kept for backward compatibility but not triggered by keyboard shortcut
     const toggleHelp = useCallback(() => {
         setIsHelpVisible((prev) => !prev);
     }, []);
@@ -153,8 +159,15 @@ export function useKeyboardNavigation(
     // Main keyboard event handler
     const handleKeyDown = useCallback(
         (event: KeyboardEvent) => {
-            // Handle Shift + ? for help
-            if (event.shiftKey && event.key === '?') {
+            // Handle Ctrl + L to toggle agent chat panel
+            if (event.ctrlKey && event.key === 'l') {
+                event.preventDefault();
+                togglePanel();
+                return;
+            }
+
+            // Handle Ctrl + / to toggle help dialog
+            if (event.ctrlKey && event.key === '/') {
                 event.preventDefault();
                 toggleHelp();
                 return;
@@ -226,6 +239,7 @@ export function useKeyboardNavigation(
             enableEscapeHandling,
             isHelpVisible,
             shortcuts,
+            togglePanel,
             toggleHelp,
             handleArrowNavigation,
         ],
@@ -285,6 +299,15 @@ export const defaultKeyboardShortcuts: KeyboardShortcut[] = [
         category: 'Navigation',
     },
     {
+        key: 'l',
+        ctrlKey: true,
+        description: 'Toggle agent chat panel',
+        action: () => {
+            // This is handled directly in the hook
+        },
+        category: 'Navigation',
+    },
+    {
         key: 'n',
         ctrlKey: true,
         description: 'Create new document',
@@ -331,8 +354,8 @@ export const defaultKeyboardShortcuts: KeyboardShortcut[] = [
         category: 'Navigation',
     },
     {
-        key: '?',
-        shiftKey: true,
+        key: '/',
+        ctrlKey: true,
         description: 'Show keyboard shortcuts',
         action: () => {
             // This is handled directly in the hook
