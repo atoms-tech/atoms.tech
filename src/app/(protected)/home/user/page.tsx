@@ -171,7 +171,7 @@ export default function UserDashboard() {
         };
 
         if (user?.id) fetchPinnedOrg();
-    }, [user?.id, profile, setUserContext]);
+    }, [user?.id, user?.email, profile, setUserContext]);
 
     // Handle pinning an organization
     const handlePinOrganization = useCallback(
