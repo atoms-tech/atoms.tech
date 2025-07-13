@@ -9,14 +9,19 @@ interface Message {
     type?: 'text' | 'voice';
 }
 
+// Organization-specific messages structure
+interface OrganizationMessages {
+    [orgId: string]: Message[];
+}
+
 interface AgentStore {
     // Panel state
     isOpen: boolean;
     isMinimized: boolean;
     panelWidth: number;
 
-    // Messages
-    messages: Message[];
+    // Messages - now organized by organization
+    organizationMessages: OrganizationMessages;
 
     // Hydration state - critical for preventing data loss on refresh
     _hasHydrated: boolean;
@@ -38,8 +43,12 @@ interface AgentStore {
     setPanelWidth: (width: number) => void;
     togglePanel: () => void;
 
+    // Organization-specific message methods
     addMessage: (message: Message) => void;
     clearMessages: () => void;
+    clearAllOrganizationMessages: () => void;
+    getMessagesForCurrentOrg: () => Message[];
+    getMessagesForOrg: (orgId: string) => Message[];
 
     // Hydration actions
     setHasHydrated: (hydrated: boolean) => void;
@@ -60,7 +69,6 @@ interface AgentStore {
     ) => Promise<Record<string, unknown>>;
 }
 
-// Add pinnedOrganizationId to SecureUserContext
 type _PinnedOrganizationId = string | undefined;
 
 interface SecureUserContext {
@@ -99,8 +107,8 @@ export const debugAgentStore = () => {
             const parsed = JSON.parse(stored);
             console.log('AgentStore Debug - Parsed localStorage data:', parsed);
             console.log(
-                'AgentStore Debug - Messages in localStorage:',
-                parsed.state?.messages?.length || 0,
+                'AgentStore Debug - Organization messages in localStorage:',
+                Object.keys(parsed.state?.organizationMessages || {}).length,
             );
         } catch (error) {
             console.error(
@@ -120,7 +128,7 @@ export const useAgentStore = create<AgentStore>()(
             isOpen: false,
             isMinimized: false,
             panelWidth: 400,
-            messages: [],
+            organizationMessages: {},
             _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
@@ -131,12 +139,62 @@ export const useAgentStore = create<AgentStore>()(
             setPanelWidth: (width: number) => set({ panelWidth: width }),
             togglePanel: () => set((state) => ({ isOpen: !state.isOpen })),
 
-            addMessage: (message: Message) =>
-                set((state) => ({
-                    messages: [...state.messages, message],
-                })),
+            // Organization-specific message methods
+            addMessage: (message: Message) => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) {
+                    console.warn(
+                        'No pinned organization ID available for message',
+                    );
+                    return;
+                }
 
-            clearMessages: () => set({ messages: [] }),
+                set((state) => ({
+                    organizationMessages: {
+                        ...state.organizationMessages,
+                        [currentPinnedOrganizationId]: [
+                            ...(state.organizationMessages[
+                                currentPinnedOrganizationId
+                            ] || []),
+                            message,
+                        ],
+                    },
+                }));
+            },
+
+            clearMessages: () => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) {
+                    console.warn(
+                        'No pinned organization ID available for clearing messages',
+                    );
+                    return;
+                }
+
+                set((state) => ({
+                    organizationMessages: {
+                        ...state.organizationMessages,
+                        [currentPinnedOrganizationId]: [],
+                    },
+                }));
+            },
+
+            clearAllOrganizationMessages: () =>
+                set({ organizationMessages: {} }),
+
+            getMessagesForCurrentOrg: () => {
+                const { currentPinnedOrganizationId, organizationMessages } =
+                    get();
+                if (!currentPinnedOrganizationId) {
+                    return [];
+                }
+                return organizationMessages[currentPinnedOrganizationId] || [];
+            },
+
+            getMessagesForOrg: (orgId: string) => {
+                const { organizationMessages } = get();
+                return organizationMessages[orgId] || [];
+            },
 
             setHasHydrated: (hydrated: boolean) =>
                 set({ _hasHydrated: hydrated }),
@@ -240,28 +298,101 @@ export const useAgentStore = create<AgentStore>()(
             // Persist the store to the browser's localStorage
             name: 'agent-store',
             partialize: (state) => ({
-                messages: state.messages.map((msg) => ({
-                    ...msg,
-                    timestamp: msg.timestamp.toISOString(),
-                })),
+                organizationMessages: Object.fromEntries(
+                    Object.entries(state.organizationMessages).map(
+                        ([orgId, messages]) => [
+                            orgId,
+                            messages.map((msg) => ({
+                                ...msg,
+                                timestamp: msg.timestamp.toISOString(),
+                            })),
+                        ],
+                    ),
+                ),
                 n8nWebhookUrl: state.n8nWebhookUrl,
                 isMinimized: state.isMinimized,
                 panelWidth: state.panelWidth,
             }),
             onRehydrateStorage: () => (state) => {
                 console.log('AgentStore - onRehydrateStorage called');
-                if (state?.messages) {
+
+                // Migration: Check if old messages format exists
+                const localStorage =
+                    typeof window !== 'undefined' ? window.localStorage : null;
+                if (localStorage) {
+                    const stored = localStorage.getItem('agent-store');
+                    if (stored) {
+                        try {
+                            const parsed = JSON.parse(stored);
+                            // Check if old messages format exists (messages array instead of organizationMessages)
+                            if (
+                                parsed.state?.messages &&
+                                Array.isArray(parsed.state.messages) &&
+                                !parsed.state?.organizationMessages &&
+                                state?.currentPinnedOrganizationId
+                            ) {
+                                console.log(
+                                    'AgentStore - Migrating old messages format to organization-based format',
+                                );
+
+                                // Convert old messages to organization format
+                                const oldMessages = parsed.state.messages.map(
+                                    (msg: {
+                                        timestamp: string | Date;
+                                        [key: string]: unknown;
+                                    }) => ({
+                                        ...msg,
+                                        timestamp: new Date(
+                                            msg.timestamp || msg.timestamp,
+                                        ),
+                                    }),
+                                );
+
+                                // Assign old messages to current pinned organization
+                                if (state.organizationMessages) {
+                                    state.organizationMessages[
+                                        state.currentPinnedOrganizationId
+                                    ] = oldMessages;
+                                } else {
+                                    state.organizationMessages = {
+                                        [state.currentPinnedOrganizationId]:
+                                            oldMessages,
+                                    };
+                                }
+
+                                console.log(
+                                    `AgentStore - Migrated ${oldMessages.length} messages to organization ${state.currentPinnedOrganizationId}`,
+                                );
+                            }
+                        } catch (error) {
+                            console.error(
+                                'AgentStore - Error during migration:',
+                                error,
+                            );
+                        }
+                    }
+                }
+
+                if (state?.organizationMessages) {
                     console.log(
-                        'AgentStore - Restoring messages from localStorage:',
-                        state.messages.length,
+                        'AgentStore - Restoring organization messages from localStorage:',
+                        Object.keys(state.organizationMessages).length,
                     );
-                    state.messages = state.messages.map((msg) => ({
-                        ...msg,
-                        timestamp: new Date(msg.timestamp),
-                    }));
+                    // Convert timestamp strings back to Date objects
+                    state.organizationMessages = Object.fromEntries(
+                        Object.entries(state.organizationMessages).map(
+                            ([orgId, messages]) => [
+                                orgId,
+                                messages.map((msg) => ({
+                                    ...msg,
+                                    timestamp: new Date(msg.timestamp),
+                                })),
+                            ],
+                        ),
+                    );
                 } else {
                     console.log(
-                        'AgentStore - No messages found in localStorage',
+                        'AgentStore - No organization messages found in localStorage',
                     );
                 }
                 // Set hydration flag after localStorage data is restored

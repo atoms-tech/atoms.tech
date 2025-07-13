@@ -28,6 +28,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
         n8nWebhookUrl,
         setN8nConfig,
         clearMessages,
+        clearAllOrganizationMessages,
         setUserContext,
         currentOrgId,
         currentPinnedOrganizationId,
@@ -152,10 +153,20 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
     const handleClearMessages = () => {
         if (
             confirm(
-                'Are you sure you want to clear all chat messages? This action cannot be undone.',
+                'Are you sure you want to clear all chat messages for the current organization? This action cannot be undone.',
             )
         ) {
             clearMessages();
+        }
+    };
+
+    const handleClearAllMessages = () => {
+        if (
+            confirm(
+                'Are you sure you want to clear all chat messages for ALL organizations? This action cannot be undone.',
+            )
+        ) {
+            clearAllOrganizationMessages();
         }
     };
 
@@ -295,14 +306,24 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                         </p>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        onClick={handleClearMessages}
-                        className="flex items-center gap-2 text-destructive hover:text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        Clear All Messages
-                    </Button>
+                    <div className="space-y-2">
+                        <Button
+                            variant="outline"
+                            onClick={handleClearMessages}
+                            className="flex items-center gap-2 text-destructive hover:text-destructive w-full"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Clear Current Organization Messages
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleClearAllMessages}
+                            className="flex items-center gap-2 text-destructive hover:text-destructive w-full"
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            Clear All Organization Messages
+                        </Button>
+                    </div>
                 </div>
 
                 <Separator />

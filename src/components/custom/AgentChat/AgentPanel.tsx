@@ -64,7 +64,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const panelRef = useRef<HTMLDivElement>(null);
 
     const {
-        messages,
         addMessage,
         clearMessages: _clearMessages,
         sendToN8n,
@@ -80,7 +79,18 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         setPanelWidth,
         _hasHydrated,
         setHasHydrated,
+        getMessagesForCurrentOrg,
     } = useAgentStore();
+
+    // Get messages for current organization
+    const messages = getMessagesForCurrentOrg();
+
+    // Auto-scroll to bottom when messages change or organization changes
+    useEffect(() => {
+        if (lastMessageRef.current) {
+            lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [messages, currentPinnedOrganizationId]);
 
     const { user, profile } = useUser();
 
@@ -201,11 +211,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         }
     }, [messages]);
 
-    useEffect(() => {
-        if (lastMessageRef.current) {
-            lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages]);
+    // This useEffect is now merged with the one above
 
     // Web Speech API initialization
     useEffect(() => {

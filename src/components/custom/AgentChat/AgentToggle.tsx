@@ -19,7 +19,8 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     onClick,
     className,
 }) => {
-    const { messages } = useAgentStore();
+    const { getMessagesForCurrentOrg } = useAgentStore();
+    const messages = getMessagesForCurrentOrg();
 
     // Count unread messages (for future implementation)
     const unreadCount = 0; // This could be calculated based on read/unread status
