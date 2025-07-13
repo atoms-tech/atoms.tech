@@ -79,11 +79,30 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         setPanelWidth,
         _hasHydrated,
         setHasHydrated,
-        getMessagesForCurrentOrg,
+        organizationMessages,
     } = useAgentStore();
 
-    // Get messages for current organization
-    const messages = getMessagesForCurrentOrg();
+    // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
+    const messages = React.useMemo(() => {
+        if (!currentPinnedOrganizationId) {
+            console.log('AgentPanel - No pinned organization ID available');
+            return [];
+        }
+        const orgMessages =
+            organizationMessages[currentPinnedOrganizationId] || [];
+        console.log(
+            `AgentPanel - Loading ${orgMessages.length} messages for organization ${currentPinnedOrganizationId}`,
+        );
+        return orgMessages;
+    }, [currentPinnedOrganizationId, organizationMessages]);
+
+    // Debug: Log when pinned organization changes
+    useEffect(() => {
+        console.log(
+            'AgentPanel - Pinned organization changed to:',
+            currentPinnedOrganizationId,
+        );
+    }, [currentPinnedOrganizationId]);
 
     // Auto-scroll to bottom when messages change or organization changes
     useEffect(() => {

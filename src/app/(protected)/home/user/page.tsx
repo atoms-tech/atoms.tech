@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import UserInvitations from '@/app/(protected)/user/components/UserInvitations.client'; // Import UserInvitations
 import { CreatePanel } from '@/components/base/panels/CreatePanel';
+import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -38,6 +39,7 @@ export default function UserDashboard() {
     const { setCurrentOrganization } = useOrganization();
     const { data: allInvitations } = useOrgInvitation(user?.email || '');
     const queryClient = useQueryClient();
+    const { setUserContext } = useAgentStore();
 
     const refetchOrganizations = useCallback(() => {
         queryClient.invalidateQueries({
@@ -120,6 +122,17 @@ export default function UserDashboard() {
                     if (data.pinned_organization_id) {
                         // If a pinned organization exists, set it
                         setPinnedOrgId(data.pinned_organization_id);
+
+                        // Update Agent Store context
+                        setUserContext({
+                            userId: user?.id || undefined,
+                            orgId: data.pinned_organization_id || undefined,
+                            pinnedOrganizationId:
+                                data.pinned_organization_id || undefined,
+                            username:
+                                profile?.full_name ||
+                                user?.email?.split('@')[0],
+                        });
                     } else if (data.personal_organization_id) {
                         // If no pinned organization, set it to personal_organization_id by default
                         const { error: updateError } = await supabase
@@ -132,6 +145,18 @@ export default function UserDashboard() {
 
                         if (!updateError) {
                             setPinnedOrgId(data.personal_organization_id);
+
+                            // Update Agent Store context
+                            setUserContext({
+                                userId: user?.id || undefined,
+                                orgId:
+                                    data.personal_organization_id || undefined,
+                                pinnedOrganizationId:
+                                    data.personal_organization_id || undefined,
+                                username:
+                                    profile?.full_name ||
+                                    user?.email?.split('@')[0],
+                            });
                         } else {
                             console.error(
                                 'Error updating pinned organization:',
@@ -146,7 +171,7 @@ export default function UserDashboard() {
         };
 
         if (user?.id) fetchPinnedOrg();
-    }, [user?.id]);
+    }, [user?.id, profile, setUserContext]);
 
     // Handle pinning an organization
     const handlePinOrganization = useCallback(
@@ -175,6 +200,15 @@ export default function UserDashboard() {
 
                 if (!updateError) {
                     setPinnedOrgId(newPinnedOrgId);
+
+                    // Update Agent Store context
+                    setUserContext({
+                        userId: user?.id || undefined,
+                        orgId: newPinnedOrgId || undefined, // Current organization ID
+                        pinnedOrganizationId: newPinnedOrgId || undefined,
+                        username:
+                            profile?.full_name || user?.email?.split('@')[0],
+                    });
                 } else {
                     console.error(
                         'Error updating pinned organization:',
@@ -185,7 +219,7 @@ export default function UserDashboard() {
                 console.error('Unexpected error:', err);
             }
         },
-        [user?.email, pinnedOrgId],
+        [user?.email, user?.id, pinnedOrgId, profile, setUserContext],
     );
 
     // Ensure the pinned organization is displayed first

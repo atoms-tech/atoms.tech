@@ -19,8 +19,16 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     onClick,
     className,
 }) => {
-    const { getMessagesForCurrentOrg } = useAgentStore();
-    const messages = getMessagesForCurrentOrg();
+    const { currentPinnedOrganizationId, organizationMessages } =
+        useAgentStore();
+
+    // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
+    const messages = React.useMemo(() => {
+        if (!currentPinnedOrganizationId) {
+            return [];
+        }
+        return organizationMessages[currentPinnedOrganizationId] || [];
+    }, [currentPinnedOrganizationId, organizationMessages]);
 
     // Count unread messages (for future implementation)
     const unreadCount = 0; // This could be calculated based on read/unread status
