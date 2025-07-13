@@ -14,8 +14,8 @@ const envSchema = z.object({
     NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
 
     // Supabase Configuration
-    NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
 
     // Optional API Keys (can be undefined in development)
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().optional(),
@@ -28,6 +28,9 @@ const envSchema = z.object({
 
     NEXT_PUBLIC_CHUNKR_API_KEY: z.string().optional(),
     NEXT_PUBLIC_CHUNKR_API_URL: z.string().url().optional(),
+
+    // N8N Configuration
+    NEXT_PUBLIC_N8N_WEBHOOK_URL: z.string().url().optional(),
 
     // Email Configuration (server-side only)
     RESEND_API_KEY: z.string().optional(),
@@ -71,6 +74,8 @@ const envSchema = z.object({
 // Production-specific schema
 const productionEnvSchema = envSchema.extend({
     // In production, these should be required
+    NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().min(1),
     NEXT_PUBLIC_GUMLOOP_USER_ID: z.string().min(1),
     NEXT_PUBLIC_CHUNKR_API_KEY: z.string().min(1),
@@ -103,12 +108,19 @@ export function validateEnv(): EnvConfig {
             // In production, fail hard
             process.exit(1);
         } else {
-            // In development, warn but continue
+            // In development, warn but continue with safe parsing
             console.warn(
                 '⚠️  Continuing with invalid environment in development mode',
             );
-            // Return partial config for development
-            return envSchema.parse(env);
+
+            // Try to parse with the development schema (which has optional Supabase vars)
+            const result = envSchema.safeParse(env);
+            if (result.success) {
+                return result.data;
+            } else {
+                // If still fails, throw the original error
+                throw error;
+            }
         }
     }
 }
@@ -143,8 +155,8 @@ export const isFeatureEnabled = {
  */
 export const apiConfig = {
     supabase: {
-        url: env.NEXT_PUBLIC_SUPABASE_URL,
-        anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        url: env.NEXT_PUBLIC_SUPABASE_URL || '',
+        anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
     },
     gumloop: {
         apiKey: env.NEXT_PUBLIC_GUMLOOP_API_KEY,
@@ -163,6 +175,9 @@ export const apiConfig = {
         apiKey: env.NEXT_PUBLIC_CHUNKR_API_KEY,
         apiUrl:
             env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1',
+    },
+    n8n: {
+        webhookUrl: env.NEXT_PUBLIC_N8N_WEBHOOK_URL,
     },
     email: {
         apiKey: env.RESEND_API_KEY,

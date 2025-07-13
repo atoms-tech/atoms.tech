@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useUser } from '@/lib/providers/user.provider';
 import { cn } from '@/lib/utils';
 
-import { useAgentStore } from './hooks/useAgentStore';
+import { debugAgentStore, useAgentStore } from './hooks/useAgentStore';
 
 interface Message {
     id: string;
@@ -78,6 +78,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         setUserContext,
         panelWidth,
         setPanelWidth,
+        _hasHydrated,
+        setHasHydrated,
     } = useAgentStore();
 
     const { user, profile } = useUser();
@@ -150,6 +152,27 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             });
         }
     }, [user, profile, setUserContext]);
+
+    // Ensure hydration is completed on mount
+    useEffect(() => {
+        console.log('AgentPanel - Hydration status on mount:', _hasHydrated);
+        console.log('AgentPanel - Messages on mount:', messages.length);
+
+        // Debug localStorage state
+        debugAgentStore();
+
+        // Force hydration check after component mounts
+        const timer = setTimeout(() => {
+            if (!_hasHydrated) {
+                console.log(
+                    'AgentPanel - Forcing hydration completion after timeout',
+                );
+                setHasHydrated(true);
+            }
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [_hasHydrated, setHasHydrated, messages.length]);
 
     // Remove guide message if pinned organization is set
     useEffect(() => {
@@ -346,7 +369,15 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 timestamp: new Date(),
                 type: 'text',
             };
+            console.log(
+                'AgentPanel - Adding assistant message:',
+                assistantMessage.content.substring(0, 100) + '...',
+            );
             addMessage(assistantMessage);
+            console.log(
+                'AgentPanel - Total messages after adding:',
+                messages.length + 1,
+            );
         } catch {
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -541,7 +572,14 @@ ${'='.repeat(50)}
                                     </Card>
                                 </div>
                             )}
-                            {messages.length === 0 ? (
+                            {!_hasHydrated ? (
+                                <div className="text-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-zinc-300 dark:border-zinc-600 border-t-blue-500 mx-auto mb-3"></div>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                                        Loading conversation...
+                                    </p>
+                                </div>
+                            ) : messages.length === 0 ? (
                                 <div className="text-center py-8">
                                     <MessageSquare className="h-8 w-8 mx-auto mb-3 text-zinc-400 dark:text-zinc-500" />
                                     <p className="text-sm text-zinc-600 dark:text-zinc-400">

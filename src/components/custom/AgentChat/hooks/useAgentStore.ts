@@ -18,6 +18,9 @@ interface AgentStore {
     // Messages
     messages: Message[];
 
+    // Hydration state - critical for preventing data loss on refresh
+    _hasHydrated: boolean;
+
     // N8N Integration
     n8nWebhookUrl?: string;
 
@@ -37,6 +40,9 @@ interface AgentStore {
 
     addMessage: (message: Message) => void;
     clearMessages: () => void;
+
+    // Hydration actions
+    setHasHydrated: (hydrated: boolean) => void;
 
     setN8nConfig: (webhookUrl: string) => void;
     setUserContext: (context: {
@@ -76,6 +82,37 @@ interface N8nRequestData {
     secureContext: SecureUserContext;
 }
 
+// Utility function to debug localStorage state
+export const debugAgentStore = () => {
+    const localStorage =
+        typeof window !== 'undefined' ? window.localStorage : null;
+    if (!localStorage) {
+        console.log('AgentStore Debug - localStorage not available');
+        return;
+    }
+
+    const stored = localStorage.getItem('agent-store');
+    console.log('AgentStore Debug - Raw localStorage data:', stored);
+
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            console.log('AgentStore Debug - Parsed localStorage data:', parsed);
+            console.log(
+                'AgentStore Debug - Messages in localStorage:',
+                parsed.state?.messages?.length || 0,
+            );
+        } catch (error) {
+            console.error(
+                'AgentStore Debug - Failed to parse localStorage data:',
+                error,
+            );
+        }
+    } else {
+        console.log('AgentStore Debug - No data found in localStorage');
+    }
+};
+
 export const useAgentStore = create<AgentStore>()(
     persist(
         (set, get) => ({
@@ -84,6 +121,7 @@ export const useAgentStore = create<AgentStore>()(
             isMinimized: false,
             panelWidth: 400,
             messages: [],
+            _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
 
@@ -99,6 +137,9 @@ export const useAgentStore = create<AgentStore>()(
                 })),
 
             clearMessages: () => set({ messages: [] }),
+
+            setHasHydrated: (hydrated: boolean) =>
+                set({ _hasHydrated: hydrated }),
 
             setN8nConfig: (webhookUrl: string) =>
                 set({ n8nWebhookUrl: webhookUrl }),
@@ -208,12 +249,24 @@ export const useAgentStore = create<AgentStore>()(
                 panelWidth: state.panelWidth,
             }),
             onRehydrateStorage: () => (state) => {
+                console.log('AgentStore - onRehydrateStorage called');
                 if (state?.messages) {
+                    console.log(
+                        'AgentStore - Restoring messages from localStorage:',
+                        state.messages.length,
+                    );
                     state.messages = state.messages.map((msg) => ({
                         ...msg,
                         timestamp: new Date(msg.timestamp),
                     }));
+                } else {
+                    console.log(
+                        'AgentStore - No messages found in localStorage',
+                    );
                 }
+                // Set hydration flag after localStorage data is restored
+                state?.setHasHydrated(true);
+                console.log('AgentStore - Hydration completed');
             },
         },
     ),
