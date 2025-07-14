@@ -91,7 +91,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             {showHorizontalToolbar && <HorizontalToolbar />}
 
             {/* Agent Demo - positioned on the right side */}
-            <AgentDemo autoInit={true} />
+            <AgentDemo autoInit={false} />
         </Sidebar>
     );
 };
