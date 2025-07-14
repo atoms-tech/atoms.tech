@@ -20,6 +20,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { OrgMemberAutocomplete } from '@/components/ui/orgMemberAutocomplete';
 import { toast } from '@/components/ui/use-toast';
 import {
     PROJECT_ROLE_ARRAY,
@@ -265,6 +266,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         } catch (error) {
             console.error('Error assigning user to project:', error);
             setErrorMessage('Failed to assign user to project.');
+        } finally {
+            setEmailInput('');
         }
     };
 
@@ -288,11 +291,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                         >
                             <Plus></Plus>
                         </Button>
-                        <Input
-                            type="text"
-                            placeholder="Invite by email"
+                        <OrgMemberAutocomplete
+                            orgId={params?.orgId || ''}
                             value={emailInput}
-                            onChange={(e) => setEmailInput(e.target.value)}
+                            onChange={setEmailInput}
                         />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
