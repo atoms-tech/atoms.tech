@@ -1,15 +1,26 @@
-const CHUNKR_API_KEY =
-    process.env.NEXT_PUBLIC_CHUNKR_API_KEY ||
-    (process.env.NODE_ENV === 'production'
-        ? undefined
-        : 'mock_api_key_for_build');
-const CHUNKR_API_URL =
-    process.env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1';
+import { apiConfig, isDevelopment } from '@/lib/utils/env-validation';
 
-if (!CHUNKR_API_KEY) {
-    throw new Error(
-        'Missing required environment variable: NEXT_PUBLIC_CHUNKR_API_KEY',
-    );
+// Use the centralized environment configuration
+const CHUNKR_API_KEY = apiConfig.chunkr.apiKey;
+const CHUNKR_API_URL = apiConfig.chunkr.apiUrl;
+
+// Helper function to check if required environment variables are available
+function checkChunkrConfig() {
+    if (!CHUNKR_API_KEY) {
+        const errorMessage =
+            'Missing required Chunkr environment variable: NEXT_PUBLIC_CHUNKR_API_KEY';
+
+        if (isDevelopment()) {
+            console.warn(
+                `⚠️ ${errorMessage} - Chunkr OCR features will be disabled in development`,
+            );
+            return false;
+        } else {
+            throw new Error(errorMessage);
+        }
+    }
+
+    return true;
 }
 
 export enum TaskStatus {
@@ -63,6 +74,10 @@ export class ChunkrService {
         high_resolution = false,
         ocr_strategy = 'All',
     }: StartOcrParams): Promise<TaskResponse> {
+        if (!checkChunkrConfig()) {
+            throw new Error('Chunkr service is not properly configured');
+        }
+
         try {
             const payload = {
                 file,
@@ -116,6 +131,10 @@ export class ChunkrService {
     }
 
     async getTaskStatus({ taskId }: GetOCRRunParams): Promise<TaskResponse> {
+        if (!checkChunkrConfig()) {
+            throw new Error('Chunkr service is not properly configured');
+        }
+
         console.log('Getting OCR task status for task ID:', taskId);
 
         try {
@@ -158,6 +177,10 @@ export class ChunkrService {
     }
 
     async processFiles(files: File[]): Promise<string[]> {
+        if (!checkChunkrConfig()) {
+            throw new Error('Chunkr service is not properly configured');
+        }
+
         console.log(
             'Processing multiple files for OCR:',
             files.map((f) => f.name),

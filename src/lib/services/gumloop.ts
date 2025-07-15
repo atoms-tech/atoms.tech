@@ -1,29 +1,44 @@
-const GUMLOOP_API_KEY = process.env.NEXT_PUBLIC_GUMLOOP_API_KEY;
-const GUMLOOP_API_URL =
-    process.env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1';
-const USER_ID = process.env.NEXT_PUBLIC_GUMLOOP_USER_ID;
-const GUMLOOP_FILE_CONVERT_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
-const GUMLOOP_REQ_ANALYSIS_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
-const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID;
-const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
+import { apiConfig, isDevelopment } from '@/lib/utils/env-validation';
 
-for (const [key, value] of Object.entries({
-    GUMLOOP_API_KEY,
-    USER_ID,
-    GUMLOOP_FILE_CONVERT_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
-    GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
-})) {
-    if (!value) {
-        throw new Error(
-            `Missing required environment variable: NEXT_PUBLIC_${key}`,
-        );
+// Use the centralized environment configuration
+const GUMLOOP_API_KEY = apiConfig.gumloop.apiKey;
+const GUMLOOP_API_URL = apiConfig.gumloop.apiUrl;
+const USER_ID = apiConfig.gumloop.userId;
+const GUMLOOP_FILE_CONVERT_FLOW_ID = apiConfig.gumloop.flows.fileConvert;
+const GUMLOOP_REQ_ANALYSIS_FLOW_ID = apiConfig.gumloop.flows.reqAnalysis;
+const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
+    apiConfig.gumloop.flows.reqAnalysisReasoning;
+const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID = apiConfig.gumloop.flows.textToMermaid;
+
+// Helper function to check if required environment variables are available
+function checkGumloopConfig() {
+    const requiredVars = {
+        GUMLOOP_API_KEY,
+        USER_ID,
+        GUMLOOP_FILE_CONVERT_FLOW_ID,
+        GUMLOOP_REQ_ANALYSIS_FLOW_ID,
+        GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+        GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
+    };
+
+    const missing = Object.entries(requiredVars)
+        .filter(([, value]) => !value)
+        .map(([key]) => key);
+
+    if (missing.length > 0) {
+        const errorMessage = `Missing required Gumloop environment variables: ${missing.join(', ')}`;
+
+        if (isDevelopment()) {
+            console.warn(
+                `⚠️ ${errorMessage} - Gumloop features will be disabled in development`,
+            );
+            return false;
+        } else {
+            throw new Error(errorMessage);
+        }
     }
+
+    return true;
 }
 
 type PipelineType =
@@ -90,6 +105,10 @@ export class GumloopService {
             'Starting file upload process:',
             files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
         );
+
+        if (!checkGumloopConfig()) {
+            throw new Error('Gumloop service is not properly configured');
+        }
 
         if (files.length === 0) {
             throw new Error('Please upload at least one file');
@@ -179,6 +198,10 @@ export class GumloopService {
         customPipelineInputs,
         savedItemId,
     }: StartPipelineParams): Promise<StartPipelineResponse> {
+        if (!checkGumloopConfig()) {
+            throw new Error('Gumloop service is not properly configured');
+        }
+
         let pipeline_id = savedItemId;
 
         // If no savedItemId is provided, use the pipeline type to determine the ID
@@ -321,6 +344,10 @@ export class GumloopService {
     async getPipelineRun({
         runId,
     }: GetPipelineRunParams): Promise<PipelineRunStatusResponse> {
+        if (!checkGumloopConfig()) {
+            throw new Error('Gumloop service is not properly configured');
+        }
+
         console.log('Getting pipeline run status:', {
             runId,
             userId: USER_ID,

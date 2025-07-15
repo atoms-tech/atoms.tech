@@ -85,10 +85,14 @@ export type EnvConfig = z.infer<typeof envSchema>;
 export function validateEnv(): EnvConfig {
     const env = process.env;
     const isProduction = env.NODE_ENV === 'production';
+    const isBuild =
+        env.NEXT_PHASE === 'phase-production-build' ||
+        process.argv.includes('build');
 
     try {
-        // Use production schema in production, regular schema otherwise
-        const schema = isProduction ? productionEnvSchema : envSchema;
+        // Use production schema only in actual production runtime, not during builds
+        const schema =
+            isProduction && !isBuild ? productionEnvSchema : envSchema;
         return schema.parse(env);
     } catch (error) {
         console.error('❌ Environment validation failed:');
@@ -99,15 +103,15 @@ export function validateEnv(): EnvConfig {
             });
         }
 
-        if (isProduction) {
-            // In production, fail hard
+        if (isProduction && !isBuild) {
+            // In production runtime, fail hard
             process.exit(1);
         } else {
-            // In development, warn but continue
+            // In development or build, warn but continue
             console.warn(
-                '⚠️  Continuing with invalid environment in development mode',
+                '⚠️  Continuing with invalid environment in development/build mode',
             );
-            // Return partial config for development
+            // Return partial config for development/build
             return envSchema.parse(env);
         }
     }
