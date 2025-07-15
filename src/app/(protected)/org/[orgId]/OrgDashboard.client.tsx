@@ -14,7 +14,7 @@ import {
     Pencil,
     Trash2,
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
@@ -71,7 +71,7 @@ interface OrgDashboardProps {
 }
 
 export default function OrgDashboard(props: OrgDashboardProps) {
-    const router = useRouter();
+    // const router = useRouter();
     const searchParams = useSearchParams();
 
     // Get current tab from URL params, default to 'projects' if not present
@@ -212,7 +212,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         setActiveTab(newTab);
         const params = new URLSearchParams(searchParams);
         params.set('currentTab', newTab);
-        router.push(`?${params.toString()}`, { scroll: false });
+        // router.push(`?${params.toString()}`, { scroll: false });
     };
 
     // Sync tab state with URL params when they change
