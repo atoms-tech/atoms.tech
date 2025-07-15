@@ -124,6 +124,8 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         ),
     );
 
+    const [localData, setLocalData] = useState<T[]>(() => [...data]);
+
     const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>(
         {},
     );
@@ -171,27 +173,28 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         [localColumns, colSizes],
     );
 
-    const sortedData = useMemo(() => {
-        const sorted = [...data].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-        );
-        console.debug(
-            `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
-            sorted,
-        );
+    // const sortedData = useMemo(() => {
+    //     const sorted = [...data].sort(
+    //         (a, b) => (a.position ?? 0) - (b.position ?? 0),
+    //     );
+    //     console.debug(
+    //         `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
+    //         sorted,
+    //     );
 
-        console.debug('[TABLE INIT] Sorted Data:', sorted);
-        sorted.forEach((row, index) => {
-            console.debug(
-                `[ROW ${index}] id=${row.id} position=${row.position}`,
-            );
-            if ('properties' in row && typeof row.properties === 'object') {
-                console.debug(`[ROW ${index}] properties:`, row.properties);
-            }
-        });
+    //     console.debug('[TABLE INIT] Sorted Data:', sorted);
+    //     sorted.forEach((row, index) => {
+    //         console.debug(
+    //             `[ROW ${index}] id=${row.id} position=${row.position}`,
+    //         );
+    //         if ('properties' in row && typeof row.properties === 'object') {
+    //             console.debug(`[ROW ${index}] properties:`, row.properties);
+    //         }
+    //     });
 
-        return sorted;
-    }, [data, instanceId]);
+    //     return sorted;
+    // }, [data, instanceId]);
+    const sortedData = localData;
 
     useEffect(() => {
         console.debug('[TABLE INIT] Columns:', localColumns);
@@ -261,7 +264,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             const [col, row] = cell;
             if (newValue.kind !== GridCellKind.Text) return;
 
-            const rowData = data[row];
+            const rowData = localData[row];
             const accessor = localColumns[col].accessor;
             const rowId = rowData.id;
 
@@ -302,7 +305,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 }
             });
         },
-        [data, localColumns, onSave, onPostSave],
+        [localData, localColumns, onSave, onPostSave],
     );
 
     // const savePendingChanges = useCallback(async () => {
@@ -351,8 +354,20 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         } as T;
 
         console.debug('[handleRowAppended] New row created:', newRow);
+        setLocalData((prev) => [...prev, newRow]);
         onSave?.(newRow, true);
     }, [columns, data, onSave]);
+
+    const handleRowMoved = useCallback((from: number, to: number) => {
+        if (from === to) return;
+
+        setLocalData((prev) => {
+            const updated = [...prev];
+            const [moved] = updated.splice(from, 1);
+            updated.splice(to, 0, moved);
+            return updated;
+        });
+    }, []);
 
     // Modify Trailing Row Visuals
     columns.map((col, idx) => ({
@@ -419,6 +434,8 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                             onRowAppended={
                                 isEditMode ? handleRowAppended : undefined
                             }
+                            rowMarkers="both"
+                            onRowMoved={handleRowMoved} // Enable row reordering
                         />
                     </div>
                 </div>
