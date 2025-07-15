@@ -526,6 +526,41 @@ export type Database = {
                     },
                 ];
             };
+            organization_agent_settings: {
+                Row: {
+                    id: string;
+                    organization_id: string;
+                    mcp_integrations: Json;
+                    advanced_settings: Json;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    organization_id: string;
+                    mcp_integrations?: Json;
+                    advanced_settings?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    organization_id?: string;
+                    mcp_integrations?: Json;
+                    advanced_settings?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'organization_agent_settings_organization_id_fkey';
+                        columns: ['organization_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'organizations';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             organization_members: {
                 Row: {
                     created_at: string | null;
