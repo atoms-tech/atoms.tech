@@ -1,13 +1,21 @@
 'use client';
 
 import DataEditor, {
+    //Rectangle,
+    DataEditorRef,
     GridCell,
     GridCellKind,
     GridColumn,
     GridDragEventArgs,
     Item,
 } from '@glideapps/glide-data-grid';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
@@ -15,9 +23,14 @@ import { DeleteConfirmDialog, TableControls } from './components';
 
 //import { CellValue } from './types';
 
-interface GlideEditableTableProps<T extends { id: string }> {
+interface GlideEditableTableProps<T extends { id: string; position?: number }> {
     data: T[];
-    columns: { accessor: keyof T; title: string; width?: number }[];
+    columns: {
+        accessor: keyof T;
+        title: string;
+        width?: number;
+        position?: number;
+    }[];
     //onCellChange: (rowId: string, accessor: keyof T, value: CellValue) => void;
     onBlur?: () => void;
     isEditMode?: boolean;
@@ -36,122 +49,324 @@ interface GlideEditableTableProps<T extends { id: string }> {
     onDragStart?: (args: GridDragEventArgs) => void;
     onDragOverCell?: (cell: Item, dataTransfer: DataTransfer | null) => void;
     onDrop?: (cell: Item, dataTransfer: DataTransfer | null) => void;
+    onColumnOrderChange?: (
+        columns: {
+            accessor: keyof T;
+            title: string;
+            width?: number;
+            position?: number;
+        }[],
+    ) => void;
 }
 
-export function GlideEditableTable<T extends { id: string }>({
-    data,
-    columns,
-    //onCellChange,
-    onSave,
-    onBlur,
-    isEditMode = true,
-    showFilter = false,
-    filterComponent,
-    onAddRow,
-    //onSaveNewRow,
-    //onCancelNewRow,
-    //isAddingNew = false,
-    deleteConfirmOpen = false,
-    onDeleteConfirm,
-    setDeleteConfirmOpen,
-}: GlideEditableTableProps<T>) {
+export function GlideEditableTable<T extends { id: string; position?: number }>(
+    props: GlideEditableTableProps<T>,
+) {
+    const {
+        data,
+        columns,
+        //onCellChange,
+        onSave,
+        onPostSave,
+        //onBlur,
+        isEditMode = true,
+        showFilter = false,
+        filterComponent,
+        onAddRow,
+        //onSaveNewRow,
+        //onCancelNewRow,
+        //isAddingNew = false,
+        deleteConfirmOpen = false,
+        onDeleteConfirm,
+        setDeleteConfirmOpen,
+        onColumnOrderChange,
+    } = props;
+
     const tableRef = useRef<HTMLDivElement>(null);
+    const gridRef = useRef<DataEditorRef | null>(null);
+    const lastEditedCellRef = useRef<Item | undefined>(undefined);
+    //const [focusedCell, setFocusedCell] = useState<Item | undefined>();
+
+    // const onVisibleRegionChanged = useCallback((
+    //     range: Rectangle,
+    //     tx: number,
+    //     ty: number,
+    //     extras: { selected?: Item; freezeRegion?: Rectangle }
+    //     ) => {
+    //     if (extras.selected) {
+    //         setFocusedCell(extras.selected);
+    //     } else {
+    //         setFocusedCell(undefined);
+    //     }
+    // }, []);
+
+    // Normalize columns to use `title` instead of `header` if needed
+    const normalizedColumns = useMemo(() => {
+        return columns.map((col) => ({
+            ...col,
+            title:
+                'title' in col
+                    ? col.title
+                    : 'header' in col
+                      ? (col as { header: string }).header
+                      : '', // Fallback to `header` if `title` missing
+        }));
+    }, [columns]);
+
+    console.debug(
+        '[GlideEditableTable] Normalized Columns:',
+        normalizedColumns,
+    );
+
+    const [localColumns, setLocalColumns] = useState(
+        [...normalizedColumns].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
+        ),
+    );
+
+    const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>(
+        {},
+    );
+
+    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
+    console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
+
+    useEffect(() => {
+        console.debug(
+            `[GlideEditableTable] PROPS for instance=${instanceId}:`,
+            {
+                dataLength: data.length,
+                columnCount: columns.length,
+                firstRow: data[0],
+                columns,
+            },
+        );
+    }, [data, columns, instanceId]);
+
+    useEffect(() => {
+        console.debug('[GlideEditableTable] Props:', {
+            dataLength: data?.length,
+            columns,
+            firstRow: data?.[0],
+        });
+    }, [data, columns]);
+
+    //const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
+    //const [isEditingCell, setIsEditingCell] = useState(false);
 
     const columnDefs: GridColumn[] = useMemo(
         () =>
-            columns.map((col) => ({
+            localColumns.map((col, idx) => ({
                 title: col.title,
-                width: col.width || 120,
+                width: colSizes[col.accessor] || col.width || 120,
+                trailingRowOptions:
+                    idx === 0
+                        ? {
+                              hint: 'Add row',
+                              addIcon: 'plus',
+                              targetColumn: 0,
+                          }
+                        : undefined,
             })),
-        [columns],
+        [localColumns, colSizes],
+    );
+
+    const sortedData = useMemo(() => {
+        const sorted = [...data].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
+        );
+        console.debug(
+            `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
+            sorted,
+        );
+
+        console.debug('[TABLE INIT] Sorted Data:', sorted);
+        sorted.forEach((row, index) => {
+            console.debug(
+                `[ROW ${index}] id=${row.id} position=${row.position}`,
+            );
+            if ('properties' in row && typeof row.properties === 'object') {
+                console.debug(`[ROW ${index}] properties:`, row.properties);
+            }
+        });
+
+        return sorted;
+    }, [data, instanceId]);
+
+    useEffect(() => {
+        console.debug('[TABLE INIT] Columns:', localColumns);
+    }, [localColumns]);
+
+    const handleColumnResize = useCallback(
+        (col: GridColumn, newSize: number) => {
+            setColSizes((prev) => {
+                const updated = { ...prev };
+                const target = localColumns.find((c) => c.title === col.title);
+                if (target) {
+                    updated[target.accessor] = newSize;
+                }
+                return updated;
+            });
+
+            setLocalColumns((prev) => {
+                return prev.map((c) =>
+                    c.title === col.title ? { ...c, width: newSize } : c,
+                );
+            });
+
+            // Optional: persist to DB
+            const updated = localColumns.map((c) =>
+                c.title === col.title ? { ...c, width: newSize } : c,
+            );
+            onColumnOrderChange?.(updated); // You could rename this to `onColumnsChanged` or similar
+        },
+        [localColumns, onColumnOrderChange],
+    );
+
+    const handleColumnMoved = useCallback(
+        (startIndex: number, endIndex: number) => {
+            setLocalColumns((prevCols) => {
+                const updated = [...prevCols];
+                const [moved] = updated.splice(startIndex, 1);
+                updated.splice(endIndex, 0, moved);
+                console.debug(
+                    '[COLUMN ORDER CHANGED]:',
+                    updated.map((c) => c.accessor),
+                );
+                onColumnOrderChange?.(updated); // <-- SAVE TO DB
+                return updated;
+            });
+        },
+        [onColumnOrderChange],
     );
 
     const getCellContent = useCallback(
         ([col, row]: Item): GridCell => {
-            const rowData = data[row];
-            const accessor = columns[col].accessor;
-            const value = rowData[accessor];
+            const rowData = sortedData[row];
+            const accessor = localColumns[col].accessor;
+            const value = rowData?.[accessor];
 
             return {
                 kind: GridCellKind.Text,
                 allowOverlay: true,
-                data: value?.toString() || '',
-                displayData: value?.toString() || '',
+                data: value?.toString() ?? '',
+                displayData: value?.toString() ?? '',
             };
         },
-        [columns, data],
+        [sortedData, localColumns],
     );
 
     const onCellEdited = useCallback(
-        (cell: Item, newValue: GridCell) => {
+        async (cell: Item, newValue: GridCell) => {
             const [col, row] = cell;
             if (newValue.kind !== GridCellKind.Text) return;
 
             const rowData = data[row];
-            //const rowId = rowData.id;
-            const accessor = columns[col].accessor;
+            const accessor = localColumns[col].accessor;
+            const rowId = rowData.id;
+
+            const newValueStr = newValue.data;
+            const originalValue = rowData?.[accessor];
+
+            if (originalValue?.toString() === newValueStr) return;
 
             const updatedRow = {
                 ...rowData,
-                [accessor]: newValue.data,
+                [accessor]: newValueStr,
             };
 
-            // Send update
-            onSave?.(updatedRow, false);
+            console.debug('[onCellEdited] Changed cell:', {
+                rowId,
+                accessor,
+                oldValue: originalValue,
+                newValue: newValueStr,
+            });
+
+            lastEditedCellRef.current = cell;
+
+            await onSave?.(updatedRow, false);
+            await onPostSave?.();
+
+            // Refocus after the render
+            requestAnimationFrame(() => {
+                const editor = gridRef.current;
+                if (editor && lastEditedCellRef.current) {
+                    console.debug(
+                        '[Refocusing Cell]',
+                        lastEditedCellRef.current,
+                    );
+                    if (editor && lastEditedCellRef.current) {
+                        const [col, row] = lastEditedCellRef.current;
+                        editor.scrollTo(col, row);
+                    }
+                }
+            });
         },
-        [columns, data, onSave],
+        [data, localColumns, onSave, onPostSave],
     );
 
     // const savePendingChanges = useCallback(async () => {
-    // if (!onSave || !data) return;
+    //     if (!onSave || Object.keys(editingData).length === 0) return;
 
     //     try {
-    //         const modifiedItems = Object.entries(editingData || {}).filter(([id, item]) => {
-    //             if (id === 'new') return false;
-    //             const original = data.find(d => d.id === id);
-    //             if (!original) return false;
-    //             return Object.keys(item).some(k => item[k] !== original[k]);
-    //         });
+    //         for (const [rowId, changes] of Object.entries(editingData)) {
+    //             const changedFields = Object.entries(changes).reduce(
+    //                 (acc, [key, value]) => {
+    //                     // Only include fields that are actually changed and not undefined
+    //                     if (value !== undefined) acc[key as keyof T] = value;
+    //                     return acc;
+    //                 },
+    //                 { id: rowId } as Partial<T>,
+    //             );
 
-    //         if (modifiedItems.length === 0) return;
-
-    //         for (const [_id, item] of modifiedItems) {
-    //             await onSave(item, false);
+    //             console.debug(`[savePendingChanges] Saving ONLY changed fields:`, changedFields);
+    //             await onSave(changedFields, false);
     //         }
-
-    //         if (onPostSave) await onPostSave();
+    //         setEditingData({});
+    //         await onPostSave?.();
     //     } catch (error) {
-    //         console.error('Failed to save pending changes:', error);
+    //         console.error('[savePendingChanges] Failed to save:', error);
     //     }
-    // }, [onSave, data, editingData, onPostSave]);
+    // }, [editingData, onSave, onPostSave]);
 
-    // const handleTableBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
-    //     if (isEditMode && tableRef.current && !tableRef.current.contains(e.relatedTarget as Node)) {
-    //         console.log('Focus left the table — auto-saving...');
-    //         savePendingChanges();
-    //     }
-    // }, [isEditMode, savePendingChanges]);
+    // const handleEditorClose = useCallback(async () => {
+    //     if (!isEditingCell) return;
+    //     setIsEditingCell(false);
+    //     await savePendingChanges();
+    // }, [isEditingCell, savePendingChanges]);
 
-    const handleDragStart = useCallback((args: GridDragEventArgs) => {
-        console.log('Drag started:', args);
-        // You could set some dragging state here if needed
-    }, []);
+    // Add a new row.
+    const handleRowAppended = useCallback(() => {
+        const maxPosition = Math.max(0, ...data.map((d) => d.position ?? 0));
+        const newRow = {
+            ...columns.reduce(
+                (acc, col) => {
+                    if (col.accessor !== 'id') acc[col.accessor as string] = '';
+                    return acc;
+                },
+                {} as Record<string, unknown>,
+            ),
+            id: crypto.randomUUID(),
+            position: maxPosition + 1,
+        } as T;
 
-    // const handleDragOverCell = useCallback(
-    //     (cell: Item, dataTransfer: DataTransfer | null) => {
-    //         console.log('Drag over cell:', cell);
-    //         // You can check or update UI
-    //     },
-    //     [],
-    // );
+        console.debug('[handleRowAppended] New row created:', newRow);
+        onSave?.(newRow, true);
+    }, [columns, data, onSave]);
 
-    // const handleDrop = useCallback(
-    //     (cell: Item, dataTransfer: DataTransfer | null) => {
-    //         console.log('Dropped on cell:', cell);
-    //         // Handle drop logic here
-    //     },
-    //     [],
-    // );
+    // Modify Trailing Row Visuals
+    columns.map((col, idx) => ({
+        title: col.title,
+        width: colSizes[col.accessor] || col.width || 120,
+        trailingRowOptions:
+            idx === 0
+                ? {
+                      hint: 'Add row',
+                      addIcon: true,
+                      targetColumn: true,
+                  }
+                : undefined,
+    }));
 
     return (
         <div className="w-full">
@@ -171,7 +386,7 @@ export function GlideEditableTable<T extends { id: string }>({
                 className="relative w-full overflow-x-auto brutalist-scrollbar"
                 style={{ maxWidth: '100%' }}
                 ref={tableRef}
-                onBlur={onBlur}
+                //onBlur={handleTableBlur}
                 tabIndex={-1}
             >
                 <div
@@ -183,14 +398,27 @@ export function GlideEditableTable<T extends { id: string }>({
                 >
                     <div style={{ height: 500 }}>
                         <DataEditor
+                            ref={gridRef}
                             columns={columnDefs}
                             getCellContent={getCellContent}
-                            onCellEdited={isEditMode ? onCellEdited : undefined} // ← only attach handler in edit mode
-                            rows={data.length}
-                            isDraggable="cell" //Use header for only column changes
-                            onDragStart={handleDragStart}
-                            //onDragOverCell={handleDragOverCell}
-                            //onDrop={handleDrop}
+                            //onVisibleRegionChanged={onVisibleRegionChanged}
+                            onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
+                            rows={sortedData.length}
+                            onColumnResize={handleColumnResize}
+                            onColumnMoved={handleColumnMoved}
+                            trailingRowOptions={{
+                                tint: true,
+                                sticky: true,
+                            }}
+                            // onKeyDown={(e) => {
+                            //     if (!isEditMode) return;
+                            //     if (e.key === 'Enter' || e.key === 'Tab') { // Keys that trigger saving (buffer locally, save later).
+                            //         handleEditorClose();
+                            //     }
+                            // }}
+                            onRowAppended={
+                                isEditMode ? handleRowAppended : undefined
+                            }
                         />
                     </div>
                 </div>
