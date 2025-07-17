@@ -517,7 +517,7 @@ ${'='.repeat(50)}
             >
                 {/* Resize Handle */}
                 <div
-                    className="absolute left-0 top-0 w-1 h-full cursor-col-resize hover:w-2 transition-all z-10 group bg-border hover:bg-accent"
+                    className="absolute left-0 top-0 w-[3px] h-full cursor-col-resize hover:w-1.5 transition-all z-10 group bg-border hover:bg-accent"
                     onMouseDown={handleResizeStart}
                 >
                     {/* Visual indicator for resize */}
