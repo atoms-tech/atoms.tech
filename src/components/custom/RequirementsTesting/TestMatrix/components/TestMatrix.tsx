@@ -272,7 +272,8 @@ function TestMatrixContent() {
                                                         },
                                                         uiState: {
                                                             compactView: false,
-                                                            highlightPassing: true,
+                                                            highlightPassing:
+                                                                true,
                                                             showEmpty: true,
                                                             isRequirementSectionExpanded,
                                                             isTestCasesSectionExpanded,
