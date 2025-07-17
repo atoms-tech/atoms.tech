@@ -1,5 +1,7 @@
 'use client';
 
+import '@/styles/globals.css';
+
 import DataEditor, {
     //Rectangle,
     DataEditorRef,
@@ -9,7 +11,11 @@ import DataEditor, {
     GridDragEventArgs,
     Item,
 } from '@glideapps/glide-data-grid';
+import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { glideDarkTheme } from './glideDarkTheme';
+import { glideLightTheme } from './glideLightTheme';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
@@ -56,6 +62,8 @@ interface GlideEditableTableProps<T extends { id: string; position?: number }> {
 export function GlideEditableTable<T extends { id: string; position?: number }>(
     props: GlideEditableTableProps<T>,
 ) {
+    const { resolvedTheme } = useTheme();
+
     const {
         data,
         columns,
@@ -93,6 +101,20 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
     //         setFocusedCell(undefined);
     //     }
     // }, []);
+
+    const [tableWidth, setTableWidth] = useState<number>(0);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (tableRef.current) {
+                setTableWidth(tableRef.current.offsetWidth);
+            }
+        };
+
+        handleResize(); // Run immediately on mount
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Normalize columns to use `title` instead of `header` if needed
     const normalizedColumns = useMemo(() => {
@@ -140,45 +162,44 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
     //const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
     //const [isEditingCell, setIsEditingCell] = useState(false);
 
-    const columnDefs: GridColumn[] = useMemo(
-        () =>
-            localColumns.map((col, idx) => ({
-                title: col.title,
-                width: colSizes[col.accessor] || col.width || 120,
-                trailingRowOptions:
-                    idx === 0
-                        ? {
-                              hint: 'Add row',
-                              addIcon: 'plus',
-                              targetColumn: 0,
-                          }
-                        : undefined,
-            })),
-        [localColumns, colSizes],
-    );
+    const columnDefs: GridColumn[] = useMemo(() => {
+        const totalCols = localColumns.length;
+        const gutter = 80;
+        const availableWidth = tableWidth > gutter ? tableWidth - gutter : 1000;
+        const widthPerCol = Math.floor(availableWidth / totalCols);
 
-    // const sortedData = useMemo(() => {
-    //     const sorted = [...data].sort(
-    //         (a, b) => (a.position ?? 0) - (b.position ?? 0),
-    //     );
-    //     console.debug(
-    //         `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
-    //         sorted,
-    //     );
+        return localColumns.map((col, idx) => ({
+            title: col.title,
+            width: widthPerCol,
+            trailingRowOptions:
+                idx === 0
+                    ? {
+                          hint: 'Add Row',
+                          addIcon: 'plus',
+                          targetColumn: 0,
+                      }
+                    : undefined,
+        }));
+    }, [localColumns, tableWidth]);
 
-    //     console.debug('[TABLE INIT] Sorted Data:', sorted);
-    //     sorted.forEach((row, index) => {
-    //         console.debug(
-    //             `[ROW ${index}] id=${row.id} position=${row.position}`,
-    //         );
-    //         if ('properties' in row && typeof row.properties === 'object') {
-    //             console.debug(`[ROW ${index}] properties:`, row.properties);
-    //         }
-    //     });
+    const sortedData = useMemo(() => {
+        const sorted = [...data].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        console.debug(
+            `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
+            sorted,
+        );
 
-    //     return sorted;
-    // }, [data, instanceId]);
-    const sortedData = localData;
+        console.debug('[TABLE INIT] Sorted Data:', sorted);
+        sorted.forEach((row, index) => {
+            console.debug(`[ROW ${index}] id=${row.id} position=${row.position}`);
+            if ('properties' in row && typeof row.properties === 'object') {
+                console.debug(`[ROW ${index}] properties:`, row.properties);
+            }
+        });
+
+        return sorted;
+    }, [data, instanceId]);
+    // const sortedData = localData;
 
     useEffect(() => {
         console.debug('[TABLE INIT] Columns:', localColumns);
@@ -379,44 +400,45 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 />
             )}
             <div
-                className="relative w-full overflow-x-auto brutalist-scrollbar"
-                style={{ maxWidth: '100%' }}
+                className="w-full"
                 ref={tableRef}
                 //onBlur={handleTableBlur}
                 tabIndex={-1}
+                style={{
+                    overflowX: 'hidden',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
             >
-                <div
-                    style={{
-                        minWidth: '100%',
-                        maxWidth: '1000px',
-                        width: 'max-content',
-                    }}
-                >
-                    <div style={{ height: 500 }}>
-                        <DataEditor
-                            ref={gridRef}
-                            columns={columnDefs}
-                            getCellContent={getCellContent}
-                            //onVisibleRegionChanged={onVisibleRegionChanged}
-                            onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
-                            rows={sortedData.length}
-                            onColumnResize={handleColumnResize}
-                            onColumnMoved={handleColumnMoved}
-                            trailingRowOptions={{
-                                tint: true,
-                                sticky: true,
-                            }}
-                            // onKeyDown={(e) => {
-                            //     if (!isEditMode) return;
-                            //     if (e.key === 'Enter' || e.key === 'Tab') { // Keys that trigger saving (buffer locally, save later).
-                            //         handleEditorClose();
-                            //     }
-                            // }}
-                            onRowAppended={isEditMode ? handleRowAppended : undefined}
-                            rowMarkers="both"
-                            onRowMoved={handleRowMoved} // Enable row reordering
-                        />
-                    </div>
+                <div style={{ height: 500 }}>
+                    <DataEditor
+                        ref={gridRef}
+                        columns={columnDefs}
+                        getCellContent={getCellContent}
+                        //onVisibleRegionChanged={onVisibleRegionChanged}
+                        onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
+                        rows={sortedData.length}
+                        onColumnResize={handleColumnResize}
+                        onColumnMoved={handleColumnMoved}
+                        trailingRowOptions={{
+                            tint: true,
+                            sticky: true,
+                        }}
+                        // onKeyDown={(e) => {
+                        //     if (!isEditMode) return;
+                        //     if (e.key === 'Enter' || e.key === 'Tab') { // Keys that trigger saving (buffer locally, save later).
+                        //         handleEditorClose();
+                        //     }
+                        // }}
+                        onRowAppended={isEditMode ? handleRowAppended : undefined}
+                        rowMarkers="both"
+                        onRowMoved={handleRowMoved} // Enable row reordering
+                        rowHeight={43}
+                        theme={
+                            resolvedTheme === 'dark' ? glideDarkTheme : glideLightTheme
+                        }
+                    />
                 </div>
             </div>
             <DeleteConfirmDialog
