@@ -377,7 +377,7 @@ export default function UserDashboard() {
                     >
                         <Button
                             size="lg"
-                            className="bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary)/.9)] shadow-md dark:bg-purple-600 dark:hover:bg-purple-700"
+                            className="w-full md:w-64 bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary)/.9)] shadow-md dark:bg-purple-600 dark:hover:bg-purple-700"
                             onClick={handleCreateOrganization}
                         >
                             <Plus className="h-4 w-4 mr-2" />
@@ -475,7 +475,7 @@ export default function UserDashboard() {
                                                 </div>
                                                 {org.type ===
                                                 OrganizationType.enterprise ? (
-                                                    <Building className="h-5 w-5 text-gray-400 dark:text-blue-500" />
+                                                    <Building className="h-5 w-5 text-muted-foreground" />
                                                 ) : (
                                                     <Users className="h-5 w-5 text-green-500" />
                                                 )}

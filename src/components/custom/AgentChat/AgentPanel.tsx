@@ -510,18 +510,18 @@ ${'='.repeat(50)}
             <div
                 ref={panelRef}
                 className={cn(
-                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-xl z-50 transition-all duration-300 ease-out flex flex-col',
+                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 shadow-xl z-50 transition-all duration-300 ease-out flex flex-col',
                     isOpen ? 'translate-x-0' : 'translate-x-full',
                 )}
                 style={{ width: `${panelWidth}px` }}
             >
                 {/* Resize Handle */}
                 <div
-                    className="absolute left-0 top-0 w-1 h-full cursor-col-resize hover:w-2 transition-all z-10 group bg-zinc-300 dark:bg-zinc-600 hover:bg-blue-500 dark:hover:bg-blue-400"
+                    className="absolute left-0 top-0 w-1 h-full cursor-col-resize hover:w-2 transition-all z-10 group bg-border hover:bg-accent"
                     onMouseDown={handleResizeStart}
                 >
                     {/* Visual indicator for resize */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 bg-zinc-400 dark:bg-zinc-500 rounded-full group-hover:bg-blue-600 dark:group-hover:bg-blue-300 transition-colors" />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-border/60 rounded-full group-hover:bg-accent/80 transition-colors" />
                 </div>
 
                 {/* Header */}
@@ -635,7 +635,7 @@ ${'='.repeat(50)}
                                                 'max-w-[80%] p-3 rounded-lg',
                                                 msg.role === 'user'
                                                     ? 'bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
-                                                    : 'bg-white dark:bg-zinc-800 border-4 border-zinc-200 dark:border-zinc-700',
+                                                    : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
