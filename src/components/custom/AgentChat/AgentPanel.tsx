@@ -634,8 +634,8 @@ ${'='.repeat(50)}
                                             className={cn(
                                                 'max-w-[80%] p-3 rounded-lg',
                                                 msg.role === 'user'
-                                                    ? 'bg-blue-500 text-white'
-                                                    : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
+                                                    ? 'bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
+                                                    : 'bg-white dark:bg-zinc-800 border-4 border-zinc-200 dark:border-zinc-700',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
@@ -687,7 +687,14 @@ ${'='.repeat(50)}
                                                     </ReactMarkdown>
                                                 </div>
                                             )}
-                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                                            <p
+                                                className={cn(
+                                                    'text-xs mt-2',
+                                                    msg.role === 'user'
+                                                        ? 'text-zinc-200 dark:text-zinc-200'
+                                                        : 'text-zinc-500 dark:text-zinc-300',
+                                                )}
+                                            >
                                                 {msg.timestamp.toLocaleTimeString()}
                                                 {msg.type === 'voice' && ' 🎤'}
                                             </p>
@@ -699,7 +706,7 @@ ${'='.repeat(50)}
                                 <div className="flex justify-start">
                                     <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3">
                                         <div className="flex items-center gap-2">
-                                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-zinc-300 dark:border-zinc-600 border-t-blue-500"></div>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-zinc-300 dark:border-white border-t-transparent"></div>
                                             <p className="text-sm text-zinc-600 dark:text-zinc-400">
                                                 Thinking...
                                             </p>
@@ -726,7 +733,7 @@ ${'='.repeat(50)}
                                 }
                                 onKeyDown={handleKeyPress}
                                 placeholder="Type your message..."
-                                className="min-h-[40px] max-h-[120px] resize-none border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
+                                className="min-h-[40px] max-h-[120px] resize-none border-[0.5px] border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
                                 disabled={isLoading}
                             />
                             {speechSupported && (
@@ -754,7 +761,7 @@ ${'='.repeat(50)}
                         <Button
                             onClick={handleSendMessage}
                             disabled={!message.trim() || isLoading}
-                            className="h-10 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+                            className="h-10 px-4 bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg"
                         >
                             <Send className="h-4 w-4" />
                         </Button>
