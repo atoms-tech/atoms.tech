@@ -377,7 +377,7 @@ export default function UserDashboard() {
                     >
                         <Button
                             size="lg"
-                            className="bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary)/.9)] shadow-md dark:bg-gradient-to-r dark:from-blue-600 dark:to-indigo-600 dark:hover:from-blue-700 dark:hover:to-indigo-700"
+                            className="bg-[hsl(var(--primary))] text-white hover:bg-[hsl(var(--primary)/.9)] shadow-md dark:bg-purple-600 dark:hover:bg-purple-700"
                             onClick={handleCreateOrganization}
                         >
                             <Plus className="h-4 w-4 mr-2" />
