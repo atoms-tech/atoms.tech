@@ -25,10 +25,7 @@ function useUserRole(userId: string) {
                 .from('project_members')
                 .select('role')
                 .eq('user_id', userId)
-                .eq(
-                    'project_id',
-                    Array.isArray(projectId) ? projectId[0] : projectId,
-                )
+                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
                 .single();
 
             if (error) {

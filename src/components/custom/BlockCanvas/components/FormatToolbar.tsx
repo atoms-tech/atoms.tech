@@ -202,14 +202,10 @@ export function Toolbar({
                     <Italic size={14} />
                 </Button>
                 <Button
-                    variant={
-                        editor.isActive('underline') ? 'secondary' : 'ghost'
-                    }
+                    variant={editor.isActive('underline') ? 'secondary' : 'ghost'}
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() =>
-                        editor.chain().focus().toggleUnderline().run()
-                    }
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
                 >
                     <Underline size={14} />
                 </Button>
@@ -295,43 +291,31 @@ export function Toolbar({
             <div className="flex items-center gap-0.5">
                 <Button
                     variant={
-                        editor.isActive({ textAlign: 'left' })
-                            ? 'secondary'
-                            : 'ghost'
+                        editor.isActive({ textAlign: 'left' }) ? 'secondary' : 'ghost'
                     }
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() =>
-                        editor.chain().focus().setTextAlign('left').run()
-                    }
+                    onClick={() => editor.chain().focus().setTextAlign('left').run()}
                 >
                     <AlignLeft size={14} />
                 </Button>
                 <Button
                     variant={
-                        editor.isActive({ textAlign: 'center' })
-                            ? 'secondary'
-                            : 'ghost'
+                        editor.isActive({ textAlign: 'center' }) ? 'secondary' : 'ghost'
                     }
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() =>
-                        editor.chain().focus().setTextAlign('center').run()
-                    }
+                    onClick={() => editor.chain().focus().setTextAlign('center').run()}
                 >
                     <AlignCenter size={14} />
                 </Button>
                 <Button
                     variant={
-                        editor.isActive({ textAlign: 'right' })
-                            ? 'secondary'
-                            : 'ghost'
+                        editor.isActive({ textAlign: 'right' }) ? 'secondary' : 'ghost'
                     }
                     size="icon"
                     className="h-7 w-7"
-                    onClick={() =>
-                        editor.chain().focus().setTextAlign('right').run()
-                    }
+                    onClick={() => editor.chain().focus().setTextAlign('right').run()}
                 >
                     <AlignRight size={14} />
                 </Button>

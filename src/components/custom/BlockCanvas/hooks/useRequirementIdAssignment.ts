@@ -16,103 +16,93 @@ export function useRequirementIdAssignment(documentId: string) {
     /**
      * Checks if a requirement needs a REQ-ID
      */
-    const needsRequirementId = useCallback(
-        (requirement: Partial<Requirement>) => {
-            const externalId = requirement.external_id;
+    const needsRequirementId = useCallback((requirement: Partial<Requirement>) => {
+        const externalId = requirement.external_id;
 
-            // Skip corrupted requirements with undefined name or external_id
-            if (
-                !requirement.id ||
-                !requirement.name ||
-                requirement.name === 'undefined' ||
-                externalId === 'undefined'
-            ) {
-                console.warn(`⚠️ Skipping corrupted requirement:`, requirement);
-                return false; // Don't process corrupted requirements
-            }
+        // Skip corrupted requirements with undefined name or external_id
+        if (
+            !requirement.id ||
+            !requirement.name ||
+            requirement.name === 'undefined' ||
+            externalId === 'undefined'
+        ) {
+            console.warn(`⚠️ Skipping corrupted requirement:`, requirement);
+            return false; // Don't process corrupted requirements
+        }
 
-            // Check for empty, null, or undefined
-            if (!externalId || externalId.trim() === '') {
-                console.log(
-                    `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (empty)`,
-                );
-                return true;
-            }
-
-            // Check for placeholder values
-            const placeholderValues = [
-                'Will be generated',
-                'REQ-001, REQ-002, etc',
-                'REQ-001',
-                'etc',
-                '-',
-                'N/A',
-                'TBD',
-                'TODO',
-                'PLACEHOLDER',
-            ];
-
-            const normalizedId = externalId.trim().toLowerCase();
-            const isPlaceholder = placeholderValues.some((placeholder) =>
-                normalizedId.includes(placeholder.toLowerCase()),
-            );
-
-            if (isPlaceholder) {
-                console.log(
-                    `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (placeholder)`,
-                );
-                return true;
-            }
-
-            // Check for valid REQ-ID patterns (case-insensitive)
-            const upperExternalId = externalId.toUpperCase();
-
-            // Valid organization-scoped format (REQ-XXX-###)
-            if (upperExternalId.match(/^REQ-[A-Z]{2,4}-\d{3,}$/)) {
-                return false; // Valid organization-scoped format
-            }
-
-            // Valid simple format (REQ-###)
-            if (upperExternalId.match(/^REQ-\d{3,}$/)) {
-                return false; // Valid simple format
-            }
-
-            // Valid legacy single/double digit IDs (REQ-1, REQ-2, etc.)
-            if (upperExternalId.match(/^REQ-\d{1,2}$/)) {
-                return false; // Valid legacy format
-            }
-
-            // If none of the valid patterns match, it needs a new ID
+        // Check for empty, null, or undefined
+        if (!externalId || externalId.trim() === '') {
             console.log(
-                `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (invalid format)`,
+                `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (empty)`,
             );
             return true;
+        }
 
-            return false;
-        },
-        [],
-    );
+        // Check for placeholder values
+        const placeholderValues = [
+            'Will be generated',
+            'REQ-001, REQ-002, etc',
+            'REQ-001',
+            'etc',
+            '-',
+            'N/A',
+            'TBD',
+            'TODO',
+            'PLACEHOLDER',
+        ];
+
+        const normalizedId = externalId.trim().toLowerCase();
+        const isPlaceholder = placeholderValues.some((placeholder) =>
+            normalizedId.includes(placeholder.toLowerCase()),
+        );
+
+        if (isPlaceholder) {
+            console.log(
+                `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (placeholder)`,
+            );
+            return true;
+        }
+
+        // Check for valid REQ-ID patterns (case-insensitive)
+        const upperExternalId = externalId.toUpperCase();
+
+        // Valid organization-scoped format (REQ-XXX-###)
+        if (upperExternalId.match(/^REQ-[A-Z]{2,4}-\d{3,}$/)) {
+            return false; // Valid organization-scoped format
+        }
+
+        // Valid simple format (REQ-###)
+        if (upperExternalId.match(/^REQ-\d{3,}$/)) {
+            return false; // Valid simple format
+        }
+
+        // Valid legacy single/double digit IDs (REQ-1, REQ-2, etc.)
+        if (upperExternalId.match(/^REQ-\d{1,2}$/)) {
+            return false; // Valid legacy format
+        }
+
+        // If none of the valid patterns match, it needs a new ID
+        console.log(
+            `Requirement ${requirement.id} (${requirement.name}) needs ID. Current external_id: "${externalId}" (invalid format)`,
+        );
+        return true;
+
+        return false;
+    }, []);
 
     /**
      * Finds all requirements that need REQ-IDs
      */
     const findRequirementsWithoutIds = useCallback(
         (requirements: Partial<Requirement>[]): RequirementWithoutId[] => {
-            console.log(
-                `Checking ${requirements.length} requirements for missing IDs`,
-            );
-            const found = requirements
-                .filter(needsRequirementId)
-                .map((req) => ({
-                    id: req.id,
-                    name: req.name,
-                    external_id: req.external_id,
-                }));
+            console.log(`Checking ${requirements.length} requirements for missing IDs`);
+            const found = requirements.filter(needsRequirementId).map((req) => ({
+                id: req.id,
+                name: req.name,
+                external_id: req.external_id,
+            }));
 
-            console.log(
-                `Found ${found.length} requirements needing IDs:`,
-                found,
-            );
+            console.log(`Found ${found.length} requirements needing IDs:`, found);
             return found;
         },
         [needsRequirementId],
@@ -223,23 +213,16 @@ export function useRequirementIdAssignment(documentId: string) {
                 const results = await Promise.allSettled(updatePromises);
 
                 // Check for any failures
-                const failures = results.filter(
-                    (result) => result.status === 'rejected',
-                );
+                const failures = results.filter((result) => result.status === 'rejected');
 
                 if (failures.length > 0) {
-                    console.error(
-                        'Some requirement ID assignments failed:',
-                        failures,
-                    );
+                    console.error('Some requirement ID assignments failed:', failures);
                     throw new Error(
                         `Failed to assign ${failures.length} out of ${updates.length} requirement IDs`,
                     );
                 }
 
-                console.log(
-                    `Successfully assigned ${updates.length} requirement IDs`,
-                );
+                console.log(`Successfully assigned ${updates.length} requirement IDs`);
                 return true;
             } catch (error) {
                 console.error('Error assigning requirement IDs:', error);

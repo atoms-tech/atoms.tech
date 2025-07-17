@@ -164,9 +164,7 @@ export function MonospaceTable<T>({
                                         >
                                             <Button
                                                 variant="ghost"
-                                                onClick={() =>
-                                                    toggleSort(index)
-                                                }
+                                                onClick={() => toggleSort(index)}
                                                 className={`h-8 text-left font-medium ${column.isSortable ? 'hover:bg-accent hover:text-accent-foreground cursor-pointer' : 'cursor-default'}`}
                                                 disabled={!column.isSortable}
                                             >
@@ -187,9 +185,7 @@ export function MonospaceTable<T>({
                                         onClick={() => handleRowClick(item)}
                                     >
                                         {columns.map((column, colIndex) => (
-                                            <TableCell
-                                                key={`${index}-${colIndex}`}
-                                            >
+                                            <TableCell key={`${index}-${colIndex}`}>
                                                 {column.renderCell ? (
                                                     column.renderCell(item)
                                                 ) : column.header
@@ -198,9 +194,7 @@ export function MonospaceTable<T>({
                                                     <Badge
                                                         variant="outline"
                                                         className={getStatusColor(
-                                                            column.accessor(
-                                                                item,
-                                                            ),
+                                                            column.accessor(item),
                                                         )}
                                                     >
                                                         {column.accessor(item)}

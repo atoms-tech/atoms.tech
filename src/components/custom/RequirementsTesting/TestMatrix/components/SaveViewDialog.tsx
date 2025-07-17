@@ -18,9 +18,7 @@ import { Label } from '@/components/ui/label';
 interface SaveViewDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    onSave: (
-        viewData: Omit<TestMatrixViewState, 'id'> | TestMatrixViewState,
-    ) => void;
+    onSave: (viewData: Omit<TestMatrixViewState, 'id'> | TestMatrixViewState) => void;
     currentView?: TestMatrixViewState;
     projectId: string;
     configuration: TestMatrixViewConfiguration;

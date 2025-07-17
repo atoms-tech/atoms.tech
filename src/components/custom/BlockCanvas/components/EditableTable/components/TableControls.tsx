@@ -27,10 +27,7 @@ export interface TableControlsProps<T = unknown> {
         propertyConfig: PropertyConfig,
         defaultValue: string,
     ) => void;
-    onAddColumnFromProperty?: (
-        propertyId: string,
-        defaultValue: string,
-    ) => void;
+    onAddColumnFromProperty?: (propertyId: string, defaultValue: string) => void;
     onEnterEditMode: () => void;
     isVisible: boolean;
     orgId: string;
@@ -53,10 +50,7 @@ export function TableControls<T extends Record<string, unknown>>({
     orgId,
     projectId,
     documentId,
-}: Omit<
-    TableControlsProps<T>,
-    'sortKey' | 'sortOrder' | 'onSort' | 'columns'
->) {
+}: Omit<TableControlsProps<T>, 'sortKey' | 'sortOrder' | 'onSort' | 'columns'>) {
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
     const { userProfile } = useAuth();
 
@@ -69,8 +63,7 @@ export function TableControls<T extends Record<string, unknown>>({
 
     // Explicitly type userRole
     const userRole: keyof typeof rolePermissions =
-        (userProfile as { role?: keyof typeof rolePermissions })?.role ||
-        'viewer';
+        (userProfile as { role?: keyof typeof rolePermissions })?.role || 'viewer';
 
     console.log('Project ID:', projectId); // Ensure projectId is logged for debugging
 

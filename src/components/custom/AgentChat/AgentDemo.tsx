@@ -9,10 +9,7 @@ interface AgentDemoProps {
     autoInit?: boolean;
 }
 
-export const AgentDemo: React.FC<AgentDemoProps> = ({
-    className,
-    autoInit = false,
-}) => {
+export const AgentDemo: React.FC<AgentDemoProps> = ({ className, autoInit = false }) => {
     return (
         <div className={className}>
             {/* Agent Interface with integrated settings */}

@@ -10,15 +10,9 @@ interface ProfilerWrapperProps {
 // Simple profiler wrapper without memo to avoid potential issues
 export function ProfilerWrapper({ children, id }: ProfilerWrapperProps) {
     // Basic callback that just logs the duration
-    const onRenderCallback: ProfilerOnRenderCallback = (
-        id,
-        phase,
-        actualDuration,
-    ) => {
+    const onRenderCallback: ProfilerOnRenderCallback = (id, phase, actualDuration) => {
         if (process.env.NODE_ENV === 'development') {
-            console.log(
-                `[Profiler] ${id} - ${phase}: ${actualDuration.toFixed(1)}ms`,
-            );
+            console.log(`[Profiler] ${id} - ${phase}: ${actualDuration.toFixed(1)}ms`);
         }
     };
 

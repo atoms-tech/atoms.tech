@@ -47,8 +47,8 @@ export function HowItWorks() {
                     ))}
                 </div>
                 <p className="text-xl md:text-2xl font-bold text-white mt-12 text-center">
-                    You can be up and running in under 10 minutes—no special
-                    training needed.
+                    You can be up and running in under 10 minutes—no special training
+                    needed.
                 </p>
             </div>
 

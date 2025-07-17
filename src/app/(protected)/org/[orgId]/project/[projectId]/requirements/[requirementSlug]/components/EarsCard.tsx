@@ -46,8 +46,7 @@ export function EarsCard({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
-                                        earsRequirement &&
-                                        onAccept(earsRequirement, true)
+                                        earsRequirement && onAccept(earsRequirement, true)
                                     }
                                     disabled={!earsRequirement}
                                 >

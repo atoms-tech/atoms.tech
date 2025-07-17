@@ -20,11 +20,7 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { InvitationStatus } from '@/types/base/enums.types';
 import { Invitation } from '@/types/base/invitations.types';
 
-export default function UserInvitations({
-    onAccept,
-}: {
-    onAccept?: () => void;
-}) {
+export default function UserInvitations({ onAccept }: { onAccept?: () => void }) {
     const { user } = useUser();
     const queryClient = useQueryClient(); // Initialize queryClient
     const router = useRouter(); // Initialize router
@@ -197,9 +193,8 @@ export default function UserInvitations({
                                 <span className="font-small">
                                     Invitation to join{' '}
                                     <span className="text-primary">
-                                        {organizations?.[
-                                            invitation.organization_id
-                                        ] || 'Unknown Organization'}
+                                        {organizations?.[invitation.organization_id] ||
+                                            'Unknown Organization'}
                                     </span>
                                 </span>
                                 <div className="flex space-x-2">

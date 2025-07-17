@@ -77,9 +77,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
     const filteredMembers = sortedMembers.filter((member) => {
         const matchesSearch =
-            member.full_name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
+            member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             member.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length > 0
@@ -119,10 +117,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
     };
 
-    const handleChangeRole = async (
-        memberId: string,
-        selectedRole: ProjectRole,
-    ) => {
+    const handleChangeRole = async (memberId: string, selectedRole: ProjectRole) => {
         if (!hasProjectPermission(userRole, 'changeRole')) {
             setErrorMessage('You do not have permission to change roles.');
             return;
@@ -153,15 +148,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
     };
 
-    const handleAddMember = async (
-        memberEmail: string,
-        selectedRole: ProjectRole,
-    ) => {
+    const handleAddMember = async (memberEmail: string, selectedRole: ProjectRole) => {
         if (!hasProjectPermission(userRole, 'assignToProject')) {
             toast({
                 title: 'Error',
-                description:
-                    'You do not have permission to assign members to projects.',
+                description: 'You do not have permission to assign members to projects.',
                 variant: 'destructive',
             });
             return;
@@ -187,10 +178,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                     );
                     return;
                 }
-                console.error(
-                    'Error checking email in profiles:',
-                    profileError,
-                );
+                console.error('Error checking email in profiles:', profileError);
                 throw profileError;
             }
 
@@ -227,10 +215,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                 .single();
 
             if (checkOrgError && orgStatus !== 406) {
-                console.error(
-                    'Error checking organization membership:',
-                    checkError,
-                );
+                console.error('Error checking organization membership:', checkError);
                 throw checkError;
             }
 
@@ -276,18 +261,14 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             <CardHeader className="flex flex-col gap-4 pb-0">
                 <div>
                     <CardTitle className="text-xl">Project Members</CardTitle>
-                    <CardDescription>
-                        Manage members of your project
-                    </CardDescription>
+                    <CardDescription>Manage members of your project</CardDescription>
                 </div>
                 {hasProjectPermission(userRole, 'changeRole') && (
                     <div className="flex w-full md:w-auto space-x-2 pb-3">
                         <Button
                             variant="ghost"
                             className="w-9 h-9"
-                            onClick={() =>
-                                handleAddMember(emailInput, roleInput)
-                            }
+                            onClick={() => handleAddMember(emailInput, roleInput)}
                         >
                             <Plus></Plus>
                         </Button>
@@ -316,8 +297,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                             setRoleInput(role as ProjectRole);
                                         }}
                                     >
-                                        {role.charAt(0).toUpperCase() +
-                                            role.slice(1)}
+                                        {role.charAt(0).toUpperCase() + role.slice(1)}
                                     </DropdownMenuItem>
                                 ))}
                             </DropdownMenuContent>
@@ -347,24 +327,18 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                         setRoleFilters((prev) =>
                                             prev.includes(role as ProjectRole)
                                                 ? prev.filter((r) => r !== role)
-                                                : [
-                                                      ...prev,
-                                                      role as ProjectRole,
-                                                  ],
+                                                : [...prev, role as ProjectRole],
                                         );
                                     }}
                                 >
                                     <span
                                         className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                            roleFilters.includes(
-                                                role as ProjectRole,
-                                            )
+                                            roleFilters.includes(role as ProjectRole)
                                                 ? 'bg-primary'
                                                 : 'bg-gray-200'
                                         }`}
                                     ></span>
-                                    {role.charAt(0).toUpperCase() +
-                                        role.slice(1)}
+                                    {role.charAt(0).toUpperCase() + role.slice(1)}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -373,9 +347,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             </CardHeader>
             <CardContent>
                 {errorMessage && (
-                    <div className="text-red-600 text-sm mb-4">
-                        {errorMessage}
-                    </div>
+                    <div className="text-red-600 text-sm mb-4">{errorMessage}</div>
                 )}
                 {isLoading ? (
                     <div className="space-y-3">
@@ -460,9 +432,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                                 <hr></hr>
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        handleRemoveMember(
-                                                            member.id,
-                                                        )
+                                                        handleRemoveMember(member.id)
                                                     }
                                                     className="text-red-600"
                                                 >
@@ -478,9 +448,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                 ) : (
                     <div className="text-center py-6">
                         <Users className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <h3 className="mt-2 text-sm font-medium">
-                            No members found
-                        </h3>
+                        <h3 className="mt-2 text-sm font-medium">No members found</h3>
                         <p className="mt-1 text-xs text-muted-foreground">
                             Invite members to collaborate
                         </p>

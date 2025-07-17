@@ -26,10 +26,7 @@ const projectFormSchema = z.object({
         .trim()
         .min(2, 'Project name must be at least 2 characters')
         .max(50, 'Project name cannot exceed 50 characters')
-        .refine(
-            (val) => val.length > 0,
-            'Project name cannot be empty or just spaces',
-        )
+        .refine((val) => val.length > 0, 'Project name cannot be empty or just spaces')
         .refine(
             (val) => /^[a-zA-Z0-9\s\-_]+$/.test(val),
             'Project name can only contain letters, numbers, spaces, hyphens and underscores',
@@ -48,10 +45,7 @@ interface ProjectFormProps {
     organizationId?: string;
 }
 
-export default function ProjectForm({
-    onSuccess,
-    organizationId,
-}: ProjectFormProps) {
+export default function ProjectForm({ onSuccess, organizationId }: ProjectFormProps) {
     const { userProfile } = useAuth();
     const { mutateAsync: createProject, isPending } = useCreateProject();
     const { toast } = useToast();
@@ -120,9 +114,7 @@ export default function ProjectForm({
                 variant: 'destructive',
                 title: 'Error',
                 description:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to create project',
+                    error instanceof Error ? error.message : 'Failed to create project',
             });
         }
     }
@@ -137,10 +129,7 @@ export default function ProjectForm({
                         <FormItem>
                             <FormLabel>Project Name</FormLabel>
                             <FormControl>
-                                <Input
-                                    placeholder="Enter project name"
-                                    {...field}
-                                />
+                                <Input placeholder="Enter project name" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

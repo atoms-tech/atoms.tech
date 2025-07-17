@@ -88,8 +88,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             console.log('AgentPanel - No pinned organization ID available');
             return [];
         }
-        const orgMessages =
-            organizationMessages[currentPinnedOrganizationId] || [];
+        const orgMessages = organizationMessages[currentPinnedOrganizationId] || [];
         console.log(
             `AgentPanel - Loading ${orgMessages.length} messages for organization ${currentPinnedOrganizationId}`,
         );
@@ -193,9 +192,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         // Force hydration check after component mounts
         const timer = setTimeout(() => {
             if (!_hasHydrated) {
-                console.log(
-                    'AgentPanel - Forcing hydration completion after timeout',
-                );
+                console.log('AgentPanel - Forcing hydration completion after timeout');
                 setHasHydrated(true);
             }
         }, 100);
@@ -225,8 +222,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
     useEffect(() => {
         if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop =
-                scrollAreaRef.current.scrollHeight;
+            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
         }
     }, [messages]);
 
@@ -234,10 +230,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
     // Web Speech API initialization
     useEffect(() => {
-        if (
-            'webkitSpeechRecognition' in window ||
-            'SpeechRecognition' in window
-        ) {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition =
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (window as any).SpeechRecognition ||
@@ -317,18 +310,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     );
 
                     // Check each possible field and log what we find
-                    console.log(
-                        'AgentPanel - response.reply:',
-                        `"${response.reply}"`,
-                    );
+                    console.log('AgentPanel - response.reply:', `"${response.reply}"`);
                     console.log(
                         'AgentPanel - response.message:',
                         `"${response.message}"`,
                     );
-                    console.log(
-                        'AgentPanel - response.output:',
-                        `"${response.output}"`,
-                    );
+                    console.log('AgentPanel - response.output:', `"${response.output}"`);
 
                     reply =
                         (response.reply && response.reply.trim()) ||
@@ -399,10 +386,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 assistantMessage.content.substring(0, 100) + '...',
             );
             addMessage(assistantMessage);
-            console.log(
-                'AgentPanel - Total messages after adding:',
-                messages.length + 1,
-            );
+            console.log('AgentPanel - Total messages after adding:', messages.length + 1);
         } catch {
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -590,9 +574,8 @@ ${'='.repeat(50)}
                                 <div className="flex justify-center">
                                     <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 p-3">
                                         <p className="text-sm text-amber-800 dark:text-amber-200">
-                                            Please pin an organization in your
-                                            profile settings before using the
-                                            agent.
+                                            Please pin an organization in your profile
+                                            settings before using the agent.
                                         </p>
                                     </Card>
                                 </div>
@@ -639,44 +622,32 @@ ${'='.repeat(50)}
                                             )}
                                         >
                                             {msg.role === 'user' ? (
-                                                <p className="text-sm">
-                                                    {msg.content}
-                                                </p>
+                                                <p className="text-sm">{msg.content}</p>
                                             ) : (
                                                 <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                                                     <ReactMarkdown
                                                         components={{
-                                                            p: ({
-                                                                children,
-                                                            }) => (
+                                                            p: ({ children }) => (
                                                                 <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300">
                                                                     {children}
                                                                 </p>
                                                             ),
-                                                            strong: ({
-                                                                children,
-                                                            }) => (
+                                                            strong: ({ children }) => (
                                                                 <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
                                                                     {children}
                                                                 </strong>
                                                             ),
-                                                            code: ({
-                                                                children,
-                                                            }) => (
+                                                            code: ({ children }) => (
                                                                 <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-xs">
                                                                     {children}
                                                                 </code>
                                                             ),
-                                                            ul: ({
-                                                                children,
-                                                            }) => (
+                                                            ul: ({ children }) => (
                                                                 <ul className="list-disc ml-4 space-y-1">
                                                                     {children}
                                                                 </ul>
                                                             ),
-                                                            ol: ({
-                                                                children,
-                                                            }) => (
+                                                            ol: ({ children }) => (
                                                                 <ol className="list-decimal ml-4 space-y-1">
                                                                     {children}
                                                                 </ol>
@@ -727,9 +698,7 @@ ${'='.repeat(50)}
                                 {...({ ref: textareaRef } as any)}
                                 value={message}
                                 onChange={(e) =>
-                                    setMessage(
-                                        (e.target as HTMLTextAreaElement).value,
-                                    )
+                                    setMessage((e.target as HTMLTextAreaElement).value)
                                 }
                                 onKeyDown={handleKeyPress}
                                 placeholder="Type your message..."

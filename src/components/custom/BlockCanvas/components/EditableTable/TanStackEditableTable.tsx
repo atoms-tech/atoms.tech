@@ -80,9 +80,7 @@ export function TanStackEditableTable<
     const [pendingSaves, setPendingSaves] = useState<Set<string>>(new Set());
 
     // Track optimistic updates for potential rollback
-    const [optimisticUpdates, setOptimisticUpdates] = useState<
-        OptimisticUpdate[]
-    >([]);
+    const [optimisticUpdates, setOptimisticUpdates] = useState<OptimisticUpdate[]>([]);
 
     // Enhanced error handling for failed saves
     const handleSaveError = useCallback(
@@ -93,9 +91,7 @@ export function TanStackEditableTable<
             setLocalData((prevData) => {
                 const newData = [...prevData];
                 failedUpdates.forEach((update) => {
-                    const item = newData.find(
-                        (item) => item.id === update.itemId,
-                    );
+                    const item = newData.find((item) => item.id === update.itemId);
                     if (item) {
                         (item as Record<string, CellValue>)[update.field] =
                             update.oldValue;
@@ -209,9 +205,7 @@ export function TanStackEditableTable<
             // Update local data immediately for optimistic UI
             setLocalData((prev) =>
                 prev.map((item) =>
-                    item.id === itemId
-                        ? { ...item, [accessor]: newValue }
-                        : item,
+                    item.id === itemId ? { ...item, [accessor]: newValue } : item,
                 ),
             );
 
@@ -490,8 +484,7 @@ export function TanStackEditableTable<
                 case 'text':
                     // For external_id field, generate a REQ-ID instead of empty string
                     if (String(col.accessor).toLowerCase() === 'external_id') {
-                        acc[col.accessor as keyof T] =
-                            'GENERATING...' as T[keyof T];
+                        acc[col.accessor as keyof T] = 'GENERATING...' as T[keyof T];
                     } else {
                         acc[col.accessor as keyof T] = '' as T[keyof T];
                     }
@@ -521,9 +514,7 @@ export function TanStackEditableTable<
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import(
-                    '@/lib/supabase/supabaseBrowser'
-                );
+                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
 
                 // Get organization ID from the current document
                 const urlParts = window.location.pathname.split('/');
@@ -555,8 +546,7 @@ export function TanStackEditableTable<
                     )?.projects?.organization_id;
 
                     if (organizationId) {
-                        const reqId =
-                            await generateNextRequirementId(organizationId);
+                        const reqId = await generateNextRequirementId(organizationId);
                         newItem[externalIdColumn.accessor as keyof T] =
                             reqId as T[keyof T];
                     }
@@ -564,8 +554,7 @@ export function TanStackEditableTable<
             } catch (error) {
                 console.error('Failed to generate REQ-ID:', error);
                 // Fall back to empty string if generation fails
-                newItem[externalIdColumn.accessor as keyof T] =
-                    '' as T[keyof T];
+                newItem[externalIdColumn.accessor as keyof T] = '' as T[keyof T];
             }
         }
 
@@ -577,9 +566,7 @@ export function TanStackEditableTable<
     }, [canPerformAction, columns]);
 
     const handleSaveNewRow = useCallback(async () => {
-        console.log(
-            '🎯 STEP 2: handleSaveNewRow called in TanStackEditableTable',
-        );
+        console.log('🎯 STEP 2: handleSaveNewRow called in TanStackEditableTable');
         const newItem = editingData['new'];
         if (!newItem || !onSave) {
             console.log('❌ STEP 2: No newItem or onSave, returning early');
@@ -594,23 +581,17 @@ export function TanStackEditableTable<
                 itemWithoutId,
             );
 
-            console.log(
-                '🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)',
-            );
+            console.log('🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)');
             await onSave(itemWithoutId as T, true);
             console.log('✅ STEP 3b: Parent onSave completed successfully');
 
             // Call onPostSave after successfully saving to refresh data
             if (onPostSave) {
-                console.log(
-                    '🎯 STEP 3c: Calling onPostSave (refreshRequirements)',
-                );
+                console.log('🎯 STEP 3c: Calling onPostSave (refreshRequirements)');
                 await onPostSave();
                 console.log('✅ STEP 3c: onPostSave completed successfully');
             } else {
-                console.log(
-                    '⚠️ STEP 3c: No onPostSave provided, skipping refresh',
-                );
+                console.log('⚠️ STEP 3c: No onPostSave provided, skipping refresh');
             }
 
             // Clear editing state only after successful save
@@ -773,14 +754,13 @@ export function TanStackEditableTable<
                             )}
 
                             {/* Add new row placeholder */}
-                            {!isAddingNew &&
-                                (isEditMode || alwaysShowAddRow) && (
-                                    <AddRowPlaceholder
-                                        columns={columns}
-                                        onClick={handleAddNewRow}
-                                        isEditMode={isEditMode}
-                                    />
-                                )}
+                            {!isAddingNew && (isEditMode || alwaysShowAddRow) && (
+                                <AddRowPlaceholder
+                                    columns={columns}
+                                    onClick={handleAddNewRow}
+                                    isEditMode={isEditMode}
+                                />
+                            )}
                         </TableBody>
                     </Table>
                 </div>

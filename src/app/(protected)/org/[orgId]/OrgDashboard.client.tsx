@@ -43,10 +43,7 @@ import {
     useDuplicateProject,
 } from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-import {
-    OrganizationRole,
-    hasOrganizationPermission,
-} from '@/lib/auth/permissions';
+import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
@@ -83,21 +80,17 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
     const [isAiAnalysisDialogOpen, setIsAiAnalysisDialogOpen] = useState(false);
-    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
         null,
     );
-    const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(
-        null,
-    );
-    const [selectedRequirementId, setSelectedRequirementId] = useState<
-        string | null
-    >(null);
 
     const [isCanvasDialogOpen, setIsCanvasDialogOpen] = useState(false);
 
-    const [selectedCanvasProjectId, setSelectedCanvasProjectId] = useState<
-        string | null
-    >(null);
+    const [selectedCanvasProjectId, setSelectedCanvasProjectId] = useState<string | null>(
+        null,
+    );
     const { user } = useUser();
     const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
     const { toast } = useToast();
@@ -107,9 +100,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const { mutateAsync: deleteProject } = useDeleteProject();
 
     // State for project actions
-    const [isEditingProject, setIsEditingProject] = useState<string | null>(
-        null,
-    );
+    const [isEditingProject, setIsEditingProject] = useState<string | null>(null);
     const [editingProjectName, setEditingProjectName] = useState('');
 
     const { data: documents } = useQuery({
@@ -141,9 +132,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     });
 
     // Fetch external documents to calculate total usage
-    const { data: externalDocuments } = useExternalDocumentsByOrg(
-        props.orgId || '',
-    );
+    const { data: externalDocuments } = useExternalDocumentsByOrg(props.orgId || '');
 
     useEffect(() => {
         if (externalDocuments) {
@@ -360,33 +349,21 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 <TabsList
                     className={`grid ${
                         props.organization?.type === 'enterprise'
-                            ? hasOrganizationPermission(
-                                  userRole,
-                                  'invitePeople',
-                              )
+                            ? hasOrganizationPermission(userRole, 'invitePeople')
                                 ? 'grid-cols-4'
                                 : 'grid-cols-3'
                             : 'grid-cols-3'
                     } w-full`}
                 >
-                    <TabsTrigger
-                        value="overview"
-                        className="flex items-center gap-2"
-                    >
+                    <TabsTrigger value="overview" className="flex items-center gap-2">
                         <Building className="h-4 w-4" />
                         <span>Overview</span>
                     </TabsTrigger>
-                    <TabsTrigger
-                        value="projects"
-                        className="flex items-center gap-2"
-                    >
+                    <TabsTrigger value="projects" className="flex items-center gap-2">
                         <FolderArchive className="h-4 w-4" />
                         <span>Projects</span>
                     </TabsTrigger>
-                    <TabsTrigger
-                        value="documents"
-                        className="flex items-center gap-2"
-                    >
+                    <TabsTrigger value="documents" className="flex items-center gap-2">
                         <FileBox className="h-4 w-4" />
                         <span>Regulation Documents</span>
                     </TabsTrigger>
@@ -411,8 +388,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 <CardHeader>
                                     <CardTitle>Organization Details</CardTitle>
                                     <CardDescription>
-                                        Basic information about your
-                                        organization
+                                        Basic information about your organization
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -444,8 +420,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                     Members:
                                                 </span>
                                                 <span className="font-medium">
-                                                    {props.organization
-                                                        ?.member_count || 0}
+                                                    {props.organization?.member_count ||
+                                                        0}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
@@ -453,10 +429,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                     Plan:
                                                 </span>
                                                 <span className="font-medium">
-                                                    {
-                                                        props.organization
-                                                            ?.billing_plan
-                                                    }
+                                                    {props.organization?.billing_plan}
                                                 </span>
                                             </div>
                                         </div>
@@ -485,10 +458,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             />
                         </div>
                         <div className="flex items-center space-x-2">
-                            {hasOrganizationPermission(
-                                userRole,
-                                'createProjects',
-                            ) && (
+                            {hasOrganizationPermission(userRole, 'createProjects') && (
                                 <Button
                                     className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
                                     onClick={handleCreateProject}
@@ -497,10 +467,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     <Folder className="w-4 h-4" />
                                 </Button>
                             )}
-                            {hasOrganizationPermission(
-                                userRole,
-                                'goToCanvas',
-                            ) && (
+                            {hasOrganizationPermission(userRole, 'goToCanvas') && (
                                 <Button
                                     variant="outline"
                                     className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -511,10 +478,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 </Button>
                             )}
                             {props.organization?.type !== 'personal' &&
-                                hasOrganizationPermission(
-                                    userRole,
-                                    'goToAiAnalysis',
-                                ) && (
+                                hasOrganizationPermission(userRole, 'goToAiAnalysis') && (
                                     <Button
                                         variant="outline"
                                         className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
@@ -564,9 +528,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     >
                                         <div
                                             className="cursor-pointer"
-                                            onClick={() =>
-                                                props.onProjectClick(project)
-                                            }
+                                            onClick={() => props.onProjectClick(project)}
                                         >
                                             <CardHeader className="relative">
                                                 <div className="flex items-start justify-between">
@@ -578,18 +540,13 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                                     value={
                                                                         editingProjectName
                                                                     }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
+                                                                    onChange={(e) =>
                                                                         setEditingProjectName(
-                                                                            e
-                                                                                .target
+                                                                            e.target
                                                                                 .value,
                                                                         )
                                                                     }
-                                                                    onKeyDown={(
-                                                                        e,
-                                                                    ) => {
+                                                                    onKeyDown={(e) => {
                                                                         if (
                                                                             e.key ===
                                                                             'Enter'
@@ -606,18 +563,14 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                                     }}
                                                                     className="text-lg font-semibold"
                                                                     autoFocus
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) =>
+                                                                    onClick={(e) =>
                                                                         e.stopPropagation()
                                                                     }
                                                                 />
                                                                 <div className="flex gap-2">
                                                                     <Button
                                                                         size="sm"
-                                                                        onClick={(
-                                                                            e,
-                                                                        ) => {
+                                                                        onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleSaveProjectEdit(
                                                                                 project,
@@ -629,9 +582,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                                     <Button
                                                                         size="sm"
                                                                         variant="outline"
-                                                                        onClick={(
-                                                                            e,
-                                                                        ) => {
+                                                                        onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleCancelProjectEdit();
                                                                         }}
@@ -650,16 +601,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                     {/* 3-dot menu */}
                                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
-                                                            >
+                                                            <DropdownMenuTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     className="h-8 w-8 p-0"
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) =>
+                                                                    onClick={(e) =>
                                                                         e.stopPropagation()
                                                                     }
                                                                 >
@@ -668,9 +615,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
                                                                 <DropdownMenuItem
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
+                                                                    onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleDuplicateProject(
                                                                             project,
@@ -681,9 +626,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                                     Duplicate
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
+                                                                    onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleEditProject(
                                                                             project,
@@ -695,9 +638,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuSeparator />
                                                                 <DropdownMenuItem
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
+                                                                    onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         handleDeleteProject(
                                                                             project,
@@ -714,8 +655,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                                 </div>
                                             </CardHeader>
 
-                                            {isEditingProject !==
-                                                project.id && (
+                                            {isEditingProject !== project.id && (
                                                 <CardContent>
                                                     <p className="text-sm text-muted-foreground line-clamp-2">
                                                         {project.description ||
@@ -776,9 +716,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                         <Button variant="outline">
                                             {selectedProjectId
                                                 ? props.projects?.find(
-                                                      (p) =>
-                                                          p.id ===
-                                                          selectedProjectId,
+                                                      (p) => p.id === selectedProjectId,
                                                   )?.name
                                                 : 'Choose a project'}
                                         </Button>
@@ -788,13 +726,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                             <DropdownMenuItem
                                                 key={project.id}
                                                 onClick={() => {
-                                                    setSelectedProjectId(
-                                                        project.id,
-                                                    );
+                                                    setSelectedProjectId(project.id);
                                                     setSelectedDocumentId(null); // Reset document selection
-                                                    setSelectedRequirementId(
-                                                        null,
-                                                    ); // Reset requirement selection
+                                                    setSelectedRequirementId(null); // Reset requirement selection
                                                 }}
                                             >
                                                 {project.name}
@@ -812,9 +746,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                         <Button variant="outline">
                                             {selectedDocumentId
                                                 ? documents?.find(
-                                                      (d) =>
-                                                          d.id ===
-                                                          selectedDocumentId,
+                                                      (d) => d.id === selectedDocumentId,
                                                   )?.name
                                                 : 'Choose a document'}
                                         </Button>
@@ -824,12 +756,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                             <DropdownMenuItem
                                                 key={document.id}
                                                 onClick={() => {
-                                                    setSelectedDocumentId(
-                                                        document.id,
-                                                    );
-                                                    setSelectedRequirementId(
-                                                        null,
-                                                    ); // Reset requirement selection
+                                                    setSelectedDocumentId(document.id);
+                                                    setSelectedRequirementId(null); // Reset requirement selection
                                                 }}
                                             >
                                                 {document.name}
@@ -848,8 +776,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                             {selectedRequirementId
                                                 ? requirements?.find(
                                                       (r) =>
-                                                          r.id ===
-                                                          selectedRequirementId,
+                                                          r.id === selectedRequirementId,
                                                   )?.name
                                                 : 'Choose a requirement'}
                                         </Button>
@@ -887,9 +814,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             <Button
                                 className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
                                 onClick={handleStartAnalysis}
-                                disabled={
-                                    !selectedProjectId || !selectedRequirementId
-                                }
+                                disabled={!selectedProjectId || !selectedRequirementId}
                             >
                                 Start Analysis
                             </Button>
@@ -911,9 +836,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                     <Button variant="outline">
                                         {selectedCanvasProjectId
                                             ? props.projects?.find(
-                                                  (p) =>
-                                                      p.id ===
-                                                      selectedCanvasProjectId,
+                                                  (p) => p.id === selectedCanvasProjectId,
                                               )?.name
                                             : 'Choose a project'}
                                     </Button>
@@ -923,9 +846,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                         <DropdownMenuItem
                                             key={project.id}
                                             onClick={() =>
-                                                setSelectedCanvasProjectId(
-                                                    project.id,
-                                                )
+                                                setSelectedCanvasProjectId(project.id)
                                             }
                                         >
                                             {project.name}

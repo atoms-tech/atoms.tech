@@ -49,10 +49,7 @@ const projectFormSchema = z.object({
         .trim()
         .min(2, 'Project name must be at least 2 characters')
         .max(50, 'Project name cannot exceed 50 characters')
-        .refine(
-            (val) => val.length > 0,
-            'Project name cannot be empty or just spaces',
-        )
+        .refine((val) => val.length > 0, 'Project name cannot be empty or just spaces')
         .refine(
             (val) => /^[a-zA-Z0-9\s\-_]+$/.test(val),
             'Project name can only contain letters, numbers, spaces, hyphens and underscores',
@@ -80,11 +77,8 @@ export default function EditProjectForm({
     setShowDeleteConfirm,
 }: EditProjectFormProps) {
     const { userProfile } = useAuth();
-    const { mutateAsync: updateProject, isPending } = useUpdateProject(
-        project.id,
-    );
-    const { mutateAsync: deleteProject, isPending: isDeleting } =
-        useDeleteProject();
+    const { mutateAsync: updateProject, isPending } = useUpdateProject(project.id);
+    const { mutateAsync: deleteProject, isPending: isDeleting } = useDeleteProject();
     const { toast } = useToast();
     const router = useRouter();
     const params = useParams<{ orgId: string }>();
@@ -165,10 +159,7 @@ export default function EditProjectForm({
     return (
         <>
             <Form {...form}>
-                <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4"
-                >
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                         control={form.control}
                         name="name"
@@ -216,14 +207,10 @@ export default function EditProjectForm({
                                         {Object.values(ProjectStatus)
                                             .filter(
                                                 (status) =>
-                                                    status !==
-                                                    ProjectStatus.deleted,
+                                                    status !== ProjectStatus.deleted,
                                             ) // Disable changing status to deleted, let the delete button handle that.
                                             .map((status) => (
-                                                <SelectItem
-                                                    key={status}
-                                                    value={status}
-                                                >
+                                                <SelectItem key={status} value={status}>
                                                     {status}
                                                 </SelectItem>
                                             ))}
@@ -250,16 +237,14 @@ export default function EditProjectForm({
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {Object.values(Visibility).map(
-                                            (visibility) => (
-                                                <SelectItem
-                                                    key={visibility}
-                                                    value={visibility}
-                                                >
-                                                    {visibility}
-                                                </SelectItem>
-                                            ),
-                                        )}
+                                        {Object.values(Visibility).map((visibility) => (
+                                            <SelectItem
+                                                key={visibility}
+                                                value={visibility}
+                                            >
+                                                {visibility}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -286,10 +271,7 @@ export default function EditProjectForm({
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={isPending || isDeleting}
-                            >
+                            <Button type="submit" disabled={isPending || isDeleting}>
                                 {isPending ? 'Updating...' : 'Update Project'}
                             </Button>
                         </div>
@@ -298,20 +280,14 @@ export default function EditProjectForm({
             </Form>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog
-                open={showDeleteConfirm}
-                onOpenChange={setShowDeleteConfirm}
-            >
+            <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Are you absolutely sure?
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete the project and remove all associated data
-                            including documents, requirements, and other
-                            resources.
+                            This action cannot be undone. This will permanently delete the
+                            project and remove all associated data including documents,
+                            requirements, and other resources.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

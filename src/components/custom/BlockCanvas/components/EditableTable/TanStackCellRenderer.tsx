@@ -40,10 +40,9 @@ const TextCell = memo(
                 onChange={(e) => onChange(e.target.value)}
                 onBlur={(e) => {
                     // Only trigger blur if we're not clicking within the same cell
-                    const isClickingWithinCell =
-                        e.currentTarget.parentElement?.contains(
-                            e.relatedTarget as Node,
-                        );
+                    const isClickingWithinCell = e.currentTarget.parentElement?.contains(
+                        e.relatedTarget as Node,
+                    );
                     if (!isClickingWithinCell) {
                         onBlur?.();
                     }
@@ -79,18 +78,13 @@ const NumberCell = memo(
                 type="number"
                 value={value}
                 onChange={(e) =>
-                    onChange(
-                        e.target.value === ''
-                            ? null
-                            : parseFloat(e.target.value),
-                    )
+                    onChange(e.target.value === '' ? null : parseFloat(e.target.value))
                 }
                 onBlur={(e) => {
                     // Only trigger blur if we're not clicking within the same cell
-                    const isClickingWithinCell =
-                        e.currentTarget.parentElement?.contains(
-                            e.relatedTarget as Node,
-                        );
+                    const isClickingWithinCell = e.currentTarget.parentElement?.contains(
+                        e.relatedTarget as Node,
+                    );
                     if (!isClickingWithinCell) {
                         onBlur?.();
                     }
@@ -126,16 +120,13 @@ const DateCell = memo(
                 type="date"
                 value={value}
                 onChange={(e) =>
-                    onChange(
-                        e.target.value === '' ? null : new Date(e.target.value),
-                    )
+                    onChange(e.target.value === '' ? null : new Date(e.target.value))
                 }
                 onBlur={(e) => {
                     // Only trigger blur if we're not clicking within the same cell
-                    const isClickingWithinCell =
-                        e.currentTarget.parentElement?.contains(
-                            e.relatedTarget as Node,
-                        );
+                    const isClickingWithinCell = e.currentTarget.parentElement?.contains(
+                        e.relatedTarget as Node,
+                    );
                     if (!isClickingWithinCell) {
                         onBlur?.();
                     }
@@ -161,9 +152,7 @@ const SelectCell = memo(
         onBlur?: () => void;
     }) => {
         const selectValue =
-            value === null || value === undefined || value === ''
-                ? '__EMPTY__'
-                : value;
+            value === null || value === undefined || value === '' ? '__EMPTY__' : value;
 
         return (
             <Select
@@ -230,18 +219,12 @@ const DisplayCell = memo(({ value }: { value: CellValue }) => {
 
     if (Array.isArray(value)) {
         return (
-            <div className="py-0.5 px-1">
-                {value.map((v) => String(v)).join(', ')}
-            </div>
+            <div className="py-0.5 px-1">{value.map((v) => String(v)).join(', ')}</div>
         );
     }
 
     if (value instanceof Date) {
-        return (
-            <div className="py-0.5 px-1">
-                {value.toISOString().split('T')[0]}
-            </div>
-        );
+        return <div className="py-0.5 px-1">{value.toISOString().split('T')[0]}</div>;
     }
 
     return <div className="py-0.5 px-1">{String(value)}</div>;
@@ -300,12 +283,7 @@ const SelectCellWrapper = memo(
         onChange: (value: string | null) => void;
         onBlur?: () => void;
     }) => (
-        <SelectCell
-            value={value}
-            options={options}
-            onChange={onChange}
-            onBlur={onBlur}
-        />
+        <SelectCell value={value} options={options} onChange={onChange} onBlur={onBlur} />
     ),
 );
 SelectCellWrapper.displayName = 'SelectCellWrapper';
@@ -346,14 +324,7 @@ interface TanStackCellRendererProps<
 // Main cell renderer component for TanStack Table
 function TanStackCellRendererComponent<
     T extends Record<string, CellValue> & { id: string },
->({
-    cell,
-    isEditing,
-    onSave,
-    onBlur,
-    isSelected,
-    value,
-}: TanStackCellRendererProps<T>) {
+>({ cell, isEditing, onSave, onBlur, isSelected, value }: TanStackCellRendererProps<T>) {
     const column = cell.column.columnDef as unknown as EditableColumn<T>;
 
     // Memoize string and array values

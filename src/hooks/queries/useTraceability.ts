@@ -79,12 +79,8 @@ export function useUserAssignments(
         queryFn: async () => {
             const { data } = await buildQuery('assignments', {
                 ...queryFilters,
-                filters: [
-                    { field: 'assignee_id', operator: 'eq', value: userId },
-                ],
-                sort: queryFilters?.sort || [
-                    { field: 'created_at', direction: 'desc' },
-                ],
+                filters: [{ field: 'assignee_id', operator: 'eq', value: userId }],
+                sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },
@@ -106,9 +102,7 @@ export function useAuditLogs(
                     { field: 'entity_id', operator: 'eq', value: entityId },
                     { field: 'entity_type', operator: 'eq', value: entityType },
                 ],
-                sort: queryFilters?.sort || [
-                    { field: 'created_at', direction: 'desc' },
-                ],
+                sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },
@@ -126,9 +120,7 @@ export function useNotifications(
             const { data } = await buildQuery('notifications', {
                 ...queryFilters,
                 filters: [{ field: 'user_id', operator: 'eq', value: userId }],
-                sort: queryFilters?.sort || [
-                    { field: 'created_at', direction: 'desc' },
-                ],
+                sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },

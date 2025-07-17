@@ -1,12 +1,6 @@
 'use client';
 
-import {
-    Home,
-    LayoutDashboard,
-    LucideIcon,
-    Sparkles,
-    User,
-} from 'lucide-react';
+import { Home, LayoutDashboard, LucideIcon, Sparkles, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -71,8 +65,7 @@ function AppSidebar() {
     const primaryEnterpriseOrg = enterpriseOrg;
 
     const _isOrgPage = pathname?.startsWith('/org') ?? false;
-    const _isPlaygroundPage =
-        currentOrganization?.type === OrganizationType.personal;
+    const _isPlaygroundPage = currentOrganization?.type === OrganizationType.personal;
     const _isUserDashboardPage = pathname?.startsWith('/home/user') ?? false;
 
     // Check if user has only a personal org and no other memberships
@@ -80,8 +73,7 @@ function AppSidebar() {
         personalOrg &&
         (!organizations ||
             organizations.length === 0 ||
-            (organizations.length === 1 &&
-                organizations[0].id === personalOrg.id));
+            (organizations.length === 1 && organizations[0].id === personalOrg.id));
 
     const navigateToPlayground = useCallback(() => {
         if (personalOrg) {
@@ -118,27 +110,20 @@ function AppSidebar() {
                     const { error: updateError } = await supabase
                         .from('profiles')
                         .update({
-                            pinned_organization_id:
-                                data.personal_organization_id,
+                            pinned_organization_id: data.personal_organization_id,
                         })
                         .eq('id', user?.id || '');
 
                     if (!updateError) {
                         targetOrgId = data.personal_organization_id;
                     } else {
-                        console.error(
-                            'Error updating pinned organization:',
-                            updateError,
-                        );
+                        console.error('Error updating pinned organization:', updateError);
                         return;
                     }
                 }
 
                 if (targetOrgId) {
-                    console.log(
-                        'Navigating to pinned organization:',
-                        targetOrgId,
-                    );
+                    console.log('Navigating to pinned organization:', targetOrgId);
                     router.push(`/org/${targetOrgId}`);
                 } else {
                     console.log('No pinned or personal organization found');
@@ -178,9 +163,7 @@ function AppSidebar() {
                                 height={32}
                                 className="object-contain dark:invert"
                             />
-                            <span className="font-semibold text-base">
-                                ATOMS
-                            </span>
+                            <span className="font-semibold text-base">ATOMS</span>
                         </Link>
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
@@ -208,9 +191,7 @@ function AppSidebar() {
                                         <Button
                                             variant="ghost"
                                             className="w-full justify-start"
-                                            onClick={
-                                                navigateToPinnedOrganization
-                                            }
+                                            onClick={navigateToPinnedOrganization}
                                         >
                                             <LayoutDashboard className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                             <span className="text-xs font-medium">
@@ -299,9 +280,7 @@ function AppSidebar() {
                                 className="w-[--radix-popper-anchor-width] text-xs"
                             >
                                 <DropdownMenuItem asChild>
-                                    <Link href="/home/user/account">
-                                        Account
-                                    </Link>
+                                    <Link href="/home/user/account">Account</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
                                     <Link href="/billing">Billing</Link>
@@ -311,9 +290,7 @@ function AppSidebar() {
                                     disabled={isSigningOut}
                                 >
                                     <span>
-                                        {isSigningOut
-                                            ? 'Signing out...'
-                                            : 'Sign out'}
+                                        {isSigningOut ? 'Signing out...' : 'Sign out'}
                                     </span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>

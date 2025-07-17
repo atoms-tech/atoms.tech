@@ -15,10 +15,7 @@ type PropertyUpdate = Database['public']['Tables']['properties']['Update'] & {
 
 // Extended Property type for internal use, including extra fields used in the component
 interface ExtendedProperty
-    extends Omit<
-        Property,
-        'document_id' | 'property_type' | 'project_id' | 'options'
-    > {
+    extends Omit<Property, 'document_id' | 'property_type' | 'project_id' | 'options'> {
     key?: string;
     position?: number;
     type?: PropertyType;
@@ -84,45 +81,42 @@ export const useProperties = (documentId: string) => {
     }, [documentId, queryClient]);
 
     // Create a new property
-    const createProperty = useCallback(
-        async (propertyData: ExtendedProperty) => {
-            try {
-                const standardPropertyData = {
-                    project_id: propertyData.project_id,
-                    document_id: propertyData.document_id,
-                    org_id: propertyData.org_id,
-                    name: propertyData.name,
-                    property_type: propertyData.type || PropertyType.text,
-                    created_by: propertyData.created_by,
-                    updated_by: propertyData.updated_by,
-                    options: propertyData.options,
-                };
+    const createProperty = useCallback(async (propertyData: ExtendedProperty) => {
+        try {
+            const standardPropertyData = {
+                project_id: propertyData.project_id,
+                document_id: propertyData.document_id,
+                org_id: propertyData.org_id,
+                name: propertyData.name,
+                property_type: propertyData.type || PropertyType.text,
+                created_by: propertyData.created_by,
+                updated_by: propertyData.updated_by,
+                options: propertyData.options,
+            };
 
-                const insertData: PropertyInsert = {
-                    ...standardPropertyData,
-                    name:
-                        propertyData.key ||
-                        propertyData.name.toLowerCase().replace(/\s+/g, '_'),
-                    options: standardPropertyData.options
-                        ? JSON.stringify(standardPropertyData.options)
-                        : null,
-                };
+            const insertData: PropertyInsert = {
+                ...standardPropertyData,
+                name:
+                    propertyData.key ||
+                    propertyData.name.toLowerCase().replace(/\s+/g, '_'),
+                options: standardPropertyData.options
+                    ? JSON.stringify(standardPropertyData.options)
+                    : null,
+            };
 
-                const { data, error } = await supabase
-                    .from('properties')
-                    .insert(insertData)
-                    .select()
-                    .single();
+            const { data, error } = await supabase
+                .from('properties')
+                .insert(insertData)
+                .select()
+                .single();
 
-                if (error) throw error;
-                return data;
-            } catch (error) {
-                console.error('Error creating property:', error);
-                throw error;
-            }
-        },
-        [],
-    );
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error creating property:', error);
+            throw error;
+        }
+    }, []);
 
     // Update a property
     const updateProperty = useCallback(
@@ -150,9 +144,7 @@ export const useProperties = (documentId: string) => {
                 // Update local state and invalidate queries
                 const updatedProperty = data[0] as ExtendedProperty;
                 setProperties((prev) =>
-                    prev.map((p) =>
-                        p.id === propertyId ? updatedProperty : p,
-                    ),
+                    prev.map((p) => (p.id === propertyId ? updatedProperty : p)),
                 );
 
                 // Invalidate related queries
@@ -190,9 +182,7 @@ export const useProperties = (documentId: string) => {
                 }
 
                 // Update local state and invalidate queries
-                setProperties((prev) =>
-                    prev.filter((p) => p.id !== propertyId),
-                );
+                setProperties((prev) => prev.filter((p) => p.id !== propertyId));
 
                 // Invalidate related queries
                 queryClient.invalidateQueries({

@@ -18,10 +18,7 @@ import { useDocumentStore } from '@/store/document.store';
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
     columns: EditableColumn<DynamicRequirement>[];
-    onSaveRequirement: (
-        dynamicReq: DynamicRequirement,
-        isNew: boolean,
-    ) => Promise<void>;
+    onSaveRequirement: (dynamicReq: DynamicRequirement, isNew: boolean) => Promise<void>;
     onDeleteRequirement: (dynamicReq: DynamicRequirement) => Promise<void>;
     refreshRequirements: () => Promise<void>;
     isEditMode: boolean;
@@ -49,8 +46,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         } = useDocumentStore();
 
         // Use prop value if provided, otherwise fall back to global setting
-        const shouldUseTanStackTables =
-            useTanStackTables || globalUseTanStackTables;
+        const shouldUseTanStackTables = useTanStackTables || globalUseTanStackTables;
 
         // Added implementation for Glide bool, should change for an enum system later.
         const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
@@ -93,8 +89,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 onSave: handleSave,
                 onDelete: handleDelete,
                 onPostSave: handleRefresh,
-                emptyMessage:
-                    "Click the 'New Row' below to add your first requirement.",
+                emptyMessage: "Click the 'New Row' below to add your first requirement.",
                 showFilter: false,
                 isEditMode,
                 alwaysShowAddRow,

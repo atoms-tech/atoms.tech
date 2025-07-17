@@ -15,14 +15,8 @@ import 'reactflow/dist/style.css';
 
 import { useRouter } from 'next/navigation';
 
-import {
-    useRequirement,
-    useRequirementsByIds,
-} from '@/hooks/queries/useRequirement';
-import {
-    useReverseTraceLinks,
-    useTraceLinks,
-} from '@/hooks/queries/useTraceability';
+import { useRequirement, useRequirementsByIds } from '@/hooks/queries/useRequirement';
+import { useReverseTraceLinks, useTraceLinks } from '@/hooks/queries/useTraceability';
 
 interface TraceLinksGraphProps {
     requirementId: string;
@@ -38,25 +32,24 @@ interface Entity {
     parents: string[];
 }
 
-const NODE_COLORS: Record<EntityType, { background: string; border: string }> =
-    {
-        requirement: {
-            background: '#fff3e0',
-            border: '#ff9800',
-        },
-        task: {
-            background: '#f3e5f5',
-            border: '#9c27b0',
-        },
-        epic: {
-            background: '#e8f5e9',
-            border: '#4caf50',
-        },
-        project: {
-            background: '#e3f2fd',
-            border: '#2196f3',
-        },
-    };
+const NODE_COLORS: Record<EntityType, { background: string; border: string }> = {
+    requirement: {
+        background: '#fff3e0',
+        border: '#ff9800',
+    },
+    task: {
+        background: '#f3e5f5',
+        border: '#9c27b0',
+    },
+    epic: {
+        background: '#e8f5e9',
+        border: '#4caf50',
+    },
+    project: {
+        background: '#e3f2fd',
+        border: '#2196f3',
+    },
+};
 
 const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -71,8 +64,10 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
         requirementId,
         'requirement',
     );
-    const { data: incomingLinks, isLoading: incomingLoading } =
-        useReverseTraceLinks(requirementId, 'requirement');
+    const { data: incomingLinks, isLoading: incomingLoading } = useReverseTraceLinks(
+        requirementId,
+        'requirement',
+    );
 
     // Extract requirement IDs from trace links
     const linkedRequirementIds = useMemo(() => {
@@ -143,9 +138,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
                     padding: '10px',
                     width: 180,
                     fontWeight: 500,
-                    boxShadow: isCurrentNode
-                        ? '0 0 10px rgba(0,0,0,0.2)'
-                        : 'none',
+                    boxShadow: isCurrentNode ? '0 0 10px rgba(0,0,0,0.2)' : 'none',
                     cursor: 'pointer', // Add cursor pointer to indicate clickable nodes
                 },
             };
@@ -185,9 +178,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
                             children: [requirementId],
                             parents: [],
                         });
-                        entitiesMap
-                            .get(requirementId)
-                            ?.parents.push(link.source_id);
+                        entitiesMap.get(requirementId)?.parents.push(link.source_id);
                     }
                 });
             }
@@ -206,9 +197,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
                             children: [],
                             parents: [requirementId],
                         });
-                        entitiesMap
-                            .get(requirementId)
-                            ?.children.push(link.target_id);
+                        entitiesMap.get(requirementId)?.children.push(link.target_id);
                     }
                 });
             }
@@ -224,9 +213,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
         const levelHeight = 200;
 
         // Position parent nodes above
-        const parentNodes = [
-            ...(entitiesMap.get(requirementId)?.parents || []),
-        ];
+        const parentNodes = [...(entitiesMap.get(requirementId)?.parents || [])];
         if (parentNodes.length > 0) {
             const parentWidth = parentNodes.length * (nodeWidth + nodeSpacing);
             parentNodes.forEach((parentId, index) => {
@@ -248,9 +235,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
         }
 
         // Position child nodes below
-        const childNodes = [
-            ...(entitiesMap.get(requirementId)?.children || []),
-        ];
+        const childNodes = [...(entitiesMap.get(requirementId)?.children || [])];
         if (childNodes.length > 0) {
             const childWidth = childNodes.length * (nodeWidth + nodeSpacing);
             childNodes.forEach((childId, index) => {
@@ -305,9 +290,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
     if (outgoingLoading || incomingLoading || requirementsLoading) {
         return (
             <div className="flex items-center justify-center h-[600px]">
-                <div className="text-center">
-                    Loading trace links diagram...
-                </div>
+                <div className="text-center">Loading trace links diagram...</div>
             </div>
         );
     }
@@ -333,11 +316,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
             >
                 <Controls />
                 <MiniMap />
-                <Background
-                    variant={BackgroundVariant.Dots}
-                    gap={12}
-                    size={1}
-                />
+                <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
             </ReactFlow>
         </div>
     );

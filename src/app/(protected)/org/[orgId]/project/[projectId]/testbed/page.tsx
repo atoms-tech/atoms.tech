@@ -13,9 +13,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { Database } from '@/types/base/database.types';
 
 export default function TestBed() {
-    const [viewMode, setViewMode] = useState<
-        'Test Cases' | 'Traceability Matrix'
-    >('Test Cases');
+    const [viewMode, setViewMode] = useState<'Test Cases' | 'Traceability Matrix'>(
+        'Test Cases',
+    );
     const [showAddModal, setShowAddModal] = useState(false);
     const [newTestData, setNewTestData] = useState({
         title: '',
@@ -67,9 +67,7 @@ export default function TestBed() {
             toast({
                 title: 'Error',
                 description:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to create test case',
+                    error instanceof Error ? error.message : 'Failed to create test case',
                 variant: 'destructive',
             });
         }
@@ -121,9 +119,7 @@ export default function TestBed() {
                     {viewMode === 'Test Cases' ? (
                         <TestCaseView projectId={projectId as string} />
                     ) : (
-                        <TraceabilityMatrixView
-                            projectId={projectId as string}
-                        />
+                        <TraceabilityMatrixView projectId={projectId as string} />
                     )}
                 </div>
             </div>
@@ -214,22 +210,12 @@ export default function TestBed() {
                                         }
                                     >
                                         <option value="unit">Unit</option>
-                                        <option value="integration">
-                                            Integration
-                                        </option>
+                                        <option value="integration">Integration</option>
                                         <option value="system">System</option>
-                                        <option value="acceptance">
-                                            Acceptance
-                                        </option>
-                                        <option value="performance">
-                                            Performance
-                                        </option>
-                                        <option value="security">
-                                            Security
-                                        </option>
-                                        <option value="usability">
-                                            Usability
-                                        </option>
+                                        <option value="acceptance">Acceptance</option>
+                                        <option value="performance">Performance</option>
+                                        <option value="security">Security</option>
+                                        <option value="usability">Usability</option>
                                         <option value="other">Other</option>
                                     </select>
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -254,12 +240,8 @@ export default function TestBed() {
                                         }
                                     >
                                         <option value="manual">Manual</option>
-                                        <option value="automated">
-                                            Automated
-                                        </option>
-                                        <option value="matrix">
-                                            Test Matrix
-                                        </option>
+                                        <option value="automated">Automated</option>
+                                        <option value="matrix">Test Matrix</option>
                                     </select>
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                 </div>
@@ -284,9 +266,7 @@ export default function TestBed() {
                                             })
                                         }
                                     >
-                                        <option value="critical">
-                                            Critical
-                                        </option>
+                                        <option value="critical">Critical</option>
                                         <option value="high">High</option>
                                         <option value="medium">Medium</option>
                                         <option value="low">Low</option>
@@ -307,14 +287,10 @@ export default function TestBed() {
                         </Button>
                         <Button
                             onClick={handleCreateTest}
-                            disabled={
-                                !newTestData.title || createTestReq.isPending
-                            }
+                            disabled={!newTestData.title || createTestReq.isPending}
                             className="bg-accent text-accent-foreground hover:bg-accent/90 dark:bg-accent/90 dark:text-accent-foreground dark:hover:bg-accent/70"
                         >
-                            {createTestReq.isPending
-                                ? 'Creating...'
-                                : 'Create Test Case'}
+                            {createTestReq.isPending ? 'Creating...' : 'Create Test Case'}
                         </Button>
                     </div>
                 </DialogContent>

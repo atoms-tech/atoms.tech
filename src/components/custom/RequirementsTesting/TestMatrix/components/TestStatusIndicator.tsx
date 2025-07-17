@@ -94,10 +94,7 @@ function TestStatusIndicatorComponent({
                 <Tooltip delayDuration={50}>
                     <TooltipTrigger asChild>
                         <div>
-                            <Select
-                                value={status}
-                                onValueChange={handleValueChange}
-                            >
+                            <Select value={status} onValueChange={handleValueChange}>
                                 <SelectTrigger className="flex items-center justify-center w-5 h-5 min-w-0 min-h-0 border-0 bg-transparent p-0 shadow-none hover:bg-transparent focus:ring-0 focus:ring-offset-0 [&>svg]:hidden">
                                     <div
                                         className={`w-3.5 h-3.5 rounded-full ${styles.bg} transition-colors duration-200`}

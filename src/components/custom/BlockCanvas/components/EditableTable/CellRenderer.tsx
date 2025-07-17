@@ -14,9 +14,7 @@ import {
 
 import { CellValue, EditableColumn } from './types';
 
-interface CellRendererProps<
-    T extends Record<string, CellValue> & { id: string },
-> {
+interface CellRendererProps<T extends Record<string, CellValue> & { id: string }> {
     item: T;
     column: EditableColumn<T>;
     isEditing: boolean;
@@ -26,13 +24,7 @@ interface CellRendererProps<
 
 // Create individual cell type components for better separation of concerns
 const TextCell = memo(
-    ({
-        value,
-        onChange,
-    }: {
-        value: string;
-        onChange: (value: string) => void;
-    }) => (
+    ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
         <input
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -55,9 +47,7 @@ const NumberCell = memo(
             type="number"
             value={value}
             onChange={(e) =>
-                onChange(
-                    e.target.value === '' ? null : parseFloat(e.target.value),
-                )
+                onChange(e.target.value === '' ? null : parseFloat(e.target.value))
             }
             className="w-full h-full bg-transparent focus:outline-none py-0.5 px-1"
             data-editing="true"
@@ -67,20 +57,12 @@ const NumberCell = memo(
 NumberCell.displayName = 'NumberCell';
 
 const DateCell = memo(
-    ({
-        value,
-        onChange,
-    }: {
-        value: string;
-        onChange: (value: Date | null) => void;
-    }) => (
+    ({ value, onChange }: { value: string; onChange: (value: Date | null) => void }) => (
         <input
             type="date"
             value={value}
             onChange={(e) =>
-                onChange(
-                    e.target.value === '' ? null : new Date(e.target.value),
-                )
+                onChange(e.target.value === '' ? null : new Date(e.target.value))
             }
             className="w-full h-full bg-transparent focus:outline-none py-0.5 px-1"
             data-editing="true"
@@ -100,9 +82,7 @@ const SelectCell = memo(
         onChange: (value: string | null) => void;
     }) => {
         const selectValue =
-            value === null || value === undefined || value === ''
-                ? '__EMPTY__'
-                : value;
+            value === null || value === undefined || value === '' ? '__EMPTY__' : value;
 
         return (
             <Select
@@ -143,9 +123,7 @@ const MultiSelectCell = memo(
         <MultiSelect
             values={values}
             options={options}
-            onChange={(newValues) =>
-                onChange(newValues.length > 0 ? newValues : null)
-            }
+            onChange={(newValues) => onChange(newValues.length > 0 ? newValues : null)}
             placeholder="Select options..."
         />
     ),
@@ -160,18 +138,12 @@ const DisplayCell = memo(({ value }: { value: CellValue }) => {
 
     if (Array.isArray(value)) {
         return (
-            <div className="py-0.5 px-1">
-                {value.map((v) => String(v)).join(', ')}
-            </div>
+            <div className="py-0.5 px-1">{value.map((v) => String(v)).join(', ')}</div>
         );
     }
 
     if (value instanceof Date) {
-        return (
-            <div className="py-0.5 px-1">
-                {value.toISOString().split('T')[0]}
-            </div>
-        );
+        return <div className="py-0.5 px-1">{value.toISOString().split('T')[0]}</div>;
     }
 
     return <div className="py-0.5 px-1">{String(value)}</div>;
@@ -179,9 +151,13 @@ const DisplayCell = memo(({ value }: { value: CellValue }) => {
 DisplayCell.displayName = 'DisplayCell';
 
 // Main cell renderer with memoization
-function CellRendererComponent<
-    T extends Record<string, CellValue> & { id: string },
->({ item, column, isEditing, value, onCellChange }: CellRendererProps<T>) {
+function CellRendererComponent<T extends Record<string, CellValue> & { id: string }>({
+    item,
+    column,
+    isEditing,
+    value,
+    onCellChange,
+}: CellRendererProps<T>) {
     // Memoize stringValue and arrayValue calculations
     const stringValue = useMemo(() => {
         return value !== null && value !== undefined ? String(value) : '';
@@ -252,20 +228,11 @@ function CellRendererComponent<
                     />
                 );
             case 'number':
-                return (
-                    <NumberCell
-                        value={stringValue}
-                        onChange={handleNumberChange}
-                    />
-                );
+                return <NumberCell value={stringValue} onChange={handleNumberChange} />;
             case 'date':
-                return (
-                    <DateCell value={stringValue} onChange={handleDateChange} />
-                );
+                return <DateCell value={stringValue} onChange={handleDateChange} />;
             default:
-                return (
-                    <TextCell value={stringValue} onChange={handleTextChange} />
-                );
+                return <TextCell value={stringValue} onChange={handleTextChange} />;
         }
     }
 
@@ -274,6 +241,4 @@ function CellRendererComponent<
 }
 
 // Export memoized component to prevent unnecessary re-renders
-export const CellRenderer = memo(
-    CellRendererComponent,
-) as typeof CellRendererComponent;
+export const CellRenderer = memo(CellRendererComponent) as typeof CellRendererComponent;

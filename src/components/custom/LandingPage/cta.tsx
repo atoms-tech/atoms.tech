@@ -11,8 +11,8 @@ export function CTA() {
                     STILL USING A DINOSAUR FOR REQUIREMENTS?
                 </h2>
                 <p className="text-2xl md:text-3xl font-bold mb-16 text-black">
-                    THE FUTURE OF SYSTEMS ENGINEERING WON&apos;T WAIT. SWITCH
-                    NOW—OR GET LEFT BEHIND WITH THE FOSSILS.
+                    THE FUTURE OF SYSTEMS ENGINEERING WON&apos;T WAIT. SWITCH NOW—OR GET
+                    LEFT BEHIND WITH THE FOSSILS.
                 </p>
                 <div className="flex flex-col md:flex-row justify-start space-y-8 md:space-y-0 md:space-x-12">
                     <ScheduleDemoDialog className="bg-[#7C3AED] text-white hover:bg-[#6D28D9]" />

@@ -47,10 +47,7 @@ import ProjectMembers from './ProjectMembers';
 
 // Dynamically import the CreatePanel with no SSR
 const CreatePanel = dynamic(
-    () =>
-        import('@/components/base/panels/CreatePanel').then(
-            (mod) => mod.CreatePanel,
-        ),
+    () => import('@/components/base/panels/CreatePanel').then((mod) => mod.CreatePanel),
     {
         ssr: false,
         loading: () => (
@@ -71,11 +68,8 @@ export default function ProjectPage() {
     const currentTabFromUrl = searchParams.get('currentTab') || 'documents';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showCreateDocumentPanel, setShowCreateDocumentPanel] =
-        useState(false);
-    const [documentToDelete, setDocumentToDelete] = useState<Document | null>(
-        null,
-    );
+    const [showCreateDocumentPanel, setShowCreateDocumentPanel] = useState(false);
+    const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
     const [userRole, setUserRole] = useState<ProjectRole | null>(null);
@@ -88,8 +82,7 @@ export default function ProjectPage() {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const { mutateAsync: deleteProject } = useDeleteProject();
     const [documentToEdit, setDocumentToEdit] = useState<Document | null>(null);
-    const [documentToDuplicate, setDocumentToDuplicate] =
-        useState<Document | null>(null);
+    const [documentToDuplicate, setDocumentToDuplicate] = useState<Document | null>(null);
 
     console.log(userRole, 'userRole');
 
@@ -156,10 +149,7 @@ export default function ProjectPage() {
                 .eq('document_id', documentToDelete.id);
 
             if (requirementsError) {
-                console.error(
-                    'Error deleting requirements:',
-                    requirementsError,
-                );
+                console.error('Error deleting requirements:', requirementsError);
                 throw requirementsError;
             }
 
@@ -258,17 +248,11 @@ export default function ProjectPage() {
                 className="w-full"
             >
                 <TabsList className="grid grid-cols-2 w-full">
-                    <TabsTrigger
-                        value="overview"
-                        className="flex items-center gap-2"
-                    >
+                    <TabsTrigger value="overview" className="flex items-center gap-2">
                         <FolderOpen className="h-4 w-4" />
                         <span>Overview</span>
                     </TabsTrigger>
-                    <TabsTrigger
-                        value="documents"
-                        className="flex items-center gap-2"
-                    >
+                    <TabsTrigger value="documents" className="flex items-center gap-2">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="h-4 w-4"
@@ -301,17 +285,12 @@ export default function ProjectPage() {
                                             Basic information about your project
                                         </CardDescription>
                                     </div>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'editProject',
-                                    ) &&
+                                    {hasProjectPermission(userRole, 'editProject') &&
                                         !isEditing && (
                                             <Button
                                                 variant="outline"
                                                 size="icon"
-                                                onClick={() =>
-                                                    setIsEditing(true)
-                                                }
+                                                onClick={() => setIsEditing(true)}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -321,16 +300,10 @@ export default function ProjectPage() {
                                     {isEditing && project ? (
                                         <EditProjectForm
                                             project={project}
-                                            onSuccess={() =>
-                                                setIsEditing(false)
-                                            }
+                                            onSuccess={() => setIsEditing(false)}
                                             onCancel={() => setIsEditing(false)}
-                                            showDeleteConfirm={
-                                                showDeleteConfirm
-                                            }
-                                            setShowDeleteConfirm={
-                                                setShowDeleteConfirm
-                                            }
+                                            showDeleteConfirm={showDeleteConfirm}
+                                            setShowDeleteConfirm={setShowDeleteConfirm}
                                         />
                                     ) : (
                                         <div className="space-y-4">
@@ -349,8 +322,7 @@ export default function ProjectPage() {
                                                 <Badge
                                                     variant="outline"
                                                     className={
-                                                        project?.status ===
-                                                        'active'
+                                                        project?.status === 'active'
                                                             ? 'border-green-500 text-green-500'
                                                             : 'border-gray-500 text-gray-500'
                                                     }
@@ -406,9 +378,7 @@ export default function ProjectPage() {
                             {hasProjectPermission(userRole, 'addDocument') && (
                                 <Button
                                     variant="outline"
-                                    onClick={() =>
-                                        setShowCreateDocumentPanel(true)
-                                    }
+                                    onClick={() => setShowCreateDocumentPanel(true)}
                                     className="gap-2 transition-colors hover:bg-primary hover:text-primary-foreground"
                                 >
                                     <PlusCircle className="h-4 w-4" />
@@ -463,9 +433,7 @@ export default function ProjectPage() {
                                                 )) && (
                                                 <div className="flex-shrink-0">
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
+                                                        <DropdownMenuTrigger asChild>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
@@ -491,8 +459,7 @@ export default function ProjectPage() {
                                                                     className="gap-3 py-2.5"
                                                                 >
                                                                     <Pencil className="h-4 w-4" />
-                                                                    Edit
-                                                                    Document
+                                                                    Edit Document
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {hasProjectPermission(
@@ -508,8 +475,7 @@ export default function ProjectPage() {
                                                                     className="gap-3 py-2.5"
                                                                 >
                                                                     <Copy className="h-4 w-4" />
-                                                                    Duplicate
-                                                                    Document
+                                                                    Duplicate Document
                                                                 </DropdownMenuItem>
                                                             )}
                                                             {hasProjectPermission(
@@ -525,8 +491,7 @@ export default function ProjectPage() {
                                                                     }
                                                                 >
                                                                     <Trash className="h-4 w-4" />
-                                                                    Delete
-                                                                    Document
+                                                                    Delete Document
                                                                 </DropdownMenuItem>
                                                             )}
                                                         </DropdownMenuContent>
@@ -538,9 +503,7 @@ export default function ProjectPage() {
                                         {/* Document Info - Clickable Area */}
                                         <div
                                             className="flex-1 cursor-pointer flex flex-col"
-                                            onClick={() =>
-                                                handleDocumentClick(doc)
-                                            }
+                                            onClick={() => handleDocumentClick(doc)}
                                         >
                                             {doc.description && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
@@ -581,16 +544,11 @@ export default function ProjectPage() {
                                                     <div className="flex items-center gap-1">
                                                         {/* Status dot and text removed as per request */}
                                                     </div>
-                                                    {doc.tags &&
-                                                        doc.tags.length > 0 && (
-                                                            <div className="text-xs text-primary font-medium truncate">
-                                                                +
-                                                                {
-                                                                    doc.tags
-                                                                        .length
-                                                                }
-                                                            </div>
-                                                        )}
+                                                    {doc.tags && doc.tags.length > 0 && (
+                                                        <div className="text-xs text-primary font-medium truncate">
+                                                            +{doc.tags.length}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -600,58 +558,52 @@ export default function ProjectPage() {
                         </div>
 
                         {/* Empty State */}
-                        {filteredDocuments?.length === 0 &&
-                            !documentsLoading && (
-                                <div className="text-center py-16">
-                                    <div className="relative mx-auto mb-6">
-                                        {/* Stacked empty documents */}
-                                        <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="40"
-                                                height="40"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                className="text-black dark:text-white"
-                                            >
-                                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-                                                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-                                                <path d="M10 9H8" />
-                                                <path d="M16 13H8" />
-                                                <path d="M16 17H8" />
-                                            </svg>
-                                        </div>
-                                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-foreground mb-2">
-                                        No documents found
-                                    </h3>
-                                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                        Get started by creating your first
-                                        requirement document to organize and
-                                        manage your project requirements
-                                    </p>
-                                    {hasProjectPermission(
-                                        userRole,
-                                        'addDocument',
-                                    ) && (
-                                        <Button
-                                            variant="default"
-                                            onClick={() =>
-                                                setShowCreateDocumentPanel(true)
-                                            }
-                                            className="gap-2 px-6 py-2.5"
+                        {filteredDocuments?.length === 0 && !documentsLoading && (
+                            <div className="text-center py-16">
+                                <div className="relative mx-auto mb-6">
+                                    {/* Stacked empty documents */}
+                                    <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="40"
+                                            height="40"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className="text-black dark:text-white"
                                         >
-                                            <PlusCircle className="h-4 w-4" />
-                                            Create Your First Document
-                                        </Button>
-                                    )}
+                                            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                                            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                                            <path d="M10 9H8" />
+                                            <path d="M16 13H8" />
+                                            <path d="M16 17H8" />
+                                        </svg>
+                                    </div>
+                                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
                                 </div>
-                            )}
+                                <h3 className="text-xl font-semibold text-foreground mb-2">
+                                    No documents found
+                                </h3>
+                                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                                    Get started by creating your first requirement
+                                    document to organize and manage your project
+                                    requirements
+                                </p>
+                                {hasProjectPermission(userRole, 'addDocument') && (
+                                    <Button
+                                        variant="default"
+                                        onClick={() => setShowCreateDocumentPanel(true)}
+                                        className="gap-2 px-6 py-2.5"
+                                    >
+                                        <PlusCircle className="h-4 w-4" />
+                                        Create Your First Document
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </TabsContent>
             </Tabs>
@@ -668,14 +620,11 @@ export default function ProjectPage() {
             {showDeleteConfirm && (
                 <div className="mt-4 space-y-2">
                     <p className="text-red-500">
-                        Are you sure you want to delete this project? This
-                        action cannot be undone.
+                        Are you sure you want to delete this project? This action cannot
+                        be undone.
                     </p>
                     <div className="flex space-x-2">
-                        <Button
-                            variant="destructive"
-                            onClick={handleDeleteProject}
-                        >
+                        <Button variant="destructive" onClick={handleDeleteProject}>
                             Delete Project
                         </Button>
                         <Button
@@ -691,13 +640,10 @@ export default function ProjectPage() {
             {documentToDelete && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
                     <div className="bg-background p-6 rounded-lg max-w-md w-full">
-                        <h2 className="text-xl font-semibold mb-4">
-                            Delete Document
-                        </h2>
+                        <h2 className="text-xl font-semibold mb-4">Delete Document</h2>
                         <p>
                             Are you sure you want to delete &ldquo;
-                            {documentToDelete.name}&rdquo;? This action cannot
-                            be undone.
+                            {documentToDelete.name}&rdquo;? This action cannot be undone.
                         </p>
                         <div className="mt-4 flex justify-end space-x-2">
                             <Button

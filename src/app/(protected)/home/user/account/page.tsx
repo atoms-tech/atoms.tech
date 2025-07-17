@@ -22,8 +22,7 @@ export default function AccountPage() {
     const [newName, setNewName] = useState(profile?.full_name || '');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { layoutViewMode: layout, setLayoutViewMode: setLayout } =
-        useLayout();
+    const { layoutViewMode: layout, setLayoutViewMode: setLayout } = useLayout();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -43,9 +42,7 @@ export default function AccountPage() {
         }
 
         if (!/^[a-zA-Z0-9\s]+$/.test(newName)) {
-            setError(
-                'Name can only contain alphanumeric characters and spaces.',
-            );
+            setError('Name can only contain alphanumeric characters and spaces.');
             return;
         }
 
@@ -138,20 +135,14 @@ export default function AccountPage() {
                                         variant="outline"
                                         onClick={() => {
                                             setEditingName(false);
-                                            setNewName(
-                                                profile?.full_name || '',
-                                            );
+                                            setNewName(profile?.full_name || '');
                                             setError('');
                                         }}
                                     >
                                         Cancel
                                     </Button>
                                 </div>
-                                {error && (
-                                    <p className="text-red-500 text-sm">
-                                        {error}
-                                    </p>
-                                )}
+                                {error && <p className="text-red-500 text-sm">{error}</p>}
                             </div>
                         ) : (
                             <div className="flex items-center space-x-2">
@@ -168,15 +159,11 @@ export default function AccountPage() {
                             </div>
                         )}
                     </div>
-                    <p className="text-gray-600 text-sm mt-2">
-                        {user?.email || 'Email'}
-                    </p>
+                    <p className="text-gray-600 text-sm mt-2">{user?.email || 'Email'}</p>
                 </div>
 
                 <div className="w-3/5 mx-auto">
-                    <h2 className="text-xl font-medium pl-2 mb-2">
-                        Account Settings
-                    </h2>
+                    <h2 className="text-xl font-medium pl-2 mb-2">Account Settings</h2>
                     <Card className="p-5">
                         <SettingsSection
                             title="Display Settings"
@@ -197,10 +184,7 @@ export default function AccountPage() {
                                                 damping: 30,
                                             }}
                                             style={{
-                                                left:
-                                                    theme === 'light'
-                                                        ? 0
-                                                        : '50%',
+                                                left: theme === 'light' ? 0 : '50%',
                                                 width: '50%',
                                             }}
                                         />
@@ -230,8 +214,7 @@ export default function AccountPage() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-600">
-                                        Switch between standard and wide
-                                        layouts.
+                                        Switch between standard and wide layouts.
                                     </span>
                                     <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden w-21 ml-6">
                                         <motion.div
@@ -243,10 +226,7 @@ export default function AccountPage() {
                                                 damping: 30,
                                             }}
                                             style={{
-                                                left:
-                                                    layout === 'standard'
-                                                        ? 0
-                                                        : '50%',
+                                                left: layout === 'standard' ? 0 : '50%',
                                                 width: '50%',
                                             }}
                                         />

@@ -71,9 +71,7 @@ describe('useDocumentRequirementScanner', () => {
     });
 
     it('should initialize with correct default values', () => {
-        const { result } = renderHook(() =>
-            useDocumentRequirementScanner(mockProps),
-        );
+        const { result } = renderHook(() => useDocumentRequirementScanner(mockProps));
 
         expect(result.current.isScanning).toBe(false);
         expect(result.current.isAssigning).toBe(false);
@@ -81,13 +79,10 @@ describe('useDocumentRequirementScanner', () => {
     });
 
     it('should scan document and find requirements without IDs', async () => {
-        const { result } = renderHook(() =>
-            useDocumentRequirementScanner(mockProps),
-        );
+        const { result } = renderHook(() => useDocumentRequirementScanner(mockProps));
 
         await act(async () => {
-            const requirements =
-                await result.current.scanDocumentRequirements();
+            const requirements = await result.current.scanDocumentRequirements();
             expect(requirements).toHaveLength(2);
             expect(requirements[0].name).toBe('Test Requirement');
             expect(requirements[1].name).toBe('Another Requirement');
@@ -97,9 +92,7 @@ describe('useDocumentRequirementScanner', () => {
     });
 
     it('should assign REQ-IDs to selected requirements', async () => {
-        const { result } = renderHook(() =>
-            useDocumentRequirementScanner(mockProps),
-        );
+        const { result } = renderHook(() => useDocumentRequirementScanner(mockProps));
 
         // First scan to populate requirements
         await act(async () => {
@@ -117,9 +110,7 @@ describe('useDocumentRequirementScanner', () => {
 
     it('should handle scanning errors gracefully', async () => {
         // Mock error response
-        const mockSupabase = jest.requireMock(
-            '@/lib/supabase/supabaseBrowser',
-        ).supabase;
+        const mockSupabase = jest.requireMock('@/lib/supabase/supabaseBrowser').supabase;
         mockSupabase.from.mockReturnValueOnce({
             select: () => ({
                 eq: () => ({
@@ -139,9 +130,9 @@ describe('useDocumentRequirementScanner', () => {
         );
 
         await act(async () => {
-            await expect(
-                _result.current.scanDocumentRequirements(),
-            ).rejects.toThrow('Failed to fetch document blocks');
+            await expect(_result.current.scanDocumentRequirements()).rejects.toThrow(
+                'Failed to fetch document blocks',
+            );
         });
     });
 

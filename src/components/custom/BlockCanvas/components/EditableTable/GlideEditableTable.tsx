@@ -9,13 +9,7 @@ import DataEditor, {
     GridDragEventArgs,
     Item,
 } from '@glideapps/glide-data-grid';
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
@@ -113,36 +107,26 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         }));
     }, [columns]);
 
-    console.debug(
-        '[GlideEditableTable] Normalized Columns:',
-        normalizedColumns,
-    );
+    console.debug('[GlideEditableTable] Normalized Columns:', normalizedColumns);
 
     const [localColumns, setLocalColumns] = useState(
-        [...normalizedColumns].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-        ),
+        [...normalizedColumns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     );
 
     const [localData, setLocalData] = useState<T[]>(() => [...data]);
 
-    const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>(
-        {},
-    );
+    const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>({});
 
     const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
     console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
 
     useEffect(() => {
-        console.debug(
-            `[GlideEditableTable] PROPS for instance=${instanceId}:`,
-            {
-                dataLength: data.length,
-                columnCount: columns.length,
-                firstRow: data[0],
-                columns,
-            },
-        );
+        console.debug(`[GlideEditableTable] PROPS for instance=${instanceId}:`, {
+            dataLength: data.length,
+            columnCount: columns.length,
+            firstRow: data[0],
+            columns,
+        });
     }, [data, columns, instanceId]);
 
     useEffect(() => {
@@ -294,10 +278,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             requestAnimationFrame(() => {
                 const editor = gridRef.current;
                 if (editor && lastEditedCellRef.current) {
-                    console.debug(
-                        '[Refocusing Cell]',
-                        lastEditedCellRef.current,
-                    );
+                    console.debug('[Refocusing Cell]', lastEditedCellRef.current);
                     if (editor && lastEditedCellRef.current) {
                         const [col, row] = lastEditedCellRef.current;
                         editor.scrollTo(col, row);
@@ -431,9 +412,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                             //         handleEditorClose();
                             //     }
                             // }}
-                            onRowAppended={
-                                isEditMode ? handleRowAppended : undefined
-                            }
+                            onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
                             onRowMoved={handleRowMoved} // Enable row reordering
                         />

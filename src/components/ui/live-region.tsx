@@ -61,22 +61,13 @@ interface LiveRegionContextType {
     announce: (message: string, politeness?: 'polite' | 'assertive') => void;
 }
 
-const LiveRegionContext = createContext<LiveRegionContextType | undefined>(
-    undefined,
-);
+const LiveRegionContext = createContext<LiveRegionContextType | undefined>(undefined);
 
-export function LiveRegionProvider({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export function LiveRegionProvider({ children }: { children: React.ReactNode }) {
     const [politeMessage, setPoliteMessage] = useState('');
     const [assertiveMessage, setAssertiveMessage] = useState('');
 
-    const announce = (
-        message: string,
-        politeness: 'polite' | 'assertive' = 'polite',
-    ) => {
+    const announce = (message: string, politeness: 'polite' | 'assertive' = 'polite') => {
         if (politeness === 'assertive') {
             setAssertiveMessage(message);
         } else {
@@ -96,9 +87,7 @@ export function LiveRegionProvider({
 export function useLiveRegion() {
     const context = useContext(LiveRegionContext);
     if (!context) {
-        throw new Error(
-            'useLiveRegion must be used within a LiveRegionProvider',
-        );
+        throw new Error('useLiveRegion must be used within a LiveRegionProvider');
     }
     return context;
 }

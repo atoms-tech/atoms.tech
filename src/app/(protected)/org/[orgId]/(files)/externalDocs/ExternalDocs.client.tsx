@@ -20,10 +20,7 @@ import {
     useUploadExternalDocument,
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-import {
-    OrganizationRole,
-    hasOrganizationPermission,
-} from '@/lib/auth/permissions';
+import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -82,14 +79,11 @@ export default function ExternalDocsPage({
     }, [currentOrgId, user?.id]);
 
     // Only fetch documents if we have a valid orgId
-    const { data, refetch } = useExternalDocumentsByOrg(
-        currentOrgId ? currentOrgId : '',
-    );
+    const { data, refetch } = useExternalDocumentsByOrg(currentOrgId ? currentOrgId : '');
 
     // Calculate total usage
     useEffect(() => {
-        const usage =
-            data?.reduce((sum, file) => sum + (file.size || 0), 0) || 0;
+        const usage = data?.reduce((sum, file) => sum + (file.size || 0), 0) || 0;
         setTotalUsage(usage);
         onTotalUsageUpdate(usage);
 
@@ -107,8 +101,7 @@ export default function ExternalDocsPage({
         if (totalUsage > 1000 * 1024 * 1024) {
             toast({
                 title: 'Error',
-                description:
-                    'Storage cap reached. Cannot upload more documents.',
+                description: 'Storage cap reached. Cannot upload more documents.',
                 variant: 'destructive',
             });
             return;
@@ -122,9 +115,7 @@ export default function ExternalDocsPage({
         }
 
         if (!currentOrgId) {
-            alert(
-                'Organization ID is missing. Please try again or contact support.',
-            );
+            alert('Organization ID is missing. Please try again or contact support.');
             console.error('Missing organization ID for file upload');
             return;
         }
@@ -153,9 +144,7 @@ export default function ExternalDocsPage({
     // Handle file deletion
     const handleFileDelete = async (documentId: string) => {
         if (!currentOrgId) {
-            alert(
-                'Organization ID is missing. Please try again or contact support.',
-            );
+            alert('Organization ID is missing. Please try again or contact support.');
             return;
         }
 
@@ -190,9 +179,7 @@ export default function ExternalDocsPage({
 
     // Sort files based on selected option
     const sortedFiles = filteredFiles?.filter((file) =>
-        sortOption
-            ? file.type?.toLowerCase() === sortOption.toLowerCase()
-            : true,
+        sortOption ? file.type?.toLowerCase() === sortOption.toLowerCase() : true,
     );
 
     const openFile = (documentId: string) => {
@@ -274,9 +261,7 @@ export default function ExternalDocsPage({
                                 variant="default"
                                 className="w-9 h-9"
                                 onClick={() =>
-                                    document
-                                        .getElementById('file-upload')
-                                        ?.click()
+                                    document.getElementById('file-upload')?.click()
                                 }
                                 disabled={
                                     !currentOrgId ||
@@ -333,25 +318,20 @@ export default function ExternalDocsPage({
             </div>
 
             {errorMessage && (
-                <div className="text-center py-4 text-red-600">
-                    {errorMessage}
-                </div>
+                <div className="text-center py-4 text-red-600">{errorMessage}</div>
             )}
 
             {!currentOrgId ? (
                 <div className="text-center py-10">
                     <p className="text-muted-foreground">
-                        Organization not found. Please select a valid
-                        organization.
+                        Organization not found. Please select a valid organization.
                     </p>
                 </div>
             ) : (
                 <>
                     {isUploading && (
                         <div className="text-center py-2">
-                            <p className="text-muted-foreground">
-                                Uploading document...
-                            </p>
+                            <p className="text-muted-foreground">Uploading document...</p>
                         </div>
                     )}
                     {sortedFiles && sortedFiles.length > 0 ? (
@@ -373,10 +353,7 @@ export default function ExternalDocsPage({
                                     onClick={() => openFile(file.id)}
                                     style={{
                                         margin: '1px',
-                                        padding:
-                                            viewMode === 'list'
-                                                ? '13px'
-                                                : '30px',
+                                        padding: viewMode === 'list' ? '13px' : '30px',
                                     }}
                                 >
                                     <div className="flex justify-between items-center">
@@ -427,13 +404,9 @@ export default function ExternalDocsPage({
                                 No documents found
                             </h3>
                             <p className="mt-2 text-sm text-muted-foreground">
-                                Please upload documents to share with your
-                                organization.
+                                Please upload documents to share with your organization.
                             </p>
-                            {hasOrganizationPermission(
-                                userRole,
-                                'manageDocs',
-                            ) && (
+                            {hasOrganizationPermission(userRole, 'manageDocs') && (
                                 <label htmlFor="file-upload">
                                     <Button
                                         variant="default"

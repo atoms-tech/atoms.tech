@@ -119,17 +119,14 @@ export function useGumloop(options: GumloopOptions = {}) {
         });
     };
 
-    const { mutateAsync: uploadFiles, error: uploadError } =
-        uploadFilesMutation;
-    const { mutateAsync: startPipeline, error: pipelineError } =
-        startPipelineMutation;
+    const { mutateAsync: uploadFiles, error: uploadError } = uploadFilesMutation;
+    const { mutateAsync: startPipeline, error: pipelineError } = startPipelineMutation;
 
     return {
         uploadFiles,
         startPipeline,
         getPipelineRun: usePipelineRun,
-        loading:
-            uploadFilesMutation.isPending || startPipelineMutation.isPending,
+        loading: uploadFilesMutation.isPending || startPipelineMutation.isPending,
         error: error || uploadError || pipelineError,
         clearCache: useCallback(
             (runId?: string) => {

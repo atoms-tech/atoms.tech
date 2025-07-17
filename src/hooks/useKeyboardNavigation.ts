@@ -29,9 +29,7 @@ export function useKeyboardNavigation(
     options: KeyboardNavigationOptions = {},
 ) {
     const [isHelpVisible, setIsHelpVisible] = useState(false);
-    const [focusedElement, setFocusedElement] = useState<HTMLElement | null>(
-        null,
-    );
+    const [focusedElement, setFocusedElement] = useState<HTMLElement | null>(null);
 
     const {
         enableGlobalShortcuts = true,
@@ -85,14 +83,10 @@ export function useKeyboardNavigation(
             let nextIndex;
             if (direction === 'next') {
                 nextIndex =
-                    currentIndex < focusableElements.length - 1
-                        ? currentIndex + 1
-                        : 0;
+                    currentIndex < focusableElements.length - 1 ? currentIndex + 1 : 0;
             } else {
                 nextIndex =
-                    currentIndex > 0
-                        ? currentIndex - 1
-                        : focusableElements.length - 1;
+                    currentIndex > 0 ? currentIndex - 1 : focusableElements.length - 1;
             }
 
             const nextElement = focusableElements[nextIndex];
@@ -129,13 +123,11 @@ export function useKeyboardNavigation(
             switch (event.key) {
                 case 'ArrowDown':
                 case 'ArrowRight':
-                    nextIndex =
-                        currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                    nextIndex = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
                     break;
                 case 'ArrowUp':
                 case 'ArrowLeft':
-                    nextIndex =
-                        currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                    nextIndex = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
                     break;
                 case 'Home':
                     nextIndex = 0;
@@ -206,22 +198,15 @@ export function useKeyboardNavigation(
             // Handle custom shortcuts
             if (enableGlobalShortcuts) {
                 for (const shortcut of shortcuts) {
-                    const ctrlMatch = shortcut.ctrlKey
-                        ? event.ctrlKey
-                        : !event.ctrlKey;
-                    const metaMatch = shortcut.metaKey
-                        ? event.metaKey
-                        : !event.metaKey;
+                    const ctrlMatch = shortcut.ctrlKey ? event.ctrlKey : !event.ctrlKey;
+                    const metaMatch = shortcut.metaKey ? event.metaKey : !event.metaKey;
                     const shiftMatch = shortcut.shiftKey
                         ? event.shiftKey
                         : !event.shiftKey;
-                    const altMatch = shortcut.altKey
-                        ? event.altKey
-                        : !event.altKey;
+                    const altMatch = shortcut.altKey ? event.altKey : !event.altKey;
 
                     if (
-                        event.key.toLowerCase() ===
-                            shortcut.key.toLowerCase() &&
+                        event.key.toLowerCase() === shortcut.key.toLowerCase() &&
                         ctrlMatch &&
                         metaMatch &&
                         shiftMatch &&

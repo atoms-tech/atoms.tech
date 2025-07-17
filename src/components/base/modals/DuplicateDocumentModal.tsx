@@ -35,9 +35,7 @@ import { Document } from '@/types/base/documents.types';
 import { Project } from '@/types/base/projects.types';
 
 const duplicateDocumentSchema = z.object({
-    destinationProjectId: z
-        .string()
-        .min(1, 'Please select a destination project'),
+    destinationProjectId: z.string().min(1, 'Please select a destination project'),
     newName: z.string().min(1, 'Document name is required'),
 });
 
@@ -109,10 +107,7 @@ export default function DuplicateDocumentModal({
                     <DialogTitle>Duplicate Document</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        className="space-y-4"
-                    >
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField
                             control={form.control}
                             name="destinationProjectId"
@@ -129,16 +124,14 @@ export default function DuplicateDocumentModal({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {projects?.map(
-                                                (project: Project) => (
-                                                    <SelectItem
-                                                        key={project.id}
-                                                        value={project.id}
-                                                    >
-                                                        {project.name}
-                                                    </SelectItem>
-                                                ),
-                                            )}
+                                            {projects?.map((project: Project) => (
+                                                <SelectItem
+                                                    key={project.id}
+                                                    value={project.id}
+                                                >
+                                                    {project.name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -172,10 +165,7 @@ export default function DuplicateDocumentModal({
                             >
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={duplicateDocument.isPending}
-                            >
+                            <Button type="submit" disabled={duplicateDocument.isPending}>
                                 {duplicateDocument.isPending
                                     ? 'Duplicating...'
                                     : 'Duplicate'}

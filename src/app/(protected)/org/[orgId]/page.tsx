@@ -40,8 +40,10 @@ export default function OrgPage() {
     }, [organization, setCurrentOrganization]);
 
     // Fetch projects data
-    const { data: projects, isLoading: projectsLoading } =
-        useProjectsByMembershipForOrg(orgId, user?.id || '');
+    const { data: projects, isLoading: projectsLoading } = useProjectsByMembershipForOrg(
+        orgId,
+        user?.id || '',
+    );
     const { data: externalDocuments, isLoading: documentsLoading } =
         useExternalDocumentsByOrg(params?.orgId || '');
 

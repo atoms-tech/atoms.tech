@@ -93,13 +93,7 @@ export function useUpdateBlock() {
 
 export function useDeleteBlock() {
     return useMutation({
-        mutationFn: async ({
-            id,
-            deletedBy,
-        }: {
-            id: string;
-            deletedBy: string;
-        }) => {
+        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting block', id);
 
             const { data: block, error: blockError } = await supabase

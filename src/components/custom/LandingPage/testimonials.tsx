@@ -6,9 +6,9 @@ export function Testimonials() {
                 <div className="max-w-4xl mx-auto">
                     <div className="relative border-2 border-white p-16">
                         <p className="text-3xl md:text-4xl font-black mb-8 text-white tracking-tight leading-tight">
-                            &quot;THIS TOOL TRANSFORMED MY REQUIREMENTS PROCESS.
-                            NO WRESTLING WITH INCOMPLETE REQUIREMENTS WITH
-                            INADEQUATE TOOLS. UPLOAD, ENHANCE AND DELIVER.&quot;
+                            &quot;THIS TOOL TRANSFORMED MY REQUIREMENTS PROCESS. NO
+                            WRESTLING WITH INCOMPLETE REQUIREMENTS WITH INADEQUATE TOOLS.
+                            UPLOAD, ENHANCE AND DELIVER.&quot;
                         </p>
                         <p className="text-lg text-gray-400 font-bold">
                             — SHANKAR, STARTUP CONSULTANT

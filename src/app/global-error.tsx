@@ -39,10 +39,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
             return (
                 <div className="error-boundary">
                     <h1>Something went wrong.</h1>
-                    <p>
-                        {this.state.error?.message ||
-                            'An unexpected error occurred.'}
-                    </p>
+                    <p>{this.state.error?.message || 'An unexpected error occurred.'}</p>
                     <button onClick={this.handleRetry}>Try Again</button>
                 </div>
             );

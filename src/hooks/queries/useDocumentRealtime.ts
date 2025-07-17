@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-    BlockWithRequirements,
-    Column,
-} from '@/components/custom/BlockCanvas/types';
+import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
@@ -60,20 +57,17 @@ export const useDocumentRealtime = ({
             if (blocksError) throw blocksError;
 
             // Fetch requirements for all blocks
-            const { data: requirementsData, error: requirementsError } =
-                await supabase
-                    .from('requirements')
-                    .select('*')
-                    .is('is_deleted', false)
-                    .eq('document_id', documentId)
-                    .order('position');
+            const { data: requirementsData, error: requirementsError } = await supabase
+                .from('requirements')
+                .select('*')
+                .is('is_deleted', false)
+                .eq('document_id', documentId)
+                .order('position');
 
             if (requirementsError) throw requirementsError;
 
             // Fetch columns for table blocks
-            const tableBlocks = blocksData.filter(
-                (block) => block.type === 'table',
-            );
+            const tableBlocks = blocksData.filter((block) => block.type === 'table');
             console.log(
                 '🔍 Table blocks found:',
                 tableBlocks.length,
@@ -92,11 +86,7 @@ export const useDocumentRealtime = ({
                 console.error('❌ Columns fetch error:', columnsError);
                 throw columnsError;
             }
-            console.log(
-                '✅ Columns fetched:',
-                columnsData?.length || 0,
-                columnsData,
-            );
+            console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
 
             // Group requirements by block_id
             const requirementsByBlock = requirementsData.reduce(
@@ -127,8 +117,8 @@ export const useDocumentRealtime = ({
             console.log('🔍 Columns grouped by block:', columnsByBlock);
 
             // Combine blocks with their requirements and columns
-            const blocksWithRequirements: BlockWithRequirements[] =
-                blocksData.map((block: Block) => {
+            const blocksWithRequirements: BlockWithRequirements[] = blocksData.map(
+                (block: Block) => {
                     const blockColumns = columnsByBlock[block.id] || [];
                     console.log('🔍 Block data assembly:', {
                         blockId: block.id,
@@ -144,7 +134,8 @@ export const useDocumentRealtime = ({
                         requirements: requirementsByBlock[block.id] || [],
                         columns: blockColumns,
                     };
-                });
+                },
+            );
 
             setBlocks(blocksWithRequirements);
             setError(null);
@@ -216,11 +207,10 @@ export const useDocumentRealtime = ({
                                 if (block.id === payload.new.block_id) {
                                     return {
                                         ...block,
-                                        requirements: block.requirements.map(
-                                            (req) =>
-                                                req.id === payload.new.id
-                                                    ? (payload.new as Requirement)
-                                                    : req,
+                                        requirements: block.requirements.map((req) =>
+                                            req.id === payload.new.id
+                                                ? (payload.new as Requirement)
+                                                : req,
                                         ),
                                     };
                                 }

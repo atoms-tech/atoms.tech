@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
         console.error('API error:', error);
         return NextResponse.json(
             {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : 'An error occurred',
+                error: error instanceof Error ? error.message : 'An error occurred',
             },
             { status: 500 },
         );
@@ -32,10 +29,7 @@ export async function GET(request: NextRequest) {
     try {
         const taskId = request.nextUrl.searchParams.get('taskId');
         if (!taskId) {
-            return NextResponse.json(
-                { error: 'Run ID is required' },
-                { status: 400 },
-            );
+            return NextResponse.json({ error: 'Run ID is required' }, { status: 400 });
         }
 
         const task = await chunkrService.getTaskStatus({ taskId });
@@ -45,10 +39,7 @@ export async function GET(request: NextRequest) {
         console.error('API error:', error);
         return NextResponse.json(
             {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : 'An error occurred',
+                error: error instanceof Error ? error.message : 'An error occurred',
             },
             { status: 500 },
         );

@@ -105,28 +105,21 @@ export function Navbar() {
                     const { error: updateError } = await supabase
                         .from('profiles')
                         .update({
-                            pinned_organization_id:
-                                data.personal_organization_id,
+                            pinned_organization_id: data.personal_organization_id,
                         })
                         .eq('id', userProfile?.id || '');
 
                     if (!updateError) {
                         targetOrgId = data.personal_organization_id;
                     } else {
-                        console.error(
-                            'Error updating pinned organization:',
-                            updateError,
-                        );
+                        console.error('Error updating pinned organization:', updateError);
                         setLoading('dashboard', false);
                         return;
                     }
                 }
 
                 if (targetOrgId) {
-                    console.log(
-                        'Navigating to pinned organization:',
-                        targetOrgId,
-                    );
+                    console.log('Navigating to pinned organization:', targetOrgId);
                     router.push(`/org/${targetOrgId}`);
                 } else {
                     console.log('No pinned or personal organization found');
@@ -220,8 +213,7 @@ export function Navbar() {
                                         >
                                             <User size={16} />
                                             <span className="max-w-24 lg:max-w-32 truncate">
-                                                {userProfile?.full_name ||
-                                                    'Account'}
+                                                {userProfile?.full_name || 'Account'}
                                             </span>
                                             {loadingStates.dashboard && (
                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -255,9 +247,7 @@ export function Navbar() {
                                         >
                                             {loadingStates.billing ? (
                                                 <div className="flex items-center">
-                                                    <span className="mr-2">
-                                                        Billing
-                                                    </span>
+                                                    <span className="mr-2">Billing</span>
                                                     <Loader2 className="h-4 w-4 animate-spin" />
                                                 </div>
                                             ) : (
@@ -304,15 +294,9 @@ export function Navbar() {
                                 type="button"
                                 className="lg:hidden text-white p-1.5 sm:p-2 hover:bg-white/10 transition-colors touch-manipulation"
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                aria-label={
-                                    isMenuOpen ? 'Close menu' : 'Open menu'
-                                }
+                                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
                             >
-                                {isMenuOpen ? (
-                                    <X size={24} />
-                                ) : (
-                                    <Menu size={24} />
-                                )}
+                                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                             </button>
                         </div>
                     </div>

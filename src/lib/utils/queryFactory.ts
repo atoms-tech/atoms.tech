@@ -22,23 +22,11 @@ type QueryOperations<T extends TableName> = {
     gte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
     lt: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
     lte: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    like: (
-        column: keyof Row<T> & string,
-        value: FilterValue,
-    ) => QueryBuilder<T>;
-    ilike: (
-        column: keyof Row<T> & string,
-        value: FilterValue,
-    ) => QueryBuilder<T>;
+    like: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    ilike: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
     in: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
-    contains: (
-        column: keyof Row<T> & string,
-        value: FilterValue,
-    ) => QueryBuilder<T>;
-    overlaps: (
-        column: keyof Row<T> & string,
-        value: FilterValue,
-    ) => QueryBuilder<T>;
+    contains: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
+    overlaps: (column: keyof Row<T> & string, value: FilterValue) => QueryBuilder<T>;
 };
 
 export interface Filter<T extends TableName> {
@@ -154,11 +142,7 @@ export async function buildQuery<T extends TableName>(
     }
 
     if (queryFilters?.page && queryFilters?.pageSize) {
-        query = applyPagination(
-            query,
-            queryFilters.page,
-            queryFilters.pageSize,
-        );
+        query = applyPagination(query, queryFilters.page, queryFilters.pageSize);
     }
 
     const { data, error, count } = await query;

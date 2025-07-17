@@ -30,9 +30,9 @@ export default function DocumentPage() {
     const organizationId = params?.orgId as string;
 
     //const [useTanStackTable, setUseTanStackTable] = useState(false);
-    const [tableType, setTableType] = useState<
-        'default' | 'tanstack' | 'glide'
-    >('default');
+    const [tableType, setTableType] = useState<'default' | 'tanstack' | 'glide'>(
+        'default',
+    );
 
     // Global REQ-ID assignment trigger
     const [triggerAssignIds, setTriggerAssignIds] = useState(0);
@@ -59,10 +59,7 @@ export default function DocumentPage() {
 
         //get requirementId from sessionStorage
         const requirementId = sessionStorage.getItem('jumpToRequirementId');
-        console.log(
-            'Checking sessionStorage for requirementId:',
-            requirementId,
-        );
+        console.log('Checking sessionStorage for requirementId:', requirementId);
 
         if (requirementId) {
             const timeout = setTimeout(() => {
@@ -70,16 +67,12 @@ export default function DocumentPage() {
                     'Attempting to find element with ID:',
                     `requirement-${requirementId}`,
                 );
-                const element = document.getElementById(
-                    `requirement-${requirementId}`,
-                );
+                const element = document.getElementById(`requirement-${requirementId}`);
 
                 if (element) {
                     //clear the requirementId from sessionStorage only after finding the element
                     sessionStorage.removeItem('jumpToRequirementId');
-                    console.log(
-                        'Element found, cleared sessionStorage, scrolling to it',
-                    );
+                    console.log('Element found, cleared sessionStorage, scrolling to it');
 
                     //scroll to element
                     element.scrollIntoView({
@@ -89,8 +82,7 @@ export default function DocumentPage() {
 
                     setTimeout(() => {
                         console.log('Adding highlight class');
-                        element.style.backgroundColor =
-                            'rgba(153, 59, 246, 0.3)';
+                        element.style.backgroundColor = 'rgba(153, 59, 246, 0.3)';
                         element.classList.add('highlight-requirement');
 
                         setTimeout(() => {
@@ -100,10 +92,7 @@ export default function DocumentPage() {
                         }, 3000);
                     }, 100);
                 } else {
-                    console.log(
-                        'Element not found for requirementId:',
-                        requirementId,
-                    );
+                    console.log('Element not found for requirementId:', requirementId);
                 }
             }, 1500);
 
@@ -146,9 +135,7 @@ export default function DocumentPage() {
     // Handle modal confirmation
     const handleAssignConfirm = async (selectedIds: string[]) => {
         if (selectedIds.length === 0) {
-            toast.error(
-                'Please select at least one requirement to assign an ID',
-            );
+            toast.error('Please select at least one requirement to assign an ID');
             return;
         }
 
@@ -271,14 +258,11 @@ export default function DocumentPage() {
             });
 
             // Find requirements with invalid names or missing data
-            const { data: invalidRequirements, error: fetchError } =
-                await supabase
-                    .from('requirements')
-                    .select('id, name, external_id, block_id')
-                    .or(
-                        'name.is.null,name.eq.,name.eq.undefined,external_id.eq.undefined',
-                    )
-                    .eq('is_deleted', false);
+            const { data: invalidRequirements, error: fetchError } = await supabase
+                .from('requirements')
+                .select('id, name, external_id, block_id')
+                .or('name.is.null,name.eq.,name.eq.undefined,external_id.eq.undefined')
+                .eq('is_deleted', false);
 
             if (fetchError) {
                 throw fetchError;
@@ -380,24 +364,16 @@ export default function DocumentPage() {
                     </Button>*/}
                     <Select
                         value={tableType}
-                        onValueChange={(value) =>
-                            setTableType(value as typeof tableType)
-                        }
+                        onValueChange={(value) => setTableType(value as typeof tableType)}
                     >
                         <SelectTrigger className="w-[240px]">
                             <Table className="h-4 w-4 mr-2" />
                             <SelectValue placeholder="Select table type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="default">
-                                Default Table
-                            </SelectItem>
-                            <SelectItem value="tanstack">
-                                TanStack Table
-                            </SelectItem>
-                            <SelectItem value="glide">
-                                Glide Table (Demo)
-                            </SelectItem>
+                            <SelectItem value="default">Default Table</SelectItem>
+                            <SelectItem value="tanstack">TanStack Table</SelectItem>
+                            <SelectItem value="glide">Glide Table (Demo)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

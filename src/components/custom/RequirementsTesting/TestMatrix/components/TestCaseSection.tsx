@@ -31,17 +31,13 @@ function TestCaseSectionComponent({
         () =>
             testCases.filter(
                 (test) =>
-                    test.title
-                        .toLowerCase()
-                        .includes(testSearchTerm.toLowerCase()) ||
+                    test.title.toLowerCase().includes(testSearchTerm.toLowerCase()) ||
                     (test.test_id &&
                         test.test_id
                             .toLowerCase()
                             .includes(testSearchTerm.toLowerCase())) ||
                     (test.id &&
-                        test.id
-                            .toLowerCase()
-                            .includes(testSearchTerm.toLowerCase())),
+                        test.id.toLowerCase().includes(testSearchTerm.toLowerCase())),
             ),
         [testCases, testSearchTerm],
     );
@@ -84,18 +80,15 @@ function TestCaseSectionComponent({
                 ) : (
                     <div className="divide-y divide-muted/30">
                         {filteredTestCases.map((test) => {
-                            const isLinked =
-                                isTestCaseLinkedToSelectedRequirement(
-                                    test.id,
-                                    linkedTestCasesMap,
-                                );
+                            const isLinked = isTestCaseLinkedToSelectedRequirement(
+                                test.id,
+                                linkedTestCasesMap,
+                            );
                             return (
                                 <TestCaseRow
                                     key={test.id}
                                     testCase={test}
-                                    isSelected={selectedTestCaseIds.includes(
-                                        test.id,
-                                    )}
+                                    isSelected={selectedTestCaseIds.includes(test.id)}
                                     isLinked={isLinked}
                                     onSelect={(isSelected) =>
                                         updateSelectedTestCases(
@@ -177,8 +170,7 @@ const TestCaseRow = memo(function TestCaseRow({
                             ref={titleRef}
                             className={cn(
                                 'inline-block max-w-full whitespace-nowrap',
-                                shouldScroll &&
-                                    'animate-marquee hover:animate-marquee',
+                                shouldScroll && 'animate-marquee hover:animate-marquee',
                             )}
                             style={
                                 shouldScroll
@@ -195,9 +187,7 @@ const TestCaseRow = memo(function TestCaseRow({
                                 </span>
                             )}
                             {/* Add extra padding for loop effect */}
-                            {shouldScroll && (
-                                <span className="px-4 opacity-70">•</span>
-                            )}
+                            {shouldScroll && <span className="px-4 opacity-70">•</span>}
                             {/* Duplicate text for seamless loop */}
                             {shouldScroll && (
                                 <>

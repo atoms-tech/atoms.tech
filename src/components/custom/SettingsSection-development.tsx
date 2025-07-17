@@ -46,9 +46,7 @@ const InProgressOverlay = ({
 }) => {
     return (
         <div className="relative p-3 rounded-lg">
-            <div className="relative z-10 opacity-50 pointer-events-none">
-                {children}
-            </div>
+            <div className="relative z-10 opacity-50 pointer-events-none">{children}</div>
             <div className="absolute inset-0 z-20 bg-white/70 dark:bg-black/40 backdrop-blur-[3px] rounded-lg border border-dashed border-muted-foreground/40 flex items-center justify-center">
                 <div className="flex items-center gap-2 text-xs text-foreground/80 bg-background/95 px-3 py-1.5 rounded-full border border-border/60 shadow-sm">
                     <Wrench className="h-3 w-3" />
@@ -63,8 +61,7 @@ export function SettingsSectionDevelopment() {
     const { user, profile } = useUser();
     const { theme, setTheme } = useTheme();
     const { announce } = useLiveRegion();
-    const { settings: _accessibilitySettings, updateSetting } =
-        useAccessibility();
+    const { settings: _accessibilitySettings, updateSetting } = useAccessibility();
     const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
     // Local settings for features not yet implemented in accessibility provider
@@ -105,12 +102,8 @@ export function SettingsSectionDevelopment() {
             <Tabs defaultValue="appearance" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="appearance">Appearance</TabsTrigger>
-                    <TabsTrigger value="accessibility">
-                        Accessibility
-                    </TabsTrigger>
-                    <TabsTrigger value="notifications">
-                        Notifications
-                    </TabsTrigger>
+                    <TabsTrigger value="accessibility">Accessibility</TabsTrigger>
+                    <TabsTrigger value="notifications">Notifications</TabsTrigger>
                     <TabsTrigger value="account">Account</TabsTrigger>
                 </TabsList>
 
@@ -128,11 +121,7 @@ export function SettingsSectionDevelopment() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-3 gap-4">
                                 <Button
-                                    variant={
-                                        theme === 'light'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
+                                    variant={theme === 'light' ? 'default' : 'outline'}
                                     onClick={() => handleThemeChange('light')}
                                     className="flex flex-col items-center gap-2 h-auto py-4"
                                 >
@@ -140,9 +129,7 @@ export function SettingsSectionDevelopment() {
                                     Light
                                 </Button>
                                 <Button
-                                    variant={
-                                        theme === 'dark' ? 'default' : 'outline'
-                                    }
+                                    variant={theme === 'dark' ? 'default' : 'outline'}
                                     onClick={() => handleThemeChange('dark')}
                                     className="flex flex-col items-center gap-2 h-auto py-4"
                                 >
@@ -150,11 +137,7 @@ export function SettingsSectionDevelopment() {
                                     Dark
                                 </Button>
                                 <Button
-                                    variant={
-                                        theme === 'system'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
+                                    variant={theme === 'system' ? 'default' : 'outline'}
                                     onClick={() => handleThemeChange('system')}
                                     className="flex flex-col items-center gap-2 h-auto py-4"
                                 >
@@ -175,34 +158,24 @@ export function SettingsSectionDevelopment() {
                         <CardContent className="space-y-4">
                             <InProgressOverlay feature="compactMode">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="compact-mode">
-                                        Compact mode
-                                    </Label>
+                                    <Label htmlFor="compact-mode">Compact mode</Label>
                                     <Switch
                                         id="compact-mode"
                                         checked={localSettings.compactMode}
                                         onCheckedChange={(checked) =>
-                                            updateLocalSetting(
-                                                'compactMode',
-                                                checked,
-                                            )
+                                            updateLocalSetting('compactMode', checked)
                                         }
                                     />
                                 </div>
                             </InProgressOverlay>
                             <InProgressOverlay feature="autoSave">
                                 <div className="flex items-center justify-between">
-                                    <Label htmlFor="auto-save">
-                                        Auto-save documents
-                                    </Label>
+                                    <Label htmlFor="auto-save">Auto-save documents</Label>
                                     <Switch
                                         id="auto-save"
                                         checked={localSettings.autoSave}
                                         onCheckedChange={(checked) =>
-                                            updateLocalSetting(
-                                                'autoSave',
-                                                checked,
-                                            )
+                                            updateLocalSetting('autoSave', checked)
                                         }
                                     />
                                 </div>
@@ -219,8 +192,7 @@ export function SettingsSectionDevelopment() {
                                 Accessibility Features
                             </CardTitle>
                             <CardDescription>
-                                Configure accessibility options for better
-                                usability
+                                Configure accessibility options for better usability
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -230,18 +202,15 @@ export function SettingsSectionDevelopment() {
                                         Enhanced keyboard navigation
                                     </Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Enable full keyboard navigation with
-                                        visual indicators
+                                        Enable full keyboard navigation with visual
+                                        indicators
                                     </p>
                                 </div>
                                 <Switch
                                     id="keyboard-nav"
                                     checked={true}
                                     onCheckedChange={(checked) => {
-                                        updateSetting(
-                                            'keyboardNavigation',
-                                            checked,
-                                        );
+                                        updateSetting('keyboardNavigation', checked);
                                         announce(
                                             `Keyboard navigation ${checked ? 'enabled' : 'disabled'}`,
                                             'polite',
@@ -254,9 +223,7 @@ export function SettingsSectionDevelopment() {
 
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <Label htmlFor="reduced-motion">
-                                        Reduce motion
-                                    </Label>
+                                    <Label htmlFor="reduced-motion">Reduce motion</Label>
                                     <p className="text-sm text-muted-foreground">
                                         Minimize animations and transitions
                                     </p>
@@ -323,9 +290,7 @@ export function SettingsSectionDevelopment() {
                             <div className="space-y-2">
                                 <Button
                                     variant="outline"
-                                    onClick={() =>
-                                        setShowKeyboardShortcuts(true)
-                                    }
+                                    onClick={() => setShowKeyboardShortcuts(true)}
                                     className="w-full justify-start"
                                 >
                                     <Keyboard className="h-4 w-4 mr-2" />
@@ -366,18 +331,14 @@ export function SettingsSectionDevelopment() {
                                             Enable notifications
                                         </Label>
                                         <p className="text-sm text-muted-foreground">
-                                            Receive notifications for important
-                                            updates
+                                            Receive notifications for important updates
                                         </p>
                                     </div>
                                     <Switch
                                         id="notifications"
                                         checked={localSettings.notifications}
                                         onCheckedChange={(checked) =>
-                                            updateLocalSetting(
-                                                'notifications',
-                                                checked,
-                                            )
+                                            updateLocalSetting('notifications', checked)
                                         }
                                     />
                                 </div>
@@ -385,12 +346,9 @@ export function SettingsSectionDevelopment() {
 
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <Label htmlFor="sound-effects">
-                                        Sound effects
-                                    </Label>
+                                    <Label htmlFor="sound-effects">Sound effects</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Play sounds for actions and
-                                        notifications
+                                        Play sounds for actions and notifications
                                     </p>
                                 </div>
                                 <Switch

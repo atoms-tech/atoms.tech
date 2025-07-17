@@ -1,8 +1,4 @@
-import {
-    QueryClient,
-    useMutation,
-    useQueryClient,
-} from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -54,8 +50,7 @@ export function useCreateRequirement() {
 
             if (organizationId) {
                 try {
-                    externalId =
-                        await generateNextRequirementId(organizationId);
+                    externalId = await generateNextRequirementId(organizationId);
                 } catch (error) {
                     console.error('Error generating requirement ID:', error);
                     // Use fallback ID with timestamp
@@ -86,12 +81,11 @@ export function useCreateRequirement() {
                 type: input.type || null,
             };
 
-            const { data: requirement, error: requirementError } =
-                await supabase
-                    .from('requirements')
-                    .insert(insertData)
-                    .select()
-                    .single();
+            const { data: requirement, error: requirementError } = await supabase
+                .from('requirements')
+                .insert(insertData)
+                .select()
+                .single();
 
             if (requirementError) {
                 console.error('Failed to create requirement', requirementError);
@@ -114,22 +108,18 @@ export function useUpdateRequirement() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            id,
-            ...input
-        }: Partial<Requirement> & { id: string }) => {
+        mutationFn: async ({ id, ...input }: Partial<Requirement> & { id: string }) => {
             console.log('Updating requirement', id, input);
 
-            const { data: requirement, error: requirementError } =
-                await supabase
-                    .from('requirements')
-                    .update({
-                        ...input,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', id)
-                    .select()
-                    .single();
+            const { data: requirement, error: requirementError } = await supabase
+                .from('requirements')
+                .update({
+                    ...input,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', id)
+                .select()
+                .single();
 
             if (requirementError) {
                 console.error('Failed to update requirement', requirementError);
@@ -152,26 +142,19 @@ export function useDeleteRequirement() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            id,
-            deletedBy,
-        }: {
-            id: string;
-            deletedBy: string;
-        }) => {
+        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting requirement', id);
 
-            const { data: requirement, error: requirementError } =
-                await supabase
-                    .from('requirements')
-                    .update({
-                        is_deleted: true,
-                        deleted_at: new Date().toISOString(),
-                        deleted_by: deletedBy,
-                    })
-                    .eq('id', id)
-                    .select()
-                    .single();
+            const { data: requirement, error: requirementError } = await supabase
+                .from('requirements')
+                .update({
+                    is_deleted: true,
+                    deleted_at: new Date().toISOString(),
+                    deleted_by: deletedBy,
+                })
+                .eq('id', id)
+                .select()
+                .single();
 
             if (requirementError) {
                 console.error('Failed to delete requirement', requirementError);
@@ -214,10 +197,7 @@ export function useSyncRequirementData() {
     });
 }
 
-const invalidateRequirementQueries = (
-    queryClient: QueryClient,
-    data: Requirement,
-) => {
+const invalidateRequirementQueries = (queryClient: QueryClient, data: Requirement) => {
     queryClient.invalidateQueries({
         queryKey: queryKeys.requirements.list({}),
     });

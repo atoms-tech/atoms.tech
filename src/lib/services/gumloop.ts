@@ -2,10 +2,8 @@ const GUMLOOP_API_KEY = process.env.NEXT_PUBLIC_GUMLOOP_API_KEY;
 const GUMLOOP_API_URL =
     process.env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1';
 const USER_ID = process.env.NEXT_PUBLIC_GUMLOOP_USER_ID;
-const GUMLOOP_FILE_CONVERT_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
-const GUMLOOP_REQ_ANALYSIS_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
+const GUMLOOP_FILE_CONVERT_FLOW_ID = process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
+const GUMLOOP_REQ_ANALYSIS_FLOW_ID = process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
 const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
     process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID;
 const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
@@ -20,9 +18,7 @@ for (const [key, value] of Object.entries({
     GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
 })) {
     if (!value) {
-        throw new Error(
-            `Missing required environment variable: NEXT_PUBLIC_${key}`,
-        );
+        throw new Error(`Missing required environment variable: NEXT_PUBLIC_${key}`);
     }
 }
 
@@ -161,9 +157,7 @@ export class GumloopService {
         } catch (error) {
             console.error('Upload process failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
+                error instanceof Error ? error.message : 'Unknown error occurred';
             throw new Error(`Failed to upload files: ${errorMessage}`);
         }
     }
@@ -202,9 +196,7 @@ export class GumloopService {
         }
 
         if (!pipeline_id) {
-            throw new Error(
-                'Either savedItemId or pipelineType must be provided',
-            );
+            throw new Error('Either savedItemId or pipelineType must be provided');
         }
 
         console.log('Starting pipeline with params:', {
@@ -311,9 +303,7 @@ export class GumloopService {
         } catch (error) {
             console.error('Start pipeline process failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
+                error instanceof Error ? error.message : 'Unknown error occurred';
             throw new Error(`Failed to start pipeline: ${errorMessage}`);
         }
     }
@@ -357,12 +347,8 @@ export class GumloopService {
         } catch (error) {
             console.error('Get pipeline run process failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
-            throw new Error(
-                `Failed to get pipeline run status: ${errorMessage}`,
-            );
+                error instanceof Error ? error.message : 'Unknown error occurred';
+            throw new Error(`Failed to get pipeline run status: ${errorMessage}`);
         }
     }
 }

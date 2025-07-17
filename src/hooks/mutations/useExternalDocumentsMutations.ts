@@ -33,10 +33,7 @@ export function useUploadExternalDocument() {
 
             if (error) {
                 // If storage upload fails, clean up the database record
-                await supabase
-                    .from('external_documents')
-                    .delete()
-                    .eq('id', document.id);
+                await supabase.from('external_documents').delete().eq('id', document.id);
 
                 throw error;
             }
@@ -59,12 +56,7 @@ export function useDeleteExternalDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            documentId,
-        }: {
-            documentId: string;
-            orgId: string;
-        }) => {
+        mutationFn: async ({ documentId }: { documentId: string; orgId: string }) => {
             // First get the document to ensure it exists
             const { data: document, error: fetchError } = await supabase
                 .from('external_documents')
@@ -100,9 +92,7 @@ export function useDeleteExternalDocument() {
             });
             if (variables.orgId) {
                 queryClient.invalidateQueries({
-                    queryKey: queryKeys.externalDocuments.byOrg(
-                        variables.orgId,
-                    ),
+                    queryKey: queryKeys.externalDocuments.byOrg(variables.orgId),
                 });
             }
         },
@@ -143,9 +133,7 @@ export function useUpdateExternalDocument() {
             });
             if (variables.orgId) {
                 queryClient.invalidateQueries({
-                    queryKey: queryKeys.externalDocuments.byOrg(
-                        variables.orgId,
-                    ),
+                    queryKey: queryKeys.externalDocuments.byOrg(variables.orgId),
                 });
             }
         },

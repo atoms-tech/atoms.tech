@@ -22,8 +22,7 @@ export function FocusTrap({
         if (!active) return;
 
         // Store the currently focused element
-        previouslyFocusedElement.current =
-            document.activeElement as HTMLElement;
+        previouslyFocusedElement.current = document.activeElement as HTMLElement;
 
         const container = containerRef.current;
         if (!container) return;

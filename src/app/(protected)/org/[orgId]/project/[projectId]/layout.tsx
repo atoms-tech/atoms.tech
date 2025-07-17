@@ -15,10 +15,7 @@ interface ProjectLayoutProps {
     }>;
 }
 
-export default async function ProjectLayout({
-    children,
-    params,
-}: ProjectLayoutProps) {
+export default async function ProjectLayout({ children, params }: ProjectLayoutProps) {
     const { orgId, projectId } = await params;
 
     if (!projectId) notFound();
@@ -38,9 +35,7 @@ export default async function ProjectLayout({
 
         return (
             <ProjectProvider initialProject={project as Project}>
-                <Suspense fallback={<ProjectPageSkeleton />}>
-                    {children}
-                </Suspense>
+                <Suspense fallback={<ProjectPageSkeleton />}>{children}</Suspense>
             </ProjectProvider>
         );
     } catch (error) {

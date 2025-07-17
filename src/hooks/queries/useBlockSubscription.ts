@@ -22,8 +22,7 @@ const fetchBlocks = async (documentId: string) => {
 };
 
 export function useBlockSubscription(documentId: string) {
-    const { addBlock, updateBlock, deleteBlock, setBlocks } =
-        useDocumentStore();
+    const { addBlock, updateBlock, deleteBlock, setBlocks } = useDocumentStore();
     const [blocks, setLocalBlocks] = useState<Block[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -47,9 +46,7 @@ export function useBlockSubscription(documentId: string) {
                         async (payload) => {
                             const newBlock = payload.new;
                             setLocalBlocks((prev) => {
-                                const exists = prev.some(
-                                    (b) => b.id === newBlock.id,
-                                );
+                                const exists = prev.some((b) => b.id === newBlock.id);
                                 return exists
                                     ? prev
                                     : [...prev, newBlock].sort(
@@ -72,9 +69,7 @@ export function useBlockSubscription(documentId: string) {
                             // Handle soft deletes
                             if (updatedBlock.is_deleted) {
                                 setLocalBlocks((prev) =>
-                                    prev.filter(
-                                        (b) => b.id !== updatedBlock.id,
-                                    ),
+                                    prev.filter((b) => b.id !== updatedBlock.id),
                                 );
                                 deleteBlock(updatedBlock.id);
                                 return;
@@ -83,9 +78,7 @@ export function useBlockSubscription(documentId: string) {
                             setLocalBlocks((prev) =>
                                 prev
                                     .map((b) =>
-                                        b.id === updatedBlock.id
-                                            ? updatedBlock
-                                            : b,
+                                        b.id === updatedBlock.id ? updatedBlock : b,
                                     )
                                     .sort((a, b) => a.position - b.position),
                             );

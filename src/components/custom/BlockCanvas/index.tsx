@@ -65,17 +65,14 @@ export function BlockCanvas({
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } =
-        useDocumentStore();
+    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } = useDocumentStore();
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
     const params = useParams();
 
     // Explicitly type userRole
-    const [userRole, setUserRole] = useState<
-        'owner' | 'editor' | 'viewer' | null
-    >(null);
+    const [userRole, setUserRole] = useState<'owner' | 'editor' | 'viewer' | null>(null);
 
     useEffect(() => {
         const fetchUserRole = async () => {
@@ -85,10 +82,7 @@ export function BlockCanvas({
             const { data, error } = await supabase
                 .from('project_members')
                 .select('role')
-                .eq(
-                    'project_id',
-                    Array.isArray(projectId) ? projectId[0] : projectId,
-                )
+                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
                 .eq('user_id', userProfile.id)
                 .single();
 
@@ -112,9 +106,7 @@ export function BlockCanvas({
     const projectId = params?.projectId as string;
 
     // Add order property to each block if it doesn't exist
-    const [enhancedBlocks, setEnhancedBlocks] = useState<
-        BlockWithRequirements[]
-    >([]);
+    const [enhancedBlocks, setEnhancedBlocks] = useState<BlockWithRequirements[]>([]);
 
     // Adapt the blocks to include order property
     useEffect(() => {
@@ -184,12 +176,7 @@ export function BlockCanvas({
     // Wrap handleAddBlock to manage the isAddingBlock flag
     const handleAddBlock = useCallback(
         async (type: BlockType, content: Json) => {
-            console.log(
-                'Adding block of type:',
-                type,
-                'with content:',
-                content,
-            );
+            console.log('Adding block of type:', type, 'with content:', content);
             // Set flag to prevent re-renders during block addition
             isAddingBlockRef.current = true;
             try {
@@ -242,18 +229,12 @@ export function BlockCanvas({
                         handleUpdateBlock(block.id, content)
                     }
                     onDelete={() =>
-                        canPerformAction('deleteBlock') &&
-                        handleDeleteBlock(block.id)
+                        canPerformAction('deleteBlock') && handleDeleteBlock(block.id)
                     }
                 />
             );
         },
-        [
-            selectedBlockId,
-            handleUpdateBlock,
-            handleDeleteBlock,
-            canPerformAction,
-        ],
+        [selectedBlockId, handleUpdateBlock, handleDeleteBlock, canPerformAction],
     );
 
     // Memoize the blocks to prevent unnecessary re-renders
@@ -272,12 +253,8 @@ export function BlockCanvas({
             return;
         }
 
-        const oldIndex = enhancedBlocks.findIndex(
-            (block) => block.id === active.id,
-        );
-        const newIndex = enhancedBlocks.findIndex(
-            (block) => block.id === over.id,
-        );
+        const oldIndex = enhancedBlocks.findIndex((block) => block.id === active.id);
+        const newIndex = enhancedBlocks.findIndex((block) => block.id === over.id);
 
         if (oldIndex !== -1 && newIndex !== -1) {
             const newBlocks = arrayMove(enhancedBlocks, oldIndex, newIndex).map(
@@ -312,11 +289,7 @@ export function BlockCanvas({
     if (loading) {
         return (
             <div className="relative min-h-[500px] space-y-4">
-                <TableBlockLoadingState
-                    isLoading={true}
-                    isError={false}
-                    error={null}
-                />
+                <TableBlockLoadingState isLoading={true} isError={false} error={null} />
             </div>
         );
     }
@@ -324,11 +297,7 @@ export function BlockCanvas({
     if (error) {
         return (
             <div className="relative min-h-[500px] space-y-4">
-                <TableBlockLoadingState
-                    isLoading={false}
-                    isError={true}
-                    error={error}
-                />
+                <TableBlockLoadingState isLoading={false} isError={true} error={error} />
             </div>
         );
     }
@@ -343,9 +312,8 @@ export function BlockCanvas({
             >
                 <SortableContext
                     items={
-                        enhancedBlocks?.map(
-                            (block: BlockWithRequirements) => block.id,
-                        ) || []
+                        enhancedBlocks?.map((block: BlockWithRequirements) => block.id) ||
+                        []
                     }
                     strategy={verticalListSortingStrategy}
                 >

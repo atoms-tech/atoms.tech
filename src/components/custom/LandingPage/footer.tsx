@@ -21,8 +21,8 @@ export function Footer() {
                 </div>
                 <div className="mt-32 text-center">
                     <p className="text-gray-400 text-lg uppercase">
-                        © 2025 ATOMS.TECH. WE CAN&apos;T PROMISE IMMORTALITY,
-                        BUT WE DO PROMISE FASTER REQUIREMENTS.
+                        © 2025 ATOMS.TECH. WE CAN&apos;T PROMISE IMMORTALITY, BUT WE DO
+                        PROMISE FASTER REQUIREMENTS.
                     </p>
                 </div>
             </div>

@@ -1,6 +1,5 @@
 export type OrganizationRole = keyof typeof ORGANIZATION_ROLES;
-type OrganizationPermission =
-    (typeof ORGANIZATION_ROLES)[OrganizationRole][number];
+type OrganizationPermission = (typeof ORGANIZATION_ROLES)[OrganizationRole][number];
 export type ProjectRole = keyof typeof PROJECT_ROLES;
 type ProjectPermission = (typeof PROJECT_ROLES)[ProjectRole][number];
 
@@ -41,9 +40,9 @@ export function hasOrganizationPermission(
     permission: OrganizationPermission,
 ) {
     return role
-        ? (
-              ORGANIZATION_ROLES[role] as readonly OrganizationPermission[]
-          )?.includes(permission)
+        ? (ORGANIZATION_ROLES[role] as readonly OrganizationPermission[])?.includes(
+              permission,
+          )
         : false;
 }
 
@@ -71,8 +70,6 @@ export function hasProjectPermission(
     permission: ProjectPermission,
 ) {
     return role
-        ? (PROJECT_ROLES[role] as readonly ProjectPermission[])?.includes(
-              permission,
-          )
+        ? (PROJECT_ROLES[role] as readonly ProjectPermission[])?.includes(permission)
         : false;
 }

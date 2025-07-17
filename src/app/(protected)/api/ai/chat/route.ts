@@ -34,11 +34,7 @@ export async function POST(request: NextRequest) {
 
         // For now, let's implement a simple response system
         // This will be replaced with actual AI integration
-        const reply = await generateResponse(
-            message,
-            conversationHistory,
-            context,
-        );
+        const reply = await generateResponse(message, conversationHistory, context);
 
         return NextResponse.json({
             reply,
@@ -47,10 +43,7 @@ export async function POST(request: NextRequest) {
         });
     } catch (error) {
         console.error('Chat API error:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 },
-        );
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
@@ -121,10 +114,7 @@ What programming challenge are you working on?`;
     // Contextual responses based on conversation history
     if (history.length > 0) {
         const lastMessage = history[history.length - 1];
-        if (
-            lastMessage.role === 'assistant' &&
-            lastMessage.content.includes('help')
-        ) {
+        if (lastMessage.role === 'assistant' && lastMessage.content.includes('help')) {
             return "I see you're looking for more specific assistance. Could you tell me more about what you're trying to accomplish?";
         }
     }

@@ -79,8 +79,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
         useState<keyof typeof BREAKPOINTS>('lg');
 
     // Layout view (width)
-    const [layoutViewMode, setLayoutViewMode] =
-        useState<LayoutViewMode>('standard');
+    const [layoutViewMode, setLayoutViewMode] = useState<LayoutViewMode>('standard');
 
     // Get edit mode from document store
     const { isEditMode, setIsEditMode } = useDocumentStore();
@@ -97,9 +96,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
 
     // Toggle sidebar handler using useCallback for performance
     const toggleSidebar = useCallback(() => {
-        setSidebarState((prev) =>
-            prev === 'expanded' ? 'collapsed' : 'expanded',
-        );
+        setSidebarState((prev) => (prev === 'expanded' ? 'collapsed' : 'expanded'));
     }, []);
 
     // Efficient resize handler with debounce
@@ -122,8 +119,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
 
                 // Set device type state
                 const newIsMobile = width < BREAKPOINTS.sm;
-                const newIsTablet =
-                    width >= BREAKPOINTS.sm && width < BREAKPOINTS.lg;
+                const newIsTablet = width >= BREAKPOINTS.sm && width < BREAKPOINTS.lg;
                 const newIsDesktop = width >= BREAKPOINTS.lg;
 
                 setCurrentBreakpoint(newBreakpoint);
@@ -160,9 +156,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     useEffect(() => {
         if (isDocumentPage) {
             const pathParts = currentPath.split('/');
-            const docIndex = pathParts.findIndex(
-                (part) => part === 'documents',
-            );
+            const docIndex = pathParts.findIndex((part) => part === 'documents');
             if (docIndex !== -1 && docIndex < pathParts.length - 1) {
                 setDocumentName(pathParts[docIndex + 1]);
             }
@@ -208,9 +202,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
     );
 
     return (
-        <LayoutContext.Provider value={contextValue}>
-            {children}
-        </LayoutContext.Provider>
+        <LayoutContext.Provider value={contextValue}>{children}</LayoutContext.Provider>
     );
 };
 

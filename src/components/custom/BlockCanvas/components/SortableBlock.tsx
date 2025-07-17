@@ -18,20 +18,14 @@ export const SortableBlock: React.FC<BlockProps> = ({
     onDelete,
     properties,
 }) => {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({
-        id: block.id,
-        transition: {
-            duration: 200,
-            easing: 'cubic-bezier(0.2, 0, 0, 1)',
-        },
-    });
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({
+            id: block.id,
+            transition: {
+                duration: 200,
+                easing: 'cubic-bezier(0.2, 0, 0, 1)',
+            },
+        });
 
     const style = {
         transform: CSS.Transform.toString(transform),

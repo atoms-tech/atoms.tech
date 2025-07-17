@@ -28,13 +28,9 @@ export function useRequirement(requirementId: string) {
     });
 }
 
-export function useRequirements(
-    queryFilters?: GenericQueryFilters<'requirements'>,
-) {
+export function useRequirements(queryFilters?: GenericQueryFilters<'requirements'>) {
     return useQuery({
-        queryKey: queryKeys.requirements.list(
-            (queryFilters as QueryFilters) || {},
-        ),
+        queryKey: queryKeys.requirements.list((queryFilters as QueryFilters) || {}),
         queryFn: async () => {
             const { data } = await buildQuery('requirements', queryFilters);
             return data;
@@ -124,12 +120,8 @@ export function useBlockRequirements(
         queryFn: async () => {
             const { data } = await buildQuery('requirements', {
                 ...queryFilters,
-                filters: [
-                    { field: 'block_id', operator: 'eq', value: blockId },
-                ],
-                sort: queryFilters?.sort || [
-                    { field: 'created_at', direction: 'desc' },
-                ],
+                filters: [{ field: 'block_id', operator: 'eq', value: blockId }],
+                sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },

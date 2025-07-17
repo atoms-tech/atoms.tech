@@ -76,8 +76,8 @@ export function KeyboardShortcutsDialog({
                         Keyboard Shortcuts
                     </DialogTitle>
                     <DialogDescription>
-                        Use these keyboard shortcuts to navigate and interact
-                        with the application more efficiently.
+                        Use these keyboard shortcuts to navigate and interact with the
+                        application more efficiently.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -89,19 +89,17 @@ export function KeyboardShortcutsDialog({
                                     {category}
                                 </h3>
                                 <div className="space-y-2">
-                                    {categoryShortcuts.map(
-                                        (shortcut, index) => (
-                                            <div
-                                                key={`${category}-${index}`}
-                                                className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors"
-                                            >
-                                                <span className="text-sm">
-                                                    {shortcut.description}
-                                                </span>
-                                                <div className="flex items-center gap-1">
-                                                    {formatShortcut(
-                                                        shortcut,
-                                                    ).map((key, keyIndex) => (
+                                    {categoryShortcuts.map((shortcut, index) => (
+                                        <div
+                                            key={`${category}-${index}`}
+                                            className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/50 transition-colors"
+                                        >
+                                            <span className="text-sm">
+                                                {shortcut.description}
+                                            </span>
+                                            <div className="flex items-center gap-1">
+                                                {formatShortcut(shortcut).map(
+                                                    (key, keyIndex) => (
                                                         <kbd
                                                             key={keyIndex}
                                                             className={cn(
@@ -111,11 +109,11 @@ export function KeyboardShortcutsDialog({
                                                         >
                                                             {key}
                                                         </kbd>
-                                                    ))}
-                                                </div>
+                                                    ),
+                                                )}
                                             </div>
-                                        ),
-                                    )}
+                                        </div>
+                                    ))}
                                 </div>
                                 {category !==
                                     Object.keys(groupedShortcuts)[
@@ -187,11 +185,7 @@ interface KeyboardNavHintProps {
     className?: string;
 }
 
-export function KeyboardNavHint({
-    children,
-    shortcut,
-    className,
-}: KeyboardNavHintProps) {
+export function KeyboardNavHint({ children, shortcut, className }: KeyboardNavHintProps) {
     return (
         <div className={cn('relative group', className)}>
             {children}

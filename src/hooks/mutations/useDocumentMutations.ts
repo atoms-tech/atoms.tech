@@ -13,12 +13,7 @@ interface PropertyCreateData {
     property_type: string;
     org_id: string;
     is_base?: boolean;
-    scope?:
-        | 'org'
-        | 'document'
-        | 'project'
-        | 'document,project'
-        | 'org,document,project';
+    scope?: 'org' | 'document' | 'project' | 'document,project' | 'org,document,project';
     document_id?: string;
     project_id?: string;
     options?: {
@@ -43,9 +38,7 @@ export function useCreateDocument() {
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
             if (!document.name || !document.project_id || !document.slug) {
-                throw new Error(
-                    'Missing required fields: name, project_id, or slug',
-                );
+                throw new Error('Missing required fields: name, project_id, or slug');
             }
 
             const insertData: TablesInsert<'documents'> = {
@@ -118,13 +111,7 @@ export function useDeleteDocument() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            id,
-            deletedBy,
-        }: {
-            id: string;
-            deletedBy: string;
-        }) => {
+        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             const { data, error } = await supabase
                 .from('documents')
                 .update({
@@ -195,8 +182,7 @@ export function useDuplicateDocument() {
                 .single();
 
             if (createError) throw createError;
-            if (!newDocument)
-                throw new Error('Failed to create duplicated document');
+            if (!newDocument) throw new Error('Failed to create duplicated document');
 
             return newDocument as Document;
         },
@@ -212,30 +198,21 @@ export function useCreateBaseOrgProperties() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            orgId,
-            userId,
-        }: {
-            orgId: string;
-            userId: string;
-        }) => {
+        mutationFn: async ({ orgId, userId }: { orgId: string; userId: string }) => {
             // First check if base properties exist for the organization
-            const { data: existingProperties, error: fetchError } =
-                await supabase
-                    .from('properties')
-                    .select('*')
-                    .eq('org_id', orgId)
-                    .eq('is_base', true)
-                    .eq('scope', 'org')
-                    .is('document_id', null)
-                    .is('project_id', null);
+            const { data: existingProperties, error: fetchError } = await supabase
+                .from('properties')
+                .select('*')
+                .eq('org_id', orgId)
+                .eq('is_base', true)
+                .eq('scope', 'org')
+                .is('document_id', null)
+                .is('project_id', null);
 
             if (fetchError) throw fetchError;
 
             // If base properties already exist, return them
-            const existingPropertyNames = new Set(
-                existingProperties.map((p) => p.name),
-            );
+            const existingPropertyNames = new Set(existingProperties.map((p) => p.name));
             const missingProperties = [
                 'External_ID',
                 'Name',
@@ -320,11 +297,10 @@ export function useCreateBaseOrgProperties() {
                 updated_by: userId,
             }));
 
-            const { data: createdProperties, error: insertError } =
-                await supabase
-                    .from('properties')
-                    .insert(baseProperties)
-                    .select();
+            const { data: createdProperties, error: insertError } = await supabase
+                .from('properties')
+                .insert(baseProperties)
+                .select();
 
             if (insertError) throw insertError;
 
@@ -365,9 +341,7 @@ export function useCreateDocumentProperties() {
             if (fetchError) throw fetchError;
 
             if (!baseProperties || baseProperties.length === 0) {
-                throw new Error(
-                    'No base properties found for this organization',
-                );
+                throw new Error('No base properties found for this organization');
             }
 
             // Create document-specific properties based on base properties
@@ -382,11 +356,10 @@ export function useCreateDocumentProperties() {
                 updated_at: timestamp,
             }));
 
-            const { data: createdProperties, error: insertError } =
-                await supabase
-                    .from('properties')
-                    .insert(documentProperties)
-                    .select();
+            const { data: createdProperties, error: insertError } = await supabase
+                .from('properties')
+                .insert(documentProperties)
+                .select();
 
             if (insertError) throw insertError;
 
@@ -395,9 +368,7 @@ export function useCreateDocumentProperties() {
         onSuccess: (data) => {
             if (data.length > 0 && data[0].document_id) {
                 queryClient.invalidateQueries({
-                    queryKey: queryKeys.properties.byDocument(
-                        data[0].document_id,
-                    ),
+                    queryKey: queryKeys.properties.byDocument(data[0].document_id),
                 });
             }
         },
@@ -436,8 +407,7 @@ export function useCreateDocumentWithDefaultSchemas() {
             console.log('baseProperties checked/created');
 
             // Create the document
-            const createdDocument =
-                await createDocumentMutation.mutateAsync(document);
+            const createdDocument = await createDocumentMutation.mutateAsync(document);
 
             return createdDocument;
         },

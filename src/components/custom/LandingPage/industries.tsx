@@ -28,8 +28,7 @@ const industries = [
     {
         name: 'ROBOTICS',
         icon: Cpu,
-        description:
-            'Synchronize multi-sensor autonomy with full traceability.',
+        description: 'Synchronize multi-sensor autonomy with full traceability.',
     },
     {
         name: 'DEFENSE / DoD',

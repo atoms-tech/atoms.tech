@@ -20,8 +20,7 @@ export const BillingPlan = {
     enterprise: 'enterprise',
 } as const;
 
-export type EInvitationStatus =
-    Database['public']['Enums']['invitation_status'];
+export type EInvitationStatus = Database['public']['Enums']['invitation_status'];
 export const InvitationStatus = {
     pending: 'pending',
     accepted: 'accepted',
@@ -29,24 +28,21 @@ export const InvitationStatus = {
     revoked: 'revoked',
 } as const;
 
-export type ENotificationType =
-    Database['public']['Enums']['notification_type'];
+export type ENotificationType = Database['public']['Enums']['notification_type'];
 export const NotificationType = {
     invitation: 'invitation',
     mention: 'mention',
     system: 'system',
 } as const;
 
-export type EOrganizationType =
-    Database['public']['Enums']['organization_type'];
+export type EOrganizationType = Database['public']['Enums']['organization_type'];
 export const OrganizationType = {
     personal: 'personal',
     team: 'team',
     enterprise: 'enterprise',
 } as const;
 
-export type EPricingPlanInterval =
-    Database['public']['Enums']['pricing_plan_interval'];
+export type EPricingPlanInterval = Database['public']['Enums']['pricing_plan_interval'];
 export const PricingPlanInterval = {
     none: 'none',
     month: 'month',
@@ -76,24 +72,21 @@ export const PropertyType = {
     file: 'file',
 } as const;
 
-export type ERequirementFormat =
-    Database['public']['Enums']['requirement_format'];
+export type ERequirementFormat = Database['public']['Enums']['requirement_format'];
 export const RequirementFormat = {
     incose: 'incose',
     ears: 'ears',
     other: 'other',
 } as const;
 
-export type ERequirementLevel =
-    Database['public']['Enums']['requirement_level'];
+export type ERequirementLevel = Database['public']['Enums']['requirement_level'];
 export const RequirementLevel = {
     component: 'component',
     system: 'system',
     subsystem: 'subsystem',
 } as const;
 
-export type ERequirementPriority =
-    Database['public']['Enums']['requirement_priority'];
+export type ERequirementPriority = Database['public']['Enums']['requirement_priority'];
 export const RequirementPriority = {
     low: 'low',
     medium: 'medium',
@@ -101,8 +94,7 @@ export const RequirementPriority = {
     critical: 'critical',
 } as const;
 
-export type ERequirementStatus =
-    Database['public']['Enums']['requirement_status'];
+export type ERequirementStatus = Database['public']['Enums']['requirement_status'];
 export const RequirementStatus = {
     active: 'active',
     archived: 'archived',
@@ -114,8 +106,7 @@ export const RequirementStatus = {
     rejected: 'rejected',
 } as const;
 
-export type ESubscriptionStatus =
-    Database['public']['Enums']['subscription_status'];
+export type ESubscriptionStatus = Database['public']['Enums']['subscription_status'];
 export const SubscriptionStatus = {
     active: 'active',
     inactive: 'inactive',

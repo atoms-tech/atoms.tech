@@ -8,9 +8,7 @@ import { z } from 'zod';
 // Environment variable schema
 const envSchema = z.object({
     // App Configuration
-    NODE_ENV: z
-        .enum(['development', 'test', 'production'])
-        .default('development'),
+    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
 
     // Supabase Configuration
@@ -109,9 +107,7 @@ export function validateEnv(): EnvConfig {
             process.exit(1);
         } else {
             // In development, warn but continue with safe parsing
-            console.warn(
-                '⚠️  Continuing with invalid environment in development mode',
-            );
+            console.warn('⚠️  Continuing with invalid environment in development mode');
 
             // Try to parse with the development schema (which has optional Supabase vars)
             const result = envSchema.safeParse(env);
@@ -160,21 +156,18 @@ export const apiConfig = {
     },
     gumloop: {
         apiKey: env.NEXT_PUBLIC_GUMLOOP_API_KEY,
-        apiUrl:
-            env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1',
+        apiUrl: env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1',
         userId: env.NEXT_PUBLIC_GUMLOOP_USER_ID,
         flows: {
             fileConvert: env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID,
             reqAnalysis: env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-            reqAnalysisReasoning:
-                env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
+            reqAnalysisReasoning: env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
             textToMermaid: env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
         },
     },
     chunkr: {
         apiKey: env.NEXT_PUBLIC_CHUNKR_API_KEY,
-        apiUrl:
-            env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1',
+        apiUrl: env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1',
     },
     n8n: {
         webhookUrl: env.NEXT_PUBLIC_N8N_WEBHOOK_URL,
@@ -200,10 +193,7 @@ export const buildConfig = {
  * Runtime environment check (for client-side)
  */
 export function checkRequiredEnvVars() {
-    const required = [
-        'NEXT_PUBLIC_SUPABASE_URL',
-        'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    ];
+    const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
 
     const missing = required.filter((key) => !process.env[key]);
 

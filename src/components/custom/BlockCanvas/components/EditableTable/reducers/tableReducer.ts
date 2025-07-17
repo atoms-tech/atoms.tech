@@ -146,8 +146,7 @@ export function tableReducer<T>(
             };
 
         case 'CLEAR_TIMEOUT':
-            const { [action.payload]: __, ...remainingTimeouts } =
-                state.editingTimeouts;
+            const { [action.payload]: __, ...remainingTimeouts } = state.editingTimeouts;
             return {
                 ...state,
                 editingTimeouts: remainingTimeouts,

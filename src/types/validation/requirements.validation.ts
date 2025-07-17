@@ -21,17 +21,9 @@ export const RequirementSchema = z.object({
     document_id: z.string(),
     enchanced_requirement: z.string().nullable(),
     external_id: z.string().nullable(),
-    format: z.enum([
-        'incose',
-        'ears',
-        'other',
-    ]) as z.ZodType<ERequirementFormat>,
+    format: z.enum(['incose', 'ears', 'other']) as z.ZodType<ERequirementFormat>,
     is_deleted: z.boolean().nullable(),
-    level: z.enum([
-        'component',
-        'system',
-        'subsystem',
-    ]) as z.ZodType<ERequirementLevel>,
+    level: z.enum(['component', 'system', 'subsystem']) as z.ZodType<ERequirementLevel>,
     name: z.string(),
     original_requirement: z.string().nullable(),
     priority: z.enum([

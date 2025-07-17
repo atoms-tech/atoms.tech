@@ -70,9 +70,7 @@ interface RequirementFormProps {
     missingFilesError: string;
     setMissingFilesError: Dispatch<SetStateAction<string>>;
     selectedFiles: { [key: string]: RegulationFile };
-    setSelectedFiles: Dispatch<
-        SetStateAction<{ [key: string]: RegulationFile }>
-    >;
+    setSelectedFiles: Dispatch<SetStateAction<{ [key: string]: RegulationFile }>>;
 }
 
 export function RequirementForm({
@@ -194,9 +192,7 @@ export function RequirementForm({
 
             setProcessingPdfFiles(pdfFiles);
 
-            const taskIds = await startOcrTask(
-                pdfFiles.map((file) => file.file),
-            );
+            const taskIds = await startOcrTask(pdfFiles.map((file) => file.file));
             setOcrPipelineTaskIds(taskIds);
         } catch (error) {
             setIsUploading(false);
@@ -214,8 +210,7 @@ export function RequirementForm({
         // Check if any task failed
         if (
             taskStatusQueries.some(
-                (query) =>
-                    query.isError || query.data?.status === TaskStatus.FAILED,
+                (query) => query.isError || query.data?.status === TaskStatus.FAILED,
             )
         ) {
             console.error('One or more OCR pipeline tasks failed');
@@ -228,9 +223,7 @@ export function RequirementForm({
         // Process all successful tasks
         if (
             taskStatusQueries.every(
-                (query) =>
-                    query.isSuccess &&
-                    query.data?.status === TaskStatus.SUCCEEDED,
+                (query) => query.isSuccess && query.data?.status === TaskStatus.SUCCEEDED,
             )
         ) {
             // from each parsed file, construct a File object
@@ -262,10 +255,7 @@ export function RequirementForm({
                     gumloopName: convertedFileName,
                     orgId: organizationId,
                 });
-                console.log(
-                    'Updated Gumloop name for file:',
-                    convertedFileName,
-                );
+                console.log('Updated Gumloop name for file:', convertedFileName);
 
                 setSelectedFiles((prev) => ({
                     ...prev,
@@ -374,10 +364,7 @@ export function RequirementForm({
         setEditingFileName('');
     };
 
-    const handleKeyDown = (
-        e: KeyboardEvent<HTMLInputElement>,
-        supabaseId: string,
-    ) => {
+    const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, supabaseId: string) => {
         if (e.key === 'Enter') {
             handleSaveFileName(supabaseId);
         } else if (e.key === 'Escape') {
@@ -492,10 +479,7 @@ export function RequirementForm({
                         </SelectTrigger>
                         <SelectContent>
                             {Object.values(unusedDocsNameMap).map((doc) => (
-                                <SelectItem
-                                    key={doc.supabaseId}
-                                    value={doc.supabaseId}
-                                >
+                                <SelectItem key={doc.supabaseId} value={doc.supabaseId}>
                                     {doc.name}
                                 </SelectItem>
                             ))}
@@ -505,90 +489,73 @@ export function RequirementForm({
 
                 {Object.keys(selectedFiles).length > 0 && (
                     <div className="mt-4">
-                        <h4 className="text-sm font-medium mb-2">
-                            Attached Files
-                        </h4>
+                        <h4 className="text-sm font-medium mb-2">Attached Files</h4>
                         <ul className="space-y-1">
-                            {Object.entries(selectedFiles).map(
-                                ([supabaseId, file]) => (
-                                    <li
-                                        key={supabaseId}
-                                        className="text-sm text-muted-foreground flex items-center justify-between"
-                                    >
-                                        <div className="flex items-center">
-                                            <Check className="h-3 w-3 mr-1" />
-                                            {editingFile === supabaseId ? (
-                                                <input
-                                                    type="text"
-                                                    value={editingFileName}
-                                                    onChange={(e) =>
-                                                        setEditingFileName(
-                                                            e.target.value,
-                                                        )
+                            {Object.entries(selectedFiles).map(([supabaseId, file]) => (
+                                <li
+                                    key={supabaseId}
+                                    className="text-sm text-muted-foreground flex items-center justify-between"
+                                >
+                                    <div className="flex items-center">
+                                        <Check className="h-3 w-3 mr-1" />
+                                        {editingFile === supabaseId ? (
+                                            <input
+                                                type="text"
+                                                value={editingFileName}
+                                                onChange={(e) =>
+                                                    setEditingFileName(e.target.value)
+                                                }
+                                                onKeyDown={(e) =>
+                                                    handleKeyDown(e, supabaseId)
+                                                }
+                                                autoFocus
+                                                className="p-1 border rounded-md text-sm"
+                                            />
+                                        ) : (
+                                            file.name
+                                        )}
+                                    </div>
+                                    <div className="flex items-center">
+                                        {editingFile === supabaseId ? (
+                                            <>
+                                                <button
+                                                    onClick={() =>
+                                                        handleSaveFileName(supabaseId)
                                                     }
-                                                    onKeyDown={(e) =>
-                                                        handleKeyDown(
-                                                            e,
-                                                            supabaseId,
-                                                        )
+                                                    className="text-green-500 hover:text-green-700 mr-1"
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    onClick={() =>
+                                                        handleEditFile(supabaseId)
                                                     }
-                                                    autoFocus
-                                                    className="p-1 border rounded-md text-sm"
-                                                />
-                                            ) : (
-                                                file.name
-                                            )}
-                                        </div>
-                                        <div className="flex items-center">
-                                            {editingFile === supabaseId ? (
-                                                <>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleSaveFileName(
-                                                                supabaseId,
-                                                            )
-                                                        }
-                                                        className="text-green-500 hover:text-green-700 mr-1"
-                                                    >
-                                                        <Check className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={
-                                                            handleCancelEdit
-                                                        }
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleEditFile(
-                                                                supabaseId,
-                                                            )
-                                                        }
-                                                        className="text-gray-500 hover:text-gray-700 mr-1"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleRemoveFile(
-                                                                supabaseId,
-                                                            )
-                                                        }
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <Trash className="h-4 w-4" />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    </li>
-                                ),
-                            )}
+                                                    className="text-gray-500 hover:text-gray-700 mr-1"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() =>
+                                                        handleRemoveFile(supabaseId)
+                                                    }
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
+                                                    <Trash className="h-4 w-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
                     </div>
                 )}

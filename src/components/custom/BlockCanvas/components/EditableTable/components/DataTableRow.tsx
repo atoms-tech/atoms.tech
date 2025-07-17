@@ -8,12 +8,7 @@ import {
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Button } from '@/components/ui/button';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
@@ -63,9 +58,7 @@ export function DataTableRow<
     };
 
     const handleNavigateToRequirement = () => {
-        router.push(
-            `/org/${orgId}/project/${projectId}/requirements/${item.id}`,
-        );
+        router.push(`/org/${orgId}/project/${projectId}/requirements/${item.id}`);
     };
 
     const handleNavigateToTrace = () => {
@@ -79,8 +72,7 @@ export function DataTableRow<
     const handleNavigateToDiagram = () => {
         const description = String(item['Description'] || '');
         if (typeof window !== 'undefined') {
-            const documentId = (currentDocument?.id ||
-                params.documentId) as string;
+            const documentId = (currentDocument?.id || params.documentId) as string;
             sessionStorage.setItem('pendingDiagramPrompt', description);
             sessionStorage.setItem('pendingDiagramRequirementId', item.id);
             sessionStorage.setItem('pendingDiagramDocumentId', documentId);
@@ -161,10 +153,7 @@ export function DataTableRow<
                             <SheetHeader className="space-y-1.5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-[10px] tabular-nums tracking-widest text-muted-foreground">
-                                        {String(columns.length).padStart(
-                                            2,
-                                            '0',
-                                        )}
+                                        {String(columns.length).padStart(2, '0')}
                                     </div>
                                     <SheetTitle className="text-sm font-mono tracking-tight">
                                         REQ-{item.id}
@@ -242,32 +231,24 @@ export function DataTableRow<
                                         </div>
                                         <div className="relative">
                                             <div className="absolute top-0 bottom-0 left-[11px] border-l border-dotted border-muted-foreground/40"></div>
-                                            {[
-                                                ...item.ai_analysis
-                                                    .descriptionHistory,
-                                            ]
+                                            {[...item.ai_analysis.descriptionHistory]
                                                 .reverse()
                                                 .map((historyItem) => {
                                                     const date = new Date(
                                                         historyItem.createdAt,
                                                     );
                                                     const formattedDate =
-                                                        new Intl.DateTimeFormat(
-                                                            'en-US',
-                                                            {
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                year: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                            },
-                                                        ).format(date);
+                                                        new Intl.DateTimeFormat('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            year: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                        }).format(date);
 
                                                     return (
                                                         <div
-                                                            key={
-                                                                historyItem.createdAt
-                                                            }
+                                                            key={historyItem.createdAt}
                                                             className="flex mb-6 last:mb-0 relative"
                                                         >
                                                             <div className="mr-4 z-10">
@@ -278,9 +259,7 @@ export function DataTableRow<
                                                             <div className="flex-1">
                                                                 <div className="text-[10px] text-muted-foreground mb-1">
                                                                     <span>
-                                                                        {
-                                                                            formattedDate
-                                                                        }
+                                                                        {formattedDate}
                                                                     </span>
                                                                     {historyItem.createdBy && (
                                                                         <span className="ml-2 font-medium">

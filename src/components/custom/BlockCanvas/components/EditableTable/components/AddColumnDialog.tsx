@@ -120,18 +120,11 @@ export function AddColumnDialog({
 
                 <Tabs
                     value={activeTab}
-                    onValueChange={(value) =>
-                        setActiveTab(value as 'new' | 'existing')
-                    }
+                    onValueChange={(value) => setActiveTab(value as 'new' | 'existing')}
                 >
                     <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="new">
-                            Create New Property
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="existing"
-                            disabled={!onSaveFromProperty}
-                        >
+                        <TabsTrigger value="new">Create New Property</TabsTrigger>
+                        <TabsTrigger value="existing" disabled={!onSaveFromProperty}>
                             Use Existing Property
                         </TabsTrigger>
                     </TabsList>
@@ -145,9 +138,7 @@ export function AddColumnDialog({
                                 <Input
                                     id="name"
                                     value={columnName}
-                                    onChange={(e) =>
-                                        setColumnName(e.target.value)
-                                    }
+                                    onChange={(e) => setColumnName(e.target.value)}
                                     className="col-span-3"
                                 />
                             </div>
@@ -160,37 +151,27 @@ export function AddColumnDialog({
                                     value={columnType}
                                     onChange={(e) =>
                                         setColumnType(
-                                            e.target
-                                                .value as EditableColumnType,
+                                            e.target.value as EditableColumnType,
                                         )
                                     }
                                     className="col-span-3 h-10 px-3 py-2 rounded-md border border-input"
                                 >
                                     <option value="text">Text</option>
                                     <option value="select">Select</option>
-                                    <option value="multi_select">
-                                        Multi Select
-                                    </option>
+                                    <option value="multi_select">Multi Select</option>
                                     <option value="number">Number</option>
                                     <option value="date">Date</option>
                                 </select>
                             </div>
-                            {['select', 'multi_select'].includes(
-                                columnType,
-                            ) && (
+                            {['select', 'multi_select'].includes(columnType) && (
                                 <div className="grid grid-cols-4 items-center gap-4">
-                                    <Label
-                                        htmlFor="options"
-                                        className="text-right"
-                                    >
+                                    <Label htmlFor="options" className="text-right">
                                         Options
                                     </Label>
                                     <Input
                                         id="options"
                                         value={options}
-                                        onChange={(e) =>
-                                            setOptions(e.target.value)
-                                        }
+                                        onChange={(e) => setOptions(e.target.value)}
                                         placeholder="Option1, Option2, Option3"
                                         className="col-span-3"
                                     />
@@ -230,19 +211,13 @@ export function AddColumnDialog({
                                         id="existingProperty"
                                         value={selectedPropertyId}
                                         onChange={(e) =>
-                                            setSelectedPropertyId(
-                                                e.target.value,
-                                            )
+                                            setSelectedPropertyId(e.target.value)
                                         }
                                         className="col-span-3 h-10 px-3 py-2 rounded-md border border-input"
                                     >
                                         {availableProperties.map((property) => (
-                                            <option
-                                                key={property.id}
-                                                value={property.id}
-                                            >
-                                                {property.name} (
-                                                {property.property_type})
+                                            <option key={property.id} value={property.id}>
+                                                {property.name} ({property.property_type})
                                             </option>
                                         ))}
                                     </select>
@@ -253,9 +228,7 @@ export function AddColumnDialog({
                             <Button
                                 type="submit"
                                 onClick={handleSaveExistingProperty}
-                                disabled={
-                                    !selectedPropertyId || !onSaveFromProperty
-                                }
+                                disabled={!selectedPropertyId || !onSaveFromProperty}
                             >
                                 Add Column
                             </Button>

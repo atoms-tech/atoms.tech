@@ -27,17 +27,11 @@ export interface TableEditState<
 
     // Actions
     setData: (data: T[]) => void;
-    updateCell: <K extends keyof T>(
-        itemId: string,
-        accessor: K,
-        value: T[K],
-    ) => void;
+    updateCell: <K extends keyof T>(itemId: string, accessor: K, value: T[K]) => void;
     saveChanges: (itemId: string) => void;
     cancelEdit: (itemId: string) => void;
     selectCell: (cell: { rowIndex: number; columnId: string } | null) => void;
-    setHoveredCell: (
-        cell: { rowIndex: number; columnId: string } | null,
-    ) => void;
+    setHoveredCell: (cell: { rowIndex: number; columnId: string } | null) => void;
     setIsAddingNew: (isAdding: boolean) => void;
     setSortConfig: (key: string | null, direction: 'asc' | 'desc') => void;
     markAsSaved: (itemId: string) => void;
@@ -76,9 +70,7 @@ export const createTableEditStore = <
             const state = get();
 
             // Find the item in the data array
-            const itemIndex = state.data.findIndex(
-                (item) => item.id === itemId,
-            );
+            const itemIndex = state.data.findIndex((item) => item.id === itemId);
 
             // Create updated data
             const newData = [...state.data];

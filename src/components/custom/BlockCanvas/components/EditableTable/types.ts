@@ -11,12 +11,7 @@ export interface PropertyConfig {
     document_id?: string;
 }
 
-export type EditableColumnType =
-    | 'text'
-    | 'select'
-    | 'multi_select'
-    | 'number'
-    | 'date';
+export type EditableColumnType = 'text' | 'select' | 'multi_select' | 'number' | 'date';
 
 export interface ValidationRule {
     validate: (value: string | number | Date | null) => boolean;
@@ -37,13 +32,7 @@ export interface ColumnValidation {
 }
 
 // Type for the possible values in a cell
-export type CellValue =
-    | string
-    | number
-    | Date
-    | string[]
-    | RequirementAiAnalysis
-    | null;
+export type CellValue = string | number | Date | string[] | RequirementAiAnalysis | null;
 
 export interface EditableColumn<T> {
     header: string;

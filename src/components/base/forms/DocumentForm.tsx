@@ -40,16 +40,11 @@ interface DocumentFormProps {
     onSuccess: () => void;
 }
 
-export default function DocumentForm({
-    projectId,
-    onSuccess,
-}: DocumentFormProps) {
+export default function DocumentForm({ projectId, onSuccess }: DocumentFormProps) {
     const { userProfile } = useAuth();
     const { toast } = useToast();
-    const {
-        mutateAsync: createDocumentWithSchemas,
-        isPending: isCreatingDocument,
-    } = useCreateDocumentWithDefaultSchemas();
+    const { mutateAsync: createDocumentWithSchemas, isPending: isCreatingDocument } =
+        useCreateDocumentWithDefaultSchemas();
 
     const form = useForm<DocumentFormValues>({
         resolver: zodResolver(documentFormSchema),
@@ -107,10 +102,7 @@ export default function DocumentForm({
                         <FormItem>
                             <FormLabel>Document Name</FormLabel>
                             <FormControl>
-                                <Input
-                                    placeholder="Enter document name"
-                                    {...field}
-                                />
+                                <Input placeholder="Enter document name" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>

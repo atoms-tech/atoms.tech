@@ -5,9 +5,7 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
  * Format: REQ-{org_prefix}-{sequential_number}
  * Example: REQ-ORG1-001, REQ-ORG1-002, etc.
  */
-export async function generateNextRequirementId(
-    organizationId: string,
-): Promise<string> {
+export async function generateNextRequirementId(organizationId: string): Promise<string> {
     try {
         // Get the organization to determine the prefix
         const { data: org, error: orgError } = await supabase
@@ -118,10 +116,7 @@ export async function generateDocumentScopedRequirementId(
         const paddedNumber = nextNumber.toString().padStart(3, '0');
         return `${prefix}${paddedNumber}`;
     } catch (error) {
-        console.error(
-            'Error generating document-scoped requirement ID:',
-            error,
-        );
+        console.error('Error generating document-scoped requirement ID:', error);
         // Fallback to a timestamp-based ID if there's an error
         const timestamp = Date.now().toString().slice(-6);
         return `REQ-DOC-${timestamp}`;

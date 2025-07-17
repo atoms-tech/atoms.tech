@@ -89,10 +89,7 @@ export const getOrganizationMembers = async (organizationId: string) => {
  * @param email The user's email (used for naming the organization)
  * @returns The personal organization
  */
-export const ensurePersonalOrganization = async (
-    userId: string,
-    email: string,
-) => {
+export const ensurePersonalOrganization = async (userId: string, email: string) => {
     // First, check if the user already has a personal organization
     const { data: existingOrgs, error: fetchError } = await supabase
         .from('organizations')
@@ -114,18 +111,14 @@ export const ensurePersonalOrganization = async (
     // Otherwise, create a new personal organization
     const username = email.split('@')[0];
     const orgName = `${username}'s Playground`;
-    const orgSlug = `${username.toLowerCase()}-playground`.replace(
-        /[^a-z0-9-]/g,
-        '-',
-    );
+    const orgSlug = `${username.toLowerCase()}-playground`.replace(/[^a-z0-9-]/g, '-');
 
     const { data: newOrg, error: createError } = await supabase
         .from('organizations')
         .insert({
             name: orgName,
             slug: orgSlug,
-            description:
-                'Your personal playground for projects and experiments',
+            description: 'Your personal playground for projects and experiments',
             created_by: userId,
             updated_by: userId,
             type: OrganizationType.personal,
@@ -144,20 +137,15 @@ export const ensurePersonalOrganization = async (
     }
 
     // Add the user as an owner of the organization
-    const { error: memberError } = await supabase
-        .from('organization_members')
-        .insert({
-            organization_id: newOrg.id,
-            user_id: userId,
-            role: 'owner',
-            status: 'active',
-        });
+    const { error: memberError } = await supabase.from('organization_members').insert({
+        organization_id: newOrg.id,
+        user_id: userId,
+        role: 'owner',
+        status: 'active',
+    });
 
     if (memberError) {
-        console.error(
-            'Error adding user to personal organization:',
-            memberError,
-        );
+        console.error('Error adding user to personal organization:', memberError);
         throw memberError;
     }
 

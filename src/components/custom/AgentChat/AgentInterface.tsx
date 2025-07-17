@@ -45,11 +45,7 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
     return (
         <>
             {/* Toggle Button */}
-            <AgentToggle
-                isOpen={isOpen}
-                onClick={handleToggle}
-                className={className}
-            />
+            <AgentToggle isOpen={isOpen} onClick={handleToggle} className={className} />
 
             {/* Agent Panel */}
             <AgentPanel

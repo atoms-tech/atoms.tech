@@ -18,9 +18,7 @@ function optimizeTypeFile(filePath) {
     const content = fs.readFileSync(filePath, 'utf8');
 
     if (content.length < LARGE_FILE_THRESHOLD) {
-        console.log(
-            `File is small enough (${content.length} bytes), skipping.`,
-        );
+        console.log(`File is small enough (${content.length} bytes), skipping.`);
         return;
     }
 
@@ -107,11 +105,7 @@ function splitTypeDefinitions(content) {
         currentSize += lineSize;
 
         // Split at end of interface/type definition if chunk is large enough
-        if (
-            !inInterface &&
-            currentSize > CHUNK_SIZE &&
-            currentChunk.length > 10
-        ) {
+        if (!inInterface && currentSize > CHUNK_SIZE && currentChunk.length > 10) {
             chunks.push([...imports, ...currentChunk].join('\n'));
             currentChunk = [];
             currentSize = 0;

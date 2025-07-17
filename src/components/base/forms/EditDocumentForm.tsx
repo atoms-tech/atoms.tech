@@ -83,9 +83,7 @@ export default function EditDocumentForm({
                 variant: 'destructive',
                 title: 'Error',
                 description:
-                    error instanceof Error
-                        ? error.message
-                        : 'Failed to update document',
+                    error instanceof Error ? error.message : 'Failed to update document',
             });
         }
     }
@@ -97,10 +95,7 @@ export default function EditDocumentForm({
                     <DialogTitle>Edit Document</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        className="space-y-4"
-                    >
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField
                             control={form.control}
                             name="name"
@@ -146,20 +141,11 @@ export default function EditDocumentForm({
                                     Delete
                                 </Button>
                             )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onClose}
-                            >
+                            <Button type="button" variant="outline" onClick={onClose}>
                                 Cancel
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={updateDocument.isPending}
-                            >
-                                {updateDocument.isPending
-                                    ? 'Saving...'
-                                    : 'Save Changes'}
+                            <Button type="submit" disabled={updateDocument.isPending}>
+                                {updateDocument.isPending ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </DialogFooter>
                     </form>

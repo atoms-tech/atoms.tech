@@ -16,21 +16,13 @@ export function OrgDashboardSkeleton() {
             {/* Tabs Skeleton */}
             <Tabs defaultValue="overview" className="w-full">
                 <TabsList className="grid grid-cols-5 w-full">
-                    {[
-                        'Overview',
-                        'Projects',
-                        'Documents',
-                        'Collections',
-                        'Tasks',
-                    ].map((tab) => (
-                        <TabsTrigger
-                            key={tab}
-                            value={tab.toLowerCase()}
-                            disabled
-                        >
-                            {tab}
-                        </TabsTrigger>
-                    ))}
+                    {['Overview', 'Projects', 'Documents', 'Collections', 'Tasks'].map(
+                        (tab) => (
+                            <TabsTrigger key={tab} value={tab.toLowerCase()} disabled>
+                                {tab}
+                            </TabsTrigger>
+                        ),
+                    )}
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
@@ -44,10 +36,7 @@ export function OrgDashboardSkeleton() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {[1, 2, 3, 4].map((i) => (
-                                        <div
-                                            key={i}
-                                            className="flex justify-between"
-                                        >
+                                        <div key={i} className="flex justify-between">
                                             <div className="h-4 w-24 bg-muted animate-pulse rounded" />
                                             <div className="h-4 w-32 bg-muted animate-pulse rounded" />
                                         </div>

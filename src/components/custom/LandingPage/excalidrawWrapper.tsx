@@ -15,22 +15,14 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import '@excalidraw/excalidraw/index.css';
 
-import {
-    convertToExcalidrawElements,
-    exportToSvg,
-} from '@excalidraw/excalidraw';
+import { convertToExcalidrawElements, exportToSvg } from '@excalidraw/excalidraw';
 import { parseMermaidToExcalidraw } from '@excalidraw/mermaid-to-excalidraw';
 import { useTheme } from 'next-themes';
 import { usePathname, useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/lib/providers/user.provider';
 
@@ -103,23 +95,20 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     pendingRequirementId,
     pendingDocumentId,
 }) => {
-    const [diagramId, setDiagramId] = useState<string | null>(
-        externalDiagramId || null,
-    );
+    const [diagramId, setDiagramId] = useState<string | null>(externalDiagramId || null);
     const [diagramName, setDiagramName] = useState<string>('Untitled Diagram');
     const [isAutoSaving, setIsAutoSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [initialData, setInitialData] =
-        useState<ExcalidrawInitialDataState | null>(null);
+    const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null>(
+        null,
+    );
     const [isLoading, setIsLoading] = useState(true);
     const [isExistingDiagram, setIsExistingDiagram] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
     const [isSaveAsDialogOpen, setIsSaveAsDialogOpen] = useState(false);
     const [newDiagramName, setNewDiagramName] = useState('');
 
-    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-        undefined,
-    );
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
     const lastSavedDataRef = useRef<{
         elements: readonly ExcalidrawElement[];
@@ -188,9 +177,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 });
 
                 // Convert SVG to data URL
-                const svgString = new XMLSerializer().serializeToString(
-                    svgElement,
-                );
+                const svgString = new XMLSerializer().serializeToString(svgElement);
                 const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`;
 
                 return dataUrl;
@@ -218,9 +205,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 
                 if (error) {
                     console.error('Error loading diagram:', error);
-                    if (
-                        error.message.includes('multiple (or no) rows returned')
-                    ) {
+                    if (error.message.includes('multiple (or no) rows returned')) {
                         console.log(
                             'No diagram found with ID:',
                             id,
@@ -267,8 +252,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                         appState: {
                             ...appState,
                             collaborators: new Map(),
-                            currentItemFontFamily:
-                                appState?.currentItemFontFamily || 1,
+                            currentItemFontFamily: appState?.currentItemFontFamily || 1,
                             viewBackgroundColor:
                                 appState?.viewBackgroundColor || '#ffffff',
                             zoom: appState?.zoom || {
@@ -392,16 +376,12 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 const { elements: skeletonElements } =
                     await parseMermaidToExcalidraw(mermaidSyntax);
 
-                let excalidrawElements =
-                    convertToExcalidrawElements(skeletonElements);
+                let excalidrawElements = convertToExcalidrawElements(skeletonElements);
 
                 // Attach requirementId if present (for requirement→diagram flow)
                 console.log('Before check');
                 if (pendingRequirementId) {
-                    console.log(
-                        'pendingrequirementId was present',
-                        pendingRequirementId,
-                    );
+                    console.log('pendingrequirementId was present', pendingRequirementId);
                     excalidrawElements = addRequirementIdToElements(
                         excalidrawElements as unknown as ExcalidrawElement[],
                         pendingRequirementId,
@@ -419,13 +399,10 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 }
 
                 if (excalidrawApiRef.current) {
-                    const currentElements =
-                        excalidrawApiRef.current.getSceneElements();
+                    const currentElements = excalidrawApiRef.current.getSceneElements();
 
                     // Calculate bounding boxes
-                    const getBoundingBox = (
-                        elements: readonly ExcalidrawElement[],
-                    ) => {
+                    const getBoundingBox = (elements: readonly ExcalidrawElement[]) => {
                         if (!elements.length) return null;
                         let minX = Infinity,
                             minY = Infinity,
@@ -493,14 +470,11 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 
                     //scroll to new content
                     setTimeout(() => {
-                        excalidrawApiRef.current?.scrollToContent(
-                            excalidrawElements,
-                            {
-                                fitToContent: true,
-                                animate: true,
-                                duration: 600,
-                            },
-                        );
+                        excalidrawApiRef.current?.scrollToContent(excalidrawElements, {
+                            fitToContent: true,
+                            animate: true,
+                            duration: 600,
+                        });
                     }, 50);
                 }
             } catch (error) {
@@ -514,10 +488,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     // Expose the addMermaidDiagram function to parent
     useEffect(() => {
         if (onMounted) {
-            console.log(
-                'onMounted called, pendingRequirementId:',
-                pendingRequirementId,
-            );
+            console.log('onMounted called, pendingRequirementId:', pendingRequirementId);
             onMounted({ addMermaidDiagram });
         }
     }, [onMounted, pendingRequirementId, addMermaidDiagram]);
@@ -561,22 +532,16 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     if (!externalDiagramId) {
                         // Use a project-specific storage key to prevent leakage between projects
                         const projectStorageKey = `${LAST_DIAGRAM_ID_KEY}_${projectId}`;
-                        const urlParams = new URLSearchParams(
-                            window.location.search,
-                        );
+                        const urlParams = new URLSearchParams(window.location.search);
                         const idFromUrl = urlParams.get('id');
-                        const lastDiagramId =
-                            localStorage.getItem(projectStorageKey);
+                        const lastDiagramId = localStorage.getItem(projectStorageKey);
 
                         // Priority: URL param > localStorage > new diagram
                         let id: string | null = null;
 
                         if (idFromUrl && isValidUuid(idFromUrl)) {
                             id = idFromUrl;
-                        } else if (
-                            lastDiagramId &&
-                            isValidUuid(lastDiagramId)
-                        ) {
+                        } else if (lastDiagramId && isValidUuid(lastDiagramId)) {
                             id = lastDiagramId;
                             // Update URL with the stored ID
                             const newUrl = new URL(window.location.href);
@@ -638,14 +603,12 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 
             // Compare relevant appState properties that we care about
             const currentViewBg = appState.viewBackgroundColor;
-            const prevViewBg =
-                lastSavedDataRef.current.appState.viewBackgroundColor;
+            const prevViewBg = lastSavedDataRef.current.appState.viewBackgroundColor;
             if (currentViewBg !== prevViewBg) return true;
 
             const currentZoom = appState.zoom;
             const prevZoom = lastSavedDataRef.current.appState.zoom;
-            if (JSON.stringify(currentZoom) !== JSON.stringify(prevZoom))
-                return true;
+            if (JSON.stringify(currentZoom) !== JSON.stringify(prevZoom)) return true;
 
             return false;
         },
@@ -677,11 +640,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             }
 
             // Check if there are actual changes to save
-            if (
-                !forceSave &&
-                !customDiagramId &&
-                !hasChanges(elements, appState)
-            ) {
+            if (!forceSave && !customDiagramId && !hasChanges(elements, appState)) {
                 console.log('No changes detected - skipping save');
                 return;
             }
@@ -700,10 +659,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 const now = new Date().toISOString();
 
                 // Generate thumbnail
-                const thumbnailUrl = await generateThumbnail(
-                    elements,
-                    appState,
-                );
+                const thumbnailUrl = await generateThumbnail(elements, appState);
 
                 // Serialize the diagram data to ensure it's JSON compatible
                 const serializedData = JSON.stringify(diagramData);
@@ -796,14 +752,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         const newId = uuidv4();
 
         // Save with the new ID and name
-        await saveDiagram(
-            elements,
-            appState,
-            files,
-            newId,
-            newDiagramName.trim(),
-            true,
-        );
+        await saveDiagram(elements, appState, files, newId, newDiagramName.trim(), true);
 
         // Close the dialog
         setIsSaveAsDialogOpen(false);
@@ -867,17 +816,15 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     prevSelectedElementRef.current = selectedId;
 
                     const selEl = elements.find((el) => el.id === selectedId);
-                    const reqId = (selEl as ElementWithRequirementProps)
-                        ?.requirementId;
-                    const docId = (selEl as ElementWithRequirementProps)
-                        ?.documentId;
+                    const reqId = (selEl as ElementWithRequirementProps)?.requirementId;
+                    const docId = (selEl as ElementWithRequirementProps)?.documentId;
 
                     if (selEl && reqId) {
                         // Find all elements with the same requirementId
                         const allSameRequirementElements = elements.filter(
                             (el) =>
-                                (el as ElementWithRequirementProps)
-                                    ?.requirementId === reqId,
+                                (el as ElementWithRequirementProps)?.requirementId ===
+                                reqId,
                         );
 
                         // Get connected elements
@@ -886,8 +833,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                             selEl,
                         );
 
-                        const boundingBox =
-                            calculateBoundingBox(relatedElements);
+                        const boundingBox = calculateBoundingBox(relatedElements);
 
                         // Update the bounding box
                         setBoundingBoxOverlay({
@@ -1020,9 +966,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 );
 
                 // Use Euclidean distance
-                const distance = Math.sqrt(
-                    xDistance * xDistance + yDistance * yDistance,
-                );
+                const distance = Math.sqrt(xDistance * xDistance + yDistance * yDistance);
                 return distance <= proximityThreshold;
             });
 
@@ -1076,8 +1020,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                         setIsSaveAsDialogOpen(true);
                     }}
                 >
-                    <Save size={14} className="mr-1 dark:hover:text-white" />{' '}
-                    Save As
+                    <Save size={14} className="mr-1 dark:hover:text-white" /> Save As
                 </Button>
             </div>
 
@@ -1117,10 +1060,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             </Excalidraw>
 
             {/* Save As Dialog */}
-            <Dialog
-                open={isSaveAsDialogOpen}
-                onOpenChange={setIsSaveAsDialogOpen}
-            >
+            <Dialog open={isSaveAsDialogOpen} onOpenChange={setIsSaveAsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Save Diagram As</DialogTitle>
@@ -1186,13 +1126,11 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     style={{
                         left:
                             (boundingBoxOverlay.x +
-                                excalidrawApiRef.current.getAppState()
-                                    .scrollX) *
+                                excalidrawApiRef.current.getAppState().scrollX) *
                             excalidrawApiRef.current.getAppState().zoom.value,
                         top:
                             (boundingBoxOverlay.y +
-                                excalidrawApiRef.current.getAppState()
-                                    .scrollY) *
+                                excalidrawApiRef.current.getAppState().scrollY) *
                             excalidrawApiRef.current.getAppState().zoom.value,
                         width:
                             boundingBoxOverlay.width *

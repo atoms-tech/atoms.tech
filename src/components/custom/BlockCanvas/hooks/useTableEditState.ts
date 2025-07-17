@@ -2,9 +2,7 @@ import { useCallback, useEffect } from 'react';
 
 import { OptimisticUpdate, useTableEditStore } from '@/store/tableEdit.store';
 
-interface UseTableEditStateProps<
-    T extends Record<string, unknown> & { id: string },
-> {
+interface UseTableEditStateProps<T extends Record<string, unknown> & { id: string }> {
     initialData?: T[];
     onSave?: (itemId: string, changes: Partial<T>) => Promise<void>;
     onDelete?: (itemId: string) => Promise<void>;
@@ -14,9 +12,11 @@ interface UseTableEditStateProps<
  * Custom hook that provides a clean API for using the tableEdit store
  * in table components
  */
-export function useTableEditState<
-    T extends Record<string, unknown> & { id: string },
->({ initialData = [], onSave, onDelete }: UseTableEditStateProps<T> = {}) {
+export function useTableEditState<T extends Record<string, unknown> & { id: string }>({
+    initialData = [],
+    onSave,
+    onDelete,
+}: UseTableEditStateProps<T> = {}) {
     const tableState = useTableEditStore();
 
     // Initialize data if provided
@@ -54,11 +54,7 @@ export function useTableEditState<
     // Helper for updating a cell value
     const updateCellValue = useCallback(
         <K extends keyof T>(itemId: string, field: K, value: T[K]) => {
-            tableState.updateCell(
-                itemId,
-                field as string,
-                value as unknown as string,
-            );
+            tableState.updateCell(itemId, field as string, value as unknown as string);
         },
         [tableState],
     );
@@ -85,9 +81,7 @@ export function useTableEditState<
             if (!onDelete) return;
 
             // Create optimistic delete by filtering out the item
-            const newData = tableState.data.filter(
-                (item) => item.id !== itemId,
-            );
+            const newData = tableState.data.filter((item) => item.id !== itemId);
             tableState.setData(newData);
 
             try {
@@ -96,9 +90,7 @@ export function useTableEditState<
             } catch (error) {
                 console.error('Failed to delete item:', error);
                 // Restore the data if delete fails
-                const foundItem = initialData.find(
-                    (item) => item.id === itemId,
-                );
+                const foundItem = initialData.find((item) => item.id === itemId);
                 const restoredData = foundItem
                     ? [...tableState.data, foundItem]
                     : tableState.data;

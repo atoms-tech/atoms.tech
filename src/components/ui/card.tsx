@@ -81,19 +81,8 @@ const CardFooter = ({
 }: HTMLAttributes<HTMLDivElement> & {
     ref?: RefObject<HTMLDivElement>;
 }) => (
-    <div
-        ref={ref}
-        className={cn('flex items-center p-6 pt-0', className)}
-        {...props}
-    />
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
 );
 CardFooter.displayName = 'CardFooter';
 
-export {
-    Card,
-    CardHeader,
-    CardFooter,
-    CardTitle,
-    CardDescription,
-    CardContent,
-};
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

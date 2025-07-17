@@ -23,8 +23,7 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
     const [, setUserExists] = useState<boolean | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // Track error messages
     const { user } = useUser();
-    const { mutateAsync: createInvitation, isPending } =
-        useCreateOrgInvitation();
+    const { mutateAsync: createInvitation, isPending } = useCreateOrgInvitation();
     const {
         data: allInvitations,
         isLoading: outgoingLoading,
@@ -67,9 +66,7 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
             );
 
             if (isAlreadyMember) {
-                setErrorMessage(
-                    'This user is already a member of the organization.',
-                );
+                setErrorMessage('This user is already a member of the organization.');
                 return;
             }
 
@@ -88,23 +85,19 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                     setUserExists(false); // User does not exist
                     return;
                 }
-                console.error(
-                    'Error checking email in profiles:',
-                    profileError,
-                );
+                console.error('Error checking email in profiles:', profileError);
                 throw profileError;
             }
 
             setUserExists(true); // User exists
 
             // Check for duplicate invitations
-            const { data: duplicateInvitations, error: duplicateError } =
-                await supabase
-                    .from('organization_invitations')
-                    .select('*')
-                    .eq('email', inviteEmail.trim())
-                    .eq('organization_id', orgId)
-                    .eq('status', InvitationStatus.pending);
+            const { data: duplicateInvitations, error: duplicateError } = await supabase
+                .from('organization_invitations')
+                .select('*')
+                .eq('email', inviteEmail.trim())
+                .eq('organization_id', orgId)
+                .eq('status', InvitationStatus.pending);
 
             if (duplicateError) {
                 console.error(
@@ -199,18 +192,13 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                                         setUserExists(null); // Reset user existence state on input change
                                     }}
                                 />
-                                <Button
-                                    onClick={handleInvite}
-                                    disabled={isPending}
-                                >
+                                <Button onClick={handleInvite} disabled={isPending}>
                                     Invite
                                 </Button>
                             </div>
                             <div>
                                 {errorMessage && (
-                                    <p className="text-primary text-sm">
-                                        {errorMessage}
-                                    </p>
+                                    <p className="text-primary text-sm">{errorMessage}</p>
                                 )}
                             </div>
                         </div>

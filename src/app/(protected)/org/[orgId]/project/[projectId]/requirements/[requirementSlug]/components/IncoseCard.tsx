@@ -16,11 +16,7 @@ interface IncoseCardProps {
     onAccept: (text: string, autosave: boolean) => void;
 }
 
-export function IncoseCard({
-    incoseFormat,
-    incoseFeedback,
-    onAccept,
-}: IncoseCardProps) {
+export function IncoseCard({ incoseFormat, incoseFeedback, onAccept }: IncoseCardProps) {
     const hasData = Boolean(incoseFormat || incoseFeedback);
 
     return (
@@ -45,8 +41,7 @@ export function IncoseCard({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
-                                        incoseFormat &&
-                                        onAccept(incoseFormat, true)
+                                        incoseFormat && onAccept(incoseFormat, true)
                                     }
                                     disabled={!incoseFormat}
                                 >
@@ -65,8 +60,7 @@ export function IncoseCard({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
-                                        incoseFormat &&
-                                        onAccept(incoseFormat, false)
+                                        incoseFormat && onAccept(incoseFormat, false)
                                     }
                                     disabled={!incoseFormat}
                                 >

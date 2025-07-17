@@ -2,12 +2,11 @@ import { useMemo, useState } from 'react';
 
 import { CellValue } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 
-export function useTableSort<
-    T extends Record<string, CellValue> & { id: string },
->(data: T[], defaultSortKey?: keyof T | null) {
-    const [sortKey, setSortKey] = useState<keyof T | null>(
-        defaultSortKey || null,
-    );
+export function useTableSort<T extends Record<string, CellValue> & { id: string }>(
+    data: T[],
+    defaultSortKey?: keyof T | null,
+) {
+    const [sortKey, setSortKey] = useState<keyof T | null>(defaultSortKey || null);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Logic for sorting data

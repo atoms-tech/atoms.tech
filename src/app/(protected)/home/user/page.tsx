@@ -71,9 +71,7 @@ export default function UserDashboard() {
     const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
     const [inviteCount, setInviteCount] = useState(0);
     const [pinnedOrgId, setPinnedOrgId] = useState<string | null>(null);
-    const [safeOrganizations, setSafeOrganizations] = useState<Organization[]>(
-        [],
-    );
+    const [safeOrganizations, setSafeOrganizations] = useState<Organization[]>([]);
 
     // Fetch organizations and update safeOrganizations
     useEffect(() => {
@@ -82,9 +80,7 @@ export default function UserDashboard() {
                 (queryClient.getQueryData(
                     queryKeys.organizations.byMembership(user?.id || ''),
                 ) as Organization[]) || [];
-            setSafeOrganizations(
-                Array.isArray(organizations) ? organizations : [],
-            );
+            setSafeOrganizations(Array.isArray(organizations) ? organizations : []);
         };
 
         fetchOrganizations();
@@ -129,17 +125,14 @@ export default function UserDashboard() {
                             orgId: data.pinned_organization_id || undefined,
                             pinnedOrganizationId:
                                 data.pinned_organization_id || undefined,
-                            username:
-                                profile?.full_name ||
-                                user?.email?.split('@')[0],
+                            username: profile?.full_name || user?.email?.split('@')[0],
                         });
                     } else if (data.personal_organization_id) {
                         // If no pinned organization, set it to personal_organization_id by default
                         const { error: updateError } = await supabase
                             .from('profiles')
                             .update({
-                                pinned_organization_id:
-                                    data.personal_organization_id,
+                                pinned_organization_id: data.personal_organization_id,
                             })
                             .eq('id', user?.id || '');
 
@@ -149,13 +142,11 @@ export default function UserDashboard() {
                             // Update Agent Store context
                             setUserContext({
                                 userId: user?.id || undefined,
-                                orgId:
-                                    data.personal_organization_id || undefined,
+                                orgId: data.personal_organization_id || undefined,
                                 pinnedOrganizationId:
                                     data.personal_organization_id || undefined,
                                 username:
-                                    profile?.full_name ||
-                                    user?.email?.split('@')[0],
+                                    profile?.full_name || user?.email?.split('@')[0],
                             });
                         } else {
                             console.error(
@@ -178,12 +169,11 @@ export default function UserDashboard() {
         async (orgId: string) => {
             try {
                 // Fetch the current user's profile to get their ID
-                const { data: profileData, error: profileError } =
-                    await supabase
-                        .from('profiles')
-                        .select('id, pinned_organization_id')
-                        .eq('email', user?.email || '')
-                        .single();
+                const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('id, pinned_organization_id')
+                    .eq('email', user?.email || '')
+                    .single();
 
                 if (profileError || !profileData?.id) {
                     console.error('Error fetching user profile:', profileError);
@@ -206,14 +196,10 @@ export default function UserDashboard() {
                         userId: user?.id || undefined,
                         orgId: newPinnedOrgId || undefined, // Current organization ID
                         pinnedOrganizationId: newPinnedOrgId || undefined,
-                        username:
-                            profile?.full_name || user?.email?.split('@')[0],
+                        username: profile?.full_name || user?.email?.split('@')[0],
                     });
                 } else {
-                    console.error(
-                        'Error updating pinned organization:',
-                        updateError,
-                    );
+                    console.error('Error updating pinned organization:', updateError);
                 }
             } catch (err) {
                 console.error('Unexpected error:', err);
@@ -283,29 +269,21 @@ export default function UserDashboard() {
     }, []);
 
     // Filter organizations based on search term and active tab
-    const filteredOrganizations = sortedOrganizations.filter(
-        (org: Organization) => {
-            const matchesSearch = org.name
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
-            if (activeTab === 'all')
-                return (
-                    matchesSearch && org.type === OrganizationType.enterprise
-                );
-            if (activeTab === 'enterprise')
-                return (
-                    matchesSearch && org.type === OrganizationType.enterprise
-                );
-            if (activeTab === 'team')
-                return (
-                    matchesSearch &&
-                    org.type !== OrganizationType.personal &&
-                    org.type !== OrganizationType.enterprise
-                );
-            if (activeTab === 'invites') return false; // No organizations for invites
-            return matchesSearch;
-        },
-    );
+    const filteredOrganizations = sortedOrganizations.filter((org: Organization) => {
+        const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase());
+        if (activeTab === 'all')
+            return matchesSearch && org.type === OrganizationType.enterprise;
+        if (activeTab === 'enterprise')
+            return matchesSearch && org.type === OrganizationType.enterprise;
+        if (activeTab === 'team')
+            return (
+                matchesSearch &&
+                org.type !== OrganizationType.personal &&
+                org.type !== OrganizationType.enterprise
+            );
+        if (activeTab === 'invites') return false; // No organizations for invites
+        return matchesSearch;
+    });
 
     // Get counts for each organization type
     const enterpriseCount = sortedOrganizations.filter(
@@ -360,8 +338,7 @@ export default function UserDashboard() {
                 >
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight">
-                            {greeting},{' '}
-                            {profile?.full_name || user?.email?.split('@')[0]}
+                            {greeting}, {profile?.full_name || user?.email?.split('@')[0]}
                         </h1>
                         <p className="text-muted-foreground mt-1">
                             Welcome to your dashboard. You have access to{' '}
@@ -394,15 +371,11 @@ export default function UserDashboard() {
                         className="w-full md:w-auto"
                     >
                         <TabsList className="grid grid-cols-4 w-full md:w-auto">
-                            <TabsTrigger value="all">
-                                All ({enterpriseCount})
-                            </TabsTrigger>
+                            <TabsTrigger value="all">All ({enterpriseCount})</TabsTrigger>
                             <TabsTrigger value="enterprise">
                                 Enterprise ({enterpriseCount})
                             </TabsTrigger>
-                            <TabsTrigger value="team">
-                                Teams ({teamCount})
-                            </TabsTrigger>
+                            <TabsTrigger value="team">Teams ({teamCount})</TabsTrigger>
                             <TabsTrigger value="invites">
                                 Invites ({inviteCount})
                             </TabsTrigger>
@@ -436,10 +409,7 @@ export default function UserDashboard() {
                     >
                         {filteredOrganizations.length > 0 ? (
                             filteredOrganizations.map((org: Organization) => (
-                                <motion.div
-                                    key={org.id}
-                                    variants={itemVariants}
-                                >
+                                <motion.div key={org.id} variants={itemVariants}>
                                     <Card
                                         className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2`}
                                         onClick={() => handleRowClick(org)}
@@ -451,19 +421,15 @@ export default function UserDashboard() {
                                                         className="h-5 w-5 cursor-pointer"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handlePinOrganization(
-                                                                org.id,
-                                                            );
+                                                            handlePinOrganization(org.id);
                                                         }}
                                                         style={{
                                                             fill:
-                                                                org.id ===
-                                                                pinnedOrgId
+                                                                org.id === pinnedOrgId
                                                                     ? 'hsl(var(--border))'
                                                                     : 'none',
                                                             stroke:
-                                                                org.id ===
-                                                                pinnedOrgId
+                                                                org.id === pinnedOrgId
                                                                     ? 'hsl(var(--border))'
                                                                     : 'hsl(var(--muted-foreground))',
                                                             strokeWidth: 2,
@@ -492,8 +458,7 @@ export default function UserDashboard() {
                                         </CardContent>
                                         <CardFooter className="flex justify-between pt-0">
                                             <Badge variant="secondary">
-                                                {org.type ===
-                                                OrganizationType.enterprise
+                                                {org.type === OrganizationType.enterprise
                                                     ? 'Enterprise'
                                                     : 'Team'}
                                             </Badge>

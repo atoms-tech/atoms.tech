@@ -42,12 +42,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
         }
     }
 
-    const orgName =
-        useOrganization(orgId).data?.name || 'Undefined Organization Name';
-    const projectName =
-        useProject(projectId).data?.name || 'Undefined Project Name';
-    const documentName =
-        useDocument(documentId).data?.name || 'Undefined Document Name';
+    const orgName = useOrganization(orgId).data?.name || 'Undefined Organization Name';
+    const projectName = useProject(projectId).data?.name || 'Undefined Project Name';
+    const documentName = useDocument(documentId).data?.name || 'Undefined Document Name';
 
     for (let i = 0; i < pathSegments.length; i++) {
         switch (pathSegments[i]) {
@@ -65,8 +62,7 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
                 break;
             default:
                 breadcrumbs.push(
-                    pathSegments[i].charAt(0).toUpperCase() +
-                        pathSegments[i].slice(1),
+                    pathSegments[i].charAt(0).toUpperCase() + pathSegments[i].slice(1),
                 );
         }
     }

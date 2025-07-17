@@ -29,12 +29,7 @@ export class ApiErrorClass extends Error implements ApiError {
     public readonly statusCode: number;
     public readonly details?: unknown;
 
-    constructor(
-        code: string,
-        message: string,
-        statusCode: number,
-        details?: unknown,
-    ) {
+    constructor(code: string, message: string, statusCode: number, details?: unknown) {
         super(message);
         this.name = 'ApiError';
         this.code = code;
@@ -58,76 +53,31 @@ export const createApiError = {
         new ApiErrorClass(API_ERROR_CODES.NOT_FOUND, message, 404, details),
 
     methodNotAllowed: (message = 'Method not allowed', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.METHOD_NOT_ALLOWED,
-            message,
-            405,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.METHOD_NOT_ALLOWED, message, 405, details),
 
     validation: (message = 'Validation failed', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.VALIDATION_ERROR,
-            message,
-            422,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.VALIDATION_ERROR, message, 422, details),
 
     rateLimit: (message = 'Rate limit exceeded', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.RATE_LIMIT_EXCEEDED,
-            message,
-            429,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.RATE_LIMIT_EXCEEDED, message, 429, details),
 
     payloadTooLarge: (message = 'Payload too large', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.PAYLOAD_TOO_LARGE,
-            message,
-            413,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.PAYLOAD_TOO_LARGE, message, 413, details),
 
     internal: (message = 'Internal server error', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.INTERNAL_SERVER_ERROR,
-            message,
-            500,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.INTERNAL_SERVER_ERROR, message, 500, details),
 
     serviceUnavailable: (message = 'Service unavailable', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.SERVICE_UNAVAILABLE,
-            message,
-            503,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.SERVICE_UNAVAILABLE, message, 503, details),
 
     gatewayTimeout: (message = 'Gateway timeout', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.GATEWAY_TIMEOUT,
-            message,
-            504,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.GATEWAY_TIMEOUT, message, 504, details),
 
     database: (message = 'Database error', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.DATABASE_ERROR,
-            message,
-            500,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.DATABASE_ERROR, message, 500, details),
 
     externalApi: (message = 'External API error', details?: unknown) =>
-        new ApiErrorClass(
-            API_ERROR_CODES.EXTERNAL_API_ERROR,
-            message,
-            500,
-            details,
-        ),
+        new ApiErrorClass(API_ERROR_CODES.EXTERNAL_API_ERROR, message, 500, details),
 };
 
 // Enhanced error handler
@@ -212,10 +162,7 @@ export function handleApiError(
         error: {
             code: API_ERROR_CODES.INTERNAL_SERVER_ERROR,
             message: 'An unknown error occurred',
-            details:
-                process.env.NODE_ENV !== 'production'
-                    ? String(error)
-                    : undefined,
+            details: process.env.NODE_ENV !== 'production' ? String(error) : undefined,
         },
         meta: {
             timestamp: context.timestamp,

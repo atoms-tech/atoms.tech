@@ -93,19 +93,13 @@ function LoginForm() {
                                     type="password"
                                     placeholder="Password"
                                     value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
+                                    onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
                             </div>
                         </div>
 
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={isPending}
-                        >
+                        <Button type="submit" className="w-full" disabled={isPending}>
                             {isPending ? (
                                 <div className="flex items-center justify-center">
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

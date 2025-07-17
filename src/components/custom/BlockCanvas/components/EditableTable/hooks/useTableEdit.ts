@@ -5,9 +5,7 @@ import {
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 
-export function useTableEdit<
-    T extends Record<string, CellValue> & { id: string },
->(
+export function useTableEdit<T extends Record<string, CellValue> & { id: string }>(
     data: T[],
     columns: EditableColumn<T>[],
     onSave?: (item: T, isNew: boolean) => Promise<void>,
@@ -33,9 +31,7 @@ export function useTableEdit<
     // Clean up timeouts on unmount
     useEffect(() => {
         return () => {
-            Object.values(editingTimeouts).forEach((timeout) =>
-                clearTimeout(timeout),
-            );
+            Object.values(editingTimeouts).forEach((timeout) => clearTimeout(timeout));
         };
     }, [editingTimeouts]);
 
@@ -84,9 +80,7 @@ export function useTableEdit<
         } else if (!localIsEditMode) {
             setEditingData({});
             setIsAddingNew(false);
-            Object.values(editingTimeouts).forEach((timeout) =>
-                clearTimeout(timeout),
-            );
+            Object.values(editingTimeouts).forEach((timeout) => clearTimeout(timeout));
             setEditingTimeouts({});
         }
     }, [localIsEditMode, data, editingData, editingTimeouts]);
@@ -153,8 +147,7 @@ export function useTableEdit<
                 case 'text':
                     // For external_id field, generate a REQ-ID instead of empty string
                     if (String(col.accessor).toLowerCase() === 'external_id') {
-                        acc[col.accessor as keyof T] =
-                            'GENERATING...' as T[keyof T];
+                        acc[col.accessor as keyof T] = 'GENERATING...' as T[keyof T];
                     } else {
                         acc[col.accessor as keyof T] = '' as T[keyof T];
                     }
@@ -184,9 +177,7 @@ export function useTableEdit<
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import(
-                    '@/lib/supabase/supabaseBrowser'
-                );
+                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
 
                 // Get organization ID from the current document
                 const urlParts = window.location.pathname.split('/');
@@ -218,8 +209,7 @@ export function useTableEdit<
                     )?.projects?.organization_id;
 
                     if (organizationId) {
-                        const reqId =
-                            await generateNextRequirementId(organizationId);
+                        const reqId = await generateNextRequirementId(organizationId);
                         newItem[externalIdColumn.accessor as keyof T] =
                             reqId as T[keyof T];
                     }
@@ -227,8 +217,7 @@ export function useTableEdit<
             } catch (error) {
                 console.error('Failed to generate REQ-ID:', error);
                 // Fall back to empty string if generation fails
-                newItem[externalIdColumn.accessor as keyof T] =
-                    '' as T[keyof T];
+                newItem[externalIdColumn.accessor as keyof T] = '' as T[keyof T];
             }
         }
 
@@ -255,23 +244,17 @@ export function useTableEdit<
                 itemWithoutId,
             );
 
-            console.log(
-                '🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)',
-            );
+            console.log('🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)');
             await onSave(itemWithoutId as T, true);
             console.log('✅ STEP 3b: Parent onSave completed successfully');
 
             // Call onPostSave after successfully saving to refresh data
             if (onPostSave) {
-                console.log(
-                    '🎯 STEP 3c: Calling onPostSave (refreshRequirements)',
-                );
+                console.log('🎯 STEP 3c: Calling onPostSave (refreshRequirements)');
                 await onPostSave();
                 console.log('✅ STEP 3c: onPostSave completed successfully');
             } else {
-                console.log(
-                    '⚠️ STEP 3c: No onPostSave provided, skipping refresh',
-                );
+                console.log('⚠️ STEP 3c: No onPostSave provided, skipping refresh');
             }
 
             // Clear editing state only after successful save

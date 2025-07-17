@@ -69,9 +69,7 @@ type FormItemContextValue = {
     id: string;
 };
 
-const FormItemContext = createContext<FormItemContextValue>(
-    {} as FormItemContextValue,
-);
+const FormItemContext = createContext<FormItemContextValue>({} as FormItemContextValue);
 
 const FormItem = ({
     ref,
@@ -109,17 +107,14 @@ const FormLabel = ({
 FormLabel.displayName = 'FormLabel';
 
 const FormControl = ({ ref, ...props }: ComponentProps<typeof Slot>) => {
-    const { error, formItemId, formDescriptionId, formMessageId } =
-        useFormField();
+    const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
     return (
         <Slot
             ref={ref}
             id={formItemId}
             aria-describedby={
-                !error
-                    ? `${formDescriptionId}`
-                    : `${formDescriptionId} ${formMessageId}`
+                !error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
             }
             aria-invalid={!!error}
             {...props}
@@ -167,10 +162,7 @@ const FormMessage = ({
         <p
             ref={ref}
             id={formMessageId}
-            className={cn(
-                'text-[0.8rem] font-medium text-destructive',
-                className,
-            )}
+            className={cn('text-[0.8rem] font-medium text-destructive', className)}
             {...props}
         >
             {body}

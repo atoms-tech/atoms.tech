@@ -6,12 +6,7 @@ import { usePathname } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGumloop } from '@/hooks/useGumloop';
@@ -19,16 +14,14 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 const ExcalidrawWithClientOnly = dynamic(
     async () =>
-        (await import('@/components/custom/LandingPage/excalidrawWrapper'))
-            .default,
+        (await import('@/components/custom/LandingPage/excalidrawWrapper')).default,
     {
         ssr: false,
     },
 );
 
 const DiagramGallery = dynamic(
-    async () =>
-        (await import('@/components/custom/Gallery/DiagramGallery')).default,
+    async () => (await import('@/components/custom/Gallery/DiagramGallery')).default,
     {
         ssr: false,
     },
@@ -48,11 +41,8 @@ export default function Draw() {
     // Gallery/editor state management
     const [activeTab, setActiveTab] = useState<string>('editor');
     const [lastActiveTab, setLastActiveTab] = useState<string>('editor');
-    const [selectedDiagramId, setSelectedDiagramId] = useState<string | null>(
-        null,
-    );
-    const [shouldRefreshGallery, setShouldRefreshGallery] =
-        useState<boolean>(false);
+    const [selectedDiagramId, setSelectedDiagramId] = useState<string | null>(null);
+    const [shouldRefreshGallery, setShouldRefreshGallery] = useState<boolean>(false);
     const [instanceKey, setInstanceKey] = useState<string>('initial');
     const isInitialRender = useRef(true);
     // Track generation status with refs to avoid re-renders triggering effects
@@ -68,33 +58,24 @@ export default function Draw() {
     // Diagram name management
     const [currentDiagramName, setCurrentDiagramName] =
         useState<string>('Untitled Diagram');
-    const [isRenameDialogOpen, setIsRenameDialogOpen] =
-        useState<boolean>(false);
+    const [isRenameDialogOpen, setIsRenameDialogOpen] = useState<boolean>(false);
     const [newDiagramName, setNewDiagramName] = useState<string>('');
 
     // Add state for pending requirementId
-    const [pendingRequirementId, setPendingRequirementId] = useState<
-        string | null
-    >(null);
+    const [pendingRequirementId, setPendingRequirementId] = useState<string | null>(null);
 
     // Add state for pending documentId
-    const [pendingDocumentId, setPendingDocumentId] = useState<string | null>(
-        null,
-    );
+    const [pendingDocumentId, setPendingDocumentId] = useState<string | null>(null);
 
     // On mount, check sessionStorage for pending diagram prompt and requirementId
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const pendingPrompt = sessionStorage.getItem('pendingDiagramPrompt');
-        const pendingReqId = sessionStorage.getItem(
-            'pendingDiagramRequirementId',
-        );
+        const pendingReqId = sessionStorage.getItem('pendingDiagramRequirementId');
         const pendingDocId = sessionStorage.getItem('pendingDiagramDocumentId');
 
         console.log('[Canvas] Reading sessionStorage:', {
-            pendingPrompt: pendingPrompt
-                ? pendingPrompt.substring(0, 20) + '...'
-                : null,
+            pendingPrompt: pendingPrompt ? pendingPrompt.substring(0, 20) + '...' : null,
             pendingReqId,
             pendingDocId,
         });
@@ -126,11 +107,7 @@ export default function Draw() {
 
         // If we're coming from gallery to editor AND we have a selected diagram,
         // update the instance key to force remount
-        if (
-            lastActiveTab === 'gallery' &&
-            activeTab === 'editor' &&
-            selectedDiagramId
-        ) {
+        if (lastActiveTab === 'gallery' && activeTab === 'editor' && selectedDiagramId) {
             // Add timestamp to force remount and refresh diagram data including name
             setInstanceKey(`diagram-${selectedDiagramId}-${Date.now()}`);
         }
@@ -140,10 +117,7 @@ export default function Draw() {
     }, [activeTab, lastActiveTab, selectedDiagramId]);
 
     // Get pipeline run data
-    const { data: pipelineResponse } = getPipelineRun(
-        pipelineRunId,
-        organizationId,
-    );
+    const { data: pipelineResponse } = getPipelineRun(pipelineRunId, organizationId);
 
     const handleGenerate = useCallback(async () => {
         if (!excalidrawApi) {
@@ -167,9 +141,7 @@ export default function Draw() {
 
         // Safety timeout to ensure the button doesn't get stuck in "generating" state
         const safetyTimer = setTimeout(() => {
-            console.log(
-                'Safety timeout triggered - resetting generation state',
-            );
+            console.log('Safety timeout triggered - resetting generation state');
             setIsGenerating(false);
             setPipelineRunId('');
         }, 15000); // 15 seconds timeout
@@ -201,14 +173,7 @@ export default function Draw() {
             // Clear the safety timeout since we're handling the error
             clearTimeout(safetyTimer);
         }
-    }, [
-        excalidrawApi,
-        prompt,
-        diagramType,
-        startPipeline,
-        isGenerating,
-        pipelineRunId,
-    ]);
+    }, [excalidrawApi, prompt, diagramType, startPipeline, isGenerating, pipelineRunId]);
 
     // Auto-generate diagram if prompt is set from sessionStorage
     useEffect(() => {
@@ -273,15 +238,10 @@ export default function Draw() {
                     // console.log('Cleaned mermaid syntax:', cleanedSyntax);
 
                     if (excalidrawApi) {
-                        excalidrawApi
-                            .addMermaidDiagram(cleanedSyntax)
-                            .catch((err) => {
-                                console.error(
-                                    'Error rendering mermaid diagram:',
-                                    err,
-                                );
-                                setError('Failed to render diagram');
-                            });
+                        excalidrawApi.addMermaidDiagram(cleanedSyntax).catch((err) => {
+                            console.error('Error rendering mermaid diagram:', err);
+                            setError('Failed to render diagram');
+                        });
                     }
                 } catch (err) {
                     console.error('Error parsing pipeline output:', err);
@@ -304,10 +264,7 @@ export default function Draw() {
             }
             default:
                 // For states like RUNNING or others, just log and don't reset
-                console.log(
-                    'Pipeline in progress, state:',
-                    pipelineResponse.state,
-                );
+                console.log('Pipeline in progress, state:', pipelineResponse.state);
                 return;
         }
     }, [pipelineResponse, excalidrawApi]);
@@ -320,9 +277,7 @@ export default function Draw() {
     }, [handleGenerate]);
 
     const handleExcalidrawMount = useCallback(
-        (api: {
-            addMermaidDiagram: (mermaidSyntax: string) => Promise<void>;
-        }) => {
+        (api: { addMermaidDiagram: (mermaidSyntax: string) => Promise<void> }) => {
             setExcalidrawApi(api);
         },
         [],
@@ -401,9 +356,7 @@ export default function Draw() {
                 <div className="flex items-center gap-2">
                     {activeTab === 'editor' && selectedDiagramId ? (
                         <>
-                            <h1 className="text-2xl font-bold">
-                                {currentDiagramName}
-                            </h1>
+                            <h1 className="text-2xl font-bold">{currentDiagramName}</h1>
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -420,16 +373,9 @@ export default function Draw() {
                         <h1 className="text-2xl font-bold">Diagrams</h1>
                     )}
                 </div>
-                <Tabs
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    className="w-auto"
-                >
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
                     <TabsList>
-                        <TabsTrigger
-                            value="editor"
-                            className="flex items-center gap-1.5"
-                        >
+                        <TabsTrigger value="editor" className="flex items-center gap-1.5">
                             <PenTool size={16} />
                             Editor
                         </TabsTrigger>
@@ -485,9 +431,7 @@ export default function Draw() {
                                 <select
                                     value={diagramType}
                                     onChange={(e) =>
-                                        setDiagramType(
-                                            e.target.value as DiagramType,
-                                        )
+                                        setDiagramType(e.target.value as DiagramType)
                                     }
                                     className="w-full p-2.5 bg-white dark:bg-secondary rounded-none border appearance-none cursor-pointer"
                                 >
@@ -534,10 +478,7 @@ export default function Draw() {
             )}
 
             {/* Rename Dialog */}
-            <Dialog
-                open={isRenameDialogOpen}
-                onOpenChange={setIsRenameDialogOpen}
-            >
+            <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Rename Diagram</DialogTitle>

@@ -52,9 +52,7 @@ export const useBlockActions = ({
         // Update the order of blocks below
         setLocalBlocks((prevBlocks) => {
             return prevBlocks.map((block) =>
-                block.order >= targetOrder
-                    ? { ...block, order: block.order + 1 }
-                    : block,
+                block.order >= targetOrder ? { ...block, order: block.order + 1 } : block,
             );
         });
     };
@@ -126,21 +124,17 @@ export const useBlockActions = ({
 
         try {
             // Fetch base properties for the organization
-            const { data: baseProperties, error: basePropertiesError } =
-                await supabase
-                    .from('properties')
-                    .select('*')
-                    .eq('org_id', orgId)
-                    .eq('is_base', true)
-                    .is('document_id', null)
-                    .is('project_id', null)
-                    .eq('scope', 'org');
+            const { data: baseProperties, error: basePropertiesError } = await supabase
+                .from('properties')
+                .select('*')
+                .eq('org_id', orgId)
+                .eq('is_base', true)
+                .is('document_id', null)
+                .is('project_id', null)
+                .eq('scope', 'org');
 
             if (basePropertiesError) {
-                console.error(
-                    'Error fetching base properties:',
-                    basePropertiesError,
-                );
+                console.error('Error fetching base properties:', basePropertiesError);
                 throw basePropertiesError;
             }
 
@@ -306,10 +300,7 @@ export const useBlockActions = ({
                     await createDefaultBlockColumns(createdBlock.id);
                     console.log('Successfully created columns for table block');
                 } catch (error) {
-                    console.error(
-                        'Failed to create columns for table block:',
-                        error,
-                    );
+                    console.error('Failed to create columns for table block:', error);
                     throw error;
                 }
             }
@@ -371,9 +362,7 @@ export const useBlockActions = ({
 
         try {
             // Update local state immediately
-            setLocalBlocks((prev) =>
-                prev.filter((block) => block.id !== blockId),
-            );
+            setLocalBlocks((prev) => prev.filter((block) => block.id !== blockId));
 
             // Delete from server
             await deleteBlockMutation.mutateAsync({

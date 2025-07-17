@@ -1,8 +1,4 @@
-import {
-    QueryClient,
-    useMutation,
-    useQueryClient,
-} from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -97,13 +93,7 @@ export function useDeleteTraceLink() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({
-            id,
-            deletedBy,
-        }: {
-            id: string;
-            deletedBy: string;
-        }) => {
+        mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting trace link', id);
 
             const { data: traceLink, error: traceLinkError } = await supabase
@@ -134,20 +124,11 @@ export function useDeleteTraceLink() {
     });
 }
 
-const invalidateTraceLinkQueries = (
-    queryClient: QueryClient,
-    data: TraceLink,
-) => {
+const invalidateTraceLinkQueries = (queryClient: QueryClient, data: TraceLink) => {
     queryClient.invalidateQueries({
-        queryKey: queryKeys.traceLinks.bySource(
-            data.source_id,
-            data.source_type,
-        ),
+        queryKey: queryKeys.traceLinks.bySource(data.source_id, data.source_type),
     });
     queryClient.invalidateQueries({
-        queryKey: queryKeys.traceLinks.byTarget(
-            data.target_id,
-            data.target_type,
-        ),
+        queryKey: queryKeys.traceLinks.byTarget(data.target_id, data.target_type),
     });
 };

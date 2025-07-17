@@ -68,9 +68,7 @@ export async function updateSession(request: NextRequest) {
                 const myNewResponse = NextResponse.redirect(url);
                 supabaseResponse.cookies
                     .getAll()
-                    .forEach(({ name, value }) =>
-                        myNewResponse.cookies.set(name, value),
-                    );
+                    .forEach(({ name, value }) => myNewResponse.cookies.set(name, value));
                 return myNewResponse;
             }
         }
@@ -89,9 +87,7 @@ export async function updateSession(request: NextRequest) {
                 const myNewResponse = NextResponse.redirect(url);
                 supabaseResponse.cookies
                     .getAll()
-                    .forEach(({ name, value }) =>
-                        myNewResponse.cookies.set(name, value),
-                    );
+                    .forEach(({ name, value }) => myNewResponse.cookies.set(name, value));
                 return myNewResponse;
             }
         }

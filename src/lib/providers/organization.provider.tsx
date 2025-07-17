@@ -11,9 +11,7 @@ interface OrganizationContextType {
     setCurrentOrganization: (organization: Organization | null) => void;
 }
 
-const OrganizationContext = createContext<OrganizationContextType | undefined>(
-    undefined,
-);
+const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
 export const OrganizationProvider = ({
     children,
@@ -24,10 +22,9 @@ export const OrganizationProvider = ({
 }) => {
     const [organizations, setOrganizations] =
         useState<Organization[]>(initialOrganizations);
-    const [currentOrganization, setCurrentOrganization] =
-        useState<Organization | null>(
-            initialOrganizations.length > 0 ? initialOrganizations[0] : null,
-        );
+    const [currentOrganization, setCurrentOrganization] = useState<Organization | null>(
+        initialOrganizations.length > 0 ? initialOrganizations[0] : null,
+    );
 
     return (
         <OrganizationContext.Provider
@@ -46,9 +43,7 @@ export const OrganizationProvider = ({
 export function useOrganization() {
     const context = use(OrganizationContext);
     if (context === undefined) {
-        throw new Error(
-            'useOrganization must be used within an OrganizationProvider',
-        );
+        throw new Error('useOrganization must be used within an OrganizationProvider');
     }
     return context;
 }

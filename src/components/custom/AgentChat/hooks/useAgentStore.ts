@@ -92,8 +92,7 @@ interface N8nRequestData {
 
 // Utility function to debug localStorage state
 export const debugAgentStore = () => {
-    const localStorage =
-        typeof window !== 'undefined' ? window.localStorage : null;
+    const localStorage = typeof window !== 'undefined' ? window.localStorage : null;
     if (!localStorage) {
         console.log('AgentStore Debug - localStorage not available');
         return;
@@ -111,10 +110,7 @@ export const debugAgentStore = () => {
                 Object.keys(parsed.state?.organizationMessages || {}).length,
             );
         } catch (error) {
-            console.error(
-                'AgentStore Debug - Failed to parse localStorage data:',
-                error,
-            );
+            console.error('AgentStore Debug - Failed to parse localStorage data:', error);
         }
     } else {
         console.log('AgentStore Debug - No data found in localStorage');
@@ -143,9 +139,7 @@ export const useAgentStore = create<AgentStore>()(
             addMessage: (message: Message) => {
                 const { currentPinnedOrganizationId } = get();
                 if (!currentPinnedOrganizationId) {
-                    console.warn(
-                        'No pinned organization ID available for message',
-                    );
+                    console.warn('No pinned organization ID available for message');
                     return;
                 }
 
@@ -153,9 +147,8 @@ export const useAgentStore = create<AgentStore>()(
                     organizationMessages: {
                         ...state.organizationMessages,
                         [currentPinnedOrganizationId]: [
-                            ...(state.organizationMessages[
-                                currentPinnedOrganizationId
-                            ] || []),
+                            ...(state.organizationMessages[currentPinnedOrganizationId] ||
+                                []),
                             message,
                         ],
                     },
@@ -179,12 +172,10 @@ export const useAgentStore = create<AgentStore>()(
                 }));
             },
 
-            clearAllOrganizationMessages: () =>
-                set({ organizationMessages: {} }),
+            clearAllOrganizationMessages: () => set({ organizationMessages: {} }),
 
             getMessagesForCurrentOrg: () => {
-                const { currentPinnedOrganizationId, organizationMessages } =
-                    get();
+                const { currentPinnedOrganizationId, organizationMessages } = get();
                 if (!currentPinnedOrganizationId) {
                     return [];
                 }
@@ -196,11 +187,9 @@ export const useAgentStore = create<AgentStore>()(
                 return organizationMessages[orgId] || [];
             },
 
-            setHasHydrated: (hydrated: boolean) =>
-                set({ _hasHydrated: hydrated }),
+            setHasHydrated: (hydrated: boolean) => set({ _hasHydrated: hydrated }),
 
-            setN8nConfig: (webhookUrl: string) =>
-                set({ n8nWebhookUrl: webhookUrl }),
+            setN8nConfig: (webhookUrl: string) => set({ n8nWebhookUrl: webhookUrl }),
 
             setUserContext: (context) =>
                 set({
@@ -355,8 +344,7 @@ export const useAgentStore = create<AgentStore>()(
                                     ] = oldMessages;
                                 } else {
                                     state.organizationMessages = {
-                                        [state.currentPinnedOrganizationId]:
-                                            oldMessages,
+                                        [state.currentPinnedOrganizationId]: oldMessages,
                                     };
                                 }
 
@@ -365,10 +353,7 @@ export const useAgentStore = create<AgentStore>()(
                                 );
                             }
                         } catch (error) {
-                            console.error(
-                                'AgentStore - Error during migration:',
-                                error,
-                            );
+                            console.error('AgentStore - Error during migration:', error);
                         }
                     }
                 }

@@ -96,9 +96,7 @@ export function useOrganizationsByMembership(userId: string) {
 
             try {
                 const orgs = await getUserOrganizations(userId);
-                console.log(
-                    `Retrieved ${orgs.length} organizations for user ${userId}`,
-                );
+                console.log(`Retrieved ${orgs.length} organizations for user ${userId}`);
                 return orgs;
             } catch (error) {
                 console.error('Error in useOrganizationsByMembership:', error);
@@ -193,10 +191,7 @@ export function useOrgInvitation(email: string) {
                 .neq('status', 'rejected'); // Exclude rejected invitations
 
             if (error) {
-                console.error(
-                    'Error fetching organization invitations by email:',
-                    error,
-                );
+                console.error('Error fetching organization invitations by email:', error);
                 throw error;
             }
 
@@ -247,10 +242,7 @@ export function useOrgInvitationsByOrgId(orgId: string) {
                 .eq('organization_id', orgId);
 
             if (error) {
-                console.error(
-                    'Error fetching invitations by organization ID:',
-                    error,
-                );
+                console.error('Error fetching invitations by organization ID:', error);
                 throw error;
             }
 

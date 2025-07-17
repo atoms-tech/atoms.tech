@@ -30,9 +30,7 @@ const TableHeader = ({
     ...props
 }: HTMLAttributes<HTMLTableSectionElement> & {
     ref?: RefObject<HTMLTableSectionElement>;
-}) => (
-    <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
-);
+}) => <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />;
 TableHeader.displayName = 'TableHeader';
 
 const TableBody = ({
@@ -42,11 +40,7 @@ const TableBody = ({
 }: HTMLAttributes<HTMLTableSectionElement> & {
     ref?: RefObject<HTMLTableSectionElement>;
 }) => (
-    <tbody
-        ref={ref}
-        className={cn('[&_tr:last-child]:border-0', className)}
-        {...props}
-    />
+    <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props} />
 );
 TableBody.displayName = 'TableBody';
 

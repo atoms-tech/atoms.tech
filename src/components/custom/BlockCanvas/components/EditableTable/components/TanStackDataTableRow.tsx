@@ -12,11 +12,7 @@ interface TanStackDataTableRowProps<
     row: Row<T>;
     isEditMode: boolean;
     selectedCell: { rowIndex: number; columnId: string } | null;
-    onCellChange?: (
-        itemId: string,
-        accessor: keyof T,
-        newValue: CellValue,
-    ) => void;
+    onCellChange?: (itemId: string, accessor: keyof T, newValue: CellValue) => void;
     onCellBlur?: () => void;
     onCellSelect?: (rowIndex: number, columnId: string) => void;
 }
@@ -34,11 +30,7 @@ function CellComponent<T extends Record<string, CellValue> & { id: string }>({
     cell: Cell<T, unknown>;
     isEditMode: boolean;
     isSelected: boolean;
-    onCellChange?: (
-        itemId: string,
-        accessor: keyof T,
-        newValue: CellValue,
-    ) => void;
+    onCellChange?: (itemId: string, accessor: keyof T, newValue: CellValue) => void;
     onCellBlur?: () => void;
     onCellSelect?: (rowIndex: number, columnId: string) => void;
     rowIndex: number;
@@ -97,10 +89,7 @@ function TanStackDataTableRowComponent<
 }: TanStackDataTableRowProps<T>) {
     return (
         <tr
-            className={cn(
-                'font-mono hover:bg-muted/50',
-                !isEditMode && 'cursor-pointer',
-            )}
+            className={cn('font-mono hover:bg-muted/50', !isEditMode && 'cursor-pointer')}
             id={`requirement-${row.original.id}`}
             data-requirement-id={row.original.id}
         >

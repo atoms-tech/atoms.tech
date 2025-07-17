@@ -56,24 +56,15 @@ const DialogContent = ({
 );
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
-const DialogHeader = ({
-    className,
-    ...props
-}: HTMLAttributes<HTMLDivElement>) => (
+const DialogHeader = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
     <div
-        className={cn(
-            'flex flex-col space-y-1.5 text-center sm:text-left',
-            className,
-        )}
+        className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)}
         {...props}
     />
 );
 DialogHeader.displayName = 'DialogHeader';
 
-const DialogFooter = ({
-    className,
-    ...props
-}: HTMLAttributes<HTMLDivElement>) => (
+const DialogFooter = ({ className, ...props }: HTMLAttributes<HTMLDivElement>) => (
     <div
         className={cn(
             'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
@@ -91,10 +82,7 @@ const DialogTitle = ({
 }: ComponentProps<typeof DialogPrimitive.Title>) => (
     <DialogPrimitive.Title
         ref={ref}
-        className={cn(
-            'text-lg font-semibold leading-none tracking-tight',
-            className,
-        )}
+        className={cn('text-lg font-semibold leading-none tracking-tight', className)}
         {...props}
     />
 );

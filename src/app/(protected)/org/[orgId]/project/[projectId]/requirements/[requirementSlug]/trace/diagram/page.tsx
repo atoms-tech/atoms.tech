@@ -29,8 +29,7 @@ export default function TraceDiagramPage() {
                         Trace Links Diagram
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                        Click on any requirement node to navigate to its details
-                        page.
+                        Click on any requirement node to navigate to its details page.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="px-6">

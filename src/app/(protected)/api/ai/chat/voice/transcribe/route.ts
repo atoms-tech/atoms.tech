@@ -11,10 +11,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const formData = await req.formData();
     const file = formData.get('audio') as File;
     if (!file) {
-        return NextResponse.json(
-            { error: 'No audio file provided' },
-            { status: 400 },
-        );
+        return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
 
     // Save the uploaded file to a temp location
@@ -63,10 +60,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
                 .filter((f) => f.endsWith('.json'));
             if (outputFiles.length === 0) {
                 resolve(
-                    NextResponse.json(
-                        { error: 'No transcript found' },
-                        { status: 500 },
-                    ),
+                    NextResponse.json({ error: 'No transcript found' }, { status: 500 }),
                 );
                 fs.rmSync(tempDir, { recursive: true, force: true });
                 return;

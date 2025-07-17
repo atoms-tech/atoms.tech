@@ -133,9 +133,7 @@ export function mapAPIRequirementTest(rt: APIRequirementTest): RequirementTest {
         'blocked',
         'skipped',
     ];
-    const status = validStatuses.includes(
-        rt.execution_status as ExecutionStatus,
-    )
+    const status = validStatuses.includes(rt.execution_status as ExecutionStatus)
         ? (rt.execution_status as ExecutionStatus)
         : 'not_executed';
 

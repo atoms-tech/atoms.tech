@@ -16,33 +16,28 @@ import {
 } from '@/lib/db/server';
 
 // Cache this function to prevent multiple executions in the same request
-export const prefetchUserDashboard = cache(
-    async (queryClient?: QueryClient) => {
-        const client = queryClient || getQueryClient();
+export const prefetchUserDashboard = cache(async (queryClient?: QueryClient) => {
+    const client = queryClient || getQueryClient();
 
-        // Fetch user data in parallel
-        const userResult = await getAuthUserServer();
-        const user = userResult.user;
+    // Fetch user data in parallel
+    const userResult = await getAuthUserServer();
+    const user = userResult.user;
 
-        // Now fetch profile and organizations with the user ID
-        const [profile, organizations] = await Promise.all([
-            getUserProfileServer(user.id),
-            getUserOrganizationsServer(user.id),
-        ]);
+    // Now fetch profile and organizations with the user ID
+    const [profile, organizations] = await Promise.all([
+        getUserProfileServer(user.id),
+        getUserOrganizationsServer(user.id),
+    ]);
 
-        // Cache all fetched data
-        if (queryClient) {
-            client.setQueryData(['user'], user);
-            client.setQueryData(queryKeys.profiles.detail(user.id), profile);
-            client.setQueryData(
-                queryKeys.organizations.byMembership(user.id),
-                organizations,
-            );
-        }
+    // Cache all fetched data
+    if (queryClient) {
+        client.setQueryData(['user'], user);
+        client.setQueryData(queryKeys.profiles.detail(user.id), profile);
+        client.setQueryData(queryKeys.organizations.byMembership(user.id), organizations);
+    }
 
-        return { user, profile, organizations };
-    },
-);
+    return { user, profile, organizations };
+});
 
 // Optimized org page data prefetching
 export const prefetchOrgPageData = async (
@@ -53,17 +48,12 @@ export const prefetchOrgPageData = async (
     const client = queryClient || getQueryClient();
 
     // Check cache first - if data exists, don't refetch
-    const cachedOrg = client.getQueryData(
-        queryKeys.organizations.detail(orgId),
-    );
+    const cachedOrg = client.getQueryData(queryKeys.organizations.detail(orgId));
 
     if (!cachedOrg) {
         // Fetch org data directly instead of getting all orgs again
         const organization = await getOrganizationServer(orgId);
-        client.setQueryData(
-            queryKeys.organizations.detail(orgId),
-            organization,
-        );
+        client.setQueryData(queryKeys.organizations.detail(orgId), organization);
     }
 
     // Parallel fetch all org page data
@@ -88,27 +78,19 @@ export const fetchProjectData = cache(
 
         // Check cache first for project
         let project = client.getQueryData(queryKeys.projects.detail(projectId));
-        let documents = client.getQueryData(
-            queryKeys.documents.byProject(projectId),
-        );
+        let documents = client.getQueryData(queryKeys.documents.byProject(projectId));
 
         // If not in cache, fetch everything in parallel
         if (!project || !documents) {
             [project, documents] = await Promise.all([
                 getProjectByIdServer(projectId).then((data) => {
                     // Update cache
-                    client.setQueryData(
-                        queryKeys.projects.detail(projectId),
-                        data,
-                    );
+                    client.setQueryData(queryKeys.projects.detail(projectId), data);
                     return data;
                 }),
                 getProjectDocumentsServer(projectId).then((data) => {
                     // The data is already typed as Document[] from the database
-                    client.setQueryData(
-                        queryKeys.documents.byProject(projectId),
-                        data,
-                    );
+                    client.setQueryData(queryKeys.documents.byProject(projectId), data);
                     return data;
                 }),
             ]);

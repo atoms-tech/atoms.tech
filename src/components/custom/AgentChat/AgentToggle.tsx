@@ -19,8 +19,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     onClick,
     className,
 }) => {
-    const { currentPinnedOrganizationId, organizationMessages } =
-        useAgentStore();
+    const { currentPinnedOrganizationId, organizationMessages } = useAgentStore();
 
     // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
     const messages = React.useMemo(() => {

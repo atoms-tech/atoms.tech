@@ -16,8 +16,7 @@ export async function GET(request: Request) {
 
     try {
         const supabase = await createClient();
-        const { data, error } =
-            await supabase.auth.exchangeCodeForSession(code);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error || !data.user) {
             console.error('Auth error:', error);
@@ -28,8 +27,7 @@ export async function GET(request: Request) {
         revalidatePath('/', 'layout');
 
         const forwardedHost = request.headers.get('x-forwarded-host');
-        const forwardedProto =
-            request.headers.get('x-forwarded-proto') || 'https';
+        const forwardedProto = request.headers.get('x-forwarded-proto') || 'https';
         const isLocalEnv = process.env.NODE_ENV === 'development';
 
         // For local development, use origin directly
@@ -38,9 +36,7 @@ export async function GET(request: Request) {
         }
 
         // For production, prefer x-forwarded-host when available
-        const baseUrl = forwardedHost
-            ? `${forwardedProto}://${forwardedHost}`
-            : origin;
+        const baseUrl = forwardedHost ? `${forwardedProto}://${forwardedHost}` : origin;
 
         return NextResponse.redirect(`${baseUrl}${next}`);
     } catch (error) {

@@ -94,14 +94,12 @@ function TestMatrixGridComponent({
                                 {requirements.map((requirement) => (
                                     <tr key={requirement.id}>
                                         {testCases.map((testCase) => {
-                                            const relationship =
-                                                requirementTests.find(
-                                                    (rt) =>
-                                                        rt.requirement_id ===
-                                                            requirement.id &&
-                                                        rt.test_id ===
-                                                            testCase.id,
-                                                );
+                                            const relationship = requirementTests.find(
+                                                (rt) =>
+                                                    rt.requirement_id ===
+                                                        requirement.id &&
+                                                    rt.test_id === testCase.id,
+                                            );
 
                                             return (
                                                 <td

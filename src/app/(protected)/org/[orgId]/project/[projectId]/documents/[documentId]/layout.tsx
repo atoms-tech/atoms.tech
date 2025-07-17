@@ -6,11 +6,7 @@ import { useEffect } from 'react';
 import { useDocument } from '@/hooks/queries/useDocument';
 import { useDocumentStore } from '@/store/document.store';
 
-export default function DocumentLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function DocumentLayout({ children }: { children: React.ReactNode }) {
     const params = useParams();
     const documentId = params.documentId as string;
 

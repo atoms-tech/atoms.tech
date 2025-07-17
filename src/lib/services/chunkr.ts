@@ -1,15 +1,11 @@
 const CHUNKR_API_KEY =
     process.env.NEXT_PUBLIC_CHUNKR_API_KEY ||
-    (process.env.NODE_ENV === 'production'
-        ? undefined
-        : 'mock_api_key_for_build');
+    (process.env.NODE_ENV === 'production' ? undefined : 'mock_api_key_for_build');
 const CHUNKR_API_URL =
     process.env.NEXT_PUBLIC_CHUNKR_API_URL || 'https://api.chunkr.ai/api/v1';
 
 if (!CHUNKR_API_KEY) {
-    throw new Error(
-        'Missing required environment variable: NEXT_PUBLIC_CHUNKR_API_KEY',
-    );
+    throw new Error('Missing required environment variable: NEXT_PUBLIC_CHUNKR_API_KEY');
 }
 
 export enum TaskStatus {
@@ -100,17 +96,12 @@ export class ChunkrService {
             }
 
             const result = (await response.json()) as TaskResponse;
-            console.log(
-                'OCR task started successfully with task ID:',
-                result.task_id,
-            );
+            console.log('OCR task started successfully with task ID:', result.task_id);
             return result;
         } catch (error) {
             console.error('Start OCR task process failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
+                error instanceof Error ? error.message : 'Unknown error occurred';
             throw new Error(`Failed to start OCR task: ${errorMessage}`);
         }
     }
@@ -145,9 +136,7 @@ export class ChunkrService {
         } catch (error) {
             console.error('Get OCR task status process failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
+                error instanceof Error ? error.message : 'Unknown error occurred';
             throw new Error(`Failed to get OCR task status: ${errorMessage}`);
         }
     }
@@ -182,10 +171,7 @@ export class ChunkrService {
                     });
                     return response.task_id;
                 } catch (error) {
-                    console.error(
-                        `Processing failed for file ${file.name}:`,
-                        error,
-                    );
+                    console.error(`Processing failed for file ${file.name}:`, error);
                     throw error;
                 }
             });
@@ -195,9 +181,7 @@ export class ChunkrService {
         } catch (error) {
             console.error('Files processing failed:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred';
+                error instanceof Error ? error.message : 'Unknown error occurred';
             throw new Error(`Failed to process files: ${errorMessage}`);
         }
     }

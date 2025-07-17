@@ -29,9 +29,7 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
 
         return (
             <div className="relative flex-1">
-                <Suspense fallback={<OrgDashboardSkeleton />}>
-                    {children}
-                </Suspense>
+                <Suspense fallback={<OrgDashboardSkeleton />}>{children}</Suspense>
             </div>
         );
     } catch (error: unknown) {

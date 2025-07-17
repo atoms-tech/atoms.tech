@@ -19,11 +19,7 @@ export const ProjectProvider = ({
     initialProject: Project | null;
 }) => {
     const [project, setProject] = useState<Project | null>(initialProject);
-    return (
-        <ProjectContext value={{ project, setProject }}>
-            {children}
-        </ProjectContext>
-    );
+    return <ProjectContext value={{ project, setProject }}>{children}</ProjectContext>;
 };
 
 export const useProject = () => {

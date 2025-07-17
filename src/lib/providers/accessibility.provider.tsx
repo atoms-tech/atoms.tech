@@ -30,17 +30,15 @@ interface AccessibilityContextType {
     toggleHelp: () => void;
 }
 
-const AccessibilityContext = createContext<
-    AccessibilityContextType | undefined
->(undefined);
+const AccessibilityContext = createContext<AccessibilityContextType | undefined>(
+    undefined,
+);
 
 interface AccessibilityProviderProps {
     children: React.ReactNode;
 }
 
-export function AccessibilityProvider({
-    children,
-}: AccessibilityProviderProps) {
+export function AccessibilityProvider({ children }: AccessibilityProviderProps) {
     const [settings, setSettings] = useState<AccessibilitySettings>({
         keyboardNavigation: true,
         reducedMotion: false,
@@ -81,10 +79,7 @@ export function AccessibilityProvider({
 
     // Save settings to localStorage when they change
     useEffect(() => {
-        localStorage.setItem(
-            'accessibility-settings',
-            JSON.stringify(settings),
-        );
+        localStorage.setItem('accessibility-settings', JSON.stringify(settings));
     }, [settings]);
 
     // Apply accessibility settings to document
@@ -122,10 +117,7 @@ export function AccessibilityProvider({
         }
     }, [settings]);
 
-    const updateSetting = (
-        key: keyof AccessibilitySettings,
-        value: boolean,
-    ) => {
+    const updateSetting = (key: keyof AccessibilitySettings, value: boolean) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
     };
 
@@ -168,9 +160,7 @@ export function AccessibilityProvider({
 export function useAccessibility() {
     const context = useContext(AccessibilityContext);
     if (context === undefined) {
-        throw new Error(
-            'useAccessibility must be used within an AccessibilityProvider',
-        );
+        throw new Error('useAccessibility must be used within an AccessibilityProvider');
     }
     return context;
 }
@@ -238,16 +228,13 @@ export function useFocusManagement() {
 export function useSoundEffects() {
     const { settings } = useAccessibility();
 
-    const playSound = (
-        type: 'click' | 'success' | 'error' | 'notification',
-    ) => {
+    const playSound = (type: 'click' | 'success' | 'error' | 'notification') => {
         if (!settings.soundEffects) return;
 
         // Create audio context for sound effects
         try {
             const audioContext = new (window.AudioContext ||
-                (window as unknown as Record<string, unknown>)
-                    .webkitAudioContext)();
+                (window as unknown as Record<string, unknown>).webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
 

@@ -3,11 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { cn } from '@/lib/utils';
 import { Profile } from '@/types/base/profiles.types';

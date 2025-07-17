@@ -1,12 +1,6 @@
 'use client';
 
-import {
-    Code2,
-    Link as LinkIcon,
-    Loader2,
-    MessageSquare,
-    Trash2,
-} from 'lucide-react';
+import { Code2, Link as LinkIcon, Loader2, MessageSquare, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -21,10 +15,7 @@ export function Hero() {
         tryDemo: false,
     });
 
-    const setLoading = (
-        key: keyof typeof loadingStates,
-        isLoading: boolean,
-    ) => {
+    const setLoading = (key: keyof typeof loadingStates, isLoading: boolean) => {
         setLoadingStates((prev) => ({ ...prev, [key]: isLoading }));
     };
 
@@ -76,8 +67,7 @@ export function Hero() {
                 </h2>
                 <div className="space-y-6 mb-16">
                     <p className="text-xl sm:text-2xl md:text-3xl font-bold mb-8">
-                        WRITE LIKE WORD · ORGANIZE LIKE EXCEL · AUTOMATE
-                        EVERYTHING ELSE
+                        WRITE LIKE WORD · ORGANIZE LIKE EXCEL · AUTOMATE EVERYTHING ELSE
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
                         <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
@@ -90,8 +80,8 @@ export function Hero() {
                                         Chat
                                     </div>
                                     <div className="text-xs sm:text-sm text-gray-300 transition-colors duration-300 leading-relaxed">
-                                        Your specs speak human now—ask
-                                        questions, rewrite, fix nonsense
+                                        Your specs speak human now—ask questions, rewrite,
+                                        fix nonsense
                                     </div>
                                 </div>
                             </div>
@@ -107,8 +97,8 @@ export function Hero() {
                                         Clean
                                     </div>
                                     <div className="text-xs sm:text-sm text-gray-300 transition-colors duration-300 leading-relaxed">
-                                        Duplicates and contradictions? Destroyed
-                                        before QA or customers notice
+                                        Duplicates and contradictions? Destroyed before QA
+                                        or customers notice
                                     </div>
                                 </div>
                             </div>
@@ -124,8 +114,8 @@ export function Hero() {
                                         Code
                                     </div>
                                     <div className="text-xs sm:text-sm text-gray-300 transition-colors duration-300 leading-relaxed">
-                                        Real code, straight from your system
-                                        design. Not vibes
+                                        Real code, straight from your system design. Not
+                                        vibes
                                     </div>
                                 </div>
                             </div>
@@ -141,8 +131,8 @@ export function Hero() {
                                         Connect
                                     </div>
                                     <div className="text-xs sm:text-sm text-gray-300 transition-colors duration-300 leading-relaxed">
-                                        Emails, tickets, docs—in one place. Stop
-                                        creating meetings; start saving hours
+                                        Emails, tickets, docs—in one place. Stop creating
+                                        meetings; start saving hours
                                     </div>
                                 </div>
                             </div>

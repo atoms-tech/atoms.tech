@@ -18,10 +18,7 @@ export async function POST(request: NextRequest) {
         console.error('API error:', error);
         return NextResponse.json(
             {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : 'An error occurred',
+                error: error instanceof Error ? error.message : 'An error occurred',
             },
             { status: 500 },
         );

@@ -50,29 +50,26 @@ export function useChunkr(options: ChunkrOptions = {}) {
         },
     });
 
-    const getTaskStatus = useCallback(
-        async (taskId: string): Promise<TaskResponse> => {
-            console.log('Fetching OCR task status for taskId:', taskId);
-            const url = new URL('/api/ocr', window.location.href);
-            url.searchParams.set('taskId', taskId);
-            const response = await fetch(url.href, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
+    const getTaskStatus = useCallback(async (taskId: string): Promise<TaskResponse> => {
+        console.log('Fetching OCR task status for taskId:', taskId);
+        const url = new URL('/api/ocr', window.location.href);
+        url.searchParams.set('taskId', taskId);
+        const response = await fetch(url.href, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                    `Failed to get OCR task status: ${errorData.error || response.statusText}`,
-                );
-            }
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+                `Failed to get OCR task status: ${errorData.error || response.statusText}`,
+            );
+        }
 
-            return response.json();
-        },
-        [],
-    );
+        return response.json();
+    }, []);
 
     const useTaskStatus = (taskId: string) => {
         return useQuery<TaskResponse, Error>({
@@ -81,10 +78,7 @@ export function useChunkr(options: ChunkrOptions = {}) {
             enabled: !!taskId && !options.skipCache,
             refetchInterval: (query) => {
                 const status = query.state.data?.status;
-                if (
-                    status === TaskStatus.STARTING ||
-                    status === TaskStatus.PROCESSING
-                ) {
+                if (status === TaskStatus.STARTING || status === TaskStatus.PROCESSING) {
                     return 2000;
                 }
                 return false;
@@ -99,12 +93,7 @@ export function useChunkr(options: ChunkrOptions = {}) {
                 queryFn: () => getTaskStatus(taskId),
                 enabled: !!taskId && !options.skipCache,
                 refetchInterval: (
-                    query: Query<
-                        TaskResponse,
-                        Error,
-                        TaskResponse,
-                        readonly unknown[]
-                    >,
+                    query: Query<TaskResponse, Error, TaskResponse, readonly unknown[]>,
                 ) => {
                     const status = query.state.data?.status;
                     if (
@@ -119,8 +108,7 @@ export function useChunkr(options: ChunkrOptions = {}) {
         });
     };
 
-    const { mutateAsync: startOcrTask, error: ocrTaskError } =
-        startOcrTaskMutation;
+    const { mutateAsync: startOcrTask, error: ocrTaskError } = startOcrTaskMutation;
 
     return {
         startOcrTask,

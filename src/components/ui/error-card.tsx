@@ -14,12 +14,7 @@ interface ErrorCardProps {
     };
 }
 
-const ErrorCard = ({
-    title,
-    message,
-    retryButton,
-    redirectButton,
-}: ErrorCardProps) => {
+const ErrorCard = ({ title, message, retryButton, redirectButton }: ErrorCardProps) => {
     return (
         <div className="flex min-h-screen items-center justify-center p-4">
             <Alert variant="destructive" className="max-w-md">
@@ -34,10 +29,7 @@ const ErrorCard = ({
                     )}
 
                     {redirectButton && (
-                        <Button
-                            variant="default"
-                            onClick={redirectButton.onClick}
-                        >
+                        <Button variant="default" onClick={redirectButton.onClick}>
                             {redirectButton.text}
                         </Button>
                     )}

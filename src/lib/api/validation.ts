@@ -67,24 +67,16 @@ export async function validateRequest<T>(
         return schema.parse(body);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation(
-                'Request validation failed',
-                error.errors,
-            );
+            throw createApiError.validation('Request validation failed', error.errors);
         }
         throw createApiError.badRequest('Invalid JSON in request body');
     }
 }
 
 // Query parameters validation
-export function validateQuery<T>(
-    request: NextRequest,
-    schema: z.ZodSchema<T>,
-): T {
+export function validateQuery<T>(request: NextRequest, schema: z.ZodSchema<T>): T {
     try {
-        const searchParams = Object.fromEntries(
-            request.nextUrl.searchParams.entries(),
-        );
+        const searchParams = Object.fromEntries(request.nextUrl.searchParams.entries());
         return schema.parse(searchParams);
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -116,19 +108,13 @@ export function validateParams<T>(
 }
 
 // Headers validation
-export function validateHeaders<T>(
-    request: NextRequest,
-    schema: z.ZodSchema<T>,
-): T {
+export function validateHeaders<T>(request: NextRequest, schema: z.ZodSchema<T>): T {
     try {
         const headers = Object.fromEntries(request.headers.entries());
         return schema.parse(headers);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation(
-                'Headers validation failed',
-                error.errors,
-            );
+            throw createApiError.validation('Headers validation failed', error.errors);
         }
         throw createApiError.badRequest('Invalid headers');
     }
@@ -145,10 +131,7 @@ export async function validateFormData<T>(
         return schema.parse(data);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation(
-                'Form data validation failed',
-                error.errors,
-            );
+            throw createApiError.validation('Form data validation failed', error.errors);
         }
         throw createApiError.badRequest('Invalid form data');
     }
@@ -230,9 +213,7 @@ export const sanitize = {
 // Security validation schemas
 export const securitySchemas = {
     // Safe string (no special characters that could be used for injection)
-    safeString: z
-        .string()
-        .regex(/^[a-zA-Z0-9\s\-_.]+$/, 'Contains invalid characters'),
+    safeString: z.string().regex(/^[a-zA-Z0-9\s\-_.]+$/, 'Contains invalid characters'),
 
     // Alphanumeric only
     alphanumeric: z
@@ -242,10 +223,7 @@ export const securitySchemas = {
     // No script tags or javascript
     noScript: z
         .string()
-        .refine(
-            (val) => !/<script|javascript:/i.test(val),
-            'Script content not allowed',
-        ),
+        .refine((val) => !/<script|javascript:/i.test(val), 'Script content not allowed'),
 
     // SQL injection prevention
     noSqlInjection: z

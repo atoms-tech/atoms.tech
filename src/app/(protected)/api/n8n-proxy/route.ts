@@ -58,10 +58,7 @@ export async function POST(request: NextRequest) {
             // First read the response as text
             const responseText = await response.text();
             console.log('N8N Proxy - Raw response:', responseText);
-            console.log(
-                'N8N Proxy - Raw response length:',
-                responseText.length,
-            );
+            console.log('N8N Proxy - Raw response length:', responseText.length);
             console.log('N8N Proxy - Raw response type:', typeof responseText);
 
             // Then try to parse it as JSON
@@ -71,10 +68,7 @@ export async function POST(request: NextRequest) {
                     'N8N Proxy - Parsed response:',
                     JSON.stringify(responseData, null, 2),
                 );
-                console.log(
-                    'N8N Proxy - Response keys:',
-                    Object.keys(responseData),
-                );
+                console.log('N8N Proxy - Response keys:', Object.keys(responseData));
 
                 // Check for empty reply field
                 if (responseData.reply !== undefined) {
@@ -105,8 +99,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(responseData);
     } catch (error) {
         console.error('N8N proxy error:', error);
-        const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return NextResponse.json(
             { error: `Failed to connect to N8N webhook: ${errorMessage}` },
             { status: 500 },

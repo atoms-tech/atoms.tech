@@ -14,8 +14,7 @@ const Label = ({
     ref,
     className,
     ...props
-}: ComponentProps<typeof LabelPrimitive.Root> &
-    VariantProps<typeof labelVariants>) => (
+}: ComponentProps<typeof LabelPrimitive.Root> & VariantProps<typeof labelVariants>) => (
     <LabelPrimitive.Root
         ref={ref}
         className={cn(labelVariants(), className)}

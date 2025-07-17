@@ -1,9 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import {
-    RequirementTest,
-    TestReq,
-} from '@/components/custom/RequirementsTesting/types';
+import { RequirementTest, TestReq } from '@/components/custom/RequirementsTesting/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
@@ -148,10 +145,7 @@ export function useTestRequirements(testId: string) {
  */
 export function useRequirementTestCases(requirementId: string) {
     return useQuery({
-        queryKey: [
-            ...queryKeys.requirements.detail(requirementId),
-            'testCases',
-        ],
+        queryKey: [...queryKeys.requirements.detail(requirementId), 'testCases'],
         queryFn: async () => {
             if (!requirementId) return [];
 
@@ -175,18 +169,13 @@ export function useRequirementTestCases(requirementId: string) {
 
             // Map the status from the junction table
             return data.map((test) => {
-                const relation = relationData.find(
-                    (r) => r.test_id === test.id,
-                );
+                const relation = relationData.find((r) => r.test_id === test.id);
                 return {
                     ...test,
                     name: test.title,
                     type: test.test_type,
-                    execution_status:
-                        relation?.execution_status || 'not_executed',
-                    result: mapExecutionStatusToResult(
-                        relation?.execution_status,
-                    ),
+                    execution_status: relation?.execution_status || 'not_executed',
+                    result: mapExecutionStatusToResult(relation?.execution_status),
                 };
             });
         },
@@ -345,8 +334,7 @@ export function useCreateRequirementTest() {
             // Set default values
             const relationData = {
                 ...newRelation,
-                execution_status:
-                    newRelation.execution_status || 'not_executed',
+                execution_status: newRelation.execution_status || 'not_executed',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             };
@@ -360,9 +348,7 @@ export function useCreateRequirementTest() {
             if (error) {
                 // Handle unique constraint violation (relationship already exists)
                 if (error.code === '23505') {
-                    throw new Error(
-                        'This requirement is already linked to this test',
-                    );
+                    throw new Error('This requirement is already linked to this test');
                 }
                 throw error;
             }
@@ -377,9 +363,7 @@ export function useCreateRequirementTest() {
 
             // Invalidate specific requirement and test queries
             queryClient.invalidateQueries({
-                queryKey: queryKeys.requirementTests.byRequirement(
-                    data.requirement_id,
-                ),
+                queryKey: queryKeys.requirementTests.byRequirement(data.requirement_id),
             });
 
             queryClient.invalidateQueries({
@@ -388,10 +372,7 @@ export function useCreateRequirementTest() {
 
             // Invalidate linked requirements count for the test
             queryClient.invalidateQueries({
-                queryKey: [
-                    ...queryKeys.testReq.detail(data.test_id),
-                    'linkedCount',
-                ],
+                queryKey: [...queryKeys.testReq.detail(data.test_id), 'linkedCount'],
             });
 
             // Invalidate test cases for the requirement
@@ -403,10 +384,7 @@ export function useCreateRequirementTest() {
             });
 
             // Add the new relationship to the query cache
-            queryClient.setQueryData(
-                queryKeys.requirementTests.detail(data.id!),
-                data,
-            );
+            queryClient.setQueryData(queryKeys.requirementTests.detail(data.id!), data);
         },
     });
 }

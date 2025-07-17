@@ -4,8 +4,7 @@ const benefits = [
     {
         icon: Clock,
         title: '50 % FASTER UPDATES',
-        description:
-            'AI drafts and edits in moments—keeping you focused on engineering.',
+        description: 'AI drafts and edits in moments—keeping you focused on engineering.',
     },
     {
         icon: AlertTriangle,

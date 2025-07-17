@@ -84,9 +84,7 @@ function PageSizeSelector({
             value={pageSize === totalItems ? 'all' : pageSize}
             onChange={(e) => {
                 const value =
-                    e.target.value === 'all'
-                        ? totalItems
-                        : parseInt(e.target.value, 10);
+                    e.target.value === 'all' ? totalItems : parseInt(e.target.value, 10);
                 onPageSizeChange(value);
             }}
         >
@@ -312,9 +310,7 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
                 <DialogContent>
                     <div className="p-6">
-                        <h3 className="text-lg font-medium mb-4">
-                            Edit Test Case
-                        </h3>
+                        <h3 className="text-lg font-medium mb-4">Edit Test Case</h3>
 
                         {editingTest && (
                             <div className="space-y-4">
@@ -390,21 +386,13 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
                                             <option value="integration">
                                                 Integration
                                             </option>
-                                            <option value="system">
-                                                System
-                                            </option>
-                                            <option value="acceptance">
-                                                Acceptance
-                                            </option>
+                                            <option value="system">System</option>
+                                            <option value="acceptance">Acceptance</option>
                                             <option value="performance">
                                                 Performance
                                             </option>
-                                            <option value="security">
-                                                Security
-                                            </option>
-                                            <option value="usability">
-                                                Usability
-                                            </option>
+                                            <option value="security">Security</option>
+                                            <option value="usability">Usability</option>
                                             <option value="other">Other</option>
                                         </select>
                                     </div>
@@ -424,15 +412,9 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
                                                 })
                                             }
                                         >
-                                            <option value="manual">
-                                                Manual
-                                            </option>
-                                            <option value="automated">
-                                                Automated
-                                            </option>
-                                            <option value="hybrid">
-                                                Hybrid
-                                            </option>
+                                            <option value="manual">Manual</option>
+                                            <option value="automated">Automated</option>
+                                            <option value="hybrid">Hybrid</option>
                                         </select>
                                     </div>
 
@@ -456,15 +438,9 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
                                             <option value="in_progress">
                                                 In Progress
                                             </option>
-                                            <option value="blocked">
-                                                Blocked
-                                            </option>
-                                            <option value="completed">
-                                                Completed
-                                            </option>
-                                            <option value="obsolete">
-                                                Obsolete
-                                            </option>
+                                            <option value="blocked">Blocked</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="obsolete">Obsolete</option>
                                         </select>
                                     </div>
 
@@ -483,13 +459,9 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
                                                 })
                                             }
                                         >
-                                            <option value="critical">
-                                                Critical
-                                            </option>
+                                            <option value="critical">Critical</option>
                                             <option value="high">High</option>
-                                            <option value="medium">
-                                                Medium
-                                            </option>
+                                            <option value="medium">Medium</option>
                                             <option value="low">Low</option>
                                         </select>
                                     </div>
@@ -508,9 +480,7 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
                                 onClick={handleUpdateTest}
                                 disabled={updateTestReq.isPending}
                             >
-                                {updateTestReq.isPending
-                                    ? 'Saving...'
-                                    : 'Save Changes'}
+                                {updateTestReq.isPending ? 'Saving...' : 'Save Changes'}
                             </Button>
                         </div>
                     </div>

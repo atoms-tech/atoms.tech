@@ -37,8 +37,7 @@ export default async function ProtectedLayout({
 
     try {
         // Parallel fetch all critical user data at once
-        const { user, profile, organizations } =
-            await prefetchUserDashboard(queryClient);
+        const { user, profile, organizations } = await prefetchUserDashboard(queryClient);
 
         // Only prefetch data for preferred org (if we know it)
         // This prevents overfetching for ALL organizations
@@ -49,8 +48,7 @@ export default async function ProtectedLayout({
             if (preferredOrg) {
                 await queryClient.prefetchQuery({
                     queryKey: queryKeys.projects.byOrg(preferredOrgId),
-                    queryFn: () =>
-                        getUserProjectsServer(user.id, preferredOrgId),
+                    queryFn: () => getUserProjectsServer(user.id, preferredOrgId),
                     staleTime: 1000 * 60 * 5, // 5 minutes
                 });
             }

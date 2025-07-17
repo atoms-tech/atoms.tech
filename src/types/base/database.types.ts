@@ -1457,56 +1457,38 @@ export type Database = {
             };
             user_roles: {
                 Row: {
-                    admin_role:
-                        | Database['public']['Enums']['user_role_type']
-                        | null;
+                    admin_role: Database['public']['Enums']['user_role_type'] | null;
                     created_at: string;
                     document_id: string | null;
-                    document_role:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    document_role: Database['public']['Enums']['project_role'] | null;
                     id: string;
                     org_id: string | null;
                     project_id: string | null;
-                    project_role:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    project_role: Database['public']['Enums']['project_role'] | null;
                     updated_at: string;
                     user_id: string;
                 };
                 Insert: {
-                    admin_role?:
-                        | Database['public']['Enums']['user_role_type']
-                        | null;
+                    admin_role?: Database['public']['Enums']['user_role_type'] | null;
                     created_at?: string;
                     document_id?: string | null;
-                    document_role?:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    document_role?: Database['public']['Enums']['project_role'] | null;
                     id?: string;
                     org_id?: string | null;
                     project_id?: string | null;
-                    project_role?:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    project_role?: Database['public']['Enums']['project_role'] | null;
                     updated_at?: string;
                     user_id: string;
                 };
                 Update: {
-                    admin_role?:
-                        | Database['public']['Enums']['user_role_type']
-                        | null;
+                    admin_role?: Database['public']['Enums']['user_role_type'] | null;
                     created_at?: string;
                     document_id?: string | null;
-                    document_role?:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    document_role?: Database['public']['Enums']['project_role'] | null;
                     id?: string;
                     org_id?: string | null;
                     project_id?: string | null;
-                    project_role?:
-                        | Database['public']['Enums']['project_role']
-                        | null;
+                    project_role?: Database['public']['Enums']['project_role'] | null;
                     updated_at?: string;
                     user_id?: string;
                 };

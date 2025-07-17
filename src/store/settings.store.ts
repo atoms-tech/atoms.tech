@@ -13,8 +13,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     theme: 'light',
     setTheme: (theme) => set({ theme }),
     sidebarCollapsed: false,
-    toggleSidebar: () =>
-        set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+    toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
     layoutViewMode: 'standard',
     setLayoutViewMode: (layoutViewMode) => set({ layoutViewMode }),
 }));

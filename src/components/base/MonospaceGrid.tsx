@@ -81,9 +81,7 @@ export function MonospaceGrid<T>({
                                                             key={colIndex}
                                                             className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded truncate max-w-[200px]"
                                                         >
-                                                            {column.accessor(
-                                                                item,
-                                                            )}
+                                                            {column.accessor(item)}
                                                         </span>
                                                     ))}
                                             </div>

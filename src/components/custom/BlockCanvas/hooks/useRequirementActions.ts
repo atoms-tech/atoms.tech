@@ -17,10 +17,7 @@ import {
     RequirementFormat as _RequirementFormat,
     RequirementLevel as _RequirementLevel,
 } from '@/types/base/enums.types';
-import {
-    Requirement,
-    RequirementAiAnalysis,
-} from '@/types/base/requirements.types';
+import { Requirement, RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 // Type for the requirement data that will be displayed in the table
 export type DynamicRequirement = {
@@ -52,19 +49,14 @@ export const useRequirementActions = ({
         console.log('🎯 STEP 6: refreshRequirements called');
         try {
             // Add a small delay to handle potential database replication lag
-            console.log(
-                '🎯 STEP 6a: Waiting 100ms for database replication lag',
-            );
+            console.log('🎯 STEP 6a: Waiting 100ms for database replication lag');
             await new Promise((resolve) => setTimeout(resolve, 100));
             console.log('✅ STEP 6a: Delay completed, fetching from database');
 
-            console.log(
-                '🎯 STEP 6b: Fetching fresh requirements from database',
-                {
-                    blockId,
-                    documentId,
-                },
-            );
+            console.log('🎯 STEP 6b: Fetching fresh requirements from database', {
+                blockId,
+                documentId,
+            });
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('*')
@@ -78,9 +70,7 @@ export const useRequirementActions = ({
                 throw error;
             }
             if (!requirements) {
-                console.log(
-                    '⚠️ STEP 6b: No requirements returned from database',
-                );
+                console.log('⚠️ STEP 6b: No requirements returned from database');
                 return;
             }
 
@@ -90,9 +80,7 @@ export const useRequirementActions = ({
             );
             console.log('🎯 STEP 6c: Replacing local state with database data');
             setLocalRequirements(requirements);
-            console.log(
-                '✅ STEP 6c: Local state replaced with fresh database data',
-            );
+            console.log('✅ STEP 6c: Local state replaced with fresh database data');
         } catch (error) {
             console.error('❌ STEP 6: Error refreshing requirements:', error);
         }
@@ -117,23 +105,16 @@ export const useRequirementActions = ({
         // Process each property
         properties.forEach((prop) => {
             const value = dynamicReq[prop.name];
-            const column = blockColumns?.find(
-                (col) => col.property_id === prop.id,
-            );
+            const column = blockColumns?.find((col) => col.property_id === prop.id);
             const lowerCaseName = prop.name.toLowerCase();
 
             // Check if this property maps to a natural field
             if (
-                [
-                    'name',
-                    'description',
-                    'external_id',
-                    'status',
-                    'priority',
-                ].includes(lowerCaseName)
+                ['name', 'description', 'external_id', 'status', 'priority'].includes(
+                    lowerCaseName,
+                )
             ) {
-                naturalFields[lowerCaseName] =
-                    typeof value === 'string' ? value : '';
+                naturalFields[lowerCaseName] = typeof value === 'string' ? value : '';
             }
 
             if (column) {
@@ -167,11 +148,7 @@ export const useRequirementActions = ({
             // Extract values from properties object
             if (req.properties) {
                 Object.entries(req.properties).forEach(([key, prop]) => {
-                    if (
-                        typeof prop === 'object' &&
-                        prop !== null &&
-                        'value' in prop
-                    ) {
+                    if (typeof prop === 'object' && prop !== null && 'value' in prop) {
                         // Ensure we only assign CellValue compatible values
                         const value = prop.value;
                         if (
@@ -221,9 +198,7 @@ export const useRequirementActions = ({
     };
 
     // Helper function to convert display values back to enum values
-    const _parseDisplayValueToEnum = (
-        displayValue: string,
-    ): ERequirementStatus => {
+    const _parseDisplayValueToEnum = (displayValue: string): ERequirementStatus => {
         if (!displayValue) return RequirementStatus.draft;
 
         // First, normalize the input by converting to lowercase and replacing spaces with underscores
@@ -277,15 +252,12 @@ export const useRequirementActions = ({
         userId: string,
         userName: string,
     ) => {
-        console.log(
-            '🎯 STEP 5: saveRequirement called in useRequirementActions',
-            {
-                isNew,
-                userId,
-                userName,
-                dynamicReq,
-            },
-        );
+        console.log('🎯 STEP 5: saveRequirement called in useRequirementActions', {
+            isNew,
+            userId,
+            userName,
+            dynamicReq,
+        });
 
         try {
             console.log(
@@ -308,9 +280,7 @@ export const useRequirementActions = ({
             if (dynamicReq.ai_analysis) {
                 try {
                     // Clone the analysis_history to avoid mutation issues
-                    analysis_history = JSON.parse(
-                        JSON.stringify(dynamicReq.ai_analysis),
-                    );
+                    analysis_history = JSON.parse(JSON.stringify(dynamicReq.ai_analysis));
 
                     // Ensure descriptionHistory is always an array even after cloning
                     if (!analysis_history?.descriptionHistory) {
@@ -369,9 +339,7 @@ export const useRequirementActions = ({
             if (isNew) {
                 console.log('🎯 STEP 5b: Processing new requirement');
                 // Get the last position for new requirements
-                console.log(
-                    '🎯 STEP 5c: Getting last position for new requirement',
-                );
+                console.log('🎯 STEP 5c: Getting last position for new requirement');
                 const position = await getLastPosition();
                 console.log('✅ STEP 5c: Got position:', position);
 
@@ -379,23 +347,21 @@ export const useRequirementActions = ({
                 let externalId = naturalFields?.external_id;
                 if (
                     !externalId ||
-                    (typeof externalId === 'string' &&
-                        externalId.trim() === '') ||
+                    (typeof externalId === 'string' && externalId.trim() === '') ||
                     externalId === 'GENERATING...'
                 ) {
                     try {
                         // Get organization ID from document
-                        const { data: document, error: docError } =
-                            await supabase
-                                .from('documents')
-                                .select(
-                                    `
+                        const { data: document, error: docError } = await supabase
+                            .from('documents')
+                            .select(
+                                `
                                 project_id,
                                 projects!inner(organization_id)
                             `,
-                                )
-                                .eq('id', documentId)
-                                .single();
+                            )
+                            .eq('id', documentId)
+                            .single();
 
                         if (!docError && document) {
                             const organizationId = (
@@ -405,16 +371,11 @@ export const useRequirementActions = ({
                             )?.projects?.organization_id;
                             if (organizationId) {
                                 externalId =
-                                    await generateNextRequirementId(
-                                        organizationId,
-                                    );
+                                    await generateNextRequirementId(organizationId);
                             }
                         }
                     } catch (error) {
-                        console.error(
-                            'Error generating requirement ID:',
-                            error,
-                        );
+                        console.error('Error generating requirement ID:', error);
                     }
 
                     // Fallback if auto-generation fails
@@ -453,10 +414,7 @@ export const useRequirementActions = ({
                     .single();
 
                 if (error) {
-                    console.error(
-                        '❌ STEP 5d: Database insertion failed:',
-                        error,
-                    );
+                    console.error('❌ STEP 5d: Database insertion failed:', error);
                     throw error;
                 }
                 if (!data) {
@@ -470,9 +428,7 @@ export const useRequirementActions = ({
                 );
 
                 // Update local state with the new requirement
-                console.log(
-                    '🎯 STEP 5e: Updating local state with new requirement',
-                );
+                console.log('🎯 STEP 5e: Updating local state with new requirement');
                 setLocalRequirements((prev) => {
                     const newState = [...prev, savedRequirement];
                     console.log(
@@ -521,10 +477,7 @@ export const useRequirementActions = ({
     };
 
     // Delete a requirement
-    const deleteRequirement = async (
-        dynamicReq: DynamicRequirement,
-        _userId: string,
-    ) => {
+    const deleteRequirement = async (dynamicReq: DynamicRequirement, _userId: string) => {
         try {
             const { error } = await supabase
                 .from('requirements')

@@ -12,9 +12,7 @@ export const getProjectDocumentsServer = async (projectId: string) => {
     return data;
 };
 
-export const getDocumentBlocksAndRequirementsServer = async (
-    documentId: string,
-) => {
+export const getDocumentBlocksAndRequirementsServer = async (documentId: string) => {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('blocks')

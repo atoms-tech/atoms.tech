@@ -49,8 +49,7 @@ export function EnhancedCard({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() =>
-                                        enhancedReqEars &&
-                                        onAccept(enhancedReqEars, true)
+                                        enhancedReqEars && onAccept(enhancedReqEars, true)
                                     }
                                     disabled={!enhancedReqEars}
                                 >

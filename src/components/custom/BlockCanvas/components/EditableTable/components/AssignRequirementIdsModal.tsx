@@ -52,9 +52,9 @@ export function AssignRequirementIdsModal({
     requirementsWithoutIds,
     isLoading = false,
 }: AssignRequirementIdsModalProps) {
-    const [selectedRequirements, setSelectedRequirements] = useState<
-        Set<string>
-    >(new Set());
+    const [selectedRequirements, setSelectedRequirements] = useState<Set<string>>(
+        new Set(),
+    );
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
     // Initialize with all requirements selected by default
@@ -149,9 +149,8 @@ export function AssignRequirementIdsModal({
                     </DialogTitle>
                     <DialogDescription>
                         Found <strong>{totalCount}</strong> requirement
-                        {totalCount === 1 ? '' : 's'} without proper IDs. Select
-                        which requirements should receive auto-generated
-                        REQ-IDs.
+                        {totalCount === 1 ? '' : 's'} without proper IDs. Select which
+                        requirements should receive auto-generated REQ-IDs.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -209,169 +208,153 @@ export function AssignRequirementIdsModal({
                             }}
                         >
                             <div className="space-y-1">
-                                {requirementsWithoutIds.map(
-                                    (requirement, index) => {
-                                        const isSelected = requirement.id
-                                            ? selectedRequirements.has(
-                                                  requirement.id,
-                                              )
-                                            : false;
-                                        const isExpanded = requirement.id
-                                            ? expandedItems.has(requirement.id)
-                                            : false;
+                                {requirementsWithoutIds.map((requirement, index) => {
+                                    const isSelected = requirement.id
+                                        ? selectedRequirements.has(requirement.id)
+                                        : false;
+                                    const isExpanded = requirement.id
+                                        ? expandedItems.has(requirement.id)
+                                        : false;
 
-                                        return (
-                                            <div
-                                                key={requirement.id || index}
-                                                className={cn(
-                                                    'border rounded-lg transition-all duration-200',
-                                                    isSelected
-                                                        ? 'border-primary/50 bg-primary/5 shadow-sm'
-                                                        : 'border-border bg-muted/20 opacity-60',
-                                                )}
-                                            >
-                                                {/* Compact Header */}
-                                                <div className="flex items-center gap-2 p-3 hover:bg-muted/50">
-                                                    <Checkbox
-                                                        checked={isSelected}
-                                                        onChange={() =>
-                                                            requirement.id &&
-                                                            toggleRequirement(
-                                                                requirement.id,
-                                                            )
-                                                        }
-                                                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                                        disabled={
-                                                            !requirement.id
-                                                        }
-                                                    />
+                                    return (
+                                        <div
+                                            key={requirement.id || index}
+                                            className={cn(
+                                                'border rounded-lg transition-all duration-200',
+                                                isSelected
+                                                    ? 'border-primary/50 bg-primary/5 shadow-sm'
+                                                    : 'border-border bg-muted/20 opacity-60',
+                                            )}
+                                        >
+                                            {/* Compact Header */}
+                                            <div className="flex items-center gap-2 p-3 hover:bg-muted/50">
+                                                <Checkbox
+                                                    checked={isSelected}
+                                                    onChange={() =>
+                                                        requirement.id &&
+                                                        toggleRequirement(requirement.id)
+                                                    }
+                                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                                    disabled={!requirement.id}
+                                                />
 
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            requirement.id &&
-                                                            toggleExpanded(
-                                                                requirement.id,
-                                                            )
-                                                        }
-                                                        className="h-6 w-6 p-0 hover:bg-muted"
-                                                    >
-                                                        {isExpanded ? (
-                                                            <ChevronDown className="h-4 w-4" />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        requirement.id &&
+                                                        toggleExpanded(requirement.id)
+                                                    }
+                                                    className="h-6 w-6 p-0 hover:bg-muted"
+                                                >
+                                                    {isExpanded ? (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+
+                                                {/* Block Icon */}
+                                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                    <span className="text-sm font-medium truncate">
+                                                        {requirement.name ||
+                                                            'Unnamed Requirement'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Status Badges */}
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {requirement.status && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-xs"
+                                                        >
+                                                            {requirement.status}
+                                                        </Badge>
+                                                    )}
+                                                    {requirement.priority && (
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-xs"
+                                                        >
+                                                            {requirement.priority}
+                                                        </Badge>
+                                                    )}
+
+                                                    {/* Current ID Badge */}
+                                                    <div className="flex items-center gap-2">
+                                                        {requirement.external_id ? (
+                                                            <Badge
+                                                                variant="destructive"
+                                                                className="text-xs"
+                                                            >
+                                                                {requirement.external_id}
+                                                            </Badge>
                                                         ) : (
-                                                            <ChevronRight className="h-4 w-4" />
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs text-muted-foreground"
+                                                            >
+                                                                No ID
+                                                            </Badge>
                                                         )}
-                                                    </Button>
-
-                                                    {/* Block Icon */}
-                                                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                                        <span className="text-sm font-medium truncate">
-                                                            {requirement.name ||
-                                                                'Unnamed Requirement'}
+                                                        <span className="text-xs text-muted-foreground">
+                                                            →
                                                         </span>
+                                                        <Badge
+                                                            variant="default"
+                                                            className="text-xs bg-green-600 hover:bg-green-700"
+                                                        >
+                                                            REQ-###
+                                                        </Badge>
                                                     </div>
+                                                </div>
+                                            </div>
 
-                                                    {/* Status Badges */}
-                                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                                        {requirement.status && (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                {
-                                                                    requirement.status
-                                                                }
-                                                            </Badge>
-                                                        )}
-                                                        {requirement.priority && (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                {
-                                                                    requirement.priority
-                                                                }
-                                                            </Badge>
-                                                        )}
-
-                                                        {/* Current ID Badge */}
-                                                        <div className="flex items-center gap-2">
-                                                            {requirement.external_id ? (
-                                                                <Badge
-                                                                    variant="destructive"
-                                                                    className="text-xs"
-                                                                >
+                                            {/* Expanded Details */}
+                                            {isExpanded && (
+                                                <div className="px-3 pb-3 border-t bg-muted/30">
+                                                    <div className="pt-3 space-y-2">
+                                                        {/* Description */}
+                                                        {requirement.description && (
+                                                            <div>
+                                                                <p className="text-sm text-muted-foreground font-medium mb-1">
+                                                                    Description:
+                                                                </p>
+                                                                <p className="text-sm text-foreground">
                                                                     {
-                                                                        requirement.external_id
+                                                                        requirement.description
                                                                     }
-                                                                </Badge>
-                                                            ) : (
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="text-xs text-muted-foreground"
-                                                                >
-                                                                    No ID
-                                                                </Badge>
+                                                                </p>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Metadata */}
+                                                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                                            {requirement.created_by && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <User className="h-3 w-3" />
+                                                                    {
+                                                                        requirement.created_by
+                                                                    }
+                                                                </div>
                                                             )}
-                                                            <span className="text-xs text-muted-foreground">
-                                                                →
-                                                            </span>
-                                                            <Badge
-                                                                variant="default"
-                                                                className="text-xs bg-green-600 hover:bg-green-700"
-                                                            >
-                                                                REQ-###
-                                                            </Badge>
+                                                            {requirement.created_at && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <Calendar className="h-3 w-3" />
+                                                                    {formatDate(
+                                                                        requirement.created_at,
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                {/* Expanded Details */}
-                                                {isExpanded && (
-                                                    <div className="px-3 pb-3 border-t bg-muted/30">
-                                                        <div className="pt-3 space-y-2">
-                                                            {/* Description */}
-                                                            {requirement.description && (
-                                                                <div>
-                                                                    <p className="text-sm text-muted-foreground font-medium mb-1">
-                                                                        Description:
-                                                                    </p>
-                                                                    <p className="text-sm text-foreground">
-                                                                        {
-                                                                            requirement.description
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            )}
-
-                                                            {/* Metadata */}
-                                                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                                                {requirement.created_by && (
-                                                                    <div className="flex items-center gap-1">
-                                                                        <User className="h-3 w-3" />
-                                                                        {
-                                                                            requirement.created_by
-                                                                        }
-                                                                    </div>
-                                                                )}
-                                                                {requirement.created_at && (
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Calendar className="h-3 w-3" />
-                                                                        {formatDate(
-                                                                            requirement.created_at,
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    },
-                                )}
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
@@ -380,11 +363,7 @@ export function AssignRequirementIdsModal({
                 <Separator className="flex-shrink-0" />
 
                 <DialogFooter className="flex-shrink-0 gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={isLoading}
-                    >
+                    <Button variant="outline" onClick={onClose} disabled={isLoading}>
                         <X className="h-4 w-4 mr-2" />
                         Cancel
                     </Button>

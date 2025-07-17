@@ -16,9 +16,7 @@ interface NewRowFormProps<T> {
     onCancel: () => void;
 }
 
-export function NewRowForm<
-    T extends Record<string, CellValue> & { id: string },
->({
+export function NewRowForm<T extends Record<string, CellValue> & { id: string }>({
     columns,
     editingData,
     onCellChange,
@@ -48,9 +46,7 @@ export function NewRowForm<
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                            console.log(
-                                '🎯 STEP 1: Check button clicked in NewRowForm',
-                            );
+                            console.log('🎯 STEP 1: Check button clicked in NewRowForm');
                             onSave();
                         }}
                     >
@@ -60,9 +56,7 @@ export function NewRowForm<
                         size="sm"
                         variant="ghost"
                         onClick={() => {
-                            console.log(
-                                '❌ Cancel button clicked in NewRowForm',
-                            );
+                            console.log('❌ Cancel button clicked in NewRowForm');
                             onCancel();
                         }}
                     >

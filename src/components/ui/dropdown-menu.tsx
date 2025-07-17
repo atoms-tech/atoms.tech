@@ -40,8 +40,7 @@ const DropdownMenuSubTrigger = ({
         <ChevronRight className="ml-auto" />
     </DropdownMenuPrimitive.SubTrigger>
 );
-DropdownMenuSubTrigger.displayName =
-    DropdownMenuPrimitive.SubTrigger.displayName;
+DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
 
 const DropdownMenuSubContent = ({
     ref,
@@ -57,8 +56,7 @@ const DropdownMenuSubContent = ({
         {...props}
     />
 );
-DropdownMenuSubContent.displayName =
-    DropdownMenuPrimitive.SubContent.displayName;
+DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
 
 const DropdownMenuContent = ({
     ref,
@@ -125,8 +123,7 @@ const DropdownMenuCheckboxItem = ({
         {children}
     </DropdownMenuPrimitive.CheckboxItem>
 );
-DropdownMenuCheckboxItem.displayName =
-    DropdownMenuPrimitive.CheckboxItem.displayName;
+DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
 const DropdownMenuRadioItem = ({
     ref,
@@ -162,11 +159,7 @@ const DropdownMenuLabel = ({
 }) => (
     <DropdownMenuPrimitive.Label
         ref={ref}
-        className={cn(
-            'px-2 py-1.5 text-sm font-semibold',
-            inset && 'pl-8',
-            className,
-        )}
+        className={cn('px-2 py-1.5 text-sm font-semibold', inset && 'pl-8', className)}
         {...props}
     />
 );
@@ -191,10 +184,7 @@ const DropdownMenuShortcut = ({
 }: HTMLAttributes<HTMLSpanElement>) => {
     return (
         <span
-            className={cn(
-                'ml-auto text-xs tracking-widest opacity-60',
-                className,
-            )}
+            className={cn('ml-auto text-xs tracking-widest opacity-60', className)}
             {...props}
         />
     );

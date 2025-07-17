@@ -75,10 +75,10 @@ export const reducer = (state: State, action: Action): State => {
         case 'ADD_TOAST':
             return {
                 ...state,
-                toasts: [
-                    { id: genId(), ...action.toast },
-                    ...state.toasts,
-                ].slice(0, TOAST_LIMIT),
+                toasts: [{ id: genId(), ...action.toast }, ...state.toasts].slice(
+                    0,
+                    TOAST_LIMIT,
+                ),
             };
 
         case 'UPDATE_TOAST':
@@ -161,7 +161,6 @@ export function useToast() {
     return {
         ...state,
         toast,
-        dismiss: (toastId?: string) =>
-            dispatch({ type: 'DISMISS_TOAST', toastId }),
+        dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
     };
 }

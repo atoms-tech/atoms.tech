@@ -19,11 +19,7 @@ const QUERY_KEYS = {
             'list',
             projectId,
         ],
-        detail: (id: string) => [
-            ...QUERY_KEYS.testMatrixViews.root,
-            'detail',
-            id,
-        ],
+        detail: (id: string) => [...QUERY_KEYS.testMatrixViews.root, 'detail', id],
     },
 };
 
@@ -102,10 +98,8 @@ export function useTestMatrixViews(projectId: string) {
                     name: newView.name,
                     project_id: newView.projectId,
                     configuration: newView.configuration as unknown as Json,
-                    created_by:
-                        (await supabase.auth.getUser()).data.user?.id || '',
-                    updated_by:
-                        (await supabase.auth.getUser()).data.user?.id || '',
+                    created_by: (await supabase.auth.getUser()).data.user?.id || '',
+                    updated_by: (await supabase.auth.getUser()).data.user?.id || '',
                     is_default: newView.isDefault || false,
                 })
                 .select()
@@ -138,8 +132,7 @@ export function useTestMatrixViews(projectId: string) {
         TestMatrixViewState
     >({
         mutationFn: async (updatedView: TestMatrixViewState) => {
-            if (!updatedView.id)
-                throw new Error('View ID is required for updates');
+            if (!updatedView.id) throw new Error('View ID is required for updates');
 
             // If setting as default, unset any existing defaults
             if (updatedView.isDefault) {
@@ -222,8 +215,7 @@ export function useTestMatrixViews(projectId: string) {
             id: data.id,
             name: data.name,
             projectId: data.project_id,
-            configuration:
-                data.configuration as unknown as TestMatrixViewConfiguration,
+            configuration: data.configuration as unknown as TestMatrixViewConfiguration,
             isDefault: data.is_default,
             createdAt: data.created_at,
             updatedAt: data.updated_at,
@@ -245,15 +237,14 @@ export function useTestMatrixViews(projectId: string) {
                 if (error.code === 'PGRST116') {
                     // No rows found
                     // If no default view, return the first active view or null
-                    const { data: firstView, error: firstViewError } =
-                        await supabase
-                            .from('test_matrix_views')
-                            .select('*')
-                            .eq('project_id', projectId)
-                            .eq('is_active', true)
-                            .order('created_at', { ascending: false })
-                            .limit(1)
-                            .single();
+                    const { data: firstView, error: firstViewError } = await supabase
+                        .from('test_matrix_views')
+                        .select('*')
+                        .eq('project_id', projectId)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
 
                     if (firstViewError || !firstView) {
                         return null;

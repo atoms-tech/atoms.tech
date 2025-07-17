@@ -39,9 +39,7 @@ export function useTestMatrixData() {
                 const allLinkedTestIds = new Set<string>();
                 newSelectedReqIds.forEach((id) => {
                     const linkedTests = linkedTestCasesMap[id] || [];
-                    linkedTests.forEach((testId) =>
-                        allLinkedTestIds.add(testId),
-                    );
+                    linkedTests.forEach((testId) => allLinkedTestIds.add(testId));
                 });
 
                 // Maintain manually selected test cases that aren't linked
@@ -106,10 +104,7 @@ export function useTestMatrixData() {
     );
 
     const isTestCaseLinkedToSelectedRequirement = useCallback(
-        (
-            testId: string,
-            linkedTestCasesMap: Record<string, string[]>,
-        ): boolean => {
+        (testId: string, linkedTestCasesMap: Record<string, string[]>): boolean => {
             for (const reqId of selectedRequirementIds) {
                 if (linkedTestCasesMap[reqId]?.includes(testId)) {
                     return true;
@@ -131,8 +126,7 @@ export function useTestMatrixData() {
 
                 toast({
                     title: 'Test linked successfully',
-                    description:
-                        'The test case has been linked to the requirement.',
+                    description: 'The test case has been linked to the requirement.',
                     variant: 'default',
                 });
             } catch (error) {
@@ -187,10 +181,7 @@ export function useTestMatrixData() {
                 ],
             });
             queryClient.invalidateQueries({
-                queryKey: [
-                    ...queryKeys.testReq.detail(data.test_id),
-                    'requirements',
-                ],
+                queryKey: [...queryKeys.testReq.detail(data.test_id), 'requirements'],
             });
 
             toast({
@@ -210,11 +201,7 @@ export function useTestMatrixData() {
     });
 
     const updateTestStatus = useCallback(
-        async (
-            requirementId: string,
-            testId: string,
-            status: ExecutionStatus,
-        ) => {
+        async (requirementId: string, testId: string, status: ExecutionStatus) => {
             try {
                 await updateStatusMutation.mutateAsync({
                     requirementId,
@@ -256,16 +243,12 @@ export function useTestMatrixData() {
                 ],
             });
             queryClient.invalidateQueries({
-                queryKey: [
-                    ...queryKeys.testReq.detail(variables.testId),
-                    'requirements',
-                ],
+                queryKey: [...queryKeys.testReq.detail(variables.testId), 'requirements'],
             });
 
             toast({
                 title: 'Link removed',
-                description:
-                    'The test case has been unlinked from the requirement.',
+                description: 'The test case has been unlinked from the requirement.',
                 variant: 'default',
             });
         },

@@ -59,10 +59,7 @@ const TableHeader: React.FC<{
         propertyConfig: PropertyConfig,
         defaultValue: string,
     ) => void;
-    onAddColumnFromProperty?: (
-        propertyId: string,
-        defaultValue: string,
-    ) => void;
+    onAddColumnFromProperty?: (propertyId: string, defaultValue: string) => void;
     onDelete: () => void;
     dragActivators?: React.ComponentProps<typeof Button>;
     orgId: string;
@@ -121,9 +118,9 @@ const TableHeader: React.FC<{
                     {isEditMode && isEditing ? (
                         <Input
                             value={inputValue}
-                            onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>,
-                            ) => setInputValue(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                setInputValue(e.target.value)
+                            }
                             onBlur={handleBlur}
                             onKeyDown={handleKeyDown}
                             className="max-w-[300px] h-9"
@@ -156,19 +153,13 @@ const TableHeader: React.FC<{
                     )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                            >
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 <MoreVertical className="h-4 w-4" />
                                 <span className="sr-only">Open menu</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                                onClick={() => setIsAddColumnOpen(true)}
-                            >
+                            <DropdownMenuItem onClick={() => setIsAddColumnOpen(true)}>
                                 Add Column
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={onDelete}>
@@ -208,16 +199,16 @@ export const TableBlock: React.FC<BlockProps> = ({
     const { userProfile } = useAuth();
     const params = useParams();
     const { currentOrganization } = useOrganization();
-    const { createPropertyAndColumn, createColumnFromProperty } =
-        useColumnActions({
-            orgId: currentOrganization?.id || '',
-            projectId: params.projectId as string,
-            documentId: params.documentId as string,
-        });
+    const { createPropertyAndColumn, createColumnFromProperty } = useColumnActions({
+        orgId: currentOrganization?.id || '',
+        projectId: params.projectId as string,
+        documentId: params.documentId as string,
+    });
     const projectId = params?.projectId as string;
 
-    const [_selectedRequirement, _setSelectedRequirement] =
-        useState<Requirement | null>(null);
+    const [_selectedRequirement, _setSelectedRequirement] = useState<Requirement | null>(
+        null,
+    );
     const [localRequirements, setLocalRequirements] = useState<Requirement[]>(
         block.requirements || [],
     );
@@ -284,13 +275,11 @@ export const TableBlock: React.FC<BlockProps> = ({
             })
             .sort((a, b) => {
                 const aPos =
-                    block.columns?.find(
-                        (col) => col.property?.name === a.header,
-                    )?.position || 0;
+                    block.columns?.find((col) => col.property?.name === a.header)
+                        ?.position || 0;
                 const bPos =
-                    block.columns?.find(
-                        (col) => col.property?.name === b.header,
-                    )?.position || 0;
+                    block.columns?.find((col) => col.property?.name === b.header)
+                        ?.position || 0;
                 return aPos - bPos;
             });
 
@@ -369,9 +358,7 @@ export const TableBlock: React.FC<BlockProps> = ({
             return;
         }
 
-        console.log(
-            '🎯 STEP 4: Calling saveRequirement from useRequirementActions',
-        );
+        console.log('🎯 STEP 4: Calling saveRequirement from useRequirementActions');
         await saveRequirement(
             dynamicReq,
             isNew,

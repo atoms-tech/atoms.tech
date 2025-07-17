@@ -53,9 +53,7 @@ interface RequirementResponse extends Record<string, unknown> {
 }
 
 // Type guards and helper functions
-function isDocumentResponse(
-    obj: Record<string, unknown>,
-): obj is DocumentResponse {
+function isDocumentResponse(obj: Record<string, unknown>): obj is DocumentResponse {
     return (
         typeof obj.id === 'string' &&
         typeof obj.updated_at === 'string' &&
@@ -64,9 +62,7 @@ function isDocumentResponse(
     );
 }
 
-function isProjectResponse(
-    obj: Record<string, unknown>,
-): obj is ProjectResponse {
+function isProjectResponse(obj: Record<string, unknown>): obj is ProjectResponse {
     return (
         typeof obj.id === 'string' &&
         typeof obj.updated_at === 'string' &&
@@ -75,9 +71,7 @@ function isProjectResponse(
     );
 }
 
-function isRequirementResponse(
-    obj: Record<string, unknown>,
-): obj is RequirementResponse {
+function isRequirementResponse(obj: Record<string, unknown>): obj is RequirementResponse {
     return (
         typeof obj.id === 'string' &&
         typeof obj.updated_at === 'string' &&
@@ -91,10 +85,7 @@ function safeGetString(obj: Record<string, unknown>, key: string): string {
     return typeof obj[key] === 'string' ? (obj[key] as string) : '';
 }
 
-function safeGetNestedString(
-    obj: Record<string, unknown>,
-    path: string[],
-): string {
+function safeGetNestedString(obj: Record<string, unknown>, path: string[]): string {
     let current: unknown = obj;
     for (const key of path) {
         if (current && typeof current === 'object' && current !== null) {
@@ -126,10 +117,7 @@ export function useRecentDocuments() {
     const { organizations } = useOrganization();
     const { user } = useUser();
 
-    const orgIds = useMemo(
-        () => organizations.map((org) => org.id),
-        [organizations],
-    );
+    const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
     return useQuery({
         queryKey: [...queryKeys.documents.root, 'recent', user?.id, orgIds],
@@ -165,23 +153,17 @@ export function useRecentDocuments() {
             if (error) throw error;
 
             return (data || [])
-                .filter((doc) =>
-                    isDocumentResponse(doc as Record<string, unknown>),
-                )
+                .filter((doc) => isDocumentResponse(doc as Record<string, unknown>))
                 .map(
                     (doc): RecentItem => ({
                         id: safeGetString(doc as Record<string, unknown>, 'id'),
                         title:
-                            safeGetString(
-                                doc as Record<string, unknown>,
-                                'name',
-                            ) || 'Untitled Document',
+                            safeGetString(doc as Record<string, unknown>, 'name') ||
+                            'Untitled Document',
                         type: 'document',
                         lastModified:
-                            safeGetString(
-                                doc as Record<string, unknown>,
-                                'updated_at',
-                            ) || new Date().toISOString(),
+                            safeGetString(doc as Record<string, unknown>, 'updated_at') ||
+                            new Date().toISOString(),
                         organization: safeGetNestedString(
                             doc as Record<string, unknown>,
                             ['projects', 'organizations', 'name'],
@@ -190,14 +172,14 @@ export function useRecentDocuments() {
                             doc as Record<string, unknown>,
                             ['projects', 'organizations', 'id'],
                         ),
-                        projectName: safeGetNestedString(
-                            doc as Record<string, unknown>,
-                            ['projects', 'name'],
-                        ),
-                        projectId: safeGetNestedString(
-                            doc as Record<string, unknown>,
-                            ['projects', 'id'],
-                        ),
+                        projectName: safeGetNestedString(doc as Record<string, unknown>, [
+                            'projects',
+                            'name',
+                        ]),
+                        projectId: safeGetNestedString(doc as Record<string, unknown>, [
+                            'projects',
+                            'id',
+                        ]),
                         path: `/org/${safeGetNestedString(doc as Record<string, unknown>, ['projects', 'organizations', 'id'])}/project/${safeGetNestedString(doc as Record<string, unknown>, ['projects', 'id'])}/documents/${safeGetString(doc as Record<string, unknown>, 'id')}`,
                         description:
                             safeGetString(
@@ -219,10 +201,7 @@ export function useRecentProjects() {
     const { organizations } = useOrganization();
     const { user } = useUser();
 
-    const orgIds = useMemo(
-        () => organizations.map((org) => org.id),
-        [organizations],
-    );
+    const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
     return useQuery({
         queryKey: [...queryKeys.projects.root, 'recent', user?.id, orgIds],
@@ -257,15 +236,10 @@ export function useRecentProjects() {
                 )
                 .map(
                     (project): RecentItem => ({
-                        id: safeGetString(
-                            project as Record<string, unknown>,
-                            'id',
-                        ),
+                        id: safeGetString(project as Record<string, unknown>, 'id'),
                         title:
-                            safeGetString(
-                                project as Record<string, unknown>,
-                                'name',
-                            ) || 'Untitled Project',
+                            safeGetString(project as Record<string, unknown>, 'name') ||
+                            'Untitled Project',
                         type: 'project',
                         lastModified:
                             safeGetString(
@@ -301,10 +275,7 @@ export function useRecentRequirements() {
     const { organizations } = useOrganization();
     const { user } = useUser();
 
-    const orgIds = useMemo(
-        () => organizations.map((org) => org.id),
-        [organizations],
-    );
+    const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
     return useQuery({
         queryKey: [...queryKeys.requirements.root, 'recent', user?.id, orgIds],
@@ -345,17 +316,12 @@ export function useRecentRequirements() {
             if (error) throw error;
 
             return (data || [])
-                .filter((req) =>
-                    isRequirementResponse(req as Record<string, unknown>),
-                )
+                .filter((req) => isRequirementResponse(req as Record<string, unknown>))
                 .map(
                     (req): RecentItem => ({
                         id: safeGetString(req as Record<string, unknown>, 'id'),
                         title:
-                            safeGetString(
-                                req as Record<string, unknown>,
-                                'name',
-                            ) ||
+                            safeGetString(req as Record<string, unknown>, 'name') ||
                             safeGetString(
                                 req as Record<string, unknown>,
                                 'external_id',
@@ -363,10 +329,8 @@ export function useRecentRequirements() {
                             'Untitled Requirement',
                         type: 'requirement',
                         lastModified:
-                            safeGetString(
-                                req as Record<string, unknown>,
-                                'updated_at',
-                            ) || new Date().toISOString(),
+                            safeGetString(req as Record<string, unknown>, 'updated_at') ||
+                            new Date().toISOString(),
                         organization: safeGetNestedString(
                             req as Record<string, unknown>,
                             ['documents', 'projects', 'organizations', 'name'],
@@ -375,14 +339,16 @@ export function useRecentRequirements() {
                             req as Record<string, unknown>,
                             ['documents', 'projects', 'organizations', 'id'],
                         ),
-                        projectName: safeGetNestedString(
-                            req as Record<string, unknown>,
-                            ['documents', 'projects', 'name'],
-                        ),
-                        projectId: safeGetNestedString(
-                            req as Record<string, unknown>,
-                            ['documents', 'projects', 'id'],
-                        ),
+                        projectName: safeGetNestedString(req as Record<string, unknown>, [
+                            'documents',
+                            'projects',
+                            'name',
+                        ]),
+                        projectId: safeGetNestedString(req as Record<string, unknown>, [
+                            'documents',
+                            'projects',
+                            'id',
+                        ]),
                         path: `/org/${safeGetNestedString(req as Record<string, unknown>, ['documents', 'projects', 'organizations', 'id'])}/project/${safeGetNestedString(req as Record<string, unknown>, ['documents', 'projects', 'id'])}/documents/${safeGetNestedString(req as Record<string, unknown>, ['documents', 'id'])}`,
                         description:
                             safeGetString(
@@ -401,19 +367,13 @@ export function useRecentRequirements() {
  * Combined hook to get all recent activity
  */
 export function useRecentActivity() {
-    const { data: recentDocuments = [], isLoading: loadingDocs } =
-        useRecentDocuments();
-    const { data: recentProjects = [], isLoading: loadingProjects } =
-        useRecentProjects();
+    const { data: recentDocuments = [], isLoading: loadingDocs } = useRecentDocuments();
+    const { data: recentProjects = [], isLoading: loadingProjects } = useRecentProjects();
     const { data: recentRequirements = [], isLoading: loadingReqs } =
         useRecentRequirements();
 
     const combinedData = useMemo(() => {
-        const allItems = [
-            ...recentDocuments,
-            ...recentProjects,
-            ...recentRequirements,
-        ];
+        const allItems = [...recentDocuments, ...recentProjects, ...recentRequirements];
 
         // Sort by last modified date
         return allItems

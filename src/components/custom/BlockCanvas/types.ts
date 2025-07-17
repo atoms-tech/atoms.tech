@@ -75,9 +75,7 @@ export interface UseBlockActionsProps {
     documentId: string;
     userProfile: Profile | null;
     blocks: BlockWithRequirements[] | undefined;
-    setLocalBlocks: React.Dispatch<
-        React.SetStateAction<BlockWithRequirements[]>
-    >;
+    setLocalBlocks: React.Dispatch<React.SetStateAction<BlockWithRequirements[]>>;
     orgId: string;
     projectId: string;
 }

@@ -47,10 +47,7 @@ import {
     useDocumentRequirements,
     useRequirementsByIds,
 } from '@/hooks/queries/useRequirement';
-import {
-    useReverseTraceLinks,
-    useTraceLinks,
-} from '@/hooks/queries/useTraceability';
+import { useReverseTraceLinks, useTraceLinks } from '@/hooks/queries/useTraceability';
 import { useUser } from '@/lib/providers/user.provider';
 
 type TraceRelationship = 'parent_of' | 'child_of';
@@ -83,10 +80,7 @@ export default function TracePage() {
     const { data: requirements, isLoading: isLoadingRequirements } =
         useDocumentRequirements(documentId);
     const { data: outgoingLinks } = useTraceLinks(requirementId, 'requirement');
-    const { data: incomingLinks } = useReverseTraceLinks(
-        requirementId,
-        'requirement',
-    );
+    const { data: incomingLinks } = useReverseTraceLinks(requirementId, 'requirement');
 
     // Extract requirement IDs from trace links
     const linkedRequirementIds = useMemo(() => {
@@ -96,10 +90,8 @@ export default function TracePage() {
     }, [incomingLinks, outgoingLinks]);
 
     // Fetch the actual requirements for the trace links
-    const {
-        data: linkedRequirements,
-        isLoading: _isLoadingLinkedRequirements,
-    } = useRequirementsByIds(linkedRequirementIds);
+    const { data: linkedRequirements, isLoading: _isLoadingLinkedRequirements } =
+        useRequirementsByIds(linkedRequirementIds);
 
     const createTraceLinksMutation = useCreateTraceLinks();
     const deleteTraceLinkMutation = useDeleteTraceLink();
@@ -122,9 +114,7 @@ export default function TracePage() {
                 searchQuery === '' ||
                 req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (req.description &&
-                    req.description
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase()));
+                    req.description.toLowerCase().includes(searchQuery.toLowerCase()));
 
             return !isSourceInOutgoing && !isTargetInIncoming && matchesSearch;
         }) || [];
@@ -134,9 +124,7 @@ export default function TracePage() {
     };
 
     const handleRemoveRequirement = (id: string) => {
-        setSelectedRequirements(
-            selectedRequirements.filter((req) => req.id !== id),
-        );
+        setSelectedRequirements(selectedRequirements.filter((req) => req.id !== id));
     };
 
     const handleDeleteTraceLink = (id: string) => {
@@ -151,8 +139,7 @@ export default function TracePage() {
                 onSuccess: () => {
                     toast({
                         title: 'Trace link deleted',
-                        description:
-                            'The trace link has been successfully deleted.',
+                        description: 'The trace link has been successfully deleted.',
                         variant: 'default',
                     });
                 },
@@ -244,14 +231,10 @@ export default function TracePage() {
                 </CardHeader>
                 <CardContent className="px-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-medium">
-                            Current Trace Links
-                        </h3>
+                        <h3 className="text-lg font-medium">Current Trace Links</h3>
                         <div className="flex gap-2">
                             <Button
-                                variant={
-                                    isDeleteMode ? 'destructive' : 'outline'
-                                }
+                                variant={isDeleteMode ? 'destructive' : 'outline'}
                                 size="sm"
                                 onClick={() => setIsDeleteMode(!isDeleteMode)}
                                 title={
@@ -271,12 +254,9 @@ export default function TracePage() {
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-background shadow-none">
                                     <DialogHeader>
-                                        <DialogTitle>
-                                            Create Trace Links
-                                        </DialogTitle>
+                                        <DialogTitle>Create Trace Links</DialogTitle>
                                         <DialogDescription>
-                                            Select requirements to create trace
-                                            links with
+                                            Select requirements to create trace links with
                                         </DialogDescription>
                                     </DialogHeader>
 
@@ -293,9 +273,7 @@ export default function TracePage() {
                                                         className="pl-8 h-9"
                                                         value={searchQuery}
                                                         onChange={(e) =>
-                                                            setSearchQuery(
-                                                                e.target.value,
-                                                            )
+                                                            setSearchQuery(e.target.value)
                                                         }
                                                     />
                                                 </div>
@@ -305,98 +283,88 @@ export default function TracePage() {
                                                 <div className="text-center py-4">
                                                     Loading requirements...
                                                 </div>
-                                            ) : availableRequirements.length ===
-                                              0 ? (
+                                            ) : availableRequirements.length === 0 ? (
                                                 <div className="text-center py-4 text-muted-foreground">
-                                                    No available requirements to
-                                                    link
+                                                    No available requirements to link
                                                 </div>
                                             ) : (
                                                 <div className="max-h-[200px] overflow-y-auto">
-                                                    {availableRequirements.map(
-                                                        (req) => {
-                                                            const isSelected =
-                                                                selectedRequirements.some(
-                                                                    (
-                                                                        selected,
-                                                                    ) =>
-                                                                        selected.id ===
-                                                                        req.id,
-                                                                );
-                                                            return (
-                                                                <div
-                                                                    key={req.id}
-                                                                    className="p-3 flex justify-between items-start hover:bg-muted"
-                                                                >
-                                                                    <div className="space-y-1">
-                                                                        <div className="font-medium">
-                                                                            {
-                                                                                req.name
-                                                                            }
-                                                                        </div>
-                                                                        <div className="text-sm text-muted-foreground">
-                                                                            {req.description ||
-                                                                                'No description'}
-                                                                        </div>
-                                                                    </div>
-                                                                    {isSelected ? (
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                handleRemoveRequirement(
-                                                                                    req.id,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <Check
-                                                                                size={
-                                                                                    16
-                                                                                }
-                                                                                className="mr-1"
-                                                                            />{' '}
-                                                                            Added
-                                                                        </Button>
-                                                                    ) : (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Select
-                                                                                onValueChange={(
-                                                                                    value: TraceRelationship,
-                                                                                ) => {
-                                                                                    handleAddRequirement(
-                                                                                        {
-                                                                                            id: req.id,
-                                                                                            name: req.name,
-                                                                                            description:
-                                                                                                req.description,
-                                                                                            external_id:
-                                                                                                req.external_id,
-                                                                                            relationship:
-                                                                                                value,
-                                                                                        },
-                                                                                    );
-                                                                                }}
-                                                                            >
-                                                                                <SelectTrigger className="w-[120px]">
-                                                                                    <SelectValue placeholder="Relation" />
-                                                                                </SelectTrigger>
-                                                                                <SelectContent>
-                                                                                    <SelectItem value="parent_of">
-                                                                                        Parent
-                                                                                        of
-                                                                                    </SelectItem>
-                                                                                    <SelectItem value="child_of">
-                                                                                        Child
-                                                                                        of
-                                                                                    </SelectItem>
-                                                                                </SelectContent>
-                                                                            </Select>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+                                                    {availableRequirements.map((req) => {
+                                                        const isSelected =
+                                                            selectedRequirements.some(
+                                                                (selected) =>
+                                                                    selected.id ===
+                                                                    req.id,
                                                             );
-                                                        },
-                                                    )}
+                                                        return (
+                                                            <div
+                                                                key={req.id}
+                                                                className="p-3 flex justify-between items-start hover:bg-muted"
+                                                            >
+                                                                <div className="space-y-1">
+                                                                    <div className="font-medium">
+                                                                        {req.name}
+                                                                    </div>
+                                                                    <div className="text-sm text-muted-foreground">
+                                                                        {req.description ||
+                                                                            'No description'}
+                                                                    </div>
+                                                                </div>
+                                                                {isSelected ? (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() =>
+                                                                            handleRemoveRequirement(
+                                                                                req.id,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Check
+                                                                            size={16}
+                                                                            className="mr-1"
+                                                                        />{' '}
+                                                                        Added
+                                                                    </Button>
+                                                                ) : (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Select
+                                                                            onValueChange={(
+                                                                                value: TraceRelationship,
+                                                                            ) => {
+                                                                                handleAddRequirement(
+                                                                                    {
+                                                                                        id: req.id,
+                                                                                        name: req.name,
+                                                                                        description:
+                                                                                            req.description,
+                                                                                        external_id:
+                                                                                            req.external_id,
+                                                                                        relationship:
+                                                                                            value,
+                                                                                    },
+                                                                                );
+                                                                            }}
+                                                                        >
+                                                                            <SelectTrigger className="w-[120px]">
+                                                                                <SelectValue placeholder="Relation" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="parent_of">
+                                                                                    Parent
+                                                                                    of
+                                                                                </SelectItem>
+                                                                                <SelectItem value="child_of">
+                                                                                    Child
+                                                                                    of
+                                                                                </SelectItem>
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
@@ -411,9 +379,7 @@ export default function TracePage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() =>
-                                                            setSelectedRequirements(
-                                                                [],
-                                                            )
+                                                            setSelectedRequirements([])
                                                         }
                                                     >
                                                         Clear All
@@ -439,9 +405,7 @@ export default function TracePage() {
                                                             {selectedRequirements.map(
                                                                 (req) => (
                                                                     <TableRow
-                                                                        key={
-                                                                            req.id
-                                                                        }
+                                                                        key={req.id}
                                                                     >
                                                                         <TableCell>
                                                                             {req.relationship ===
@@ -456,9 +420,7 @@ export default function TracePage() {
                                                                                 )[1]}
                                                                         </TableCell>
                                                                         <TableCell>
-                                                                            {
-                                                                                req.name
-                                                                            }
+                                                                            {req.name}
                                                                         </TableCell>
                                                                         <TableCell>
                                                                             <Button
@@ -497,8 +459,7 @@ export default function TracePage() {
                                         <Button
                                             onClick={handleCreateTraceLinks}
                                             disabled={
-                                                selectedRequirements.length ===
-                                                    0 ||
+                                                selectedRequirements.length === 0 ||
                                                 createTraceLinksMutation.isPending
                                             }
                                         >
@@ -523,9 +484,7 @@ export default function TracePage() {
                                                 <TableHead className="w-[100px]">
                                                     ID
                                                 </TableHead>
-                                                <TableHead>
-                                                    Requirement
-                                                </TableHead>
+                                                <TableHead>Requirement</TableHead>
                                                 <TableHead className="w-[120px]">
                                                     Relationship
                                                 </TableHead>
@@ -542,8 +501,7 @@ export default function TracePage() {
                                                     const requirement =
                                                         linkedRequirements?.find(
                                                             (req) =>
-                                                                req.id ===
-                                                                link.source_id,
+                                                                req.id === link.source_id,
                                                         );
                                                     return (
                                                         <TableRow key={link.id}>
@@ -557,9 +515,7 @@ export default function TracePage() {
                                                                 {requirement?.name ||
                                                                     'Loading...'}
                                                             </TableCell>
-                                                            <TableCell>
-                                                                Parent
-                                                            </TableCell>
+                                                            <TableCell>Parent</TableCell>
                                                             {isDeleteMode && (
                                                                 <TableCell>
                                                                     <Button
@@ -587,8 +543,7 @@ export default function TracePage() {
                                                     const requirement =
                                                         linkedRequirements?.find(
                                                             (req) =>
-                                                                req.id ===
-                                                                link.target_id,
+                                                                req.id === link.target_id,
                                                         );
                                                     return (
                                                         <TableRow key={link.id}>
@@ -602,9 +557,7 @@ export default function TracePage() {
                                                                 {requirement?.name ||
                                                                     'Loading...'}
                                                             </TableCell>
-                                                            <TableCell>
-                                                                Child
-                                                            </TableCell>
+                                                            <TableCell>Child</TableCell>
                                                             {isDeleteMode && (
                                                                 <TableCell>
                                                                     <Button

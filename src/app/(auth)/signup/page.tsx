@@ -65,9 +65,7 @@ function SignupForm() {
                 setError(result.error);
             } else if (result?.message) {
                 // Handle success message (email confirmation required)
-                router.push(
-                    `/signup?message=${encodeURIComponent(result.message)}`,
-                );
+                router.push(`/signup?message=${encodeURIComponent(result.message)}`);
             }
         } catch (err) {
             console.error(err);
@@ -127,9 +125,7 @@ function SignupForm() {
                                     type="password"
                                     placeholder="Password"
                                     value={password}
-                                    onChange={(e) =>
-                                        setPassword(e.target.value)
-                                    }
+                                    onChange={(e) => setPassword(e.target.value)}
                                     required
                                 />
                             </div>
@@ -139,9 +135,7 @@ function SignupForm() {
                                     type="password"
                                     placeholder="Confirm Password"
                                     value={confirmPassword}
-                                    onChange={(e) =>
-                                        setConfirmPassword(e.target.value)
-                                    }
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
                                 />
                             </div>

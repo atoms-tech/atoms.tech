@@ -55,10 +55,7 @@ export function useDocumentRequirementScanner({
                             'id',
                             corruptedRequirements
                                 .map((req) => req.id)
-                                .filter(
-                                    (id): id is string =>
-                                        typeof id === 'string',
-                                ),
+                                .filter((id): id is string => typeof id === 'string'),
                         );
 
                     if (!error) {
@@ -82,14 +79,10 @@ export function useDocumentRequirementScanner({
         RequirementWithoutId[]
     > => {
         // Function to check if a requirement needs an ID
-        const needsRequirementId = (
-            externalId: string | null | undefined,
-        ): boolean => {
+        const needsRequirementId = (externalId: string | null | undefined): boolean => {
             // Check for empty, null, or undefined
             if (!externalId || externalId.trim() === '') {
-                console.log(
-                    `🔍 Requirement needs ID: external_id is empty/null`,
-                );
+                console.log(`🔍 Requirement needs ID: external_id is empty/null`);
                 return true;
             }
 
@@ -141,17 +134,13 @@ export function useDocumentRequirementScanner({
             }
 
             // If none of the valid patterns match, it needs a new ID
-            console.log(
-                `🔍 Requirement needs ID: "${externalId}" has invalid format`,
-            );
+            console.log(`🔍 Requirement needs ID: "${externalId}" has invalid format`);
             return true;
         };
 
         setIsScanning(true);
         try {
-            console.log(
-                '🔍 Scanning document for requirements without proper IDs...',
-            );
+            console.log('🔍 Scanning document for requirements without proper IDs...');
 
             // First, get all blocks in the document
             const { data: blocks, error: blocksError } = await supabase
@@ -174,11 +163,10 @@ export function useDocumentRequirementScanner({
             console.log(`Found ${blocks.length} table blocks in document`);
 
             // Get all requirements from all table blocks
-            const { data: requirements, error: requirementsError } =
-                await supabase
-                    .from('requirements')
-                    .select(
-                        `
+            const { data: requirements, error: requirementsError } = await supabase
+                .from('requirements')
+                .select(
+                    `
                     id,
                     name,
                     description,
@@ -190,21 +178,18 @@ export function useDocumentRequirementScanner({
                     block_id,
                     blocks!inner(name)
                 `,
-                    )
-                    .in(
-                        'block_id',
-                        blocks.map((block) => block.id),
-                    )
-                    .eq('is_deleted', false)
-                    .not('id', 'is', null)
-                    .not('name', 'is', null)
-                    .not('name', 'eq', 'undefined');
+                )
+                .in(
+                    'block_id',
+                    blocks.map((block) => block.id),
+                )
+                .eq('is_deleted', false)
+                .not('id', 'is', null)
+                .not('name', 'is', null)
+                .not('name', 'eq', 'undefined');
 
             if (requirementsError) {
-                console.error(
-                    'Error fetching requirements:',
-                    requirementsError,
-                );
+                console.error('Error fetching requirements:', requirementsError);
                 throw new Error('Failed to fetch requirements');
             }
 
@@ -213,9 +198,7 @@ export function useDocumentRequirementScanner({
                 return [];
             }
 
-            console.log(
-                `Found ${requirements.length} total requirements in document`,
-            );
+            console.log(`Found ${requirements.length} total requirements in document`);
 
             // Auto-cleanup corrupted requirements
             await cleanupCorruptedRequirements(requirements);
@@ -260,10 +243,8 @@ export function useDocumentRequirementScanner({
                 .map((req) => ({
                     ...req,
                     block_name:
-                        typeof (req.blocks as Record<string, unknown>)?.name ===
-                        'string'
-                            ? ((req.blocks as Record<string, unknown>)
-                                  .name as string)
+                        typeof (req.blocks as Record<string, unknown>)?.name === 'string'
+                            ? ((req.blocks as Record<string, unknown>).name as string)
                             : 'Unknown Table',
                 }));
 

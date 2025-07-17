@@ -138,8 +138,7 @@ export function DataTable({
                                                 )}
                                             >
                                                 {flexRender(
-                                                    header.column.columnDef
-                                                        .header,
+                                                    header.column.columnDef.header,
                                                     header.getContext(),
                                                 )}
                                                 {header.column.getCanSort() && (
@@ -174,91 +173,73 @@ export function DataTable({
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
-                                    data-state={
-                                        row.getIsSelected() && 'selected'
-                                    }
+                                    data-state={row.getIsSelected() && 'selected'}
                                     className="group border-b border-border hover:bg-muted/50 dark:hover:bg-muted/25"
                                 >
-                                    {row
-                                        .getVisibleCells()
-                                        .map((cell, index) => (
-                                            <TableCell
-                                                key={cell.id}
-                                                style={{
-                                                    width: cell.column.columnDef
-                                                        .size,
-                                                }}
-                                                className={cn(
-                                                    'break-words whitespace-normal text-sm py-2',
-                                                    index ===
-                                                        row.getVisibleCells()
-                                                            .length -
-                                                            1 && 'relative',
-                                                )}
-                                            >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
-                                                {index ===
-                                                    row.getVisibleCells()
-                                                        .length -
-                                                        1 && (
-                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
+                                    {row.getVisibleCells().map((cell, index) => (
+                                        <TableCell
+                                            key={cell.id}
+                                            style={{
+                                                width: cell.column.columnDef.size,
+                                            }}
+                                            className={cn(
+                                                'break-words whitespace-normal text-sm py-2',
+                                                index ===
+                                                    row.getVisibleCells().length - 1 &&
+                                                    'relative',
+                                            )}
+                                        >
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                            )}
+                                            {index ===
+                                                row.getVisibleCells().length - 1 && (
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 w-8 p-0"
                                                             >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    className="h-8 w-8 p-0"
-                                                                >
-                                                                    <MoreVertical className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        e.stopPropagation();
-                                                                        (
-                                                                            table
-                                                                                .options
-                                                                                .meta as TableMetaType
-                                                                        )?.onEdit(
-                                                                            row.original,
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive"
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        e.stopPropagation();
-                                                                        (
-                                                                            table
-                                                                                .options
-                                                                                .meta as TableMetaType
-                                                                        )?.onDelete(
-                                                                            row
-                                                                                .original
-                                                                                .id ||
-                                                                                '',
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                )}
-                                            </TableCell>
-                                        ))}
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    (
+                                                                        table.options
+                                                                            .meta as TableMetaType
+                                                                    )?.onEdit(
+                                                                        row.original,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="text-destructive"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    (
+                                                                        table.options
+                                                                            .meta as TableMetaType
+                                                                    )?.onDelete(
+                                                                        row.original.id ||
+                                                                            '',
+                                                                    );
+                                                                }}
+                                                            >
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                    ))}
                                 </TableRow>
                             ))
                         ) : (
@@ -293,27 +274,24 @@ export function DataTable({
                         >
                             Previous
                         </Button>
-                        {Array.from(
-                            { length: Math.min(5, pageCount) },
-                            (_, i) => {
-                                const pageNumber = i + 1;
-                                return (
-                                    <Button
-                                        key={i}
-                                        variant={
-                                            pageNumber === pageIndex + 1
-                                                ? 'default'
-                                                : 'outline'
-                                        }
-                                        size="sm"
-                                        onClick={() => table.setPageIndex(i)}
-                                        className="border-border hover:bg-muted dark:border-border dark:hover:bg-muted"
-                                    >
-                                        {pageNumber}
-                                    </Button>
-                                );
-                            },
-                        )}
+                        {Array.from({ length: Math.min(5, pageCount) }, (_, i) => {
+                            const pageNumber = i + 1;
+                            return (
+                                <Button
+                                    key={i}
+                                    variant={
+                                        pageNumber === pageIndex + 1
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size="sm"
+                                    onClick={() => table.setPageIndex(i)}
+                                    className="border-border hover:bg-muted dark:border-border dark:hover:bg-muted"
+                                >
+                                    {pageNumber}
+                                </Button>
+                            );
+                        })}
                         <Button
                             variant="outline"
                             size="sm"
@@ -369,20 +347,13 @@ export const columns: ColumnDef<TestReq>[] = [
         header: 'Status',
         enableSorting: true,
         size: 120,
-        cell: ({
-            row,
-            table,
-        }: {
-            row: Row<TestReq>;
-            table: TanstackTable<TestReq>;
-        }) => {
+        cell: ({ row, table }: { row: Row<TestReq>; table: TanstackTable<TestReq> }) => {
             const status = row.original.status;
             return (
                 <span
                     className={`px-2 py-1 rounded text-sm ${
-                        (table.options.meta as TableMetaType)?.getStatusStyle(
-                            status,
-                        ) || ''
+                        (table.options.meta as TableMetaType)?.getStatusStyle(status) ||
+                        ''
                     }`}
                 >
                     {status.replace('_', ' ')}
@@ -395,13 +366,7 @@ export const columns: ColumnDef<TestReq>[] = [
         header: 'Priority',
         enableSorting: true,
         size: 100,
-        cell: ({
-            row,
-            table,
-        }: {
-            row: Row<TestReq>;
-            table: TanstackTable<TestReq>;
-        }) => {
+        cell: ({ row, table }: { row: Row<TestReq>; table: TanstackTable<TestReq> }) => {
             const priority = row.original.priority;
             return (
                 <span
@@ -424,15 +389,9 @@ export const columns: ColumnDef<TestReq>[] = [
         cell: ({ row }: { row: Row<TestReq> }) => {
             const result = row.original.result;
             if (result === 'Pass')
-                return (
-                    <span className="text-green-600 dark:text-green-400">
-                        Pass
-                    </span>
-                );
+                return <span className="text-green-600 dark:text-green-400">Pass</span>;
             if (result === 'Fail')
-                return (
-                    <span className="text-red-600 dark:text-red-400">Fail</span>
-                );
+                return <span className="text-red-600 dark:text-red-400">Fail</span>;
             return <span className="text-muted-foreground">Not Run</span>;
         },
     },

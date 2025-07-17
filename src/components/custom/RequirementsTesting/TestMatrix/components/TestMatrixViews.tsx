@@ -32,18 +32,13 @@ function TestMatrixViewsComponent({
     onViewSelect,
     onCreateNewView,
 }: TestMatrixViewsProps) {
-    const { views, isLoading, updateView, deleteView } =
-        useTestMatrixViews(projectId);
+    const { views, isLoading, updateView, deleteView } = useTestMatrixViews(projectId);
     const { toast } = useToast();
     const [isRenaming, setIsRenaming] = useState(false);
-    const [viewToRename, setViewToRename] =
-        useState<TestMatrixViewState | null>(null);
+    const [viewToRename, setViewToRename] = useState<TestMatrixViewState | null>(null);
     const [newName, setNewName] = useState('');
 
-    const handleSetDefault = async (
-        view: TestMatrixViewState,
-        e: React.MouseEvent,
-    ) => {
+    const handleSetDefault = async (view: TestMatrixViewState, e: React.MouseEvent) => {
         e.stopPropagation();
         try {
             await updateView.mutateAsync({
@@ -65,10 +60,7 @@ function TestMatrixViewsComponent({
         }
     };
 
-    const handleDelete = async (
-        view: TestMatrixViewState,
-        e: React.MouseEvent,
-    ) => {
+    const handleDelete = async (view: TestMatrixViewState, e: React.MouseEvent) => {
         e.stopPropagation();
         try {
             await deleteView.mutateAsync({ id: view.id });
@@ -87,10 +79,7 @@ function TestMatrixViewsComponent({
         }
     };
 
-    const openRenameDialog = (
-        view: TestMatrixViewState,
-        e: React.MouseEvent,
-    ) => {
+    const openRenameDialog = (view: TestMatrixViewState, e: React.MouseEvent) => {
         e.stopPropagation();
         setViewToRename(view);
         setNewName(view.name);
@@ -139,9 +128,7 @@ function TestMatrixViewsComponent({
             ) : views.length === 0 ? (
                 <div className="text-center text-muted-foreground">
                     <p>No test runs yet</p>
-                    <p className="text-sm mt-2">
-                        Create a new test run to get started
-                    </p>
+                    <p className="text-sm mt-2">Create a new test run to get started</p>
                 </div>
             ) : (
                 <div className="grid gap-4">
@@ -153,16 +140,13 @@ function TestMatrixViewsComponent({
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex-1">
-                                    <h3 className="font-medium mr-8">
-                                        {view.name}
-                                    </h3>
+                                    <h3 className="font-medium mr-8">{view.name}</h3>
                                     <p className="text-sm text-muted-foreground">
-                                        {view.configuration
-                                            .selectedRequirementIds?.length ||
-                                            0}{' '}
-                                        requirements,{' '}
-                                        {view.configuration.selectedTestCaseIds
+                                        {view.configuration.selectedRequirementIds
                                             ?.length || 0}{' '}
+                                        requirements,{' '}
+                                        {view.configuration.selectedTestCaseIds?.length ||
+                                            0}{' '}
                                         test cases
                                     </p>
                                 </div>
@@ -183,23 +167,16 @@ function TestMatrixViewsComponent({
                                                 <MoreVertical className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent
-                                            align="end"
-                                            className="w-36"
-                                        >
+                                        <DropdownMenuContent align="end" className="w-36">
                                             <DropdownMenuItem
-                                                onClick={(e) =>
-                                                    openRenameDialog(view, e)
-                                                }
+                                                onClick={(e) => openRenameDialog(view, e)}
                                                 className="cursor-pointer"
                                             >
                                                 <Pencil className="h-4 w-4 mr-2" />
                                                 Rename
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                onClick={(e) =>
-                                                    handleDelete(view, e)
-                                                }
+                                                onClick={(e) => handleDelete(view, e)}
                                                 className="cursor-pointer text-destructive"
                                             >
                                                 <Trash className="h-4 w-4 mr-2" />
@@ -208,10 +185,7 @@ function TestMatrixViewsComponent({
                                             {!view.isDefault && (
                                                 <DropdownMenuItem
                                                     onClick={(e) =>
-                                                        handleSetDefault(
-                                                            view,
-                                                            e,
-                                                        )
+                                                        handleSetDefault(view, e)
                                                     }
                                                     className="cursor-pointer"
                                                 >
@@ -243,16 +217,10 @@ function TestMatrixViewsComponent({
                         />
                     </div>
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsRenaming(false)}
-                        >
+                        <Button variant="outline" onClick={() => setIsRenaming(false)}>
                             Cancel
                         </Button>
-                        <Button
-                            onClick={handleRename}
-                            disabled={!newName.trim()}
-                        >
+                        <Button onClick={handleRename} disabled={!newName.trim()}>
                             Save
                         </Button>
                     </DialogFooter>

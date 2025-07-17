@@ -27,28 +27,22 @@ interface TestMatrixContextType {
     updateConfiguration: (config: Partial<TestMatrixViewConfiguration>) => void;
 }
 
-const TestMatrixContext = createContext<TestMatrixContextType | undefined>(
-    undefined,
-);
+const TestMatrixContext = createContext<TestMatrixContextType | undefined>(undefined);
 
 interface TestMatrixProviderProps {
     children: React.ReactNode;
     projectId: string;
 }
 
-export function TestMatrixProvider({
-    children,
-    projectId,
-}: TestMatrixProviderProps) {
+export function TestMatrixProvider({ children, projectId }: TestMatrixProviderProps) {
     const [mode, setMode] = React.useState<TestMatrixMode>('view-list');
-    const [currentView, setCurrentView] =
-        React.useState<TestMatrixViewState | null>(null);
-    const [selectedRequirementIds, setSelectedRequirementIds] = React.useState<
-        string[]
-    >([]);
-    const [selectedTestCaseIds, setSelectedTestCaseIds] = React.useState<
-        string[]
-    >([]);
+    const [currentView, setCurrentView] = React.useState<TestMatrixViewState | null>(
+        null,
+    );
+    const [selectedRequirementIds, setSelectedRequirementIds] = React.useState<string[]>(
+        [],
+    );
+    const [selectedTestCaseIds, setSelectedTestCaseIds] = React.useState<string[]>([]);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [testSearchTerm, setTestSearchTerm] = React.useState('');
     const [isRequirementSectionExpanded, setIsRequirementSectionExpanded] =
@@ -107,18 +101,14 @@ export function TestMatrixProvider({
     );
 
     return (
-        <TestMatrixContext.Provider value={value}>
-            {children}
-        </TestMatrixContext.Provider>
+        <TestMatrixContext.Provider value={value}>{children}</TestMatrixContext.Provider>
     );
 }
 
 export function useTestMatrix() {
     const context = useContext(TestMatrixContext);
     if (context === undefined) {
-        throw new Error(
-            'useTestMatrix must be used within a TestMatrixProvider',
-        );
+        throw new Error('useTestMatrix must be used within a TestMatrixProvider');
     }
     return context;
 }

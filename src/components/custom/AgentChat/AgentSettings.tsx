@@ -176,8 +176,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
             const urlObj = new URL(url);
             const domain = urlObj.hostname;
             const path = urlObj.pathname;
-            const maskedPath =
-                path.length > 20 ? path.slice(0, 20) + '...' : path;
+            const maskedPath = path.length > 20 ? path.slice(0, 20) + '...' : path;
             return `${domain}${maskedPath}`;
         } catch {
             return url.length > 30 ? url.slice(0, 30) + '...' : url;
@@ -215,12 +214,9 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                 {/* Atoms URL Configuration */}
                 <div className="space-y-4">
                     <div>
-                        <h3 className="text-sm font-medium mb-2">
-                            Atoms Default URL
-                        </h3>
+                        <h3 className="text-sm font-medium mb-2">Atoms Default URL</h3>
                         <p className="text-xs text-muted-foreground mb-4">
-                            Use the pre-configured Atoms webhook URL for quick
-                            setup
+                            Use the pre-configured Atoms webhook URL for quick setup
                         </p>
                     </div>
 
@@ -236,15 +232,15 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
 
                     {!atomsWebhookUrl && (
                         <p className="text-xs text-amber-600">
-                            Atoms webhook URL is not configured in environment
-                            variables (NEXT_PUBLIC_N8N_WEBHOOK_URL)
+                            Atoms webhook URL is not configured in environment variables
+                            (NEXT_PUBLIC_N8N_WEBHOOK_URL)
                         </p>
                     )}
 
                     {atomsWebhookUrl && (
                         <p className="text-xs text-muted-foreground">
-                            Click to apply the default Atoms webhook URL from
-                            environment variables
+                            Click to apply the default Atoms webhook URL from environment
+                            variables
                         </p>
                     )}
                 </div>
@@ -254,31 +250,24 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                 {/* Custom URL Configuration */}
                 <div className="space-y-4">
                     <div>
-                        <h3 className="text-sm font-medium mb-2">
-                            Custom Webhook URL
-                        </h3>
+                        <h3 className="text-sm font-medium mb-2">Custom Webhook URL</h3>
                         <p className="text-xs text-muted-foreground mb-4">
-                            Configure a custom N8N webhook URL for your specific
-                            workflow
+                            Configure a custom N8N webhook URL for your specific workflow
                         </p>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="custom-webhook-url">
-                            Custom N8N Webhook URL
-                        </Label>
+                        <Label htmlFor="custom-webhook-url">Custom N8N Webhook URL</Label>
                         <Input
                             id="custom-webhook-url"
                             type="url"
                             placeholder="https://your-n8n-instance.com/webhook/your-webhook-id"
                             value={customWebhookUrl}
-                            onChange={(e) =>
-                                setCustomWebhookUrl(e.target.value)
-                            }
+                            onChange={(e) => setCustomWebhookUrl(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Enter your custom N8N webhook URL to override the
-                            default settings
+                            Enter your custom N8N webhook URL to override the default
+                            settings
                         </p>
                     </div>
 
@@ -298,9 +287,7 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                 {/* Message Management */}
                 <div className="space-y-4">
                     <div>
-                        <h3 className="text-sm font-medium mb-2">
-                            Message Management
-                        </h3>
+                        <h3 className="text-sm font-medium mb-2">Message Management</h3>
                         <p className="text-xs text-muted-foreground mb-4">
                             Manage your conversation history and chat data
                         </p>
@@ -336,20 +323,13 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                         </h3>
                         <div className="text-xs text-muted-foreground space-y-2">
                             <p>1. Create a new workflow in your N8N instance</p>
-                            <p>
-                                2. Add a &quot;Webhook&quot; node as the trigger
-                            </p>
-                            <p>
-                                3. Configure the webhook to accept POST requests
-                            </p>
+                            <p>2. Add a &quot;Webhook&quot; node as the trigger</p>
+                            <p>3. Configure the webhook to accept POST requests</p>
                             <p>4. Copy the webhook URL and use it above</p>
+                            <p>5. Add your processing nodes (AI, database, etc.)</p>
                             <p>
-                                5. Add your processing nodes (AI, database,
-                                etc.)
-                            </p>
-                            <p>
-                                6. Return a response with a &quot;reply&quot;
-                                field for the agent
+                                6. Return a response with a &quot;reply&quot; field for
+                                the agent
                             </p>
                         </div>
                     </div>

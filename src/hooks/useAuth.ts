@@ -24,10 +24,7 @@ export function useAuth() {
                 console.error('useAuth: Error fetching user profile:', error);
                 throw error;
             }
-            console.log(
-                'useAuth: Profile fetched successfully:',
-                profile?.full_name,
-            );
+            console.log('useAuth: Profile fetched successfully:', profile?.full_name);
             setUserProfile(profile);
         } catch (error) {
             console.error('useAuth: Error in fetchUserProfile:', error);
@@ -58,18 +55,13 @@ export function useAuth() {
                         ?.split('=')[1];
 
                     if (userIdCookie) {
-                        console.log(
-                            'useAuth: Found user_id in cookie:',
-                            userIdCookie,
-                        );
+                        console.log('useAuth: Found user_id in cookie:', userIdCookie);
                         setIsAuthenticated(true);
                         await fetchUserProfile(userIdCookie);
                         setIsLoading(false);
                         return;
                     } else {
-                        console.log(
-                            'useAuth: No user_id cookie found in development',
-                        );
+                        console.log('useAuth: No user_id cookie found in development');
                         setIsAuthenticated(false);
                         setUserProfile(null);
                         setIsLoading(false);
@@ -80,16 +72,10 @@ export function useAuth() {
                 // Add timeout to prevent hanging in production
                 const sessionPromise = supabase.auth.getSession();
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(
-                        () => reject(new Error('Session check timeout')),
-                        3000,
-                    ),
+                    setTimeout(() => reject(new Error('Session check timeout')), 3000),
                 );
 
-                const result = await Promise.race([
-                    sessionPromise,
-                    timeoutPromise,
-                ]);
+                const result = await Promise.race([sessionPromise, timeoutPromise]);
                 const {
                     data: { session },
                     error,
@@ -110,10 +96,7 @@ export function useAuth() {
 
                 setIsAuthenticated(!!session);
                 if (session?.user) {
-                    console.log(
-                        'useAuth: Fetching user profile for:',
-                        session.user.id,
-                    );
+                    console.log('useAuth: Fetching user profile for:', session.user.id);
                     await fetchUserProfile(session.user.id);
                 } else {
                     console.log('useAuth: No session, clearing profile');
@@ -151,15 +134,11 @@ export function useAuth() {
                 );
                 await fetchUserProfile(session.user.id);
             } else {
-                console.log(
-                    'useAuth: Auth state change - no session, clearing profile',
-                );
+                console.log('useAuth: Auth state change - no session, clearing profile');
                 setUserProfile(null);
             }
             // Ensure loading state is set to false after auth state change
-            console.log(
-                'useAuth: Auth state change - setting loading to false',
-            );
+            console.log('useAuth: Auth state change - setting loading to false');
             setIsLoading(false);
         });
 

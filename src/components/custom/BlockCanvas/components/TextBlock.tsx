@@ -137,9 +137,7 @@ export const TextBlock: React.FC<BlockProps> = ({
     dragActivators,
 }) => {
     const content = block.content as { text?: string; format?: string };
-    const [localContent, setLocalContent] = React.useState(
-        content?.text || '<p></p>',
-    );
+    const [localContent, setLocalContent] = React.useState(content?.text || '<p></p>');
     const [showToolbar, setShowToolbar] = React.useState(false);
     const [toolbarPosition, setToolbarPosition] = React.useState({
         top: 0,
@@ -156,10 +154,7 @@ export const TextBlock: React.FC<BlockProps> = ({
         if (typeof window === 'undefined') return;
 
         const handleClickOutside = (event: MouseEvent) => {
-            if (
-                editorRef.current &&
-                !editorRef.current.contains(event.target as Node)
-            ) {
+            if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
                 setShowToolbar(false);
             }
         };
@@ -269,9 +264,7 @@ export const TextBlock: React.FC<BlockProps> = ({
         if (!isEditMode && localContent !== lastSavedContent.current) {
             // If content is empty or just empty paragraph tags, save as empty string
             const contentToSave =
-                localContent === '' || localContent === '<p></p>'
-                    ? ''
-                    : localContent;
+                localContent === '' || localContent === '<p></p>' ? '' : localContent;
 
             lastSavedContent.current = contentToSave;
             onUpdate({
@@ -384,9 +377,7 @@ export const TextBlock: React.FC<BlockProps> = ({
                     {(!localContent ||
                         localContent === '' ||
                         localContent === '<p></p>') && (
-                        <div className="empty-editor-placeholder">
-                            Enter text here...
-                        </div>
+                        <div className="empty-editor-placeholder">Enter text here...</div>
                     )}
                     <EditorContent
                         editor={editor}

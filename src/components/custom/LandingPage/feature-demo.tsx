@@ -31,19 +31,13 @@ export function FeatureDemo({ className }: FeatureDemoProps) {
         {
             id: 'diagram',
             title: 'Visualize Requirements',
-            description:
-                'Generate an instant visual so connections are obvious.',
+            description: 'Generate an instant visual so connections are obvious.',
             gifPath: '/RequirementToDiagram.gif',
         },
     ];
 
     return (
-        <section
-            className={cn(
-                'py-24 md:py-32 relative bg-black text-white',
-                className,
-            )}
-        >
+        <section className={cn('py-24 md:py-32 relative bg-black text-white', className)}>
             <div className="absolute top-0 left-0 w-full h-1 bg-white" />
             <div className="container mx-auto px-4">
                 <h2 className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] xl:text-[112px] font-black tracking-tighter text-white leading-none mb-16 md:mb-24">
@@ -81,10 +75,8 @@ export function FeatureDemo({ className }: FeatureDemoProps) {
                                 key={feature.id}
                                 initial={{ opacity: 0 }}
                                 animate={{
-                                    opacity:
-                                        activeFeature === feature.id ? 1 : 0,
-                                    zIndex:
-                                        activeFeature === feature.id ? 10 : 0,
+                                    opacity: activeFeature === feature.id ? 1 : 0,
+                                    zIndex: activeFeature === feature.id ? 10 : 0,
                                 }}
                                 transition={{ duration: 0.5 }}
                                 className="absolute inset-0"

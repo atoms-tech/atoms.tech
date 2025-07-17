@@ -101,8 +101,7 @@ export function ScheduleDemoDialog({ className }: ScheduleDemoDialogProps) {
                 {selectedDate && !selectedTime && (
                     <div className="space-y-4">
                         <p className="font-bold">
-                            Select a time on{' '}
-                            {format(selectedDate, 'MMMM d, yyyy')}
+                            Select a time on {format(selectedDate, 'MMMM d, yyyy')}
                         </p>
                         <div className="grid grid-cols-2 gap-2">
                             {timeSlots.map((slot) => (

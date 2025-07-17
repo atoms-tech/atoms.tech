@@ -94,9 +94,7 @@ export function SidePanel({
                                                 <DropdownMenuItem
                                                     key={option.value}
                                                     onClick={() =>
-                                                        onOptionSelect(
-                                                            option.value,
-                                                        )
+                                                        onOptionSelect(option.value)
                                                     }
                                                 >
                                                     {option.label}

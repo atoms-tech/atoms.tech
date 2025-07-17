@@ -95,8 +95,8 @@
     code,
     pre {
         font-family:
-            var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco,
-            Consolas, 'Liberation Mono', 'Courier New', monospace;
+            var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            'Liberation Mono', 'Courier New', monospace;
     }
 
     .dark {

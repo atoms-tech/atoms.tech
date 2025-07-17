@@ -10,11 +10,7 @@ import {
     CommandInput,
     CommandItem,
 } from '@/components/ui/command';
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
 import { Badge } from './badge';
@@ -69,9 +65,7 @@ export function MultiSelect({
                     <div className="flex flex-wrap gap-1">
                         {values.length > 0 ? (
                             values.map((value) => {
-                                const option = options.find(
-                                    (o) => o.value === value,
-                                );
+                                const option = options.find((o) => o.value === value);
                                 return (
                                     <Badge
                                         key={value}
@@ -93,9 +87,7 @@ export function MultiSelect({
                                 );
                             })
                         ) : (
-                            <span className="text-muted-foreground">
-                                {placeholder}
-                            </span>
+                            <span className="text-muted-foreground">{placeholder}</span>
                         )}
                     </div>
                 </div>
@@ -113,8 +105,7 @@ export function MultiSelect({
                                     onSelect={() => handleSelect(option)}
                                     className={cn(
                                         'flex items-center gap-2',
-                                        isSelected &&
-                                            'bg-accent text-accent-foreground',
+                                        isSelected && 'bg-accent text-accent-foreground',
                                     )}
                                 >
                                     <div

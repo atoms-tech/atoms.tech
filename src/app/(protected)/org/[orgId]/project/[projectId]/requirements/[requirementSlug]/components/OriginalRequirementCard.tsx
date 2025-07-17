@@ -28,8 +28,7 @@ export function OriginalRequirementCard({
                         </div>
                     ) : (
                         <p className="text-muted-foreground text-sm">
-                            Upload files and analyze the requirement to get AI
-                            feedback
+                            Upload files and analyze the requirement to get AI feedback
                         </p>
                     )}
                 </div>

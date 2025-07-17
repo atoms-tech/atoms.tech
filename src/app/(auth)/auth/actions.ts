@@ -19,8 +19,7 @@ export async function login(formData: FormData) {
     };
 
     try {
-        const { error, data: authData } =
-            await supabase.auth.signInWithPassword(data);
+        const { error, data: authData } = await supabase.auth.signInWithPassword(data);
 
         if (error || !authData.user) {
             return {
@@ -29,9 +28,7 @@ export async function login(formData: FormData) {
             };
         }
 
-        const organizations = await getUserOrganizationsServer(
-            authData.user.id,
-        );
+        const organizations = await getUserOrganizationsServer(authData.user.id);
 
         let redirectUrl = '/home'; // Default fallback - route to /home by default
 
@@ -41,8 +38,7 @@ export async function login(formData: FormData) {
         );
 
         // Only set cookie if enterprise org exists or if no preferred_org_id is set yet
-        const existingPreferredOrgId =
-            cookieStore.get('preferred_org_id')?.value;
+        const existingPreferredOrgId = cookieStore.get('preferred_org_id')?.value;
 
         if (enterpriseOrg) {
             // If enterprise org exists, always set it as preferred and redirect there

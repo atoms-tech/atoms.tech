@@ -1,10 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
-import {
-    getDocumentBlocksAndRequirements,
-    getProjectDocuments,
-} from '@/lib/db/client';
+import { getDocumentBlocksAndRequirements, getProjectDocuments } from '@/lib/db/client';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import {
     QueryFilters as GenericQueryFilters,
@@ -45,9 +42,7 @@ export function useDocument(documentId: string) {
 
 export function useDocuments(queryFilters?: GenericQueryFilters<'documents'>) {
     return useQuery({
-        queryKey: queryKeys.documents.list(
-            (queryFilters as QueryFilters) || {},
-        ),
+        queryKey: queryKeys.documents.list((queryFilters as QueryFilters) || {}),
         queryFn: async () => {
             const { data } = await buildQuery('documents', queryFilters);
             return data;

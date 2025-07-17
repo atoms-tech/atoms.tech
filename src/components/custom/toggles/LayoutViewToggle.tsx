@@ -29,9 +29,7 @@ export const LayoutViewToggle = memo(() => {
         localStorage.setItem('layoutViewMode', newMode); // Persist state
     };
 
-    const tooltip = isWideMode
-        ? 'Switch to Standard View'
-        : 'Switch to Wide View';
+    const tooltip = isWideMode ? 'Switch to Standard View' : 'Switch to Wide View';
 
     // For SSR, show a placeholder until mounted
     if (!mounted) {

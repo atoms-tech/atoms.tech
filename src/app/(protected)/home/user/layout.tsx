@@ -1,10 +1,6 @@
 'use server';
 
-import {
-    HydrationBoundary,
-    QueryClient,
-    dehydrate,
-} from '@tanstack/react-query';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
@@ -29,13 +25,10 @@ export default async function UserDashboardLayout({
     });
 
     // Make organizations available to client components
-    (
-        queryClient as QueryClient & { organizations: typeof organizations }
-    ).organizations = organizations;
+    (queryClient as QueryClient & { organizations: typeof organizations }).organizations =
+        organizations;
 
     return (
-        <HydrationBoundary state={dehydrate(queryClient)}>
-            {children}
-        </HydrationBoundary>
+        <HydrationBoundary state={dehydrate(queryClient)}>{children}</HydrationBoundary>
     );
 }

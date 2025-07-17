@@ -49,9 +49,7 @@ export function useCreateProject() {
                 );
             }
             if (!project) {
-                throw new Error(
-                    'Failed to create project, insert returned no data.',
-                );
+                throw new Error('Failed to create project, insert returned no data.');
             }
 
             return project;
@@ -228,10 +226,7 @@ export function useDuplicateProject() {
                 .single();
 
             if (createError) {
-                console.error(
-                    'Failed to create duplicated project',
-                    createError,
-                );
+                console.error('Failed to create duplicated project', createError);
                 throw createError;
             }
             if (!newProject) {
@@ -239,21 +234,16 @@ export function useDuplicateProject() {
             }
 
             // Add the user as owner of the new project
-            const { error: memberError } = await supabase
-                .from('project_members')
-                .insert({
-                    user_id: userId,
-                    project_id: newProject.id,
-                    role: 'owner',
-                    org_id: originalProject.organization_id,
-                    status: 'active',
-                });
+            const { error: memberError } = await supabase.from('project_members').insert({
+                user_id: userId,
+                project_id: newProject.id,
+                role: 'owner',
+                org_id: originalProject.organization_id,
+                status: 'active',
+            });
 
             if (memberError) {
-                console.error(
-                    'Failed to add user as project member',
-                    memberError,
-                );
+                console.error('Failed to add user as project member', memberError);
                 // Don't throw here as the project was created successfully
             }
 

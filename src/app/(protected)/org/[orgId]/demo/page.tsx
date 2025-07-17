@@ -43,8 +43,7 @@ export default function RequirementPage() {
 
     const [isReasoning, setIsReasoning] = useState(false);
     const [isAnalysing, setIsAnalysing] = useState(false);
-    const [analysisPipelineRunId, setAnalysisPipelineRunId] =
-        useState<string>('');
+    const [analysisPipelineRunId, setAnalysisPipelineRunId] = useState<string>('');
     const { data: analysisResponse } = getPipelineRun(
         analysisPipelineRunId,
         organizationId,
@@ -64,9 +63,7 @@ export default function RequirementPage() {
                 requirement: reqText,
                 systemName: systemName,
                 objective: objective,
-                fileNames: Object.values(selectedFiles).map(
-                    (file) => file.gumloopName,
-                ),
+                fileNames: Object.values(selectedFiles).map((file) => file.gumloopName),
                 model_preference: isReasoning ? 'o1' : 'gemini-2.0-flash-001',
                 temperature: isReasoning ? 1 : 0.1,
             });
@@ -116,38 +113,24 @@ export default function RequirementPage() {
                     // convert it back into \n
                     for (const key in mergedData) {
                         if (mergedData[key]) {
-                            mergedData[key] = mergedData[key].replace(
-                                '\\\\n',
-                                '\\n',
-                            );
-                            mergedData[key] = mergedData[key].replace(
-                                '\\n',
-                                '\n',
-                            );
-                            mergedData[key] = mergedData[key].replace(
-                                '\n',
-                                '  \n',
-                            );
+                            mergedData[key] = mergedData[key].replace('\\\\n', '\\n');
+                            mergedData[key] = mergedData[key].replace('\\n', '\n');
+                            mergedData[key] = mergedData[key].replace('\n', '  \n');
                         }
                     }
 
                     setAnalysisData({
                         reqId: mergedData['REQ ID'],
                         originalRequirement: mergedData['Original Requirement'],
-                        earsRequirement:
-                            mergedData['EARS Generated Requirement'],
+                        earsRequirement: mergedData['EARS Generated Requirement'],
                         earsPattern: mergedData['EARS Pattern'],
                         earsTemplate: mergedData['EARS_SYNTAX_TEMPLATE'],
                         incoseFormat: mergedData['INCOSE_FORMAT'],
-                        incoseFeedback:
-                            mergedData['INCOSE_REQUIREMENT_FEEDBACK'],
+                        incoseFeedback: mergedData['INCOSE_REQUIREMENT_FEEDBACK'],
                         complianceFeedback: mergedData['COMPLIANCE_FEEDBACK'],
-                        enhancedReqEars:
-                            mergedData['ENHANCED_REQUIREMENT_EARS'],
-                        enhancedReqIncose:
-                            mergedData['ENHANCED_REQUIREMENT_INCOSE'],
-                        enhancedGeneralFeedback:
-                            mergedData['ENHANCED_GENERAL_FEEDBACK'],
+                        enhancedReqEars: mergedData['ENHANCED_REQUIREMENT_EARS'],
+                        enhancedReqIncose: mergedData['ENHANCED_REQUIREMENT_INCOSE'],
+                        enhancedGeneralFeedback: mergedData['ENHANCED_GENERAL_FEEDBACK'],
                         relevantRegulations: mergedData['RELEVANT_REGULATIONS'],
                     });
                 } catch (error) {
@@ -239,9 +222,7 @@ export default function RequirementPage() {
                     <EnhancedCard
                         enhancedReqEars={analysisData?.enhancedReqEars}
                         enhancedReqIncose={analysisData?.enhancedReqIncose}
-                        enhancedGeneralFeedback={
-                            analysisData?.enhancedGeneralFeedback
-                        }
+                        enhancedGeneralFeedback={analysisData?.enhancedGeneralFeedback}
                         onAccept={handleAcceptChange}
                     />
                 </div>

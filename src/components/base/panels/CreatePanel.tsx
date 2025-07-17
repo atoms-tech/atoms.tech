@@ -14,9 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // Lazy load form components to reduce initial bundle size
 const ProjectForm = lazy(() => import('@/components/base/forms/ProjectForm'));
 const DocumentForm = lazy(() => import('@/components/base/forms/DocumentForm'));
-const OrganizationForm = lazy(
-    () => import('@/components/base/forms/OrganizationForm'),
-);
+const OrganizationForm = lazy(() => import('@/components/base/forms/OrganizationForm'));
 
 // Fallback loading component
 const FormLoader = () => (
@@ -61,12 +59,9 @@ export function CreatePanel({
                     <SheetHeader>
                         <SheetTitle>
                             Create New{' '}
-                            {showTabs.charAt(0).toUpperCase() +
-                                showTabs.slice(1)}
+                            {showTabs.charAt(0).toUpperCase() + showTabs.slice(1)}
                         </SheetTitle>
-                        <SheetDescription>
-                            Fill in the details below
-                        </SheetDescription>
+                        <SheetDescription>Fill in the details below</SheetDescription>
                     </SheetHeader>
                     <div className="space-y-6">
                         <Suspense fallback={<FormLoader />}>
@@ -120,12 +115,8 @@ export function CreatePanel({
                     >
                         <TabsList className="grid grid-cols-3 w-full">
                             <TabsTrigger value="project">Project</TabsTrigger>
-                            <TabsTrigger value="requirement">
-                                Requirement
-                            </TabsTrigger>
-                            <TabsTrigger value="organization">
-                                Organization
-                            </TabsTrigger>
+                            <TabsTrigger value="requirement">Requirement</TabsTrigger>
+                            <TabsTrigger value="organization">Organization</TabsTrigger>
                         </TabsList>
 
                         <Suspense fallback={<FormLoader />}>

@@ -247,14 +247,11 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
                         <FormItem>
                             <FormLabel>Organization Slug</FormLabel>
                             <FormControl>
-                                <Input
-                                    placeholder="acme-corporation"
-                                    {...field}
-                                />
+                                <Input placeholder="acme-corporation" {...field} />
                             </FormControl>
                             <FormDescription>
-                                Used in URLs. Only lowercase letters, numbers,
-                                and hyphens.
+                                Used in URLs. Only lowercase letters, numbers, and
+                                hyphens.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

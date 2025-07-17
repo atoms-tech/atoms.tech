@@ -39,14 +39,10 @@ export default function SettingsSection({
             >
                 <div className="flex items-start">
                     <div>
-                        <h3 className="text-primary text-sm pl-3">
-                            {description}
-                        </h3>
+                        <h3 className="text-primary text-sm pl-3">{description}</h3>
                         <div className="mt-3 mb-3 text-sm">
                             {Children.map(children, (child) => (
-                                <div className="pl-4 flex items-center">
-                                    {child}
-                                </div>
+                                <div className="pl-4 flex items-center">{child}</div>
                             ))}
                         </div>
                     </div>

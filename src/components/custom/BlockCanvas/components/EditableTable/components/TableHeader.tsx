@@ -2,11 +2,7 @@ import { CaretSortIcon } from '@radix-ui/react-icons';
 
 import { EditableColumn } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Button } from '@/components/ui/button';
-import {
-    TableHead,
-    TableRow,
-    TableHeader as UITableHeader,
-} from '@/components/ui/table';
+import { TableHead, TableRow, TableHeader as UITableHeader } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
 interface TableHeaderProps<T> {
@@ -33,9 +29,7 @@ export function TableHeader<T>({
                     <TableHead
                         key={column.header}
                         style={{
-                            width: column.width
-                                ? `${column.width}px`
-                                : undefined,
+                            width: column.width ? `${column.width}px` : undefined,
                         }}
                     >
                         <Button
@@ -58,9 +52,7 @@ export function TableHeader<T>({
                         </Button>
                     </TableHead>
                 ))}
-                {isEditMode && (
-                    <TableHead style={{ width: '100px' }}>Actions</TableHead>
-                )}
+                {isEditMode && <TableHead style={{ width: '100px' }}>Actions</TableHead>}
             </TableRow>
         </UITableHeader>
     );

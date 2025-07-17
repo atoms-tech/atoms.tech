@@ -126,10 +126,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
     };
 
-    const handleChangeRole = async (
-        memberId: string,
-        selectedRole: OrganizationRole,
-    ) => {
+    const handleChangeRole = async (memberId: string, selectedRole: OrganizationRole) => {
         if (!hasOrganizationPermission(userRole, 'changeRole')) {
             toast({
                 title: 'Error',
@@ -156,10 +153,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                 .eq('user_id', memberId);
 
             if (error) {
-                console.error(
-                    'Error updating organization member role:',
-                    error,
-                );
+                console.error('Error updating organization member role:', error);
                 throw error;
             }
 
@@ -192,9 +186,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     // Filter and search functionality
     const filteredMembers = sortedMembers.filter((member) => {
         const matchesSearch =
-            member.full_name
-                ?.toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
+            member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             member.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length === 0 ||
@@ -207,9 +199,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             <CardHeader className="flex flex-col gap-4 pb-2">
                 <div>
                     <CardTitle className="text-xl">Members</CardTitle>
-                    <CardDescription>
-                        Manage organization members
-                    </CardDescription>
+                    <CardDescription>Manage organization members</CardDescription>
                 </div>
                 <div className="flex w-full md:w-auto space-x-2 pb-3">
                     <Input
@@ -232,28 +222,20 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                     onSelect={(e) => e.preventDefault()}
                                     onClick={() =>
                                         setRoleFilters((prev) =>
-                                            prev.includes(
-                                                role as OrganizationRole,
-                                            )
+                                            prev.includes(role as OrganizationRole)
                                                 ? prev.filter((r) => r !== role)
-                                                : [
-                                                      ...prev,
-                                                      role as OrganizationRole,
-                                                  ],
+                                                : [...prev, role as OrganizationRole],
                                         )
                                     }
                                 >
                                     <span
                                         className={`mr-2 inline-block w-4 h-4 rounded-full ${
-                                            roleFilters.includes(
-                                                role as OrganizationRole,
-                                            )
+                                            roleFilters.includes(role as OrganizationRole)
                                                 ? 'bg-primary'
                                                 : 'bg-gray-200'
                                         }`}
                                     ></span>
-                                    {role.charAt(0).toUpperCase() +
-                                        role.slice(1)}
+                                    {role.charAt(0).toUpperCase() + role.slice(1)}
                                 </DropdownMenuItem>
                             ))}
                         </DropdownMenuContent>
@@ -349,9 +331,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                                 <hr></hr>
                                                 <DropdownMenuItem
                                                     onClick={() =>
-                                                        handleRemoveMember(
-                                                            member.id,
-                                                        )
+                                                        handleRemoveMember(member.id)
                                                     }
                                                     className="text-red-600"
                                                 >

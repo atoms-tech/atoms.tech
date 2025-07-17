@@ -5,11 +5,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getAuthUserServer, getUserOrganizationsServer } from '@/lib/db/server';
 
-export default async function HomeLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default async function HomeLayout({ children }: { children: React.ReactNode }) {
     const queryClient = new QueryClient();
     const user = await getAuthUserServer();
 
@@ -25,9 +21,8 @@ export default async function HomeLayout({
     });
 
     // Add organizations to Next.js data for client components
-    (
-        queryClient as QueryClient & { organizations: typeof organizations }
-    ).organizations = organizations;
+    (queryClient as QueryClient & { organizations: typeof organizations }).organizations =
+        organizations;
 
     return <div className="relative flex-1">{children}</div>;
 }

@@ -93,21 +93,17 @@ export function EditableTable<
 
         try {
             // Get all modified items
-            const modifiedItems = Object.entries(editingData).filter(
-                ([id, item]) => {
-                    // Skip new items as they're handled separately
-                    if (id === 'new') return false;
+            const modifiedItems = Object.entries(editingData).filter(([id, item]) => {
+                // Skip new items as they're handled separately
+                if (id === 'new') return false;
 
-                    // Find original item
-                    const originalItem = data.find((d) => d.id === id);
-                    if (!originalItem) return false;
+                // Find original item
+                const originalItem = data.find((d) => d.id === id);
+                if (!originalItem) return false;
 
-                    // Check if any values have changed
-                    return Object.keys(item).some(
-                        (key) => item[key] !== originalItem[key],
-                    );
-                },
-            );
+                // Check if any values have changed
+                return Object.keys(item).some((key) => item[key] !== originalItem[key]);
+            });
 
             // Only proceed if there are actually modified items
             if (modifiedItems.length === 0) return;
@@ -172,9 +168,7 @@ export function EditableTable<
 
     const canPerformAction = useCallback(
         async (action: string) => {
-            const getUserRole = async (): Promise<
-                keyof typeof rolePermissions
-            > => {
+            const getUserRole = async (): Promise<keyof typeof rolePermissions> => {
                 try {
                     const { data, error } = await supabase
                         .from('project_members')
@@ -347,8 +341,7 @@ export function EditableTable<
                 case 'text':
                     // For external_id field, generate a REQ-ID instead of empty string
                     if (String(col.accessor).toLowerCase() === 'external_id') {
-                        acc[col.accessor as keyof T] =
-                            'GENERATING...' as T[keyof T];
+                        acc[col.accessor as keyof T] = 'GENERATING...' as T[keyof T];
                     } else {
                         acc[col.accessor as keyof T] = '' as T[keyof T];
                     }
@@ -378,9 +371,7 @@ export function EditableTable<
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import(
-                    '@/lib/supabase/supabaseBrowser'
-                );
+                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
 
                 // Get organization ID from the current document
                 const urlParts = window.location.pathname.split('/');
@@ -412,8 +403,7 @@ export function EditableTable<
                     )?.projects?.organization_id;
 
                     if (organizationId) {
-                        const reqId =
-                            await generateNextRequirementId(organizationId);
+                        const reqId = await generateNextRequirementId(organizationId);
                         newItem[externalIdColumn.accessor as keyof T] =
                             reqId as T[keyof T];
                     }
@@ -421,8 +411,7 @@ export function EditableTable<
             } catch (error) {
                 console.error('Failed to generate REQ-ID:', error);
                 // Fall back to empty string if generation fails
-                newItem[externalIdColumn.accessor as keyof T] =
-                    '' as T[keyof T];
+                newItem[externalIdColumn.accessor as keyof T] = '' as T[keyof T];
             }
         }
 
@@ -449,23 +438,17 @@ export function EditableTable<
                 itemWithoutId,
             );
 
-            console.log(
-                '🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)',
-            );
+            console.log('🎯 STEP 3b: Calling parent onSave (handleSaveRequirement)');
             await onSave(itemWithoutId as T, true);
             console.log('✅ STEP 3b: Parent onSave completed successfully');
 
             // Call onPostSave after successfully saving to refresh data
             if (onPostSave) {
-                console.log(
-                    '🎯 STEP 3c: Calling onPostSave (refreshRequirements)',
-                );
+                console.log('🎯 STEP 3c: Calling onPostSave (refreshRequirements)');
                 await onPostSave();
                 console.log('✅ STEP 3c: onPostSave completed successfully');
             } else {
-                console.log(
-                    '⚠️ STEP 3c: No onPostSave provided, skipping refresh',
-                );
+                console.log('⚠️ STEP 3c: No onPostSave provided, skipping refresh');
             }
 
             // Clear editing state only after successful save
@@ -593,14 +576,13 @@ export function EditableTable<
                             )}
 
                             {/* Add new row placeholder */}
-                            {!isAddingNew &&
-                                (isEditMode || alwaysShowAddRow) && (
-                                    <AddRowPlaceholder
-                                        columns={columns}
-                                        onClick={handleAddNewRow}
-                                        isEditMode={isEditMode}
-                                    />
-                                )}
+                            {!isAddingNew && (isEditMode || alwaysShowAddRow) && (
+                                <AddRowPlaceholder
+                                    columns={columns}
+                                    onClick={handleAddNewRow}
+                                    isEditMode={isEditMode}
+                                />
+                            )}
                         </TableBody>
                     </Table>
                 </div>

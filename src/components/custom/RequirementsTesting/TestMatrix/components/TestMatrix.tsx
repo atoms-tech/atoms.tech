@@ -56,8 +56,7 @@ function TestMatrixContent() {
     const { createView, updateView } = useTestMatrixViews(projectId);
     const { data: apiRequirements = [] } = useProjectRequirements(projectId);
     const { data: testCasesData } = useProjectTestCases(projectId);
-    const { data: apiRequirementTests = [] } =
-        useProjectRequirementTests(projectId);
+    const { data: apiRequirementTests = [] } = useProjectRequirementTests(projectId);
 
     const allRequirements = useMemo(
         () => apiRequirements.map(mapAPIRequirement),
@@ -86,19 +85,14 @@ function TestMatrixContent() {
     }, [requirementTests]);
 
     const displayRequirements = useMemo(
-        () =>
-            allRequirements.filter((req) =>
-                selectedRequirementIds.includes(req.id),
-            ),
+        () => allRequirements.filter((req) => selectedRequirementIds.includes(req.id)),
         [allRequirements, selectedRequirementIds],
     );
 
     const displayTestCases = useMemo(
         () =>
             selectedTestCaseIds.length > 0
-                ? allTestCases.filter((test) =>
-                      selectedTestCaseIds.includes(test.id),
-                  )
+                ? allTestCases.filter((test) => selectedTestCaseIds.includes(test.id))
                 : [],
         [allTestCases, selectedTestCaseIds],
     );
@@ -106,28 +100,22 @@ function TestMatrixContent() {
     const handleViewSelect = (view: TestMatrixViewState) => {
         try {
             setCurrentView(view);
-            setSelectedRequirementIds(
-                view.configuration.selectedRequirementIds || [],
-            );
+            setSelectedRequirementIds(view.configuration.selectedRequirementIds || []);
 
             let testCaseIds = view.configuration.selectedTestCaseIds || [];
             if (
                 testCaseIds.length === 0 &&
                 view.configuration.selectedRequirementIds.length > 0
             ) {
-                const linkedTests =
-                    view.configuration.selectedRequirementIds.flatMap(
-                        (reqId) => linkedTestCasesMap[reqId] || [],
-                    );
+                const linkedTests = view.configuration.selectedRequirementIds.flatMap(
+                    (reqId) => linkedTestCasesMap[reqId] || [],
+                );
                 testCaseIds = Array.from(new Set(linkedTests));
             }
 
             setSelectedTestCaseIds(testCaseIds);
 
-            if (
-                view.configuration.uiState?.isRequirementSectionExpanded !==
-                undefined
-            ) {
+            if (view.configuration.uiState?.isRequirementSectionExpanded !== undefined) {
                 setIsRequirementSectionExpanded(
                     view.configuration.uiState.isRequirementSectionExpanded,
                 );
@@ -178,9 +166,7 @@ function TestMatrixContent() {
             };
 
             if ('id' in updatedViewData) {
-                await updateView.mutateAsync(
-                    updatedViewData as TestMatrixViewState,
-                );
+                await updateView.mutateAsync(updatedViewData as TestMatrixViewState);
             } else {
                 await createView.mutateAsync(
                     updatedViewData as Omit<TestMatrixViewState, 'id'>,
@@ -253,8 +239,7 @@ function TestMatrixContent() {
                             <div className="p-4 flex justify-between items-center border-b">
                                 <h2 className="text-lg font-medium">
                                     {mode === 'edit-view'
-                                        ? currentView?.name ||
-                                          'Test Matrix View'
+                                        ? currentView?.name || 'Test Matrix View'
                                         : 'New Test Matrix View'}
                                 </h2>
                                 <div className="flex space-x-2">
@@ -272,8 +257,7 @@ function TestMatrixContent() {
                                                         },
                                                         uiState: {
                                                             compactView: false,
-                                                            highlightPassing:
-                                                                true,
+                                                            highlightPassing: true,
                                                             showEmpty: true,
                                                             isRequirementSectionExpanded,
                                                             isTestCasesSectionExpanded,
@@ -288,9 +272,7 @@ function TestMatrixContent() {
                                     </Button>
                                     {mode === 'new-view' && (
                                         <Button
-                                            onClick={() =>
-                                                setSaveDialogOpen(true)
-                                            }
+                                            onClick={() => setSaveDialogOpen(true)}
                                             variant="default"
                                         >
                                             <Save className="mr-2 h-4 w-4" />
@@ -311,26 +293,23 @@ function TestMatrixContent() {
                                     ) : (
                                         <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/5 rounded-lg border">
                                             <p className="text-muted-foreground">
-                                                No test cases selected for this
-                                                view
+                                                No test cases selected for this view
                                             </p>
                                             <p className="text-sm text-muted-foreground mt-2">
-                                                Select test cases from the test
-                                                cases section, or select
-                                                requirements with linked test
-                                                cases
+                                                Select test cases from the test cases
+                                                section, or select requirements with
+                                                linked test cases
                                             </p>
                                         </div>
                                     )
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-8 text-center bg-muted/5 rounded-lg border">
                                         <p className="text-muted-foreground mb-2">
-                                            Select requirements to display in
-                                            the matrix
+                                            Select requirements to display in the matrix
                                         </p>
                                         <p className="text-sm text-muted-foreground">
-                                            Use the requirements section to
-                                            choose which requirements to include
+                                            Use the requirements section to choose which
+                                            requirements to include
                                         </p>
                                     </div>
                                 )}
@@ -352,17 +331,14 @@ function TestMatrixContent() {
                                             !isRequirementSectionExpanded,
                                         );
                                         if (!isRequirementSectionExpanded) {
-                                            setIsTestCasesSectionExpanded(
-                                                false,
-                                            );
+                                            setIsTestCasesSectionExpanded(false);
                                         }
                                     }}
                                 >
                                     <ChevronRight
                                         className={cn(
                                             'h-4 w-4 transition-transform',
-                                            isRequirementSectionExpanded &&
-                                                'rotate-180',
+                                            isRequirementSectionExpanded && 'rotate-180',
                                         )}
                                     />
                                     Add Requirements
@@ -387,17 +363,14 @@ function TestMatrixContent() {
                                             !isTestCasesSectionExpanded,
                                         );
                                         if (!isTestCasesSectionExpanded) {
-                                            setIsRequirementSectionExpanded(
-                                                false,
-                                            );
+                                            setIsRequirementSectionExpanded(false);
                                         }
                                     }}
                                 >
                                     <ChevronRight
                                         className={cn(
                                             'h-4 w-4 transition-transform',
-                                            isTestCasesSectionExpanded &&
-                                                'rotate-180',
+                                            isTestCasesSectionExpanded && 'rotate-180',
                                         )}
                                     />
                                     Add Test Cases

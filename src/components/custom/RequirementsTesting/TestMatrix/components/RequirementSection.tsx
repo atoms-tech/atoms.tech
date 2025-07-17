@@ -32,9 +32,7 @@ function RequirementSectionComponent({
                 (req) =>
                     req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     (req.external_id &&
-                        req.external_id
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase())),
+                        req.external_id.toLowerCase().includes(searchTerm.toLowerCase())),
             ),
         [requirements, searchTerm],
     );
@@ -44,17 +42,14 @@ function RequirementSectionComponent({
             className={cn(
                 'h-full flex flex-col border-r',
                 'transition-all duration-300 ease-in-out',
-                !isRequirementSectionExpanded &&
-                    'w-0 opacity-0 overflow-hidden',
+                !isRequirementSectionExpanded && 'w-0 opacity-0 overflow-hidden',
                 isRequirementSectionExpanded && 'w-full opacity-100',
             )}
         >
             {/* Header */}
             <div className="sticky top-0 p-3 border-b bg-background/80 dark:bg-background/90 backdrop-blur-sm z-10">
                 <h3 className="text-xs font-medium mb-2.5 flex items-center text-muted-foreground">
-                    <span className="uppercase tracking-wider">
-                        Requirements
-                    </span>
+                    <span className="uppercase tracking-wider">Requirements</span>
                     <span className="ml-2 text-[10px] opacity-70">
                         ({filteredRequirements.length})
                     </span>
@@ -83,12 +78,8 @@ function RequirementSectionComponent({
                             <RequirementRow
                                 key={req.id}
                                 requirement={req}
-                                isSelected={selectedRequirementIds.includes(
-                                    req.id,
-                                )}
-                                linkedTestCount={
-                                    linkedTestCasesMap[req.id]?.length || 0
-                                }
+                                isSelected={selectedRequirementIds.includes(req.id)}
+                                linkedTestCount={linkedTestCasesMap[req.id]?.length || 0}
                                 onSelect={(isSelected) =>
                                     updateSelectedRequirements(
                                         req.id,
@@ -161,8 +152,7 @@ const RequirementRow = memo(function RequirementRow({
                             ref={titleRef}
                             className={cn(
                                 'inline-block max-w-full whitespace-nowrap',
-                                shouldScroll &&
-                                    'animate-marquee hover:animate-marquee',
+                                shouldScroll && 'animate-marquee hover:animate-marquee',
                             )}
                             style={
                                 shouldScroll
@@ -174,9 +164,7 @@ const RequirementRow = memo(function RequirementRow({
                         >
                             {requirement.name}
                             {/* Add extra padding for loop effect */}
-                            {shouldScroll && (
-                                <span className="px-4 opacity-70">•</span>
-                            )}
+                            {shouldScroll && <span className="px-4 opacity-70">•</span>}
                             {/* Duplicate text for seamless loop */}
                             {shouldScroll && <>{requirement.name}</>}
                         </span>
@@ -184,8 +172,7 @@ const RequirementRow = memo(function RequirementRow({
                 </div>
                 <div className="text-[10px] text-muted-foreground flex items-center mt-0.5 flex-wrap gap-0.5 overflow-hidden whitespace-nowrap">
                     <span className="font-mono opacity-70 flex-shrink-0">
-                        {requirement.external_id ||
-                            requirement.id.substring(0, 8)}
+                        {requirement.external_id || requirement.id.substring(0, 8)}
                     </span>
                     <span className="text-[0.6rem] mx-0.5 opacity-40 flex-shrink-0">
                         •

@@ -5,11 +5,7 @@ import {
     EditableColumnType,
     PropertyConfig,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
-import {
-    Column,
-    Property,
-    PropertyType,
-} from '@/components/custom/BlockCanvas/types';
+import { Column, Property, PropertyType } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Json } from '@/types/base/database.types';
@@ -55,33 +51,30 @@ export const useColumnActions = ({
         ) => {
             try {
                 // Step 1: Create the property
-                const { data: propertyData, error: propertyError } =
-                    await supabase
-                        .from('properties')
-                        .insert({
-                            name,
-                            property_type: columnTypeToPropertyType(type),
-                            org_id: orgId,
-                            project_id: propertyConfig.scope.includes('project')
-                                ? projectId
-                                : null,
-                            document_id: propertyConfig.scope.includes(
-                                'document',
-                            )
-                                ? documentId
-                                : null,
-                            is_base: propertyConfig.is_base,
-                            options: propertyConfig.options
-                                ? { values: propertyConfig.options }
-                                : null,
-                            scope: propertyConfig.scope.join(','),
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString(),
-                            created_by: userId,
-                            updated_by: userId,
-                        })
-                        .select()
-                        .single();
+                const { data: propertyData, error: propertyError } = await supabase
+                    .from('properties')
+                    .insert({
+                        name,
+                        property_type: columnTypeToPropertyType(type),
+                        org_id: orgId,
+                        project_id: propertyConfig.scope.includes('project')
+                            ? projectId
+                            : null,
+                        document_id: propertyConfig.scope.includes('document')
+                            ? documentId
+                            : null,
+                        is_base: propertyConfig.is_base,
+                        options: propertyConfig.options
+                            ? { values: propertyConfig.options }
+                            : null,
+                        scope: propertyConfig.scope.join(','),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                        created_by: userId,
+                        updated_by: userId,
+                    })
+                    .select()
+                    .single();
 
                 if (propertyError) {
                     throw propertyError;
@@ -115,12 +108,11 @@ export const useColumnActions = ({
                 const column = columnData as Column;
 
                 // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } =
-                    await supabase
-                        .from('requirements')
-                        .select('*')
-                        .eq('block_id', blockId)
-                        .eq('is_deleted', false);
+                const { data: requirements, error: requirementsError } = await supabase
+                    .from('requirements')
+                    .select('*')
+                    .eq('block_id', blockId)
+                    .eq('is_deleted', false);
 
                 if (requirementsError) {
                     throw requirementsError;
@@ -180,12 +172,11 @@ export const useColumnActions = ({
         ) => {
             try {
                 // Step 1: Get the property details
-                const { data: propertyData, error: propertyError } =
-                    await supabase
-                        .from('properties')
-                        .select('*')
-                        .eq('id', propertyId)
-                        .single();
+                const { data: propertyData, error: propertyError } = await supabase
+                    .from('properties')
+                    .select('*')
+                    .eq('id', propertyId)
+                    .single();
 
                 if (propertyError) {
                     throw propertyError;
@@ -219,12 +210,11 @@ export const useColumnActions = ({
                 const column = columnData as Column;
 
                 // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } =
-                    await supabase
-                        .from('requirements')
-                        .select('*')
-                        .eq('block_id', blockId)
-                        .eq('is_deleted', false);
+                const { data: requirements, error: requirementsError } = await supabase
+                    .from('requirements')
+                    .select('*')
+                    .eq('block_id', blockId)
+                    .eq('is_deleted', false);
 
                 if (requirementsError) {
                     throw requirementsError;
