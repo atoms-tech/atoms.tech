@@ -1,6 +1,7 @@
 'use client';
 
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import jsPDF from 'jspdf';
 import {
     Download,
     FileText,
@@ -11,11 +12,10 @@ import {
     Settings,
     X,
 } from 'lucide-react';
+import Image from 'next/image';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import Image from 'next/image';
 
-// import jsPDF from 'jspdf'; // Commented out due to missing dependency
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -110,6 +110,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages, currentPinnedOrganizationId]);
+
+    // Auto-focus textarea when new assistant message is added
+    useEffect(() => {
+        if (messages.length > 0 && !isLoading) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === 'assistant') {
+                // Small delay to ensure the message is rendered
+                setTimeout(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.focus();
+                    }
+                }, 200);
+            }
+        }
+    }, [messages, isLoading]);
 
     const { user, profile } = useUser();
 
@@ -400,6 +415,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             addMessage(errorMessage);
         } finally {
             setIsLoading(false);
+            // Focus on textarea after response is received
+            setTimeout(() => {
+                if (textareaRef.current) {
+                    textareaRef.current.focus();
+                }
+            }, 100);
         }
     };
 
@@ -476,10 +497,100 @@ ${'='.repeat(50)}
     };
 
     const downloadChatHistoryPDF = () => {
-        // PDF functionality removed due to missing jsPDF dependency
-        alert(
-            'PDF download functionality is currently disabled. Please use the TXT download option instead.',
-        );
+        if (messages.length === 0) {
+            return;
+        }
+
+        // Create new PDF document
+        const pdf = new jsPDF();
+
+        // Set font for Korean characters
+        pdf.setFont('helvetica');
+
+        // Set initial position
+        let yPosition = 20;
+        const pageHeight = 280;
+        const margin = 20;
+        const lineHeight = 7;
+
+        // Add title
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Chat History Export', margin, yPosition);
+        yPosition += 15;
+
+        // Add metadata
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Generated: ${new Date().toLocaleString()}`, margin, yPosition);
+        yPosition += 8;
+        pdf.text(`Total Messages: ${messages.length}`, margin, yPosition);
+        yPosition += 8;
+        if (currentUsername) {
+            pdf.text(`User: ${currentUsername}`, margin, yPosition);
+            yPosition += 8;
+        }
+        yPosition += 10;
+
+        // Add separator line
+        pdf.line(margin, yPosition, 190, yPosition);
+        yPosition += 10;
+
+        // Process messages
+        messages.forEach((msg, _index) => {
+            const timestamp = msg.timestamp.toLocaleString();
+            const sender = msg.role === 'user' ? 'User' : 'AI Agent';
+            const voiceIndicator = msg.type === 'voice' ? ' (Voice)' : '';
+
+            // Check if we need a new page
+            if (yPosition > pageHeight) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+
+            // Add message header
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`[${timestamp}] ${sender}${voiceIndicator}:`, margin, yPosition);
+            yPosition += 6;
+
+            // Clean markdown formatting for plain text
+            const cleanContent = msg.content
+                .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold formatting
+                .replace(/\*(.*?)\*/g, '$1') // Remove italic formatting
+                .replace(/`(.*?)`/g, '$1') // Remove code formatting
+                .replace(/#{1,6}\s?(.*)/g, '$1') // Remove headers
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+                .replace(/^\s*[-*+]\s+/gm, '• ') // Convert markdown bullets to bullets
+                .replace(/^\s*\d+\.\s+/gm, (match) => {
+                    const number = match.match(/\d+/)?.[0] || '1';
+                    return `${number}. `;
+                });
+
+            // Split content into lines that fit the page width
+            const maxWidth = 170; // 190 - 20 (margin)
+            const lines = pdf.splitTextToSize(cleanContent, maxWidth);
+
+            // Add content lines
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'normal');
+            lines.forEach((line: string) => {
+                // Check if we need a new page
+                if (yPosition > pageHeight) {
+                    pdf.addPage();
+                    yPosition = 20;
+                }
+                pdf.text(line, margin, yPosition);
+                yPosition += lineHeight;
+            });
+
+            // Add space between messages
+            yPosition += 5;
+        });
+
+        // Save the PDF
+        const filename = `chat-history-${new Date().toISOString().split('T')[0]}.pdf`;
+        pdf.save(filename);
     };
 
     return (
@@ -616,16 +727,16 @@ ${'='.repeat(50)}
                                     >
                                         <div
                                             className={cn(
-                                                'max-w-[80%] p-3 rounded-lg',
+                                                'max-w-[80%] p-3 rounded-lg break-words',
                                                 msg.role === 'user'
                                                     ? 'bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
-                                                    : 'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
+                                                    : 'bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
-                                                <p className="text-sm">{msg.content}</p>
+                                                <p className="text-base">{msg.content}</p>
                                             ) : (
-                                                <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                                                <div className="text-base w-full overflow-hidden">
                                                     {/* ATOMS name and character for the latest assistant message */}
                                                     {idx === messages.length - 1 && (
                                                         <div className="flex items-center gap-2 mb-2">
@@ -646,7 +757,7 @@ ${'='.repeat(50)}
                                                     <ReactMarkdown
                                                         components={{
                                                             p: ({ children }) => (
-                                                                <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300">
+                                                                <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300 break-words whitespace-pre-wrap text-base">
                                                                     {children}
                                                                 </p>
                                                             ),
@@ -655,20 +766,102 @@ ${'='.repeat(50)}
                                                                     {children}
                                                                 </strong>
                                                             ),
+                                                            em: ({ children }) => (
+                                                                <em className="italic text-zinc-700 dark:text-zinc-300">
+                                                                    {children}
+                                                                </em>
+                                                            ),
                                                             code: ({ children }) => (
-                                                                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-xs">
+                                                                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">
                                                                     {children}
                                                                 </code>
                                                             ),
+                                                            pre: ({ children }) => (
+                                                                <pre className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg overflow-x-auto mb-2 break-words whitespace-pre-wrap">
+                                                                    {children}
+                                                                </pre>
+                                                            ),
                                                             ul: ({ children }) => (
-                                                                <ul className="list-disc ml-4 space-y-1">
+                                                                <ul className="list-disc ml-4 space-y-1 mb-2">
                                                                     {children}
                                                                 </ul>
                                                             ),
                                                             ol: ({ children }) => (
-                                                                <ol className="list-decimal ml-4 space-y-1">
+                                                                <ol className="list-decimal ml-4 space-y-1 mb-2">
                                                                     {children}
                                                                 </ol>
+                                                            ),
+                                                            li: ({ children }) => (
+                                                                <li className="text-zinc-700 dark:text-zinc-300 break-words text-base">
+                                                                    {children}
+                                                                </li>
+                                                            ),
+                                                            blockquote: ({
+                                                                children,
+                                                            }) => (
+                                                                <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 italic text-zinc-600 dark:text-zinc-400 mb-2 break-words text-base">
+                                                                    {children}
+                                                                </blockquote>
+                                                            ),
+                                                            h1: ({ children }) => (
+                                                                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-4 first:mt-0">
+                                                                    {children}
+                                                                </h1>
+                                                            ),
+                                                            h2: ({ children }) => (
+                                                                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                                                                    {children}
+                                                                </h2>
+                                                            ),
+                                                            h3: ({ children }) => (
+                                                                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                                                                    {children}
+                                                                </h3>
+                                                            ),
+                                                            h4: ({ children }) => (
+                                                                <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                                                                    {children}
+                                                                </h4>
+                                                            ),
+                                                            h5: ({ children }) => (
+                                                                <h5 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                                                                    {children}
+                                                                </h5>
+                                                            ),
+                                                            h6: ({ children }) => (
+                                                                <h6 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                                                                    {children}
+                                                                </h6>
+                                                            ),
+                                                            a: ({ children, href }) => (
+                                                                <a
+                                                                    href={href}
+                                                                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    {children}
+                                                                </a>
+                                                            ),
+                                                            table: ({ children }) => (
+                                                                <div className="overflow-x-auto mb-2 max-w-full">
+                                                                    <table className="min-w-full border border-zinc-300 dark:border-zinc-600 table-fixed">
+                                                                        {children}
+                                                                    </table>
+                                                                </div>
+                                                            ),
+                                                            th: ({ children }) => (
+                                                                <th className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 bg-zinc-50 dark:bg-zinc-700 text-left font-semibold text-zinc-900 dark:text-zinc-100 break-words text-sm">
+                                                                    {children}
+                                                                </th>
+                                                            ),
+                                                            td: ({ children }) => (
+                                                                <td className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 text-zinc-700 dark:text-zinc-300 break-words text-sm">
+                                                                    {children}
+                                                                </td>
+                                                            ),
+                                                            hr: () => (
+                                                                <hr className="border-t border-zinc-300 dark:border-zinc-600 my-4" />
                                                             ),
                                                         }}
                                                     >
