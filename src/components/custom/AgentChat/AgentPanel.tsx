@@ -722,15 +722,15 @@ ${'='.repeat(50)}
                                             'flex',
                                             msg.role === 'user'
                                                 ? 'justify-end'
-                                                : 'justify-start',
+                                                : 'justify-center',
                                         )}
                                     >
                                         <div
                                             className={cn(
-                                                'max-w-[80%] p-3 rounded-lg break-words',
+                                                'p-3 rounded-lg break-words',
                                                 msg.role === 'user'
-                                                    ? 'bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
-                                                    : 'bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600',
+                                                    ? 'max-w-[85%] bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
+                                                    : 'max-w-[95%] bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
