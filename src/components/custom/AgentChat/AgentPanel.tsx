@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import Image from 'next/image';
 
 // import jsPDF from 'jspdf'; // Commented out due to missing dependency
 import { Button } from '@/components/ui/button';
@@ -625,6 +626,23 @@ ${'='.repeat(50)}
                                                 <p className="text-sm">{msg.content}</p>
                                             ) : (
                                                 <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                                                    {/* ATOMS name and character for the latest assistant message */}
+                                                    {idx === messages.length - 1 && (
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-6 h-6 flex items-center justify-center">
+                                                                <Image
+                                                                    src="/atom.png"
+                                                                    alt="Atoms logo"
+                                                                    width={24}
+                                                                    height={24}
+                                                                    className="object-contain dark:invert"
+                                                                />
+                                                            </div>
+                                                            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                                                                ATOMS
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                     <ReactMarkdown
                                                         components={{
                                                             p: ({ children }) => (
