@@ -658,17 +658,18 @@ ${'='.repeat(50)}
                                                     </ReactMarkdown>
                                                 </div>
                                             )}
-                                            <p
-                                                className={cn(
-                                                    'text-xs mt-2',
-                                                    msg.role === 'user'
-                                                        ? 'text-zinc-200 dark:text-zinc-200'
-                                                        : 'text-zinc-500 dark:text-zinc-300',
-                                                )}
-                                            >
-                                                {msg.timestamp.toLocaleTimeString()}
-                                                {msg.type === 'voice' && ' 🎤'}
-                                            </p>
+                                            {msg.type === 'voice' && (
+                                                <p
+                                                    className={cn(
+                                                        'text-xs mt-2',
+                                                        msg.role === 'user'
+                                                            ? 'text-zinc-200 dark:text-zinc-200'
+                                                            : 'text-zinc-500 dark:text-zinc-300',
+                                                    )}
+                                                >
+                                                    🎤
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 ))
