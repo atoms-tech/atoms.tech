@@ -679,6 +679,7 @@ export type Database = {
                     preferences: Json | null;
                     status: Database['public']['Enums']['user_status'] | null;
                     updated_at: string | null;
+                    is_approved: boolean;
                 };
                 Insert: {
                     avatar_url?: string | null;
@@ -698,6 +699,7 @@ export type Database = {
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
+                    is_approved?: boolean;
                 };
                 Update: {
                     avatar_url?: string | null;
@@ -717,6 +719,7 @@ export type Database = {
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
+                    is_approved?: boolean;
                 };
                 Relationships: [];
             };
