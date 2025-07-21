@@ -52,9 +52,46 @@ export async function updateSession(request: NextRequest) {
             url.pathname = '/login';
             return NextResponse.redirect(url);
         }
+        // Check if user is approved
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_approved')
+            .eq('id', user.id || '')
+            .single();
+        // Redirect to /request-approval if not approved
+        if (
+            (error || !data.is_approved) &&
+            !request.nextUrl.pathname.startsWith('/request-approval')
+        ) {
+            const url = request.nextUrl.clone();
+            url.pathname = '/request-approval';
+            const myNewResponse = NextResponse.redirect(url);
+            supabaseResponse.cookies
+                .getAll()
+                .forEach(({ name, value }) => myNewResponse.cookies.set(name, value));
+            return myNewResponse;
+        }
         const segments = request.nextUrl.pathname.split('/').filter(Boolean);
+        // Check if user is allowed in the admin page
+        if (segments[0] === 'admin') {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('job_title')
+                .eq('id', user.id || '')
+                .single();
+            if (error || data.job_title !== 'admin') {
+                // unauthorized to see admin page
+                const url = request.nextUrl.clone();
+                url.pathname = '/home/user';
+                const myNewResponse = NextResponse.redirect(url);
+                supabaseResponse.cookies
+                    .getAll()
+                    .forEach(({ name, value }) => myNewResponse.cookies.set(name, value));
+                return myNewResponse;
+            }
+        }
+        // Check if user is allowed in the organization
         if (segments.length > 1 && segments[0] === 'org') {
-            // Check if user has a role in organization
             const { data, error } = await supabase
                 .from('organization_members')
                 .select('role')
@@ -72,8 +109,8 @@ export async function updateSession(request: NextRequest) {
                 return myNewResponse;
             }
         }
+        // Check if user is allowed in the project
         if (segments.length > 3 && segments[2] === 'project') {
-            // Check if user has a role in project
             const { data, error } = await supabase
                 .from('project_members')
                 .select('role')
