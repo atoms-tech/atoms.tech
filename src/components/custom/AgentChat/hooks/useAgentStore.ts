@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+
 interface Message {
     id: string;
     content: string;
@@ -74,6 +76,7 @@ type _PinnedOrganizationId = string | undefined;
 interface SecureUserContext {
     userId: string;
     orgId: string;
+    orgName?: string;
     pinnedOrganizationId?: string;
     projectId?: string;
     documentId?: string;
@@ -222,10 +225,25 @@ export const useAgentStore = create<AgentStore>()(
                 }
 
                 try {
+                    // Fetch organization name
+                    let orgName: string | undefined;
+                    try {
+                        const { data: orgData } = await supabase
+                            .from('organizations')
+                            .select('name')
+                            .eq('id', currentOrgId)
+                            .eq('is_deleted', false)
+                            .single();
+                        orgName = orgData?.name;
+                    } catch (orgError) {
+                        console.warn('Failed to fetch organization name:', orgError);
+                    }
+
                     // Create secure context with only necessary information
                     const secureContext: SecureUserContext = {
                         userId: currentUserId,
                         orgId: currentOrgId,
+                        orgName,
                         pinnedOrganizationId: currentPinnedOrganizationId,
                         timestamp: new Date().toISOString(),
                         sessionToken: '',
