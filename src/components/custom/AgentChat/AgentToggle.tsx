@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare } from 'lucide-react';
+import Image from 'next/image';
 import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -40,12 +40,9 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     return (
         <div
             className={cn(
-                'fixed top-1/2 -translate-y-1/2 z-40 transition-all duration-300 ease-out',
+                'fixed right-6 bottom-6 z-40 transition-all duration-300 ease-out',
                 className,
             )}
-            style={{
-                right: '24px',
-            }}
         >
             {/* Agent Card when closed */}
             <div
@@ -56,22 +53,27 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                     'rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-out',
                     'hover:bg-zinc-50 dark:hover:bg-zinc-750',
                     'min-w-[120px] max-w-[160px] overflow-hidden',
+                    'flex flex-col items-center',
                 )}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-3">
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <h3 className="font-medium text-zinc-900 dark:text-zinc-100 text-sm">
-                            Agent
-                        </h3>
+                {/* Header: ATOMS logo and name */}
+                <div className="flex flex-row items-center justify-center p-3 gap-2 w-full">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                        <Image
+                            src="/atom.png"
+                            alt="Atoms logo"
+                            width={32}
+                            height={32}
+                            className="object-contain dark:invert"
+                        />
                     </div>
-                    <MessageSquare className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
+                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-base tracking-wide">
+                        ATOMS
+                    </h3>
                 </div>
-
                 {/* Status */}
-                <div className="px-3 pb-3">
-                    <div className="flex items-center justify-between">
+                <div className="px-3 pb-3 w-full">
+                    <div className="flex items-center justify-between w-full">
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">
                             {messages.length} messages
                         </span>
@@ -85,9 +87,8 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                         )}
                     </div>
                 </div>
-
                 {/* Hover indicator */}
-                <div className="h-0.5 bg-blue-500 dark:bg-blue-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" />
+                <div className="h-0.5 bg-blue-500 dark:bg-blue-400 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left w-full" />
             </div>
         </div>
     );

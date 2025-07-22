@@ -623,14 +623,19 @@ ${'='.repeat(50)}
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
-                        <MessageSquare className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                        <div className="w-8 h-8 flex items-center justify-center">
+                            <Image
+                                src="/atom.png"
+                                alt="Atoms logo"
+                                width={32}
+                                height={32}
+                                className="object-contain dark:invert"
+                            />
+                        </div>
                         <div>
-                            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                Agent Chat
+                            <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg tracking-wide">
+                                ATOMS
                             </h2>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                AI Assistant
-                            </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -902,8 +907,8 @@ ${'='.repeat(50)}
                 </ScrollArea>
 
                 {/* Input Area */}
-                <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                    <div className="flex gap-2">
+                <div className="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                    <div className="flex gap-2 items-stretch">
                         <div className="flex-1 relative">
                             <Textarea
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -914,7 +919,8 @@ ${'='.repeat(50)}
                                 }
                                 onKeyDown={handleKeyPress}
                                 placeholder="Type your message..."
-                                className="min-h-[40px] max-h-[120px] resize-none border-[0.5px] border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg"
+                                // Thicker border for more visible input box
+                                className="min-h-[40px] max-h-[120px] resize-none border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
                                 disabled={isLoading}
                             />
                             {speechSupported && (
@@ -942,7 +948,8 @@ ${'='.repeat(50)}
                         <Button
                             onClick={handleSendMessage}
                             disabled={!message.trim() || isLoading}
-                            className="h-10 px-4 bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg"
+                            // Make button height match Textarea exactly
+                            className="h-auto py-2 border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg flex items-center justify-center"
                         >
                             <Send className="h-4 w-4" />
                         </Button>
