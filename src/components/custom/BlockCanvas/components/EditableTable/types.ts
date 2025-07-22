@@ -1,3 +1,5 @@
+import { GridDragEventArgs, Item } from '@glideapps/glide-data-grid';
+
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 export type PropertyScope = 'org' | 'project' | 'document';
@@ -37,6 +39,7 @@ export type CellValue = string | number | Date | string[] | RequirementAiAnalysi
 export interface EditableColumn<T> {
     header: string;
     width?: number;
+    position?: number;
     accessor: keyof T;
     type: EditableColumnType;
     options?: string[]; // For select type columns
@@ -68,6 +71,20 @@ export interface EditableTableProps<
     filterComponent?: React.ReactNode;
     isEditMode?: boolean;
     alwaysShowAddRow?: boolean; // Always show the "Add New Row" row, even when there are no items
+}
+
+// Additional props needed for GlideDataTables. Allows hooking into the existing EditableTableProps like isLoading
+export interface GlideTableProps<T extends Record<string, CellValue> & { id: string }>
+    extends EditableTableProps<T> {
+    onAddRow?: () => void;
+    deleteConfirmOpen?: boolean;
+    onDeleteConfirm?: () => void;
+    setDeleteConfirmOpen?: (open: boolean) => void;
+    onColumnOrderChange?: (columns: EditableColumn<T>[]) => void;
+
+    onDragStart?: (args: GridDragEventArgs) => void;
+    onDragOverCell?: (cell: Item, dataTransfer: DataTransfer | null) => void;
+    onDrop?: (cell: Item, dataTransfer: DataTransfer | null) => void;
 }
 
 export interface TableSideMenuProps {
