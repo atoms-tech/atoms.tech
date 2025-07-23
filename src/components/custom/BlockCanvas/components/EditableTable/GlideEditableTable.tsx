@@ -41,48 +41,58 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         onColumnOrderChange,
         isLoading = false,
     } = props;
-    console.debug('[GlideEditableTable] isEditMode:', isEditMode);
+    //console.debug('[GlideEditableTable] isEditMode:', isEditMode);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
+    const isSavingRef = useRef(false);
+
+    // Debugs for tracing loading issues, ignore.
+    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
+    console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
 
     const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
 
     const handleSaveAll = useCallback(async () => {
-        const hasEdits = Object.keys(editingData).length > 0;
-        //const hasColumnChanges = true; // TODO: Detect if column widths/order changed
-
-        if (!hasEdits /*&& !hasColumnChanges*/) {
-            console.debug('[GlideEditableTable] No changes to save.');
+        if (isSavingRef.current) {
+            console.debug('[GlideEditableTable] Save already in progress. Skipping.');
             return;
         }
 
+        isSavingRef.current = true;
         console.debug('[GlideEditableTable] Saving all pending data...');
 
         try {
-            // Save row editing data
-            if (hasEdits) {
-                for (const [rowId, changes] of Object.entries(editingData)) {
-                    const originalItem = data.find((d) => d.id === rowId);
-                    if (!originalItem) continue; // skip if not found
+            const hasEdits = Object.keys(editingData).length > 0;
 
-                    const fullItem: T = {
-                        ...originalItem,
-                        ...changes,
-                    };
-
-                    await onSave?.(fullItem, false);
-                    console.debug(`[GlideEditableTable] Saved row ${rowId}`);
-                }
-                setEditingData({});
+            if (!hasEdits) {
+                console.debug('[GlideEditableTable] No changes to save.');
+                return;
             }
 
-            // Save column metadata (TODO)
+            // Save row changes
+            for (const [rowId, changes] of Object.entries(editingData)) {
+                const originalItem = data.find((d) => d.id === rowId);
+                if (!originalItem) continue;
 
+                const fullItem: T = {
+                    ...originalItem,
+                    ...changes,
+                };
+
+                await onSave?.(fullItem, false);
+                console.debug(`[GlideEditableTable] Saved row ${rowId}`);
+            }
+
+            // TODO: Update Column metadata (also need to track w/ local columns vs passed.)
+
+            setEditingData({});
             await onPostSave?.();
         } catch (err) {
             console.error('[GlideEditableTable] Error saving all changes:', err);
+        } finally {
+            isSavingRef.current = false;
         }
     }, [editingData, onPostSave, data, onSave]);
 
@@ -133,8 +143,8 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
     const sortedData = localData;
 
     // Debugs for tracing loading issues, ignore.
-    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
-    console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
+    // const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
+    // console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
     /*
     useEffect(() => {
         console.debug(`[GlideEditableTable] PROPS for instance=${instanceId}:`, {
@@ -329,26 +339,26 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 : undefined,
     }));
 
-    // Called when edit mode is turned off. Curr broken due to remount om edit exit...
-    useEffect(() => {
-        if (!isEditMode) {
-            console.debug('[GlideEditableTable] Edit mode exited. ...');
+    // Called when edit mode is turned false. Curr does nothing...
+    // useEffect(() => {
+    //     if (!isEditMode) {
+    //         //console.debug('[GlideEditableTable] Edit mode exited. ...');
 
-            // const updates = localColumns.map((col, index) => ({
-            //     propertyName: col.accessor as string, // accessor is the name of the property
-            //     width: col.width,
-            //     position: index,
-            // }));
+    //         // const updates = localColumns.map((col, index) => ({
+    //         //     propertyName: col.accessor as string, // accessor is the name of the property
+    //         //     width: col.width,
+    //         //     position: index,
+    //         // }));
 
-            // updateColumnsMetadata(blockId, updates)
-            //     .then(() => {
-            //         console.debug('[GlideEditableTable] Column changes saved to DB.');
-            //     })
-            //     .catch((err) => {
-            //         console.error('[GlideEditableTable] Failed to save columns:', err);
-            //     });
-        }
-    }, [isEditMode, localColumns, editingData, onSave, onPostSave]);
+    //         // updateColumnsMetadata(blockId, updates)
+    //         //     .then(() => {
+    //         //         console.debug('[GlideEditableTable] Column changes saved to DB.');
+    //         //     })
+    //         //     .catch((err) => {
+    //         //         console.error('[GlideEditableTable] Failed to save columns:', err);
+    //         //     });
+    //     }
+    // }, [isEditMode, localColumns, editingData, onSave, onPostSave]);
 
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     const handleKeyDown = useCallback(

@@ -211,6 +211,10 @@ export const TableBlock: React.FC<BlockProps> = ({
     });
     const projectId = params?.projectId as string;
 
+    // Debugs for tracing loading issues, ignore.
+    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
+    console.debug(`[TableBlock] MOUNT instance=${instanceId}`);
+
     // IMPORTANT: Initialize localRequirements once from block.requirements
     // but prevent resetting on every rerender:
     const [localRequirements, setLocalRequirements] = React.useState<Requirement[]>(
@@ -226,7 +230,7 @@ export const TableBlock: React.FC<BlockProps> = ({
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
     // Use the document store for edit mode state
-    const { isEditMode, useTanStackTables } = useDocumentStore();
+    const { isEditMode, useTanStackTables, useGlideTables } = useDocumentStore();
 
     // Initialize requirement actions with properties
     const {
@@ -374,28 +378,31 @@ export const TableBlock: React.FC<BlockProps> = ({
         }
     }, [onDelete]);
 
-    const TableContent = useCallback(() => {
-        return (
-            <TableBlockContent
-                dynamicRequirements={dynamicRequirements}
-                columns={columns}
-                onSaveRequirement={handleSaveRequirement}
-                onDeleteRequirement={handleDeleteRequirement}
-                refreshRequirements={refreshRequirements}
-                isEditMode={isEditMode}
-                alwaysShowAddRow={isEditMode}
-                useTanStackTables={useTanStackTables}
-            />
-        );
-    }, [
-        dynamicRequirements,
-        columns,
-        handleSaveRequirement,
-        handleDeleteRequirement,
-        refreshRequirements,
-        isEditMode,
-        useTanStackTables,
-    ]);
+    // * This method was causing a new instance of the table to be made on each data update.
+    // * This is due to it being seen as a new TableConent instance.
+    // * We now inline it in the return below, to avoid this. Can remove if testing is ok.
+    // const TableContent = useCallback(() => {
+    //     return (
+    //         <TableBlockContent
+    //             dynamicRequirements={dynamicRequirements}
+    //             columns={columns}
+    //             onSaveRequirement={handleSaveRequirement}
+    //             onDeleteRequirement={handleDeleteRequirement}
+    //             refreshRequirements={refreshRequirements}
+    //             isEditMode={isEditMode}
+    //             alwaysShowAddRow={isEditMode}
+    //             useTanStackTables={useTanStackTables}
+    //         />
+    //     );
+    // }, [
+    //     dynamicRequirements,
+    //     columns,
+    //     handleSaveRequirement,
+    //     handleDeleteRequirement,
+    //     refreshRequirements,
+    //     isEditMode,
+    //     useTanStackTables,
+    // ]);
 
     return (
         <div className="w-full max-w-full bg-background border-b rounded-lg overflow-hidden">
@@ -424,7 +431,17 @@ export const TableBlock: React.FC<BlockProps> = ({
                             />
                         </>
                     ) : (
-                        <TableContent />
+                        <TableBlockContent
+                            dynamicRequirements={dynamicRequirements}
+                            columns={columns}
+                            onSaveRequirement={handleSaveRequirement}
+                            onDeleteRequirement={handleDeleteRequirement}
+                            refreshRequirements={refreshRequirements}
+                            isEditMode={isEditMode}
+                            alwaysShowAddRow={isEditMode}
+                            useTanStackTables={useTanStackTables}
+                            useGlideTables={useGlideTables}
+                        />
                     )}
                 </div>
             </div>
