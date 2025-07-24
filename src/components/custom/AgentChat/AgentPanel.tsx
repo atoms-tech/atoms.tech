@@ -85,6 +85,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         addToQueue,
         popFromQueue,
         getQueueForCurrentOrg,
+        removeFromQueue,
     } = useAgentStore();
 
     // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
@@ -1039,9 +1040,26 @@ ${'='.repeat(50)}
                         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
                             Queued Messages ({queue.length}/5):
                         </p>
-                        <ul className="text-xs text-zinc-700 dark:text-zinc-200 list-decimal ml-4">
+                        <ul className="text-xs text-zinc-700 dark:text-zinc-200 space-y-1">
                             {queue.map((q, i) => (
-                                <li key={i}>{q}</li>
+                                <li
+                                    key={i}
+                                    className="flex items-center justify-between group"
+                                >
+                                    <span className="flex-1 truncate">
+                                        {i + 1}. {q}
+                                    </span>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 ml-2 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                                        onClick={() => removeFromQueue(i)}
+                                        title="Cancel this message"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </Button>
+                                </li>
                             ))}
                         </ul>
                     </div>

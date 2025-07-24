@@ -75,6 +75,7 @@ interface AgentStore {
     // Queue actions
     addToQueue: (message: string) => void;
     popFromQueue: () => string | undefined;
+    removeFromQueue: (index: number) => void;
     clearQueue: () => void;
     getQueueForCurrentOrg: () => string[];
 }
@@ -336,6 +337,19 @@ export const useAgentStore = create<AgentStore>()(
                     },
                 });
                 return next;
+            },
+            removeFromQueue: (index: number) => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (index < 0 || index >= queue.length) return;
+                const newQueue = queue.filter((_, i) => i !== index);
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: newQueue,
+                    },
+                });
             },
             clearQueue: () => {
                 const { currentPinnedOrganizationId, organizationQueues } = get();
