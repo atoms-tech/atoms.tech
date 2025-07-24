@@ -364,10 +364,16 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             // Send to N8N if configured, otherwise use local AI
             if (n8nWebhookUrl) {
                 try {
+                    // Convert messages to LLM-friendly format (role and content only)
+                    const llmFriendlyHistory = messages.slice(-5).map((msg) => ({
+                        role: msg.role === 'assistant' ? 'you' : msg.role,
+                        content: msg.content,
+                    }));
+
                     const n8nResponse = await sendToN8nWithRetry({
                         type: 'chat',
                         message: msg,
-                        conversationHistory: messages.slice(-5), // Use original Message[] format
+                        conversationHistory: llmFriendlyHistory,
                         timestamp: new Date().toISOString(),
                     });
                     // Try different possible response fields from N8N
