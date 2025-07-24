@@ -81,6 +81,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         _hasHydrated,
         setHasHydrated,
         organizationMessages,
+        // queue logic
+        addToQueue,
+        popFromQueue,
+        getQueueForCurrentOrg,
     } = useAgentStore();
 
     // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
@@ -288,38 +292,86 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         }
     };
 
-    const handleSendMessage = async () => {
-        // Check for pinned organization before sending
+    const sendToN8nWithRetry = async (
+        data: Record<string, unknown>,
+        maxRetries = 3,
+        delayMs = 800,
+    ): Promise<Record<string, unknown>> => {
+        let attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const n8nResponse = await sendToN8n(data as any);
+                // If response contains error code 500, throw to trigger retry
+                if (
+                    n8nResponse &&
+                    (n8nResponse as Record<string, unknown>).status === 500
+                ) {
+                    throw new Error('500');
+                }
+                return n8nResponse;
+            } catch (err: unknown) {
+                attempt++;
+                // Only retry on 500 error
+                if (
+                    (err as Error)?.message === '500' ||
+                    ((err as Record<string, unknown>)?.response &&
+                        (
+                            (err as Record<string, unknown>).response as Record<
+                                string,
+                                unknown
+                            >
+                        )?.status === 500)
+                ) {
+                    if (attempt < maxRetries) {
+                        await new Promise((res) => setTimeout(res, delayMs * attempt));
+                        continue;
+                    }
+                }
+                throw err;
+            }
+        }
+        throw new Error('N8N request failed after retries');
+    };
+
+    const handleSendMessage = async (messageToSend?: string) => {
         if (!currentPinnedOrganizationId) {
             setShowPinGuide(true);
             return;
         }
-        if (!message.trim() || isLoading) return;
+        const msg = (typeof messageToSend === 'string' ? messageToSend : message).trim();
+        if (!msg) return;
+        if (isLoading) {
+            // If already thinking, queue the message if queue < 5
+            if (getQueueForCurrentOrg().length < 5) {
+                addToQueue(msg);
+                if (!messageToSend) setMessage('');
+            }
+            return;
+        }
         const userMessage: Message = {
             id: Date.now().toString(),
-            content: message.trim(),
+            content: msg,
             role: 'user',
             timestamp: new Date(),
             type: 'text',
         };
         addMessage(userMessage);
-        const currentMessage = message;
-        setMessage('');
+        if (!messageToSend) setMessage('');
         try {
             setIsLoading(true);
             let reply: string;
             // Send to N8N if configured, otherwise use local AI
             if (n8nWebhookUrl) {
                 try {
-                    const n8nResponse = await sendToN8n({
+                    const n8nResponse = await sendToN8nWithRetry({
                         type: 'chat',
-                        message: currentMessage,
-                        conversationHistory: messages,
+                        message: msg,
+                        conversationHistory: messages.slice(-5), // Use original Message[] format
                         timestamp: new Date().toISOString(),
                     });
                     // Try different possible response fields from N8N
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const response = n8nResponse as any;
+                    const response = n8nResponse as Record<string, unknown>;
                     console.log(
                         'AgentPanel - N8N Response received:',
                         JSON.stringify(response, null, 2),
@@ -333,26 +385,33 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     );
                     console.log('AgentPanel - response.output:', `"${response.output}"`);
 
-                    reply =
-                        (response.reply && response.reply.trim()) ||
-                        (response.message && response.message.trim()) ||
-                        (response.output && response.output.trim()) ||
-                        (response.response && response.response.trim()) ||
+                    reply = ((response.reply && (response.reply as string).trim()) ||
+                        (response.message && (response.message as string).trim()) ||
+                        (response.output && (response.output as string).trim()) ||
+                        (response.response && (response.response as string).trim()) ||
                         (response.data &&
-                            response.data.output &&
-                            response.data.output.trim()) ||
+                            (response.data as Record<string, unknown>).output &&
+                            (
+                                (response.data as Record<string, unknown>)
+                                    .output as string
+                            ).trim()) ||
                         (response.data &&
-                            response.data.reply &&
-                            response.data.reply.trim()) ||
+                            (response.data as Record<string, unknown>).reply &&
+                            (
+                                (response.data as Record<string, unknown>).reply as string
+                            ).trim()) ||
                         (response.data &&
-                            response.data.message &&
-                            response.data.message.trim()) ||
+                            (response.data as Record<string, unknown>).message &&
+                            (
+                                (response.data as Record<string, unknown>)
+                                    .message as string
+                            ).trim()) ||
                         (() => {
                             console.log(
                                 'AgentPanel - No valid reply found, using fallback',
                             );
                             return 'N8N workflow completed but returned an empty response. Please check your N8N workflow configuration.';
-                        })();
+                        })()) as string;
                 } catch (n8nError) {
                     console.error('N8N error:', n8nError);
                     // If N8N fails, fall back to local AI
@@ -360,7 +419,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            message: currentMessage,
+                            message: msg,
                             conversationHistory: messages.slice(-10),
                             context: {
                                 userId: currentUserId,
@@ -371,7 +430,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                         }),
                     });
                     const data = await response.json();
-                    reply = data.reply;
+                    reply = data.reply as string;
                 }
             } else {
                 // Use local AI if N8N is not configured
@@ -379,13 +438,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        message: currentMessage,
+                        message: msg,
                         conversationHistory: messages.slice(-10),
                     }),
                 });
                 if (response.ok) {
                     const data = await response.json();
-                    reply = data.reply;
+                    reply = data.reply as string;
                 } else {
                     throw new Error('API request failed');
                 }
@@ -402,7 +461,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 assistantMessage.content.substring(0, 100) + '...',
             );
             addMessage(assistantMessage);
-            console.log('AgentPanel - Total messages after adding:', messages.length + 1);
         } catch {
             const errorMessage: Message = {
                 id: (Date.now() + 1).toString(),
@@ -415,12 +473,20 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             addMessage(errorMessage);
         } finally {
             setIsLoading(false);
-            // Focus on textarea after response is received
-            setTimeout(() => {
-                if (textareaRef.current) {
-                    textareaRef.current.focus();
-                }
-            }, 100);
+            // If queue has messages, send next automatically
+            const next = popFromQueue();
+            if (next) {
+                setMessage(''); // clear UI input
+                setTimeout(() => {
+                    handleSendMessage(next);
+                }, 100);
+            } else {
+                setTimeout(() => {
+                    if (textareaRef.current) {
+                        textareaRef.current.focus();
+                    }
+                }, 100);
+            }
         }
     };
 
@@ -592,6 +658,8 @@ ${'='.repeat(50)}
         const filename = `chat-history-${new Date().toISOString().split('T')[0]}.pdf`;
         pdf.save(filename);
     };
+
+    const queue = getQueueForCurrentOrg();
 
     return (
         <>
@@ -921,7 +989,7 @@ ${'='.repeat(50)}
                                 placeholder="Type your message..."
                                 // Thicker border for more visible input box
                                 className="min-h-[40px] max-h-[120px] resize-none border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
-                                disabled={isLoading}
+                                disabled={queue.length >= 5}
                             />
                             {speechSupported && (
                                 <Button
@@ -935,7 +1003,7 @@ ${'='.repeat(50)}
                                             : 'hover:bg-zinc-100 dark:hover:bg-zinc-700',
                                     )}
                                     onClick={toggleVoiceInput}
-                                    disabled={isLoading}
+                                    disabled={queue.length >= 5}
                                 >
                                     {isListening ? (
                                         <MicOff className="h-4 w-4" />
@@ -946,8 +1014,8 @@ ${'='.repeat(50)}
                             )}
                         </div>
                         <Button
-                            onClick={handleSendMessage}
-                            disabled={!message.trim() || isLoading}
+                            onClick={() => handleSendMessage()}
+                            disabled={!message.trim() || queue.length >= 5}
                             // Make button height match Textarea exactly
                             className="h-auto py-2 border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg flex items-center justify-center"
                         >
@@ -960,6 +1028,19 @@ ${'='.repeat(50)}
                             : 'Press Enter to send, Shift+Enter for new line'}
                     </p>
                 </div>
+                {/* Add minimal UI for queued messages */}
+                {queue.length > 0 && (
+                    <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                            Queued Messages ({queue.length}/5):
+                        </p>
+                        <ul className="text-xs text-zinc-700 dark:text-zinc-200 list-decimal ml-4">
+                            {queue.map((q, i) => (
+                                <li key={i}>{q}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
         </>
     );

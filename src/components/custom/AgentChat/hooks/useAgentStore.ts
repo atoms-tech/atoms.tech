@@ -69,6 +69,14 @@ interface AgentStore {
     sendToN8n: (
         data: Omit<N8nRequestData, 'secureContext'>,
     ) => Promise<Record<string, unknown>>;
+
+    // Chat queue per organization
+    organizationQueues: { [orgId: string]: string[] };
+    // Queue actions
+    addToQueue: (message: string) => void;
+    popFromQueue: () => string | undefined;
+    clearQueue: () => void;
+    getQueueForCurrentOrg: () => string[];
 }
 
 type _PinnedOrganizationId = string | undefined;
@@ -131,6 +139,7 @@ export const useAgentStore = create<AgentStore>()(
             _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
+            organizationQueues: {},
 
             // Actions
             setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -299,6 +308,49 @@ export const useAgentStore = create<AgentStore>()(
                 } catch (error) {
                     throw error;
                 }
+            },
+
+            // Chat queue per organization
+            addToQueue: (message: string) => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (queue.length >= 5) return; // Max 5
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: [...queue, message],
+                    },
+                });
+            },
+            popFromQueue: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return undefined;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (queue.length === 0) return undefined;
+                const [next, ...rest] = queue;
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: rest,
+                    },
+                });
+                return next;
+            },
+            clearQueue: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: [],
+                    },
+                });
+            },
+            getQueueForCurrentOrg: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return [];
+                return organizationQueues[currentPinnedOrganizationId] || [];
             },
         }),
         {
