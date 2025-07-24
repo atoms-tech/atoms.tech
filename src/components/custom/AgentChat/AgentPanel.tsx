@@ -345,7 +345,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             // If already thinking, queue the message if queue < 5
             if (getQueueForCurrentOrg().length < 5) {
                 addToQueue(msg);
-                if (!messageToSend) setMessage('');
+                if (!messageToSend) setMessage(''); // Only clear if user sent the message
             }
             return;
         }
@@ -357,7 +357,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             type: 'text',
         };
         addMessage(userMessage);
-        if (!messageToSend) setMessage('');
+        if (!messageToSend) setMessage(''); // Only clear if user sent the message
         try {
             setIsLoading(true);
             let reply: string;
@@ -482,7 +482,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             // If queue has messages, send next automatically
             const next = popFromQueue();
             if (next) {
-                setMessage(''); // clear UI input
                 setTimeout(() => {
                     handleSendMessage(next);
                 }, 100);
