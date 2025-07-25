@@ -339,25 +339,29 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     // Memoize handleSaveRequirement
     const handleSaveRequirement = useCallback(
-        async (dynamicReq: DynamicRequirement, isNew: boolean) => {
+        async (
+            dynamicReq: DynamicRequirement,
+            isNew: boolean,
+            userId?: string,
+            userName?: string,
+        ) => {
+            // Retrieve user info from args or curr profile. Allows debouncing saves.
+            const foundId = userId ?? userProfile?.id;
+            const foundName = userName ?? userProfile?.full_name;
+
             console.log('🎯 STEP 4: handleSaveRequirement called in TableBlock', {
                 isNew,
                 dynamicReq,
-                userId: userProfile?.id,
+                foundId,
             });
 
-            if (!userProfile?.id) {
-                console.log('❌ STEP 4: No userProfile.id, returning early');
+            if (!foundId) {
+                console.log('❌ STEP 4: No userProfile.id or userId, returning early');
                 return;
             }
 
             console.log('🎯 STEP 4: Calling saveRequirement from useRequirementActions');
-            await saveRequirement(
-                dynamicReq,
-                isNew,
-                userProfile.id,
-                userProfile.full_name || '',
-            );
+            await saveRequirement(dynamicReq, isNew, foundId, foundName || '');
             console.log('✅ STEP 4: saveRequirement completed successfully');
         },
         [saveRequirement, userProfile?.id, userProfile?.full_name],
@@ -377,32 +381,6 @@ export const TableBlock: React.FC<BlockProps> = ({
             onDelete();
         }
     }, [onDelete]);
-
-    // * This method was causing a new instance of the table to be made on each data update.
-    // * This is due to it being seen as a new TableConent instance.
-    // * We now inline it in the return below, to avoid this. Can remove if testing is ok.
-    // const TableContent = useCallback(() => {
-    //     return (
-    //         <TableBlockContent
-    //             dynamicRequirements={dynamicRequirements}
-    //             columns={columns}
-    //             onSaveRequirement={handleSaveRequirement}
-    //             onDeleteRequirement={handleDeleteRequirement}
-    //             refreshRequirements={refreshRequirements}
-    //             isEditMode={isEditMode}
-    //             alwaysShowAddRow={isEditMode}
-    //             useTanStackTables={useTanStackTables}
-    //         />
-    //     );
-    // }, [
-    //     dynamicRequirements,
-    //     columns,
-    //     handleSaveRequirement,
-    //     handleDeleteRequirement,
-    //     refreshRequirements,
-    //     isEditMode,
-    //     useTanStackTables,
-    // ]);
 
     return (
         <div className="w-full max-w-full bg-background border-b rounded-lg overflow-hidden">
@@ -431,6 +409,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             />
                         </>
                     ) : (
+                        // Must be inlined, passing as an object causes remount on data change.
                         <TableBlockContent
                             dynamicRequirements={dynamicRequirements}
                             columns={columns}

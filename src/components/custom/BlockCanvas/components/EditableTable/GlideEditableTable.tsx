@@ -13,6 +13,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
+import debounce from 'lodash/debounce';
+
+import { useUser } from '@/lib/providers/user.provider';
+
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 //import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 
@@ -46,15 +50,35 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
+    const prevEditModeRef = useRef<boolean>(isEditMode);
     const isSavingRef = useRef(false);
+
+    // Get user site profile info for saves.
+    const { profile } = useUser();
+    const userId = profile?.id;
+    const userName = profile?.full_name || '';
 
     // Debugs for tracing loading issues, ignore.
     const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
     console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
 
     const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
+    // Ref to refresh editing data when autosave evaluated.
+    const editingDataRef = useRef(editingData);
+    useEffect(() => {
+        editingDataRef.current = editingData;
+    }, [editingData]);
+
+    // Debounce saves, should be abstracted to table props and switched off when realtime collaboration enabled.
+    const useDebouncedSave = (saveFn: () => void, delay = 5000) => {
+        const debounced = useRef(debounce(saveFn, delay));
+        useEffect(() => () => debounced.current.cancel(), []);
+        return debounced.current;
+    };
 
     const handleSaveAll = useCallback(async () => {
+        const currentEdits = editingDataRef.current;
+
         if (isSavingRef.current) {
             console.debug('[GlideEditableTable] Save already in progress. Skipping.');
             return;
@@ -64,7 +88,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         console.debug('[GlideEditableTable] Saving all pending data...');
 
         try {
-            const hasEdits = Object.keys(editingData).length > 0;
+            const hasEdits = Object.keys(currentEdits).length > 0;
 
             if (!hasEdits) {
                 console.debug('[GlideEditableTable] No changes to save.');
@@ -72,7 +96,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             }
 
             // Save row changes
-            for (const [rowId, changes] of Object.entries(editingData)) {
+            for (const [rowId, changes] of Object.entries(currentEdits)) {
                 const originalItem = data.find((d) => d.id === rowId);
                 if (!originalItem) continue;
 
@@ -81,7 +105,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                     ...changes,
                 };
 
-                await onSave?.(fullItem, false);
+                await onSave?.(fullItem, false, userId, userName);
                 console.debug(`[GlideEditableTable] Saved row ${rowId}`);
             }
 
@@ -94,7 +118,9 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         } finally {
             isSavingRef.current = false;
         }
-    }, [editingData, onPostSave, data, onSave]);
+    }, [onPostSave, data, onSave, userId, userName]);
+
+    const debouncedSave = useDebouncedSave(() => void handleSaveAll(), 5000);
 
     // Normalize columns to use `title` instead of `header` if needed
     const normalizedColumns = useMemo(() => {
@@ -289,9 +315,11 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 return updatedEditingData;
             });
 
+            debouncedSave(); // Debounce save if set, else leave in buffer and handle on edit exit or manual save.
+
             lastEditedCellRef.current = cell;
         },
-        [localData, localColumns],
+        [localData, localColumns, debouncedSave],
     );
 
     // Add a new row.
@@ -339,26 +367,41 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 : undefined,
     }));
 
-    // Called when edit mode is turned false. Curr does nothing...
-    // useEffect(() => {
-    //     if (!isEditMode) {
-    //         //console.debug('[GlideEditableTable] Edit mode exited. ...');
+    // Called when edit mode is turned false. Curr salls HandleSaveAll ...
+    useEffect(() => {
+        const wasEditMode = prevEditModeRef.current;
+        prevEditModeRef.current = isEditMode;
+        if (wasEditMode && !isEditMode) {
+            console.debug(
+                '[GlideEditableTable] Edit mode exited. Checking for unsaved edits...',
+            );
 
-    //         // const updates = localColumns.map((col, index) => ({
-    //         //     propertyName: col.accessor as string, // accessor is the name of the property
-    //         //     width: col.width,
-    //         //     position: index,
-    //         // }));
+            const hasPendingEdits = Object.keys(editingDataRef.current).length > 0;
 
-    //         // updateColumnsMetadata(blockId, updates)
-    //         //     .then(() => {
-    //         //         console.debug('[GlideEditableTable] Column changes saved to DB.');
-    //         //     })
-    //         //     .catch((err) => {
-    //         //         console.error('[GlideEditableTable] Failed to save columns:', err);
-    //         //     });
-    //     }
-    // }, [isEditMode, localColumns, editingData, onSave, onPostSave]);
+            if (hasPendingEdits) {
+                console.debug(
+                    '[GlideEditableTable] Flushing pending edits on edit mode exit...',
+                );
+                void handleSaveAll();
+            } else {
+                console.debug('[GlideEditableTable] No edits to save on exit.');
+            }
+
+            // const updates = localColumns.map((col, index) => ({
+            //     propertyName: col.accessor as string, // accessor is the name of the property
+            //     width: col.width,
+            //     position: index,
+            // }));
+
+            // updateColumnsMetadata(blockId, updates)
+            //     .then(() => {
+            //         console.debug('[GlideEditableTable] Column changes saved to DB.');
+            //     })
+            //     .catch((err) => {
+            //         console.error('[GlideEditableTable] Failed to save columns:', err);
+            //     });
+        }
+    }, [isEditMode, localColumns, editingData, onSave, onPostSave, handleSaveAll]);
 
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     const handleKeyDown = useCallback(

@@ -18,7 +18,12 @@ import { useDocumentStore } from '@/store/document.store';
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
     columns: EditableColumn<DynamicRequirement>[];
-    onSaveRequirement: (dynamicReq: DynamicRequirement, isNew: boolean) => Promise<void>;
+    onSaveRequirement: (
+        dynamicReq: DynamicRequirement,
+        isNew: boolean,
+        userId?: string,
+        userName?: string,
+    ) => Promise<void>;
     onDeleteRequirement: (dynamicReq: DynamicRequirement) => Promise<void>;
     refreshRequirements: () => Promise<void>;
     isEditMode: boolean;
@@ -62,8 +67,13 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(
-            async (dynamicReq: DynamicRequirement, isNew: boolean) => {
-                await onSaveRequirement(dynamicReq, isNew);
+            async (
+                dynamicReq: DynamicRequirement,
+                isNew: boolean,
+                userId?: string,
+                userName?: string,
+            ) => {
+                await onSaveRequirement(dynamicReq, isNew, userId, userName);
             },
             [onSaveRequirement],
         );

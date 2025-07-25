@@ -62,7 +62,12 @@ export interface EditableTableProps<
 > {
     data: T[];
     columns: EditableColumn<T>[];
-    onSave?: (item: T, isNew: boolean) => Promise<void>;
+    onSave?: (
+        item: T,
+        isNew: boolean,
+        userId?: string,
+        userName?: string,
+    ) => Promise<void>;
     onDelete?: (item: T) => Promise<void>;
     onPostSave?: () => Promise<void>; // Callback to refresh data after a save operation
     isLoading?: boolean;
