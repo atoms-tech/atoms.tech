@@ -1,5 +1,4 @@
-import { isEqual } from 'lodash';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -41,10 +40,6 @@ export const useDocumentRealtime = ({
     const [blocks, setBlocks] = useState<BlockWithRequirements[]>();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
-
-    // To keep previous state for comparison to avoid unnecessary setState calls
-    const blocksRef = useRef<BlockWithRequirements[] | undefined>(blocks);
-    blocksRef.current = blocks;
 
     // Fetch blocks and their requirements
     const fetchBlocks = useCallback(async () => {
@@ -142,11 +137,8 @@ export const useDocumentRealtime = ({
                     };
                 },
             );
+            setBlocks(blocksWithRequirements);
 
-            // Only update if blocks have actually changed
-            if (!isEqual(blocksRef.current, blocksWithRequirements)) {
-                setBlocks(blocksWithRequirements);
-            }
             setError(null);
         } catch (err) {
             setError(err as Error);
@@ -179,7 +171,7 @@ export const useDocumentRealtime = ({
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
 
-                            const updated = prevBlocks.map((block) =>
+                            return prevBlocks.map((block) =>
                                 block.id === payload.new.id
                                     ? {
                                           ...block,
@@ -189,9 +181,6 @@ export const useDocumentRealtime = ({
                                       }
                                     : block,
                             );
-
-                            // Only update state if changed
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
                         });
                     } else {
                         // For INSERT and DELETE, fetch all blocks
@@ -217,7 +206,7 @@ export const useDocumentRealtime = ({
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
 
-                            const updated = prevBlocks.map((block) => {
+                            return prevBlocks.map((block) => {
                                 if (block.id === payload.new.block_id) {
                                     return {
                                         ...block,
@@ -230,14 +219,12 @@ export const useDocumentRealtime = ({
                                 }
                                 return block;
                             });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
                         });
                     } else if (payload.eventType === 'INSERT') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
 
-                            const updated = prevBlocks.map((block) => {
+                            return prevBlocks.map((block) => {
                                 if (block.id === payload.new.block_id) {
                                     return {
                                         ...block,
@@ -249,14 +236,12 @@ export const useDocumentRealtime = ({
                                 }
                                 return block;
                             });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
                         });
                     } else if (payload.eventType === 'DELETE') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
 
-                            const updated = prevBlocks.map((block) => {
+                            return prevBlocks.map((block) => {
                                 if (block.id === payload.old.block_id) {
                                     return {
                                         ...block,
@@ -267,8 +252,6 @@ export const useDocumentRealtime = ({
                                 }
                                 return block;
                             });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
                         });
                     }
                 },
@@ -285,63 +268,8 @@ export const useDocumentRealtime = ({
                     schema: 'public',
                     table: 'columns',
                 },
-                (payload) => {
-                    if (payload.eventType === 'UPDATE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
-
-                            const updated = prevBlocks.map((block) => {
-                                if (block.id !== payload.new.block_id) return block;
-
-                                const newColumns = (block.columns ?? []).map((col) =>
-                                    col.id === payload.new.id
-                                        ? (payload.new as Column)
-                                        : col,
-                                );
-
-                                return { ...block, columns: newColumns };
-                            });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
-                        });
-                    } else if (payload.eventType === 'INSERT') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
-
-                            const updated = prevBlocks.map((block) => {
-                                if (block.id !== payload.new.block_id) return block;
-
-                                return {
-                                    ...block,
-                                    columns: [
-                                        ...(block.columns ?? []),
-                                        payload.new as Column,
-                                    ],
-                                };
-                            });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
-                        });
-                    } else if (payload.eventType === 'DELETE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
-
-                            const updated = prevBlocks.map((block) => {
-                                if (block.id !== payload.old.block_id) return block;
-
-                                return {
-                                    ...block,
-                                    columns: (block.columns ?? []).filter(
-                                        (col) => col.id !== payload.old.id,
-                                    ),
-                                };
-                            });
-
-                            return isEqual(prevBlocks, updated) ? prevBlocks : updated;
-                        });
-                    } else {
-                        // fallback or other event types: consider fetchBlocks or no-op
-                    }
+                () => {
+                    fetchBlocks();
                 },
             )
             .subscribe();

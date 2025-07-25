@@ -11,6 +11,7 @@ import {
 } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import {
     BlockProps,
+    BlockTableMetadata,
     BlockWithRequirements,
     Property,
     PropertyType,
@@ -23,7 +24,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/useAuth';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
@@ -65,6 +65,8 @@ const TableHeader: React.FC<{
     orgId: string;
     projectId?: string;
     documentId?: string;
+    blockId?: string;
+    tableMetadata?: BlockTableMetadata | null;
 }> = ({
     name,
     isEditMode,
@@ -192,6 +194,7 @@ export const TableBlock: React.FC<BlockProps> = ({
     onUpdate,
     onDelete,
     dragActivators,
+    userProfile,
 }) => {
     console.log('🔍 TableBlock render:', {
         blockId: block.id,
@@ -201,7 +204,6 @@ export const TableBlock: React.FC<BlockProps> = ({
         columns: block.columns,
     });
 
-    const { userProfile } = useAuth();
     const params = useParams();
     const { currentOrganization } = useOrganization();
     const { createPropertyAndColumn, createColumnFromProperty } = useColumnActions({
@@ -210,10 +212,6 @@ export const TableBlock: React.FC<BlockProps> = ({
         documentId: params.documentId as string,
     });
     const projectId = params?.projectId as string;
-
-    // Debugs for tracing loading issues, ignore.
-    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
-    console.debug(`[TableBlock] MOUNT instance=${instanceId}`);
 
     // IMPORTANT: Initialize localRequirements once from block.requirements
     // but prevent resetting on every rerender:
@@ -231,6 +229,63 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     // Use the document store for edit mode state
     const { isEditMode, useTanStackTables, useGlideTables } = useDocumentStore();
+
+    // Grab column/requirement metadata from block level.
+    const tableContentMetadata: BlockTableMetadata | null = useMemo(() => {
+        if (block.type !== 'table') return null;
+        const content = block.content;
+
+        try {
+            // Ensure content is an object and contains valid arrays for 'columns' and 'requirements'
+            const isValid =
+                typeof content === 'object' &&
+                content !== null &&
+                'columns' in content &&
+                'requirements' in content &&
+                Array.isArray((content as Record<string, unknown>).columns) &&
+                Array.isArray((content as Record<string, unknown>).requirements) &&
+                (content as { columns: unknown[] }).columns.every(
+                    (col) =>
+                        typeof col === 'object' &&
+                        col !== null &&
+                        'columnId' in col &&
+                        typeof (col as Record<string, unknown>).columnId === 'string' &&
+                        'position' in col &&
+                        typeof (col as Record<string, unknown>).position === 'number',
+                ) &&
+                (content as { requirements: unknown[] }).requirements.every(
+                    (req) =>
+                        typeof req === 'object' &&
+                        req !== null &&
+                        'requirementId' in req &&
+                        typeof (req as Record<string, unknown>).requirementId ===
+                            'string' &&
+                        'position' in req &&
+                        typeof (req as Record<string, unknown>).position === 'number',
+                );
+
+            if (isValid) {
+                const parsed = content as unknown as BlockTableMetadata;
+                console.debug(
+                    `[TableBlock] Parsed tableContentMetadata for ${block.id}: `,
+                    parsed,
+                );
+                return parsed;
+            } else {
+                console.warn(
+                    `[TableBlock] Invalid BlockTableMetadata structure for ${block.id}: `,
+                    content,
+                );
+            }
+        } catch (err) {
+            console.error(
+                `[TableBlock] Failed to parse content as BlockTableMetadata for ${block.id}: `,
+                err,
+            );
+        }
+
+        return null;
+    }, [block.content, block.id, block.type]);
 
     // Initialize requirement actions with properties
     const {
@@ -265,25 +320,31 @@ export const TableBlock: React.FC<BlockProps> = ({
     const columns = useMemo(() => {
         if (!block.columns) return [];
 
+        const metadataColumns = tableContentMetadata?.columns ?? [];
+
         return block.columns
             .filter((col) => col.property)
-            .map((col) => {
+            .map((col, index) => {
                 const _property = col.property as Property;
                 const propertyKey = _property.name;
 
+                // Look for matching column metadata by ID
+                const metadata = metadataColumns.find((meta) => meta.columnId === col.id);
+
                 return {
+                    id: col.id,
                     header: propertyKey,
                     accessor: propertyKey as keyof DynamicRequirement,
                     type: propertyTypeToColumnType(_property.property_type),
-                    width: col.width ?? 150,
-                    position: col.position ?? 0,
+                    width: metadata?.width ?? col.width ?? 150,
+                    position: metadata?.position ?? col.position ?? index,
                     required: false,
                     isSortable: true,
                     options: _property.options?.values,
                 };
             })
             .sort((a, b) => a.position - b.position);
-    }, [block.columns]);
+    }, [block.columns, tableContentMetadata?.columns]);
 
     // Memoize dynamicRequirements to avoid recreating every render unless localRequirements changes
     const dynamicRequirements = useMemo(
@@ -420,6 +481,8 @@ export const TableBlock: React.FC<BlockProps> = ({
                             alwaysShowAddRow={isEditMode}
                             useTanStackTables={useTanStackTables}
                             useGlideTables={useGlideTables}
+                            blockId={block.id}
+                            tableMetadata={tableContentMetadata}
                         />
                     )}
                 </div>

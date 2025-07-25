@@ -1,5 +1,6 @@
 import { GridDragEventArgs, Item } from '@glideapps/glide-data-grid';
 
+import { BlockTableMetadata } from '@/components/custom/BlockCanvas/types';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 export type PropertyScope = 'org' | 'project' | 'document';
@@ -37,6 +38,7 @@ export interface ColumnValidation {
 export type CellValue = string | number | Date | string[] | RequirementAiAnalysis | null;
 
 export interface EditableColumn<T> {
+    id: string;
     header: string;
     width?: number;
     position?: number;
@@ -76,6 +78,8 @@ export interface EditableTableProps<
     filterComponent?: React.ReactNode;
     isEditMode?: boolean;
     alwaysShowAddRow?: boolean; // Always show the "Add New Row" row, even when there are no items
+    blockId?: string;
+    tableMetadata?: BlockTableMetadata | null;
 }
 
 // Additional props needed for GlideDataTables. Allows hooking into the existing EditableTableProps like isLoading
@@ -85,7 +89,6 @@ export interface GlideTableProps<T extends Record<string, CellValue> & { id: str
     deleteConfirmOpen?: boolean;
     onDeleteConfirm?: () => void;
     setDeleteConfirmOpen?: (open: boolean) => void;
-    onColumnOrderChange?: (columns: EditableColumn<T>[]) => void;
 
     onDragStart?: (args: GridDragEventArgs) => void;
     onDragOverCell?: (cell: Item, dataTransfer: DataTransfer | null) => void;

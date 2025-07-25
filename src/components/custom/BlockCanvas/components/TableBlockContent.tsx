@@ -13,6 +13,7 @@ import {
     PropertyConfig,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
+import { BlockTableMetadata } from '@/components/custom/BlockCanvas/types';
 import { useDocumentStore } from '@/store/document.store';
 
 interface TableBlockContentProps {
@@ -30,6 +31,8 @@ interface TableBlockContentProps {
     alwaysShowAddRow?: boolean;
     useTanStackTables?: boolean;
     useGlideTables?: boolean;
+    blockId?: string;
+    tableMetadata?: BlockTableMetadata | null;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -43,6 +46,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         alwaysShowAddRow = false,
         useTanStackTables = false,
         useGlideTables = false,
+        blockId,
+        tableMetadata,
     }) => {
         // Get global setting from doc store as fallback
         const {
@@ -103,6 +108,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 showFilter: false,
                 isEditMode,
                 alwaysShowAddRow,
+                blockId,
+                tableMetadata,
             }),
             [
                 dynamicRequirements,
@@ -112,6 +119,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 handleRefresh,
                 isEditMode,
                 alwaysShowAddRow,
+                blockId,
+                tableMetadata,
             ],
         );
 
