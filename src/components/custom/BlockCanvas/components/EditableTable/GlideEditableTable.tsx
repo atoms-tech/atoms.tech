@@ -15,15 +15,18 @@ import '@glideapps/glide-data-grid/dist/index.css';
 
 import debounce from 'lodash/debounce';
 
-import { useBlockMetadataActions } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
+import {
+    BlockTableMetadata,
+    useBlockMetadataActions,
+} from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
 import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 import { /*CellValue,*/ GlideTableProps } from './types';
 
-export function GlideEditableTable<T extends { id: string; position?: number }>(
-    props: GlideTableProps<T>,
-) {
+export function GlideEditableTable<
+    T extends { id: string; position?: number; height?: number },
+>(props: GlideTableProps<T>) {
     const {
         data,
         columns,
@@ -119,7 +122,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         const debounced = useRef(
             debounce(() => {
                 void handleSaveAllRef.current?.();
-                void saveColumnMetadataRef.current?.();
+                void saveTableMetadataRef.current?.();
             }, delay),
         );
 
@@ -172,13 +175,32 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         [localColumns, colSizes],
     );
 
-    const sortedData = localData;
+    // Sort localData by metadata position key.
+    const sortedData = useMemo(() => {
+        return [...localData].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    }, [localData]);
 
-    // Method to save the column's metadata
-    const saveColumnMetadata = useCallback(async () => {
+    useEffect(() => {
+        console.debug('[GlideEditableTable] Sorted Data:', sortedData);
+    }, [sortedData]);
+
+    const saveTableMetadata = useCallback(async () => {
+        if (!blockId) return;
+
         const latestLocalColumns = localColumnsRef.current;
+        const latestSortedData = sortedData; // Already sorted by position
 
-        if (!blockId || latestLocalColumns.length === 0) return;
+        const columnMetadata = latestLocalColumns.map((col, idx) => ({
+            columnId: col.id,
+            position: idx,
+            ...(col.width !== undefined ? { width: col.width } : {}),
+        }));
+
+        const rowMetadata = latestSortedData.map((row, idx) => ({
+            requirementId: row.id,
+            position: idx,
+            ...(row.height !== undefined ? { height: row.height } : {}),
+        }));
 
         const originalColumnState = columns
             .map((col) => ({
@@ -188,50 +210,130 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             }))
             .sort((a, b) => a.position - b.position);
 
-        const localColumnState = latestLocalColumns
-            .map((col, idx) => ({
-                id: col.id,
-                position: idx,
-                width: col.width ?? undefined,
+        const currentColumnState = columnMetadata
+            .map(({ columnId, position, width }) => ({
+                id: columnId,
+                position,
+                width,
             }))
             .sort((a, b) => a.position - b.position);
 
-        const isDifferent =
-            originalColumnState.length !== localColumnState.length ||
+        const isColumnMetadataChanged =
+            originalColumnState.length !== currentColumnState.length ||
             originalColumnState.some((col, idx) => {
-                const local = localColumnState[idx];
+                const curr = currentColumnState[idx];
                 return (
-                    col.id !== local.id ||
-                    col.position !== local.position ||
-                    (col.width ?? null) !== (local.width ?? null)
+                    col.id !== curr.id ||
+                    col.position !== curr.position ||
+                    (col.width ?? null) !== (curr.width ?? null)
                 );
             });
 
-        if (!isDifferent) {
+        // Always assume row position/height may change
+        const hasRowChanges = true;
+
+        if (!isColumnMetadataChanged && !hasRowChanges) {
             console.debug(
-                '[GlideEditableTable] No column metadata changes detected. Skipping save.',
+                '[GlideEditableTable] No metadata changes detected. Skipping save.',
             );
             return;
         }
 
-        const updatedMetadata = {
-            columns: latestLocalColumns.map((col, idx) => ({
-                columnId: col.id,
-                position: idx,
-                ...(col.width !== undefined ? { width: col.width } : {}),
-            })),
-        };
-
         try {
-            await updateBlockMetadata(blockId, updatedMetadata);
+            const metadataToSave: Partial<BlockTableMetadata> = {
+                columns: columnMetadata,
+                requirements: rowMetadata,
+            };
+
+            await updateBlockMetadata(blockId, metadataToSave);
             console.debug(
-                '[GlideEditableTable] Column metadata saved to block: ',
-                updatedMetadata,
+                '[GlideEditableTable] Saved combined row + column metadata:',
+                metadataToSave,
             );
         } catch (err) {
-            console.error('[GlideEditableTable] Failed to save column metadata:', err);
+            console.error(
+                '[GlideEditableTable] Failed to save combined table metadata:',
+                err,
+            );
         }
-    }, [blockId, columns, updateBlockMetadata]);
+    }, [blockId, columns, sortedData, updateBlockMetadata]);
+
+    // Methods have been combined into a single save metadata method. Remove after testing (initial results show we can delete these)
+    // // Method to save the column's metadata
+    // const saveColumnMetadata = useCallback(async () => {
+    //     const latestLocalColumns = localColumnsRef.current;
+
+    //     if (!blockId || latestLocalColumns.length === 0) return;
+
+    //     const originalColumnState = columns
+    //         .map((col) => ({
+    //             id: col.id,
+    //             position: col.position ?? 0,
+    //             width: col.width ?? undefined,
+    //         }))
+    //         .sort((a, b) => a.position - b.position);
+
+    //     const localColumnState = latestLocalColumns
+    //         .map((col, idx) => ({
+    //             id: col.id,
+    //             position: idx,
+    //             width: col.width ?? undefined,
+    //         }))
+    //         .sort((a, b) => a.position - b.position);
+
+    //     const isDifferent =
+    //         originalColumnState.length !== localColumnState.length ||
+    //         originalColumnState.some((col, idx) => {
+    //             const local = localColumnState[idx];
+    //             return (
+    //                 col.id !== local.id ||
+    //                 col.position !== local.position ||
+    //                 (col.width ?? null) !== (local.width ?? null)
+    //             );
+    //         });
+
+    //     if (!isDifferent) {
+    //         console.debug(
+    //             '[GlideEditableTable] No column metadata changes detected. Skipping save.',
+    //         );
+    //         return;
+    //     }
+
+    //     const updatedMetadata = {
+    //         columns: latestLocalColumns.map((col, idx) => ({
+    //             columnId: col.id,
+    //             position: idx,
+    //             ...(col.width !== undefined ? { width: col.width } : {}),
+    //         })),
+    //     };
+
+    //     try {
+    //         await updateBlockMetadata(blockId, updatedMetadata);
+    //         console.debug(
+    //             '[GlideEditableTable] Column metadata saved to block: ',
+    //             updatedMetadata,
+    //         );
+    //     } catch (err) {
+    //         console.error('[GlideEditableTable] Failed to save column metadata:', err);
+    //     }
+    // }, [blockId, columns, updateBlockMetadata]);
+
+    // const saveRowMetadata = useCallback(async () => {
+    //     if (!blockId || !sortedData.length) return;
+
+    //     const rowMetadata = sortedData.map((row, index) => ({
+    //         requirementId: row.id,
+    //         position: index,
+    //         ...(row.height !== undefined ? { height: row.height } : {}),
+    //     }));
+
+    //     try {
+    //         await updateBlockMetadata(blockId, { requirements: rowMetadata });
+    //         console.debug('[GlideEditableTable] Saved row metadata:', rowMetadata);
+    //     } catch (err) {
+    //         console.error('[GlideEditableTable] Failed to save row metadata:', err);
+    //     }
+    // }, [blockId, sortedData, updateBlockMetadata]);
 
     // References to latest version of save methods. Fixes stale reference when editing data on a newly added column.
     const handleSaveAllRef = useRef(handleSaveAll);
@@ -239,10 +341,10 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         handleSaveAllRef.current = handleSaveAll;
     }, [handleSaveAll]);
 
-    const saveColumnMetadataRef = useRef(saveColumnMetadata);
+    const saveTableMetadataRef = useRef(saveTableMetadata);
     useEffect(() => {
-        saveColumnMetadataRef.current = saveColumnMetadata;
-    }, [saveColumnMetadata]);
+        saveTableMetadataRef.current = saveTableMetadata;
+    }, [saveTableMetadata]);
 
     // Sync db row changes with existing pending changes for local data.
     useEffect(() => {
@@ -256,37 +358,40 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         });
 
         // 3. Compare mergedData with current localData
-        const hasDifferences =
-            mergedData.length !== localData.length ||
-            mergedData.some((row, idx) => {
-                const localRow = localData[idx];
-                if (!localRow || row.id !== localRow.id) return true;
+        //const isSameLength = mergedData.length === localData.length;
+        const localIds = localData.map((r) => r.id);
+        const mergedIds = mergedData.map((r) => r.id);
+
+        // Check if the sets of IDs are equal (regardless of order)
+        const localIdSet = new Set(localIds);
+        const mergedIdSet = new Set(mergedIds);
+
+        const sameIdSet =
+            localIdSet.size === mergedIdSet.size &&
+            [...localIdSet].every((id) => mergedIdSet.has(id));
+
+        // Only consider content mismatch if sets are different or content differs.
+        const contentMismatch =
+            !sameIdSet ||
+            mergedData.some((row) => {
+                const localRow = localData.find((r) => r.id === row.id);
+                if (!localRow) return true;
 
                 for (const key of Object.keys(row)) {
-                    if (
-                        row[key as keyof T] !== localRow[key as keyof T] &&
-                        !(
-                            key === 'position' &&
-                            Math.abs(
-                                (row[key as keyof T] as number) -
-                                    (localRow[key as keyof T] as number),
-                            ) < 1e-6
-                        )
-                    ) {
-                        return true;
-                    }
+                    if (key === 'position' || key === 'height') continue;
+                    if (localRow[key as keyof T] !== row[key as keyof T]) return true;
                 }
                 return false;
             });
 
-        if (hasDifferences) {
+        if (contentMismatch) {
             console.debug(
-                '[GlideEditableTable] Detected external data change. Syncing localData...',
+                '[GlideEditableTable] External data change detected (excluding local row reorders). Syncing...',
             );
             setLocalData(mergedData);
         }
         // else {
-        //     console.debug('[GlideEditableTable] No changes detected in props.data');
+        //     console.debug('[GlideEditableTable] No external row data changes detected.');
         // }
     }, [data, localData]);
 
@@ -493,16 +598,44 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         onSave?.(newRow, true);
     }, [columns, data, onSave]);
 
-    const handleRowMoved = useCallback((from: number, to: number) => {
-        if (from === to) return;
+    const handleRowMoved = useCallback(
+        (from: number, to: number) => {
+            if (from === to) return;
 
-        setLocalData((prev) => {
-            const updated = [...prev];
-            const [moved] = updated.splice(from, 1);
-            updated.splice(to, 0, moved);
-            return updated;
-        });
-    }, []);
+            setLocalData((prev) => {
+                const updated = [...prev];
+                const [moved] = updated.splice(from, 1);
+                updated.splice(to, 0, moved);
+
+                const reindexed = updated.map((row, index) => ({
+                    ...row,
+                    position: index,
+                }));
+
+                debouncedSave(); // Call debounced save with newly updated columns.
+
+                return reindexed;
+            });
+        },
+        [debouncedSave],
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const handleRowResize = useCallback(
+        (rowIndex: number, newSize: number) => {
+            const rowId = sortedData[rowIndex]?.id;
+            if (!rowId) return;
+
+            setLocalData((prev) => {
+                const updated = prev.map((row) =>
+                    row.id === rowId ? { ...row, height: newSize } : row,
+                );
+                debouncedSave(); // Call debounced save with newly updated columns.
+                return updated;
+            });
+        },
+        [debouncedSave, sortedData],
+    );
 
     // Modify Trailing Row Visuals
     columns.map((col, idx) => ({
@@ -538,7 +671,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 console.debug('[GlideEditableTable] No edits to save on exit.');
             }
 
-            void saveColumnMetadata();
+            void saveTableMetadata();
         }
     }, [
         isEditMode,
@@ -547,7 +680,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         onSave,
         onPostSave,
         handleSaveAll,
-        saveColumnMetadata,
+        saveTableMetadata,
     ]);
 
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
@@ -567,10 +700,10 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                     '[GlideEditableTable] Ctrl+S detected. Saving pending changes...',
                 );
                 void handleSaveAll();
-                void saveColumnMetadata();
+                void saveTableMetadata();
             }
         },
-        [handleSaveAll, saveColumnMetadata],
+        [handleSaveAll, saveTableMetadata],
     );
 
     useEffect(() => {
@@ -620,6 +753,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                             //onVisibleRegionChanged={onVisibleRegionChanged}
                             onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
                             rows={sortedData.length}
+                            rowHeight={(row) => sortedData[row]?.height ?? 34}
                             onColumnResize={handleColumnResize}
                             onColumnMoved={handleColumnMoved}
                             trailingRowOptions={{
@@ -629,6 +763,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                             onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
                             onRowMoved={handleRowMoved} // Enable row reordering
+                            //onRowResize={handleRowResize}
                         />
                     </div>
                 </div>

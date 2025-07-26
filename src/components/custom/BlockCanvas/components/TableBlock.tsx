@@ -347,10 +347,31 @@ export const TableBlock: React.FC<BlockProps> = ({
     }, [block.columns, tableContentMetadata?.columns]);
 
     // Memoize dynamicRequirements to avoid recreating every render unless localRequirements changes
-    const dynamicRequirements = useMemo(
-        () => getDynamicRequirements(),
-        [getDynamicRequirements],
-    );
+    const dynamicRequirements = useMemo(() => {
+        const reqs = getDynamicRequirements();
+
+        const metadataMap = new Map(
+            (tableContentMetadata?.requirements || []).map((meta) => [
+                meta.requirementId,
+                meta,
+            ]),
+        );
+
+        const reqsWithMetadata = reqs
+            .map((req, idx) => {
+                const meta = metadataMap.get(req.id);
+                return {
+                    ...req,
+                    position: meta?.position ?? req.position ?? idx,
+                    height: meta?.height,
+                };
+            })
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+        //console.debug('[TableBlock] Requirments with metadata: ', reqsWithMetadata);
+
+        return reqsWithMetadata;
+    }, [getDynamicRequirements, tableContentMetadata?.requirements]);
 
     // Memoize handleAddColumn and handleAddColumnFromProperty
     const handleAddColumn = useCallback(
