@@ -1,867 +1,963 @@
 {
     "nodes": [
-        {
-            "parameters": {
-                "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
-                "height": 360,
-                "width": 400
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "typeVersion": 1,
-            "position": [-380, 20],
-            "id": "2c234a2f-fc71-4611-9e09-06f5b7e27342",
-            "name": "Sticky Note"
+      {
+        "parameters": {
+          "content": "## Pull Org Project Lists\n**organization id's value** should be replaced to api or user's id to distinguish the user.\n\nMaybe should be added to create api logic for each user.\n\nCurrent setup is targeting \"Atoms-Platform\" Organization.",
+          "height": 360,
+          "width": 400
         },
-        {
-            "parameters": {
-                "useCustomSchema": true,
-                "operation": "get",
-                "tableId": "projects",
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "organization_id",
-                            "keyValue": "=b5d4ea64-ccf1-4cb6-9236-6e8b239d9097"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [-200, 620],
-            "id": "589b84be-ecf0-4406-b339-2fb192dbe001",
-            "name": "Pull Org Project Lists",
-            "alwaysOutputData": true,
-            "credentials": {
-                "supabaseApi": {
-                    "id": "LDfTyVc5kKgtlyZL",
-                    "name": "Supabase account"
-                }
-            }
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -180,
+          -20
+        ],
+        "id": "6bd81823-221d-47c3-8e7c-0c7b9a5aacea",
+        "name": "Sticky Note"
+      },
+      {
+        "parameters": {
+          "useCustomSchema": true,
+          "operation": "get",
+          "tableId": "projects",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "organization_id",
+                "keyValue": "=b5d4ea64-ccf1-4cb6-9236-6e8b239d9097"
+              }
+            ]
+          }
         },
-        {
-            "parameters": {
-                "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.id);\n\nconst description = $input.all().map(item => item.json.description);\n\n\nreturn [\n  {\n    json: {\n      project_ids: ids,\n      project_names: names,\n      project_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [-60, 740],
-            "id": "4f5c9adc-d2e9-4dcd-9a3a-69fd1c5e2a91",
-            "name": "Extract Project's ids",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=**project_ids**: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\n**project_names**: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\n**project_descriptions**: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\n**user's message**: {{ $('Extract Project\\'s ids').item.json.message }}",
-                "hasOutputParser": true,
-                "options": {
-                    "systemMessage": "=# 🔧 System Prompt\n\nThe data contains three key components:\n\n- **`project_ids`**: A list of unique identifiers for each project. Each project is assigned a unique ID for identification.\n- **`project_names`**: A list of names corresponding to each project. Each project has a name that can be used to identify it more easily.\n- **`project_descriptions`**: A list of descriptions corresponding to each project. These descriptions provide additional details or context about each project. Note that some descriptions may be null, indicating that no description is available for that project.\n\nEach of these lists corresponds to each other in a 1-to-1 relationship. That means:\n\n- The first `project_id` corresponds to the first `project_name` and the first `project_description`.\n- The second `project_id` corresponds to the second `project_name` and the second `project_description`.\n- And so on...\n\n---\n\n## ✅ Your Task\n\nBased on the user's goal, you need to:\n\n1. **Review** the `project_names` and `project_descriptions` provided above.\n2. **Understand** the user's goal or requirements.\n3. **Identify** the most relevant projects by matching their names and descriptions with the user's intent.\n\n---\n\n## 🎯 Selection Rule\n\n- If the user wants to **review all project requirements**,  \n  → **Return all `project_ids`**.\n\n- If the user is interested in **only specific projects**,  \n  → **Return only the `project_ids`** that best match the user's needs.\n\n---\n\n## 🔁 Output Format\n\nReturn the selected `project_ids` as a **list**.\n"
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 2,
-            "position": [100, 840],
-            "id": "98d1a251-25ff-4d88-88b1-f76e037d56b9",
-            "name": "Agent Checked DB",
-            "alwaysOutputData": true,
-            "executeOnce": true,
-            "retryOnFail": true,
-            "maxTries": 5
-        },
-        {
-            "parameters": {
-                "jsonSchemaExample": "[\n  {\n  \t\"target_project_ids\": \"adsfadgadsg1\"\n  }\n]"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.2,
-            "position": [260, 1020],
-            "id": "49c445e3-724a-4438-801f-1f5889807f22",
-            "name": "Structured Output Parser",
-            "notesInFlow": true
-        },
-        {
-            "parameters": {
-                "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_project_ids from the output array\n    const targetProjectIds = item.json.output.map(o => ({ target_project_ids: o.target_project_ids }));\n    \n    // Add the extracted target_project_ids to the result\n    result = result.concat(targetProjectIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [420, 960],
-            "id": "db7356a5-1917-4e22-8b64-3faf9c10a50c",
-            "name": "extract target_project_ids"
-        },
-        {
-            "parameters": {
-                "modelName": "models/gemini-2.5-pro",
-                "options": {
-                    "maxOutputTokens": 2048,
-                    "temperature": 0.3,
-                    "topP": 0.9
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-            "typeVersion": 1,
-            "position": [120, 1020],
-            "id": "27ef0b53-1cd2-460d-9612-fd0197e14a1d",
-            "name": "gemini 2.5 pro",
-            "credentials": {
-                "googlePalmApi": {
-                    "id": "AwJrPOk3HV2bX5Ki",
-                    "name": "Google Gemini(PaLM) Api account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "assignments": {
-                    "assignments": [
-                        {
-                            "id": "e22d2a1a-2357-4295-b8a3-e98af8de00fe",
-                            "name": "id",
-                            "value": "={{ $json.project_id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "374b3c56-146c-4d41-8923-47cd78aa624d",
-                            "name": "document_name",
-                            "value": "={{ $json.name }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "f024475c-e2f7-49fe-ab60-7d9ccb0f300b",
-                            "name": "document_id",
-                            "value": "={{ $json.id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "7644cd10-9229-4ef2-83f8-b7c0341dbe94",
-                            "name": "document_description",
-                            "value": "={{ $json.description }}",
-                            "type": "string"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 3.4,
-            "position": [740, 1060],
-            "id": "6b4f0a40-a4d5-4e8e-a80a-a56f186100b0",
-            "name": "set_document_id,name,description",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "operation": "getAll",
-                "tableId": "requirements",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "document_id",
-                            "condition": "eq",
-                            "keyValue": "={{ $json.target_document_ids }}"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [1880, 1140],
-            "id": "6da72698-08d2-47ac-93e7-d207c85b253f",
-            "name": "Get Tables",
-            "alwaysOutputData": true,
-            "executeOnce": false,
-            "credentials": {
-                "supabaseApi": {
-                    "id": "LDfTyVc5kKgtlyZL",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsCode": "const keysToRemove = [\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\",\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [2020, 1200],
-            "id": "6ba8c917-4e66-42cf-a467-36463610ccbf",
-            "name": "Refine param from Table",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "mode": "combine",
-                "fieldsToMatchString": "id",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [860, 840],
-            "id": "9b2379db-b451-4f3e-9147-69b596f0fb03",
-            "name": "Merge: Project + documents"
-        },
-        {
-            "parameters": {
-                "operation": "getAll",
-                "tableId": "blocks",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "document_id",
-                            "condition": "eq",
-                            "keyValue": "={{ $json.target_document_ids }}"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [1900, 800],
-            "id": "7a123ed3-adce-4181-b41d-ca1c8a32e714",
-            "name": "blocks & text_from_document_ids",
-            "executeOnce": false,
-            "alwaysOutputData": true,
-            "credentials": {
-                "supabaseApi": {
-                    "id": "LDfTyVc5kKgtlyZL",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "useCustomSchema": true,
-                "operation": "getAll",
-                "tableId": "documents",
-                "returnAll": true,
-                "filters": {
-                    "conditions": [
-                        {
-                            "keyName": "project_id",
-                            "condition": "eq",
-                            "keyValue": "={{ $json.target_project_ids }}"
-                        }
-                    ]
-                }
-            },
-            "type": "n8n-nodes-base.supabase",
-            "typeVersion": 1,
-            "position": [580, 840],
-            "id": "7f6ed331-87f2-41a9-b4d8-c4e3a2cb3f31",
-            "name": "Get Documents from Selected Project",
-            "alwaysOutputData": true,
-            "credentials": {
-                "supabaseApi": {
-                    "id": "LDfTyVc5kKgtlyZL",
-                    "name": "Supabase account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "content": "# 2. Sorting the Project IDs selected by AI based on the user's request, along with their corresponding requirement fields in order.\n",
-                "height": 1080,
-                "width": 720,
-                "color": 3
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [560, 380],
-            "typeVersion": 1,
-            "id": "f5bc64b1-2043-4d7d-8c6b-578c19885ee0",
-            "name": "Sticky Note1"
-        },
-        {
-            "parameters": {
-                "assignments": {
-                    "assignments": [
-                        {
-                            "id": "2fb9f1c1-ddd0-4ef1-a4b8-a321d67925a4",
-                            "name": "organization_id",
-                            "value": "={{ $json.organization_id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "3eb43469-7f53-4c5c-941b-a8f2f265cd9d",
-                            "name": "project_id",
-                            "value": "={{ $json.id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "6f784a3e-308c-401e-9f71-192f407a38da",
-                            "name": "project_name",
-                            "value": "={{ $json.name }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "9668c1af-8417-40d6-9c71-dfe911841ab7",
-                            "name": "project_description",
-                            "value": "={{ $json.description }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "087bc4f9-9bee-4c85-bae8-b8f1b85d6889",
-                            "name": "document_id",
-                            "value": "={{ $json.document_id }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "81d90925-a035-4579-a7d3-40391c906098",
-                            "name": "document_name",
-                            "value": "={{ $json.document_name }}",
-                            "type": "string"
-                        },
-                        {
-                            "id": "1cefe88a-d741-4cc5-a6e1-51e9ce0aba3d",
-                            "name": "document_description",
-                            "value": "={{ $json.document_description }}",
-                            "type": "string"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 3.4,
-            "position": [1000, 1060],
-            "id": "2c59569d-38ee-498f-af82-373228a32b98",
-            "name": "Organizing Params: projects, documents"
-        },
-        {
-            "parameters": {
-                "mode": "combine",
-                "fieldsToMatchString": "block_id",
-                "joinMode": "keepEverything",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [2540, 1180],
-            "id": "ae7c9fa7-04e7-4c98-a13b-b1a2ff25c198",
-            "name": "Project < Documents < Blocks < Tables",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "content": "# 4. Merge Projects < Documents < Blocks to one node\n",
-                "height": 680,
-                "width": 1060,
-                "color": 4
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [1820, 380],
-            "typeVersion": 1,
-            "id": "373ab81f-921a-4269-aa46-bffca368c152",
-            "name": "Sticky Note2"
-        },
-        {
-            "parameters": {
-                "content": "# 5. Merge table to node which is generated from #4.\n",
-                "height": 400,
-                "width": 1060
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [1820, 1060],
-            "typeVersion": 1,
-            "id": "09538d9a-f7e4-44ca-ba35-0a352fb3e157",
-            "name": "Sticky Note3"
-        },
-        {
-            "parameters": {
-                "workflowInputs": {
-                    "values": [
-                        {
-                            "name": "query"
-                        }
-                    ]
-                }
-            },
-            "id": "ec5a797a-84ab-4419-99ad-1a8aa1c8420e",
-            "typeVersion": 1.1,
-            "name": "project_overview",
-            "type": "n8n-nodes-base.executeWorkflowTrigger",
-            "position": [-360, 620]
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "=**document_ids**: {{ $json.document_ids }}\n\n**document_names**: {{ $json.document_names }}\n\n**project_descriptions**: {{ $json.document_descriptions }}\n\n**user's message**: {{ $json.message }}",
-                "hasOutputParser": true,
-                "options": {
-                    "systemMessage": "# 🔧 System Prompt\n\nThe data contains three key components:\n\n- **`document_ids`**: A list of unique identifiers for each document. Each document is assigned a unique ID for identification.\n- **`document_names`**: A list of names corresponding to each document. Each document has a name that can be used to identify it more easily.\n- **`document_descriptions`**: A list of descriptions corresponding to each document. These descriptions provide additional details or context about each document. Note that some descriptions may be null, indicating that no description is available for that document.\n\nEach of these lists corresponds to each other in a 1-to-1 relationship. That means:\n\n- The first `document_id` corresponds to the first `document_name` and the first `document_description`.\n- The second `document_id` corresponds to the second `document_name` and the second `document_description`.\n- And so on...\n\n---\n\n## ✅ Your Task\n\nBased on the user's goal, you need to:\n\n1. **Review** the `document_names` and `document_descriptions` provided above.\n2. **Understand** the user's goal or requirements.\n3. **Identify** the most relevant documents by matching their names and descriptions with the user's intent.\n\n---\n\n## 🎯 Selection Rule\n\n- If the user wants to **review all document requirements**,  \n  → **Return all `document_ids`**.\n\n- If the user is interested in **only specific documents**,  \n  → **Return only the `document_ids`** that best match the user's needs.\n\n---\n\n## 🔁 Output Format\n\nReturn the selected `document_ids` as a **list**.\n"
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 2,
-            "position": [1280, 1060],
-            "id": "09db3df4-2559-4ba9-8adc-c64ec8146c2d",
-            "name": "AI Agent",
-            "alwaysOutputData": true,
-            "executeOnce": true,
-            "retryOnFail": true,
-            "maxTries": 5,
-            "waitBetweenTries": 1000
-        },
-        {
-            "parameters": {
-                "modelName": "models/gemini-2.5-pro",
-                "options": {}
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-            "typeVersion": 1,
-            "position": [1280, 1240],
-            "id": "6a721092-f694-4da7-9a81-300ee5b35978",
-            "name": "gemini 2.5 pro 2",
-            "credentials": {
-                "googlePalmApi": {
-                    "id": "AwJrPOk3HV2bX5Ki",
-                    "name": "Google Gemini(PaLM) Api account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "jsonSchemaExample": "[\n  {\n  \t\"target_document_ids\": \"adsfadgadsg1\"\n  }\n]"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.2,
-            "position": [1460, 1240],
-            "id": "dac5b3e4-b2d8-4749-9267-5e156e9d223e",
-            "name": "Structured Output Parser2",
-            "notesInFlow": true
-        },
-        {
-            "parameters": {
-                "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.document_name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.document_id);\n\nconst description = $input.all().map(item => item.json.document_description);\n\n\nreturn [\n  {\n    json: {\n      document_ids: ids,\n      document_names: names,\n      document_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [1140, 840],
-            "id": "49fbb2fa-9443-4671-ba4b-f4d398f1d325",
-            "name": "Extract document's ids"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_document_ids from the output array\n    const targetDocumentIds = item.json.output.map(o => ({ target_document_ids: o.target_document_ids }));\n    \n    // Add the extracted target_document_ids to the result\n    result = result.concat(targetDocumentIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [1560, 840],
-            "id": "f3617ee3-a507-4971-9c0b-ab77ad338594",
-            "name": "extract target_project_ids2"
-        },
-        {
-            "parameters": {
-                "content": "# 3. Selecting the documents to be reviewed based on the user's request",
-                "height": 1080,
-                "width": 560,
-                "color": 5
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [1260, 380],
-            "typeVersion": 1,
-            "id": "229c6590-7088-4ad0-9f96-fafa2907d19b",
-            "name": "Sticky Note4"
-        },
-        {
-            "parameters": {
-                "mode": "combine",
-                "advanced": true,
-                "mergeByFields": {
-                    "values": [
-                        {
-                            "field1": "document_id",
-                            "field2": "target_document_ids"
-                        }
-                    ]
-                },
-                "outputDataFrom": "input1",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [1700, 620],
-            "id": "c5bfdd6b-19b9-46f3-b4dc-d958c4bd80df",
-            "name": "Extract selected document"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Helper function to convert JSON object to markdown string\nfunction jsonToMarkdown(jsonObj) {\n    let markdown = '';\n    \n    // Keys to exclude from markdown conversion\n    const excludedKeys = ['organization_id', 'project_id', 'id', 'document_id', 'block_id'];\n    \n    for (const [key, value] of Object.entries(jsonObj)) {\n        // Skip excluded keys\n        if (excludedKeys.includes(key)) {\n            continue;\n        }\n        \n        markdown += `**${key}**: `;\n        \n        if (typeof value === 'string') {\n            markdown += `${value}\\n`;\n        } else if (typeof value === 'number' || typeof value === 'boolean') {\n            markdown += `${value}\\n`;\n        } else if (value === null) {\n            markdown += `null\\n`;\n        } else if (typeof value === 'object') {\n            markdown += `\\n${JSON.stringify(value, null, 2)}\\n`;\n        } else {\n            markdown += `${value}\\n`;\n        }\n    }\n    \n    return markdown;\n}\n\n// Collect all markdown strings from each item.json\nlet allDocumentsMarkdown = '';\n\nfor (const item of $input.all()) {\n    // Convert each item.json to markdown\n    const markdownString = jsonToMarkdown(item.json);\n    \n    // Add to the combined string with double newlines between items\n    if (allDocumentsMarkdown !== '') {\n        allDocumentsMarkdown += '\\n\\n';\n    }\n    allDocumentsMarkdown += markdownString;\n}\n\n// Return new array with single object containing all documents as markdown\nreturn [{\"all_documents\": allDocumentsMarkdown}];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [2940, 1180],
-            "id": "fc43fd2b-dd46-4e89-acf8-a47a84d59699",
-            "name": "Return to User",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "content": "# Return To User\n",
-                "height": 420,
-                "width": 480,
-                "color": 3
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [2880, 1040],
-            "typeVersion": 1,
-            "id": "5446e62f-4e1a-4d7c-9213-9a7bb05a93ba",
-            "name": "Sticky Note5"
-        },
-        {
-            "parameters": {
-                "content": "# 1. Selecting the projects to be reviewed based on the user's request\n",
-                "height": 1080,
-                "width": 940
-            },
-            "type": "n8n-nodes-base.stickyNote",
-            "position": [-380, 380],
-            "typeVersion": 1,
-            "id": "1c904ad7-533e-4c8d-bc55-69d9f97450c9",
-            "name": "Sticky Note6"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Return only items where type is \"text\"\nreturn $input.all().filter(item => item.json.type === \"text\");"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [2020, 580],
-            "id": "06722b3f-bd35-4be0-82d2-89d6e6a195bf",
-            "name": "Filtering Text"
-        },
-        {
-            "parameters": {
-                "fieldToSplitOut": "id, document_id, type, content.text, position",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.splitOut",
-            "typeVersion": 1,
-            "position": [2160, 800],
-            "id": "c9356cd9-c023-471e-83a8-378cfc9432a8",
-            "name": "Split Out - ids,context.text1",
-            "alwaysOutputData": true
-        },
-        {
-            "parameters": {
-                "mode": "combine",
-                "advanced": true,
-                "mergeByFields": {
-                    "values": [
-                        {
-                            "field1": "document_id",
-                            "field2": "document_id"
-                        }
-                    ]
-                },
-                "joinMode": "enrichInput1",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.merge",
-            "typeVersion": 3.2,
-            "position": [2420, 800],
-            "id": "37cd6a3f-c8b7-4774-b439-237d24bbdf8a",
-            "name": "Project < Documents < Blocks",
-            "alwaysOutputData": true
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          0,
+          580
+        ],
+        "id": "e29e21d8-881b-40a2-8ffe-7e8994ab8b1e",
+        "name": "Pull Org Project Lists",
+        "alwaysOutputData": true,
+        "credentials": {
+          "supabaseApi": {
+            "id": "4T7K0ALnwHMmf2mr",
+            "name": "Supabase account"
+          }
         }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.id);\n\nconst description = $input.all().map(item => item.json.description);\n\n\nreturn [\n  {\n    json: {\n      project_ids: ids,\n      project_names: names,\n      project_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          140,
+          700
+        ],
+        "id": "22c9fe38-865d-40c7-90c6-c858f24c426c",
+        "name": "Extract Project's ids",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=**project_ids**: {{ $('Extract Project\\'s ids').item.json.project_ids }}\n\n**project_names**: {{ $('Extract Project\\'s ids').item.json.project_names }}\n\n**project_descriptions**: {{ $('Extract Project\\'s ids').item.json.project_descriptions }}\n\n**user's message**: {{ $('Extract Project\\'s ids').item.json.message }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "=# 🔧 System Prompt\n\nThe data contains three key components:\n\n- **`project_ids`**: A list of unique identifiers for each project. Each project is assigned a unique ID for identification.\n- **`project_names`**: A list of names corresponding to each project. Each project has a name that can be used to identify it more easily.\n- **`project_descriptions`**: A list of descriptions corresponding to each project. These descriptions provide additional details or context about each project. Note that some descriptions may be null, indicating that no description is available for that project.\n\nEach of these lists corresponds to each other in a 1-to-1 relationship. That means:\n\n- The first `project_id` corresponds to the first `project_name` and the first `project_description`.\n- The second `project_id` corresponds to the second `project_name` and the second `project_description`.\n- And so on...\n\n---\n\n## ✅ Your Task\n\nBased on the user's goal, you need to:\n\n1. **Review** the `project_names` and `project_descriptions` provided above.\n2. **Understand** the user's goal or requirements.\n3. **Identify** the most relevant projects by matching their names and descriptions with the user's intent.\n\n---\n\n## 🎯 Selection Rule\n\n- If the user wants to **review all project requirements**,  \n  → **Return all `project_ids`**.\n\n- If the user is interested in **only specific projects**,  \n  → **Return only the `project_ids`** that best match the user's needs.\n\n---\n\n## 🔁 Output Format\n\nReturn the selected `project_ids` as a **list**.\n"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          300,
+          800
+        ],
+        "id": "9ec23578-d994-4043-aed3-5751c075d554",
+        "name": "Agent Checked DB",
+        "alwaysOutputData": true,
+        "executeOnce": true,
+        "retryOnFail": true,
+        "maxTries": 5
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "[\n  {\n  \t\"target_project_ids\": \"adsfadgadsg1\"\n  }\n]"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.2,
+        "position": [
+          460,
+          980
+        ],
+        "id": "b8de6ad6-b9bc-4f93-bf10-34c45c4ce2aa",
+        "name": "Structured Output Parser",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_project_ids from the output array\n    const targetProjectIds = item.json.output.map(o => ({ target_project_ids: o.target_project_ids }));\n    \n    // Add the extracted target_project_ids to the result\n    result = result.concat(targetProjectIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          620,
+          920
+        ],
+        "id": "882ebc37-5b01-4c04-ae4e-1f6c60fe51ba",
+        "name": "extract target_project_ids"
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-2.5-pro",
+          "options": {
+            "maxOutputTokens": 2048,
+            "temperature": 0.3,
+            "topP": 0.9
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          320,
+          980
+        ],
+        "id": "136ed31c-d587-4f55-998b-561a00001207",
+        "name": "gemini 2.5 pro",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "4cUrFs3WHQ9IQCld",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "e22d2a1a-2357-4295-b8a3-e98af8de00fe",
+                "name": "id",
+                "value": "={{ $json.project_id }}",
+                "type": "string"
+              },
+              {
+                "id": "374b3c56-146c-4d41-8923-47cd78aa624d",
+                "name": "document_name",
+                "value": "={{ $json.name }}",
+                "type": "string"
+              },
+              {
+                "id": "f024475c-e2f7-49fe-ab60-7d9ccb0f300b",
+                "name": "document_id",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "7644cd10-9229-4ef2-83f8-b7c0341dbe94",
+                "name": "document_description",
+                "value": "={{ $json.description }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          940,
+          1020
+        ],
+        "id": "ef760cd3-31d8-4c08-a2ad-4a47ce117ed5",
+        "name": "set_document_id,name,description",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "requirements",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "document_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.target_document_ids }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          2080,
+          1100
+        ],
+        "id": "2b091afa-82a2-485d-885e-8bb9971f9143",
+        "name": "Get Tables",
+        "alwaysOutputData": true,
+        "executeOnce": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "4T7K0ALnwHMmf2mr",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const keysToRemove = [\n  \"format\",\n  \"level\",\n  \"tags\",\n  \"position\",\n  \"type\",\n  \"original_requirement\",\n  \"enchanced_requirement\",\n  \"ai_analysis\",\n  \"created_at\",\n  \"updated_at\",\n  \"created_by\",\n  \"updated_by\",\n  \"version\",\n  \"is_deleted\",\n  \"deleted_at\",\n  \"deleted_by\",\n  \"properties\",\n];\n\nfor (const item of $input.all()) {\n  if (item.json && typeof item.json === 'object') {\n    if (item.json.properties && item.json.properties.Email && item.json.properties.Email.value) {\n      item.json.email = item.json.properties.Email.value;\n    }\n    \n    for (const key of keysToRemove) {\n      delete item.json[key];\n    }\n  }\n}\n\nreturn $input.all();"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2220,
+          1160
+        ],
+        "id": "30f053e0-c2c6-4a81-93f6-29e52fa2ea9d",
+        "name": "Refine param from Table",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "mode": "combine",
+          "fieldsToMatchString": "id",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          1060,
+          800
+        ],
+        "id": "716c19e8-2bc9-4be8-a434-c59e107dfd84",
+        "name": "Merge: Project + documents"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "blocks",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "document_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.target_document_ids }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          2100,
+          760
+        ],
+        "id": "1a3becd7-97e7-4e39-816c-3172e170c451",
+        "name": "blocks & text_from_document_ids",
+        "executeOnce": false,
+        "alwaysOutputData": true,
+        "credentials": {
+          "supabaseApi": {
+            "id": "4T7K0ALnwHMmf2mr",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "useCustomSchema": true,
+          "operation": "getAll",
+          "tableId": "documents",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "project_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.target_project_ids }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          780,
+          800
+        ],
+        "id": "de362c0e-dcea-4211-a2aa-abb373542819",
+        "name": "Get Documents from Selected Project",
+        "alwaysOutputData": true,
+        "credentials": {
+          "supabaseApi": {
+            "id": "4T7K0ALnwHMmf2mr",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "content": "# 2. Sorting the Project IDs selected by AI based on the user's request, along with their corresponding requirement fields in order.\n",
+          "height": 1080,
+          "width": 720,
+          "color": 3
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          760,
+          340
+        ],
+        "typeVersion": 1,
+        "id": "9da008d9-818c-42c1-ae6f-7546d45efbb8",
+        "name": "Sticky Note1"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "2fb9f1c1-ddd0-4ef1-a4b8-a321d67925a4",
+                "name": "organization_id",
+                "value": "={{ $json.organization_id }}",
+                "type": "string"
+              },
+              {
+                "id": "3eb43469-7f53-4c5c-941b-a8f2f265cd9d",
+                "name": "project_id",
+                "value": "={{ $json.id }}",
+                "type": "string"
+              },
+              {
+                "id": "6f784a3e-308c-401e-9f71-192f407a38da",
+                "name": "project_name",
+                "value": "={{ $json.name }}",
+                "type": "string"
+              },
+              {
+                "id": "9668c1af-8417-40d6-9c71-dfe911841ab7",
+                "name": "project_description",
+                "value": "={{ $json.description }}",
+                "type": "string"
+              },
+              {
+                "id": "087bc4f9-9bee-4c85-bae8-b8f1b85d6889",
+                "name": "document_id",
+                "value": "={{ $json.document_id }}",
+                "type": "string"
+              },
+              {
+                "id": "81d90925-a035-4579-a7d3-40391c906098",
+                "name": "document_name",
+                "value": "={{ $json.document_name }}",
+                "type": "string"
+              },
+              {
+                "id": "1cefe88a-d741-4cc5-a6e1-51e9ce0aba3d",
+                "name": "document_description",
+                "value": "={{ $json.document_description }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          1200,
+          1020
+        ],
+        "id": "9fb404b9-cad9-4e00-8ad9-2db9646f6ff6",
+        "name": "Organizing Params: projects, documents"
+      },
+      {
+        "parameters": {
+          "mode": "combine",
+          "fieldsToMatchString": "block_id",
+          "joinMode": "keepEverything",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          2740,
+          1140
+        ],
+        "id": "d9a97d01-6e27-4ab7-adf7-02826b07fb29",
+        "name": "Project < Documents < Blocks < Tables",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "content": "# 4. Merge Projects < Documents < Blocks to one node\n",
+          "height": 680,
+          "width": 1060,
+          "color": 4
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          2020,
+          340
+        ],
+        "typeVersion": 1,
+        "id": "a23a3905-5d24-4a98-af69-02982adb71ac",
+        "name": "Sticky Note2"
+      },
+      {
+        "parameters": {
+          "content": "# 5. Merge table to node which is generated from #4.\n",
+          "height": 400,
+          "width": 1060
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          2020,
+          1020
+        ],
+        "typeVersion": 1,
+        "id": "256f60b3-1709-4148-82f6-6d9a503f2f57",
+        "name": "Sticky Note3"
+      },
+      {
+        "parameters": {
+          "workflowInputs": {
+            "values": [
+              {
+                "name": "query"
+              }
+            ]
+          }
+        },
+        "id": "1923a303-2136-4301-8e5d-103b6bbb13b3",
+        "typeVersion": 1.1,
+        "name": "project_overview",
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "position": [
+          -160,
+          580
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=**document_ids**: {{ $json.document_ids }}\n\n**document_names**: {{ $json.document_names }}\n\n**project_descriptions**: {{ $json.document_descriptions }}\n\n**user's message**: {{ $json.message }}",
+          "hasOutputParser": true,
+          "options": {
+            "systemMessage": "# 🔧 System Prompt\n\nThe data contains three key components:\n\n- **`document_ids`**: A list of unique identifiers for each document. Each document is assigned a unique ID for identification.\n- **`document_names`**: A list of names corresponding to each document. Each document has a name that can be used to identify it more easily.\n- **`document_descriptions`**: A list of descriptions corresponding to each document. These descriptions provide additional details or context about each document. Note that some descriptions may be null, indicating that no description is available for that document.\n\nEach of these lists corresponds to each other in a 1-to-1 relationship. That means:\n\n- The first `document_id` corresponds to the first `document_name` and the first `document_description`.\n- The second `document_id` corresponds to the second `document_name` and the second `document_description`.\n- And so on...\n\n---\n\n## ✅ Your Task\n\nBased on the user's goal, you need to:\n\n1. **Review** the `document_names` and `document_descriptions` provided above.\n2. **Understand** the user's goal or requirements.\n3. **Identify** the most relevant documents by matching their names and descriptions with the user's intent.\n\n---\n\n## 🎯 Selection Rule\n\n- If the user wants to **review all document requirements**,  \n  → **Return all `document_ids`**.\n\n- If the user is interested in **only specific documents**,  \n  → **Return only the `document_ids`** that best match the user's needs.\n\n---\n\n## 🔁 Output Format\n\nReturn the selected `document_ids` as a **list**.\n"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 2,
+        "position": [
+          1480,
+          1020
+        ],
+        "id": "661159b0-477c-4a14-985f-d8672db0c680",
+        "name": "AI Agent",
+        "alwaysOutputData": true,
+        "executeOnce": true,
+        "retryOnFail": true,
+        "maxTries": 5,
+        "waitBetweenTries": 1000
+      },
+      {
+        "parameters": {
+          "modelName": "models/gemini-2.5-pro",
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1,
+        "position": [
+          1480,
+          1200
+        ],
+        "id": "fe506b5e-3da5-41c1-922c-55a01151f971",
+        "name": "gemini 2.5 pro 2",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "4cUrFs3WHQ9IQCld",
+            "name": "Google Gemini(PaLM) Api account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "[\n  {\n  \t\"target_document_ids\": \"adsfadgadsg1\"\n  }\n]"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.2,
+        "position": [
+          1660,
+          1200
+        ],
+        "id": "79ff05c7-efcd-47d4-ba3a-1417666f43f6",
+        "name": "Structured Output Parser2",
+        "notesInFlow": true
+      },
+      {
+        "parameters": {
+          "jsCode": "// Extract the 'name' values from the input\nconst names = $input.all().map(item => item.json.document_name);\n\n// Extract the 'id' values from the input\nconst ids = $input.all().map(item => item.json.document_id);\n\nconst description = $input.all().map(item => item.json.document_description);\n\n\nreturn [\n  {\n    json: {\n      document_ids: ids,\n      document_names: names,\n      document_descriptions: description,\n      message: $('project_overview').first().json.query\n    }\n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1340,
+          800
+        ],
+        "id": "671893ab-14f8-44b6-b0f8-c888e609ab4c",
+        "name": "Extract document's ids"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Loop over input items\nlet result = [];\n\n// Loop through all items\nfor (const item of $input.all()) {\n  // Ensure 'output' exists and is an array\n  if (item.json.output && Array.isArray(item.json.output)) {\n    // Extract target_document_ids from the output array\n    const targetDocumentIds = item.json.output.map(o => ({ target_document_ids: o.target_document_ids }));\n    \n    // Add the extracted target_document_ids to the result\n    result = result.concat(targetDocumentIds);\n  }\n}\n\n// Return the transformed result\nreturn result;\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1760,
+          800
+        ],
+        "id": "8bda24e7-3f04-427f-851f-16c1c9c01e6d",
+        "name": "extract target_project_ids2"
+      },
+      {
+        "parameters": {
+          "content": "# 3. Selecting the documents to be reviewed based on the user's request",
+          "height": 1080,
+          "width": 560,
+          "color": 5
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          1460,
+          340
+        ],
+        "typeVersion": 1,
+        "id": "14e57592-e2f5-4eef-b34c-56bebe25e304",
+        "name": "Sticky Note4"
+      },
+      {
+        "parameters": {
+          "mode": "combine",
+          "advanced": true,
+          "mergeByFields": {
+            "values": [
+              {
+                "field1": "document_id",
+                "field2": "target_document_ids"
+              }
+            ]
+          },
+          "outputDataFrom": "input1",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          1900,
+          580
+        ],
+        "id": "32c11fef-9ebd-47f6-a5ac-680fe8f02c88",
+        "name": "Extract selected document"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Helper function to convert JSON object to markdown string\nfunction jsonToMarkdown(jsonObj) {\n    let markdown = '';\n    \n    // Keys to exclude from markdown conversion\n    const excludedKeys = ['organization_id', 'project_id', 'id', 'document_id', 'block_id'];\n    \n    for (const [key, value] of Object.entries(jsonObj)) {\n        // Skip excluded keys\n        if (excludedKeys.includes(key)) {\n            continue;\n        }\n        \n        markdown += `**${key}**: `;\n        \n        if (typeof value === 'string') {\n            markdown += `${value}\\n`;\n        } else if (typeof value === 'number' || typeof value === 'boolean') {\n            markdown += `${value}\\n`;\n        } else if (value === null) {\n            markdown += `null\\n`;\n        } else if (typeof value === 'object') {\n            markdown += `\\n${JSON.stringify(value, null, 2)}\\n`;\n        } else {\n            markdown += `${value}\\n`;\n        }\n    }\n    \n    return markdown;\n}\n\n// Collect all markdown strings from each item.json\nlet allDocumentsMarkdown = '';\n\nfor (const item of $input.all()) {\n    // Convert each item.json to markdown\n    const markdownString = jsonToMarkdown(item.json);\n    \n    // Add to the combined string with double newlines between items\n    if (allDocumentsMarkdown !== '') {\n        allDocumentsMarkdown += '\\n\\n';\n    }\n    allDocumentsMarkdown += markdownString;\n}\n\n// Return new array with single object containing all documents as markdown\nreturn [{\"all_documents\": allDocumentsMarkdown}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3140,
+          1140
+        ],
+        "id": "b6c6b5ca-e6a2-4105-ad16-dcc4e925a30b",
+        "name": "Return to User",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "content": "# Return To User\n",
+          "height": 420,
+          "width": 480,
+          "color": 3
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          3080,
+          1000
+        ],
+        "typeVersion": 1,
+        "id": "49686a65-7c36-4117-83a0-2a29947600dd",
+        "name": "Sticky Note5"
+      },
+      {
+        "parameters": {
+          "content": "# 1. Selecting the projects to be reviewed based on the user's request\n",
+          "height": 1080,
+          "width": 940
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -180,
+          340
+        ],
+        "typeVersion": 1,
+        "id": "7f83c85b-b777-452e-ab56-910b60779e37",
+        "name": "Sticky Note6"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Return only items where type is \"text\"\nreturn $input.all().filter(item => item.json.type === \"text\");"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2220,
+          540
+        ],
+        "id": "fc1004e1-955d-4ff3-a4a5-eb42a3f1ffc1",
+        "name": "Filtering Text"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "id, document_id, type, content.text, position",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          2360,
+          760
+        ],
+        "id": "60ecd666-e667-4224-8917-3f84c21ad30e",
+        "name": "Split Out - ids,context.text1",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "mode": "combine",
+          "advanced": true,
+          "mergeByFields": {
+            "values": [
+              {
+                "field1": "document_id",
+                "field2": "document_id"
+              }
+            ]
+          },
+          "joinMode": "enrichInput1",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3.2,
+        "position": [
+          2620,
+          760
+        ],
+        "id": "cfddf3a8-5eb0-4ef5-a2e8-792dc1915f00",
+        "name": "Project < Documents < Blocks",
+        "alwaysOutputData": true
+      }
     ],
     "connections": {
-        "Pull Org Project Lists": {
-            "main": [
-                [
-                    {
-                        "node": "Extract Project's ids",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Merge: Project + documents",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Extract Project's ids": {
-            "main": [
-                [
-                    {
-                        "node": "Agent Checked DB",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Agent Checked DB": {
-            "main": [
-                [
-                    {
-                        "node": "extract target_project_ids",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "Agent Checked DB",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "extract target_project_ids": {
-            "main": [
-                [
-                    {
-                        "node": "Get Documents from Selected Project",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "gemini 2.5 pro": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "Agent Checked DB",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "set_document_id,name,description": {
-            "main": [
-                [
-                    {
-                        "node": "Merge: Project + documents",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Get Tables": {
-            "main": [
-                [
-                    {
-                        "node": "Refine param from Table",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Refine param from Table": {
-            "main": [
-                [
-                    {
-                        "node": "Project < Documents < Blocks < Tables",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Merge: Project + documents": {
-            "main": [
-                [
-                    {
-                        "node": "Organizing Params: projects, documents",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "blocks & text_from_document_ids": {
-            "main": [
-                [
-                    {
-                        "node": "Filtering Text",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Get Documents from Selected Project": {
-            "main": [
-                [
-                    {
-                        "node": "set_document_id,name,description",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Organizing Params: projects, documents": {
-            "main": [
-                [
-                    {
-                        "node": "Extract document's ids",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Extract selected document",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Project < Documents < Blocks < Tables": {
-            "main": [
-                [
-                    {
-                        "node": "Return to User",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "project_overview": {
-            "main": [
-                [
-                    {
-                        "node": "Pull Org Project Lists",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "AI Agent": {
-            "main": [
-                [
-                    {
-                        "node": "extract target_project_ids2",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "gemini 2.5 pro 2": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser2": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Extract document's ids": {
-            "main": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "extract target_project_ids2": {
-            "main": [
-                [
-                    {
-                        "node": "blocks & text_from_document_ids",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Get Tables",
-                        "type": "main",
-                        "index": 0
-                    },
-                    {
-                        "node": "Extract selected document",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Extract selected document": {
-            "main": [
-                [
-                    {
-                        "node": "Project < Documents < Blocks",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Filtering Text": {
-            "main": [
-                [
-                    {
-                        "node": "Split Out - ids,context.text1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Split Out - ids,context.text1": {
-            "main": [
-                [
-                    {
-                        "node": "Project < Documents < Blocks",
-                        "type": "main",
-                        "index": 1
-                    }
-                ]
-            ]
-        },
-        "Project < Documents < Blocks": {
-            "main": [
-                [
-                    {
-                        "node": "Project < Documents < Blocks < Tables",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        }
+      "Pull Org Project Lists": {
+        "main": [
+          [
+            {
+              "node": "Extract Project's ids",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Merge: Project + documents",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Project's ids": {
+        "main": [
+          [
+            {
+              "node": "Agent Checked DB",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agent Checked DB": {
+        "main": [
+          [
+            {
+              "node": "extract target_project_ids",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Agent Checked DB",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extract target_project_ids": {
+        "main": [
+          [
+            {
+              "node": "Get Documents from Selected Project",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "gemini 2.5 pro": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agent Checked DB",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "set_document_id,name,description": {
+        "main": [
+          [
+            {
+              "node": "Merge: Project + documents",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Get Tables": {
+        "main": [
+          [
+            {
+              "node": "Refine param from Table",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Refine param from Table": {
+        "main": [
+          [
+            {
+              "node": "Project < Documents < Blocks < Tables",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge: Project + documents": {
+        "main": [
+          [
+            {
+              "node": "Organizing Params: projects, documents",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "blocks & text_from_document_ids": {
+        "main": [
+          [
+            {
+              "node": "Filtering Text",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Documents from Selected Project": {
+        "main": [
+          [
+            {
+              "node": "set_document_id,name,description",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Organizing Params: projects, documents": {
+        "main": [
+          [
+            {
+              "node": "Extract document's ids",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Extract selected document",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Project < Documents < Blocks < Tables": {
+        "main": [
+          [
+            {
+              "node": "Return to User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "project_overview": {
+        "main": [
+          [
+            {
+              "node": "Pull Org Project Lists",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Agent": {
+        "main": [
+          [
+            {
+              "node": "extract target_project_ids2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "gemini 2.5 pro 2": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser2": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract document's ids": {
+        "main": [
+          [
+            {
+              "node": "AI Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "extract target_project_ids2": {
+        "main": [
+          [
+            {
+              "node": "blocks & text_from_document_ids",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Get Tables",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Extract selected document",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Extract selected document": {
+        "main": [
+          [
+            {
+              "node": "Project < Documents < Blocks",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Filtering Text": {
+        "main": [
+          [
+            {
+              "node": "Split Out - ids,context.text1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out - ids,context.text1": {
+        "main": [
+          [
+            {
+              "node": "Project < Documents < Blocks",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Project < Documents < Blocks": {
+        "main": [
+          [
+            {
+              "node": "Project < Documents < Blocks < Tables",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
     },
     "pinData": {
-        "project_overview": [
-            {
-                "query": "Show me all detailed requirements and content from the perception requirement document, including all fields, descriptions, and specifications"
-            }
-        ]
+      "project_overview": [
+        {
+          "query": "Show me all detailed requirements and content from the perception requirement document, including all fields, descriptions, and specifications"
+        }
+      ]
     },
     "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "0d71b622322a5065a1d05eb8df0488a161a137b6ca1d05c8af04e8f6b2d48412"
+      "templateCredsSetupCompleted": true,
+      "instanceId": "d26b2a84234c2c4983f8b74ee4bb4d875412aeacbd4cd8b7cbaad7b8c7614526"
     }
-}
+  }
