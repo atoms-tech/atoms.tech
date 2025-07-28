@@ -17,6 +17,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
     onUpdate,
     onDelete,
     properties,
+    userProfile,
 }) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
         useSortable({
@@ -75,6 +76,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                     onDelete={onDelete}
                     properties={properties}
                     dragActivators={listeners}
+                    userProfile={userProfile}
                 />
             )}
         </div>

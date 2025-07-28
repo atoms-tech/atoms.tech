@@ -80,7 +80,8 @@ export const useDocumentRealtime = ({
                 .in(
                     'block_id',
                     tableBlocks.map((block) => block.id),
-                );
+                )
+                .order('position', { ascending: true });
 
             if (columnsError) {
                 console.error('❌ Columns fetch error:', columnsError);
@@ -136,8 +137,8 @@ export const useDocumentRealtime = ({
                     };
                 },
             );
-
             setBlocks(blocksWithRequirements);
+
             setError(null);
         } catch (err) {
             setError(err as Error);
@@ -169,6 +170,7 @@ export const useDocumentRealtime = ({
                     if (payload.eventType === 'UPDATE') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
+
                             return prevBlocks.map((block) =>
                                 block.id === payload.new.id
                                     ? {
@@ -203,6 +205,7 @@ export const useDocumentRealtime = ({
                     if (payload.eventType === 'UPDATE') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
+
                             return prevBlocks.map((block) => {
                                 if (block.id === payload.new.block_id) {
                                     return {
@@ -220,6 +223,7 @@ export const useDocumentRealtime = ({
                     } else if (payload.eventType === 'INSERT') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
+
                             return prevBlocks.map((block) => {
                                 if (block.id === payload.new.block_id) {
                                     return {
@@ -236,6 +240,7 @@ export const useDocumentRealtime = ({
                     } else if (payload.eventType === 'DELETE') {
                         setBlocks((prevBlocks) => {
                             if (!prevBlocks) return prevBlocks;
+
                             return prevBlocks.map((block) => {
                                 if (block.id === payload.old.block_id) {
                                     return {

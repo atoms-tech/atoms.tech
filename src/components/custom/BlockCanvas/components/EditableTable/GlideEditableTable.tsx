@@ -8,7 +8,7 @@ import DataEditor, {
     GridCell,
     GridCellKind,
     GridColumn,
-    GridDragEventArgs,
+    //GridDragEventArgs,
     Item,
 } from '@glideapps/glide-data-grid';
 import { useTheme } from 'next-themes';
@@ -19,48 +19,16 @@ import { glideLightTheme } from './glideLightTheme';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
-import { DeleteConfirmDialog, TableControls } from './components';
+import debounce from 'lodash/debounce';
 
-//import { CellValue } from './types';
+import { useBlockMetadataActions } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
+import { useUser } from '@/lib/providers/user.provider';
 
-interface GlideEditableTableProps<T extends { id: string; position?: number }> {
-    data: T[];
-    columns: {
-        accessor: keyof T;
-        title: string;
-        width?: number;
-        position?: number;
-    }[];
-    //onCellChange: (rowId: string, accessor: keyof T, value: CellValue) => void;
-    onBlur?: () => void;
-    isEditMode?: boolean;
-    showFilter?: boolean;
-    filterComponent?: React.ReactNode;
-    onSave?: (item: Partial<T>, isNew: boolean) => Promise<void>;
-    onPostSave?: () => Promise<void>;
-    onDelete?: (item: T) => Promise<void>;
-    onAddRow?: () => void;
-    onSaveNewRow?: () => void;
-    onCancelNewRow?: () => void;
-    isAddingNew?: boolean;
-    deleteConfirmOpen?: boolean;
-    onDeleteConfirm?: () => void;
-    setDeleteConfirmOpen?: (open: boolean) => void;
-    onDragStart?: (args: GridDragEventArgs) => void;
-    onDragOverCell?: (cell: Item, dataTransfer: DataTransfer | null) => void;
-    onDrop?: (cell: Item, dataTransfer: DataTransfer | null) => void;
-    onColumnOrderChange?: (
-        columns: {
-            accessor: keyof T;
-            title: string;
-            width?: number;
-            position?: number;
-        }[],
-    ) => void;
-}
+import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
+import { /*CellValue,*/ GlideTableProps } from './types';
 
 export function GlideEditableTable<T extends { id: string; position?: number }>(
-    props: GlideEditableTableProps<T>,
+    props: GlideTableProps<T>,
 ) {
     const { resolvedTheme } = useTheme();
 
@@ -71,7 +39,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         onSave,
         onPostSave,
         //onBlur,
-        isEditMode = true,
+        isEditMode = false,
         showFilter = false,
         filterComponent,
         onAddRow,
@@ -81,28 +49,99 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
         deleteConfirmOpen = false,
         onDeleteConfirm,
         setDeleteConfirmOpen,
-        onColumnOrderChange,
+        isLoading = false,
+        blockId,
+        //tableMetadata, // Unneeded: metadata is being used in parent to pass in settings, and saving uses local array to track.
     } = props;
 
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
-    //const [focusedCell, setFocusedCell] = useState<Item | undefined>();
+    const prevEditModeRef = useRef<boolean>(isEditMode);
+    const isSavingRef = useRef(false);
 
-    // const onVisibleRegionChanged = useCallback((
-    //     range: Rectangle,
-    //     tx: number,
-    //     ty: number,
-    //     extras: { selected?: Item; freezeRegion?: Rectangle }
-    //     ) => {
-    //     if (extras.selected) {
-    //         setFocusedCell(extras.selected);
-    //     } else {
-    //         setFocusedCell(undefined);
-    //     }
-    // }, []);
+    // Get user site profile info for saves.
+    const { profile } = useUser();
+    const userId = profile?.id;
+    const userName = profile?.full_name || '';
 
-    const [tableWidth, setTableWidth] = useState<number>(0);
+    const { updateBlockMetadata } = useBlockMetadataActions();
+
+    // useEffect(() => {
+    //     console.debug('[GlideEditableTable] Received tableMetadata:', tableMetadata);
+    // }, [tableMetadata]);
+
+    const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
+    // Ref to refresh editing data when autosave evaluated.
+    const editingDataRef = useRef(editingData);
+    useEffect(() => {
+        editingDataRef.current = editingData;
+    }, [editingData]);
+
+    const handleSaveAll = useCallback(async () => {
+        const currentEdits = editingDataRef.current;
+
+        if (isSavingRef.current) {
+            console.debug('[GlideEditableTable] Save already in progress. Skipping.');
+            return;
+        }
+
+        isSavingRef.current = true;
+        console.debug('[GlideEditableTable] Saving all pending data...');
+
+        try {
+            const hasEdits = Object.keys(currentEdits).length > 0;
+
+            if (!hasEdits) {
+                console.debug('[GlideEditableTable] No changes to save.');
+                return;
+            }
+
+            // Save row changes
+            for (const [rowId, changes] of Object.entries(currentEdits)) {
+                const originalItem = data.find((d) => d.id === rowId);
+                if (!originalItem) continue;
+
+                const fullItem: T = {
+                    ...originalItem,
+                    ...changes,
+                };
+
+                await onSave?.(fullItem, false, userId, userName);
+                console.debug(`[GlideEditableTable] Saved row ${rowId}`);
+            }
+
+            // TODO: Update Column metadata (also need to track w/ local columns vs passed.)
+
+            setEditingData({});
+            await onPostSave?.();
+        } catch (err) {
+            console.error('[GlideEditableTable] Error saving all changes:', err);
+        } finally {
+            isSavingRef.current = false;
+        }
+    }, [onPostSave, data, onSave, userId, userName]);
+
+    // Debounce saves, should be abstracted to table props and switched off when realtime collaboration enabled.
+    const useDebouncedSave = (delay = 5000) => {
+        const debounced = useRef(
+            debounce(() => {
+                void handleSaveAllRef.current?.();
+                void saveColumnMetadataRef.current?.();
+            }, delay),
+        );
+
+        useEffect(() => {
+            const d = debounced.current;
+            return () => d.cancel(); // cleanup on unmount
+        }, []);
+
+        return debounced.current;
+    };
+
+    const debouncedSave = useDebouncedSave();
+
+    // const [tableWidth, setTableWidth] = useState<number>(0);
 
     useEffect(() => {
         const handleResize = () => {
@@ -120,90 +159,231 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
     const normalizedColumns = useMemo(() => {
         return columns.map((col) => ({
             ...col,
-            title:
-                'title' in col
-                    ? col.title
-                    : 'header' in col
-                      ? (col as { header: string }).header
-                      : '', // Fallback to `header` if `title` missing
+            title: col.header, // map header to title
         }));
     }, [columns]);
 
-    console.debug('[GlideEditableTable] Normalized Columns:', normalizedColumns);
+    //console.debug('[GlideEditableTable] Normalized Columns:', normalizedColumns);
 
     const [localColumns, setLocalColumns] = useState(
         [...normalizedColumns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     );
+    const localColumnsRef = useRef(localColumns);
+    useEffect(() => {
+        localColumnsRef.current = localColumns;
+    }, [localColumns]);
 
     const [localData, setLocalData] = useState<T[]>(() => [...data]);
 
     const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>({});
 
-    const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
-    console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
+    // Build column definitions using user-defined column sizes (if available)
+    const columnDefs: GridColumn[] = useMemo(
+        () =>
+            localColumns.map((col, idx) => ({
+                title: col.title,
+                width: colSizes[col.accessor] || col.width || 120, // prioritize user's resized width
+                trailingRowOptions:
+                    idx === 0
+                        ? {
+                              hint: 'Add row',
+                              addIcon: 'plus',
+                              targetColumn: 0,
+                          }
+                        : undefined,
+            })),
+        [localColumns, colSizes],
+    );
 
-    useEffect(() => {
-        console.debug(`[GlideEditableTable] PROPS for instance=${instanceId}:`, {
-            dataLength: data.length,
-            columnCount: columns.length,
-            firstRow: data[0],
-            columns,
-        });
-    }, [data, columns, instanceId]);
-
-    useEffect(() => {
-        console.debug('[GlideEditableTable] Props:', {
-            dataLength: data?.length,
-            columns,
-            firstRow: data?.[0],
-        });
-    }, [data, columns]);
-
-    //const [editingData, setEditingData] = useState<Record<string, Partial<T>>>({});
-    //const [isEditingCell, setIsEditingCell] = useState(false);
-
-    const columnDefs: GridColumn[] = useMemo(() => {
-        const totalCols = localColumns.length;
-        const gutter = 80;
-        const availableWidth = tableWidth > gutter ? tableWidth - gutter : 1000;
-        const widthPerCol = Math.floor(availableWidth / totalCols);
-
-        return localColumns.map((col, idx) => ({
-            title: col.title,
-            width: widthPerCol,
-            trailingRowOptions:
-                idx === 0
-                    ? {
-                          hint: 'Add Row',
-                          addIcon: 'plus',
-                          targetColumn: 0,
-                      }
-                    : undefined,
-        }));
-    }, [localColumns, tableWidth]);
-
+    // Sort the local data (which includes user edits and new rows) by position
     const sortedData = useMemo(() => {
-        const sorted = [...data].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-        console.debug(
-            `[GlideEditableTable] Sorted Data for instance=${instanceId}:`,
-            sorted,
+        const sorted = [...localData].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
+        );
+        console.debug(`[GlideEditableTable] Sorted Data (position):`, sorted);
+        return sorted;
+    }, [localData]);
+
+    // Method to save the column's metadata
+    const saveColumnMetadata = useCallback(async () => {
+        const latestLocalColumns = localColumnsRef.current;
+
+        if (!blockId || latestLocalColumns.length === 0) return;
+
+        const originalColumnState = columns
+            .map((col) => ({
+                id: col.id,
+                position: col.position ?? 0,
+                width: col.width ?? undefined,
+            }))
+            .sort((a, b) => a.position - b.position);
+
+        const localColumnState = latestLocalColumns
+            .map((col, idx) => ({
+                id: col.id,
+                position: idx,
+                width: col.width ?? undefined,
+            }))
+            .sort((a, b) => a.position - b.position);
+
+        const isDifferent =
+            originalColumnState.length !== localColumnState.length ||
+            originalColumnState.some((col, idx) => {
+                const local = localColumnState[idx];
+                return (
+                    col.id !== local.id ||
+                    col.position !== local.position ||
+                    (col.width ?? null) !== (local.width ?? null)
+                );
+            });
+
+        if (!isDifferent) {
+            console.debug(
+                '[GlideEditableTable] No column metadata changes detected. Skipping save.',
+            );
+            return;
+        }
+
+        const updatedMetadata = {
+            columns: latestLocalColumns.map((col, idx) => ({
+                columnId: col.id,
+                position: idx,
+                ...(col.width !== undefined ? { width: col.width } : {}),
+            })),
+        };
+
+        try {
+            await updateBlockMetadata(blockId, updatedMetadata);
+            console.debug(
+                '[GlideEditableTable] Column metadata saved to block: ',
+                updatedMetadata,
+            );
+        } catch (err) {
+            console.error('[GlideEditableTable] Failed to save column metadata:', err);
+        }
+    }, [blockId, columns, updateBlockMetadata]);
+
+    // References to latest version of save methods. Fixes stale reference when editing data on a newly added column.
+    const handleSaveAllRef = useRef(handleSaveAll);
+    useEffect(() => {
+        handleSaveAllRef.current = handleSaveAll;
+    }, [handleSaveAll]);
+
+    const saveColumnMetadataRef = useRef(saveColumnMetadata);
+    useEffect(() => {
+        saveColumnMetadataRef.current = saveColumnMetadata;
+    }, [saveColumnMetadata]);
+
+    // Sync db row changes with existing pending changes for local data.
+    useEffect(() => {
+        // 1. Build a map of pending edits
+        const pendingEdits = editingDataRef.current;
+
+        // 2. Detect any differences between new props.data and current localData + pendingEdits
+        const mergedData = data.map((incomingRow) => {
+            const pending = pendingEdits[incomingRow.id];
+            return pending ? { ...incomingRow, ...pending } : incomingRow;
+        });
+
+        // 3. Compare mergedData with current localData
+        const hasDifferences =
+            mergedData.length !== localData.length ||
+            mergedData.some((row, idx) => {
+                const localRow = localData[idx];
+                if (!localRow || row.id !== localRow.id) return true;
+
+                for (const key of Object.keys(row)) {
+                    if (
+                        row[key as keyof T] !== localRow[key as keyof T] &&
+                        !(
+                            key === 'position' &&
+                            Math.abs(
+                                (row[key as keyof T] as number) -
+                                    (localRow[key as keyof T] as number),
+                            ) < 1e-6
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+        if (hasDifferences) {
+            console.debug(
+                '[GlideEditableTable] Detected external data change. Syncing localData...',
+            );
+            setLocalData(mergedData);
+        }
+        // else {
+        //     console.debug('[GlideEditableTable] No changes detected in props.data');
+        // }
+    }, [data, localData]);
+
+    // Watch for changes in columns from db
+    useEffect(() => {
+        const normalized = columns.map((col) => ({
+            ...col,
+            title: col.header,
+        }));
+        const sortedNormalized = [...normalized].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
         );
 
-        console.debug('[TABLE INIT] Sorted Data:', sorted);
-        sorted.forEach((row, index) => {
-            console.debug(`[ROW ${index}] id=${row.id} position=${row.position}`);
-            if ('properties' in row && typeof row.properties === 'object') {
-                console.debug(`[ROW ${index}] properties:`, row.properties);
+        const localAccessors = new Set(localColumns.map((c) => c.accessor));
+        const normalizedAccessors = new Set(sortedNormalized.map((c) => c.accessor));
+
+        const columnsAdded = [...normalizedAccessors].filter(
+            (a) => !localAccessors.has(a),
+        );
+        const columnsRemoved = [...localAccessors].filter(
+            (a) => !normalizedAccessors.has(a),
+        );
+
+        if (columnsAdded.length || columnsRemoved.length) {
+            //console.debug('[GlideEditableTable] Detected column count change. Updating localColumns...');
+
+            // Merge new columns at end, preserving existing column order and metadata
+            const merged = [...localColumns];
+
+            for (const added of columnsAdded) {
+                const newCol = sortedNormalized.find((c) => c.accessor === added);
+                if (newCol) merged.push(newCol);
             }
-        });
 
-        return sorted;
-    }, [data, instanceId]);
-    // const sortedData = localData;
+            // Filter out removed columns
+            const filtered = merged.filter((col) =>
+                normalizedAccessors.has(col.accessor),
+            );
 
-    useEffect(() => {
-        console.debug('[TABLE INIT] Columns:', localColumns);
-    }, [localColumns]);
+            setLocalColumns(filtered);
+        }
+    }, [columns, localColumns]);
+
+    // Debugs for tracing loading issues, ignore.
+    // const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
+    // console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
+    // console.debug('[GlideEditableTable] Local Columns:', localColumns);
+    // useEffect(() => {
+    //     console.debug(`[GlideEditableTable] PROPS for instance=${instanceId}:`, {
+    //         dataLength: data.length,
+    //         columnCount: columns.length,
+    //         firstRow: data[0],
+    //         columns,
+    //     });
+    // }, [data, columns, instanceId]);
+
+    // useEffect(() => {
+    //     console.debug('[GlideEditableTable] Props:', {
+    //         dataLength: data?.length,
+    //         columns,
+    //         firstRow: data?.[0],
+    //     });
+    // }, [data, columns]);
+
+    // useEffect(() => {
+    //     console.debug('[Glide TABLE INIT] Local Columns:', localColumns);
+    // }, [localColumns]);
 
     const handleColumnResize = useCallback(
         (col: GridColumn, newSize: number) => {
@@ -217,18 +397,15 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             });
 
             setLocalColumns((prev) => {
-                return prev.map((c) =>
+                const updated = prev.map((c) =>
                     c.title === col.title ? { ...c, width: newSize } : c,
                 );
-            });
 
-            // Optional: persist to DB
-            const updated = localColumns.map((c) =>
-                c.title === col.title ? { ...c, width: newSize } : c,
-            );
-            onColumnOrderChange?.(updated); // You could rename this to `onColumnsChanged` or similar
+                debouncedSave(); // Call debounced save with newly updated columns.
+                return updated;
+            });
         },
-        [localColumns, onColumnOrderChange],
+        [debouncedSave, localColumns],
     );
 
     const handleColumnMoved = useCallback(
@@ -237,15 +414,18 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                 const updated = [...prevCols];
                 const [moved] = updated.splice(startIndex, 1);
                 updated.splice(endIndex, 0, moved);
-                console.debug(
-                    '[COLUMN ORDER CHANGED]:',
-                    updated.map((c) => c.accessor),
-                );
-                onColumnOrderChange?.(updated); // <-- SAVE TO DB
-                return updated;
+
+                const reindexed = updated.map((col, i) => ({
+                    ...col,
+                    position: i,
+                }));
+
+                return reindexed;
             });
+
+            debouncedSave(); // Trigger debounced save on column metadata change
         },
-        [onColumnOrderChange],
+        [debouncedSave],
     );
 
     const getCellContent = useCallback(
@@ -278,67 +458,50 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
 
             if (originalValue?.toString() === newValueStr) return;
 
-            const updatedRow = {
-                ...rowData,
-                [accessor]: newValueStr,
-            };
+            // console.debug('[onCellEdited] Detected change:', {
+            //     rowId,
+            //     accessor,
+            //     oldValue: originalValue,
+            //     newValue: newValueStr,
+            // });
 
-            console.debug('[onCellEdited] Changed cell:', {
-                rowId,
-                accessor,
-                oldValue: originalValue,
-                newValue: newValueStr,
+            // Optimistically update local data
+            setLocalData((prev) => {
+                const updated = [...prev];
+                updated[row] = {
+                    ...updated[row],
+                    [accessor]: newValueStr,
+                };
+                return updated;
             });
+
+            // Update the editing buffer and log changes
+            setEditingData((prev) => {
+                const existing = prev[rowId] ?? {};
+                const updatedRow = {
+                    ...existing,
+                    [accessor]: newValueStr,
+                };
+                const updatedEditingData = {
+                    ...prev,
+                    [rowId]: updatedRow,
+                };
+
+                // console.debug('[onCellEdited] Updated editingData entry:', updatedRow);
+                // console.debug(
+                //     '[onCellEdited] Full editingData after change:',
+                //     updatedEditingData,
+                // );
+
+                return updatedEditingData;
+            });
+
+            debouncedSave(); // Debounce save if set, else leave in buffer and handle on edit exit or manual save.
 
             lastEditedCellRef.current = cell;
-
-            await onSave?.(updatedRow, false);
-            await onPostSave?.();
-
-            // Refocus after the render
-            requestAnimationFrame(() => {
-                const editor = gridRef.current;
-                if (editor && lastEditedCellRef.current) {
-                    console.debug('[Refocusing Cell]', lastEditedCellRef.current);
-                    if (editor && lastEditedCellRef.current) {
-                        const [col, row] = lastEditedCellRef.current;
-                        editor.scrollTo(col, row);
-                    }
-                }
-            });
         },
-        [localData, localColumns, onSave, onPostSave],
+        [localData, localColumns, debouncedSave],
     );
-
-    // const savePendingChanges = useCallback(async () => {
-    //     if (!onSave || Object.keys(editingData).length === 0) return;
-
-    //     try {
-    //         for (const [rowId, changes] of Object.entries(editingData)) {
-    //             const changedFields = Object.entries(changes).reduce(
-    //                 (acc, [key, value]) => {
-    //                     // Only include fields that are actually changed and not undefined
-    //                     if (value !== undefined) acc[key as keyof T] = value;
-    //                     return acc;
-    //                 },
-    //                 { id: rowId } as Partial<T>,
-    //             );
-
-    //             console.debug(`[savePendingChanges] Saving ONLY changed fields:`, changedFields);
-    //             await onSave(changedFields, false);
-    //         }
-    //         setEditingData({});
-    //         await onPostSave?.();
-    //     } catch (error) {
-    //         console.error('[savePendingChanges] Failed to save:', error);
-    //     }
-    // }, [editingData, onSave, onPostSave]);
-
-    // const handleEditorClose = useCallback(async () => {
-    //     if (!isEditingCell) return;
-    //     setIsEditingCell(false);
-    //     await savePendingChanges();
-    // }, [isEditingCell, savePendingChanges]);
 
     // Add a new row.
     const handleRowAppended = useCallback(() => {
@@ -355,7 +518,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
             position: maxPosition + 1,
         } as T;
 
-        console.debug('[handleRowAppended] New row created:', newRow);
+        //console.debug('[handleRowAppended] New row created:', newRow);
         setLocalData((prev) => [...prev, newRow]);
         onSave?.(newRow, true);
     }, [columns, data, onSave]);
@@ -373,7 +536,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
 
     // Modify Trailing Row Visuals
     columns.map((col, idx) => ({
-        title: col.title,
+        title: col.header,
         width: colSizes[col.accessor] || col.width || 120,
         trailingRowOptions:
             idx === 0
@@ -384,6 +547,72 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                   }
                 : undefined,
     }));
+
+    // Called when edit mode is turned false. Curr salls HandleSaveAll ...
+    useEffect(() => {
+        const wasEditMode = prevEditModeRef.current;
+        prevEditModeRef.current = isEditMode;
+        if (wasEditMode && !isEditMode) {
+            console.debug(
+                '[GlideEditableTable] Edit mode exited. Checking for unsaved edits...',
+            );
+
+            const hasPendingEdits = Object.keys(editingDataRef.current).length > 0;
+
+            if (hasPendingEdits) {
+                console.debug(
+                    '[GlideEditableTable] Flushing pending edits on edit mode exit...',
+                );
+                void handleSaveAll();
+            } else {
+                console.debug('[GlideEditableTable] No edits to save on exit.');
+            }
+
+            void saveColumnMetadata();
+        }
+    }, [
+        isEditMode,
+        localColumns,
+        editingData,
+        onSave,
+        onPostSave,
+        handleSaveAll,
+        saveColumnMetadata,
+    ]);
+
+    // Save hotkey, temp fix for dev. 'Ctrl' + 's'
+    const handleKeyDown = useCallback(
+        (e: KeyboardEvent) => {
+            const isMac =
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (navigator as any).userAgentData?.platform === 'macOS' ||
+                navigator.userAgent.toLowerCase().includes('mac');
+            const isSaveKey =
+                (isMac && e.metaKey && e.key === 's') ||
+                (!isMac && e.ctrlKey && e.key === 's');
+
+            if (isSaveKey) {
+                e.preventDefault(); // Prevent browser's save dialog
+                console.debug(
+                    '[GlideEditableTable] Ctrl+S detected. Saving pending changes...',
+                );
+                void handleSaveAll();
+                void saveColumnMetadata();
+            }
+        },
+        [handleSaveAll, saveColumnMetadata],
+    );
+
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleKeyDown]);
+
+    if (isLoading) {
+        return <TableLoadingSkeleton columns={columns.length} />;
+    }
 
     return (
         <div className="w-full">
@@ -399,10 +628,10 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                     documentId=""
                 />
             )}
+
             <div
                 className="w-full"
                 ref={tableRef}
-                //onBlur={handleTableBlur}
                 tabIndex={-1}
                 style={{
                     overflowX: 'hidden',
@@ -411,41 +640,39 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
                     flexDirection: 'column',
                 }}
             >
-                <div style={{ height: 500 }}>
-                    <DataEditor
-                        ref={gridRef}
-                        columns={columnDefs}
-                        getCellContent={getCellContent}
-                        //onVisibleRegionChanged={onVisibleRegionChanged}
-                        onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
-                        rows={sortedData.length}
-                        onColumnResize={handleColumnResize}
-                        onColumnMoved={handleColumnMoved}
-                        trailingRowOptions={{
-                            tint: true,
-                            sticky: true,
-                        }}
-                        // onKeyDown={(e) => {
-                        //     if (!isEditMode) return;
-                        //     if (e.key === 'Enter' || e.key === 'Tab') { // Keys that trigger saving (buffer locally, save later).
-                        //         handleEditorClose();
-                        //     }
-                        // }}
-                        onRowAppended={isEditMode ? handleRowAppended : undefined}
-                        rowMarkers="both"
-                        onRowMoved={handleRowMoved} // Enable row reordering
-                        rowHeight={43}
-                        theme={
-                            resolvedTheme === 'dark' ? glideDarkTheme : glideLightTheme
-                        }
-                    />
+                <div style={{ width: '100%' }}>
+                    <div style={{ height: 500 }}>
+                        <DataEditor
+                            ref={gridRef}
+                            columns={columnDefs}
+                            getCellContent={getCellContent}
+                            onCellEdited={isEditMode ? onCellEdited : undefined}
+                            rows={sortedData.length}
+                            onColumnResize={handleColumnResize}
+                            onColumnMoved={handleColumnMoved}
+                            trailingRowOptions={{
+                                tint: true,
+                                sticky: true,
+                            }}
+                            onRowAppended={isEditMode ? handleRowAppended : undefined}
+                            rowMarkers="both"
+                            onRowMoved={handleRowMoved}
+                            rowHeight={43}
+                            theme={
+                                resolvedTheme === 'dark'
+                                    ? glideDarkTheme
+                                    : glideLightTheme
+                            }
+                        />
+                    </div>
                 </div>
+
+                <DeleteConfirmDialog
+                    open={deleteConfirmOpen}
+                    onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
+                    onConfirm={onDeleteConfirm || (() => {})}
+                />
             </div>
-            <DeleteConfirmDialog
-                open={deleteConfirmOpen}
-                onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
-                onConfirm={onDeleteConfirm || (() => {})}
-            />
         </div>
     );
 }

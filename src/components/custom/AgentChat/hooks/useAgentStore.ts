@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { supabase } from '@/lib/supabase/supabaseBrowser';
+
 interface Message {
     id: string;
     content: string;
@@ -67,6 +69,15 @@ interface AgentStore {
     sendToN8n: (
         data: Omit<N8nRequestData, 'secureContext'>,
     ) => Promise<Record<string, unknown>>;
+
+    // Chat queue per organization
+    organizationQueues: { [orgId: string]: string[] };
+    // Queue actions
+    addToQueue: (message: string) => void;
+    popFromQueue: () => string | undefined;
+    removeFromQueue: (index: number) => void;
+    clearQueue: () => void;
+    getQueueForCurrentOrg: () => string[];
 }
 
 type _PinnedOrganizationId = string | undefined;
@@ -74,6 +85,7 @@ type _PinnedOrganizationId = string | undefined;
 interface SecureUserContext {
     userId: string;
     orgId: string;
+    orgName?: string;
     pinnedOrganizationId?: string;
     projectId?: string;
     documentId?: string;
@@ -128,6 +140,7 @@ export const useAgentStore = create<AgentStore>()(
             _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
+            organizationQueues: {},
 
             // Actions
             setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -222,10 +235,25 @@ export const useAgentStore = create<AgentStore>()(
                 }
 
                 try {
+                    // Fetch organization name
+                    let orgName: string | undefined;
+                    try {
+                        const { data: orgData } = await supabase
+                            .from('organizations')
+                            .select('name')
+                            .eq('id', currentOrgId)
+                            .eq('is_deleted', false)
+                            .single();
+                        orgName = orgData?.name;
+                    } catch (orgError) {
+                        console.warn('Failed to fetch organization name:', orgError);
+                    }
+
                     // Create secure context with only necessary information
                     const secureContext: SecureUserContext = {
                         userId: currentUserId,
                         orgId: currentOrgId,
+                        orgName,
                         pinnedOrganizationId: currentPinnedOrganizationId,
                         timestamp: new Date().toISOString(),
                         sessionToken: '',
@@ -281,6 +309,62 @@ export const useAgentStore = create<AgentStore>()(
                 } catch (error) {
                     throw error;
                 }
+            },
+
+            // Chat queue per organization
+            addToQueue: (message: string) => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (queue.length >= 5) return; // Max 5
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: [...queue, message],
+                    },
+                });
+            },
+            popFromQueue: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return undefined;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (queue.length === 0) return undefined;
+                const [next, ...rest] = queue;
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: rest,
+                    },
+                });
+                return next;
+            },
+            removeFromQueue: (index: number) => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                const queue = organizationQueues[currentPinnedOrganizationId] || [];
+                if (index < 0 || index >= queue.length) return;
+                const newQueue = queue.filter((_, i) => i !== index);
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: newQueue,
+                    },
+                });
+            },
+            clearQueue: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return;
+                set({
+                    organizationQueues: {
+                        ...organizationQueues,
+                        [currentPinnedOrganizationId]: [],
+                    },
+                });
+            },
+            getQueueForCurrentOrg: () => {
+                const { currentPinnedOrganizationId, organizationQueues } = get();
+                if (!currentPinnedOrganizationId) return [];
+                return organizationQueues[currentPinnedOrganizationId] || [];
             },
         }),
         {

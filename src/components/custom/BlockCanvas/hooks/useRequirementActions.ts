@@ -427,7 +427,7 @@ export const useRequirementActions = ({
                     savedRequirement,
                 );
 
-                // Update local state with the new requirement
+                // Update local state with the new requirement immediately without refetching
                 console.log('🎯 STEP 5e: Updating local state with new requirement');
                 setLocalRequirements((prev) => {
                     const newState = [...prev, savedRequirement];
@@ -460,7 +460,7 @@ export const useRequirementActions = ({
                 if (!data) throw new Error('No data returned from update');
                 savedRequirement = data;
 
-                // Update local state with the updated requirement
+                // Update local state with the updated requirement immediately without refetching
                 setLocalRequirements((prev) =>
                     prev.map((req) =>
                         req.id === savedRequirement.id ? savedRequirement : req,
@@ -469,7 +469,8 @@ export const useRequirementActions = ({
             }
 
             return savedRequirement;
-            console.log('🎉 STEP 5: saveRequirement completed successfully');
+            // Note: removed unreachable console.log below
+            // console.log('🎉 STEP 5: saveRequirement completed successfully');
         } catch (error) {
             console.error('❌ STEP 5: Error saving requirement:', error);
             throw error;
@@ -486,7 +487,7 @@ export const useRequirementActions = ({
 
             if (error) throw error;
 
-            // Update local state by removing the deleted requirement
+            // Update local state by removing the deleted requirement immediately without refetching
             setLocalRequirements((prev) =>
                 prev.filter((req) => req.id !== dynamicReq.id),
             );
@@ -501,6 +502,6 @@ export const useRequirementActions = ({
         saveRequirement,
         deleteRequirement,
         createPropertiesObjectFromDynamicReq,
-        refreshRequirements,
+        refreshRequirements, // still available for manual refresh but not called automatically
     };
 };

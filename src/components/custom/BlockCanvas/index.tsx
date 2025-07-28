@@ -231,10 +231,17 @@ export function BlockCanvas({
                     onDelete={() =>
                         canPerformAction('deleteBlock') && handleDeleteBlock(block.id)
                     }
+                    userProfile={userProfile} // Pass userprofile to table each block, prevent refetch for each table block.
                 />
             );
         },
-        [selectedBlockId, handleUpdateBlock, handleDeleteBlock, canPerformAction],
+        [
+            selectedBlockId,
+            userProfile,
+            canPerformAction,
+            handleUpdateBlock,
+            handleDeleteBlock,
+        ],
     );
 
     // Memoize the blocks to prevent unnecessary re-renders

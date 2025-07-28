@@ -64,6 +64,7 @@ export interface BlockProps {
     onDelete?: () => void;
     properties?: Property[];
     dragActivators?: SyntheticListenerMap;
+    userProfile?: Profile | null;
 }
 
 export interface BlockActionsProps {
@@ -129,4 +130,18 @@ export interface ColumnCreateData {
     width?: number | null;
     is_hidden?: boolean | null;
     is_pinned?: boolean | null;
+}
+
+// Metadata interface for table column/row position and width.
+export interface BlockTableMetadata {
+    columns: {
+        columnId: string;
+        position: number;
+        width?: number;
+    }[];
+    requirements: {
+        requirementId: string;
+        position: number;
+        height?: number;
+    }[];
 }

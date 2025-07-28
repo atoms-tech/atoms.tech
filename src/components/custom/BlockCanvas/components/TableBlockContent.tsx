@@ -13,18 +13,26 @@ import {
     PropertyConfig,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
+import { BlockTableMetadata } from '@/components/custom/BlockCanvas/types';
 import { useDocumentStore } from '@/store/document.store';
 
 interface TableBlockContentProps {
     dynamicRequirements: DynamicRequirement[];
     columns: EditableColumn<DynamicRequirement>[];
-    onSaveRequirement: (dynamicReq: DynamicRequirement, isNew: boolean) => Promise<void>;
+    onSaveRequirement: (
+        dynamicReq: DynamicRequirement,
+        isNew: boolean,
+        userId?: string,
+        userName?: string,
+    ) => Promise<void>;
     onDeleteRequirement: (dynamicReq: DynamicRequirement) => Promise<void>;
     refreshRequirements: () => Promise<void>;
     isEditMode: boolean;
     alwaysShowAddRow?: boolean;
     useTanStackTables?: boolean;
     useGlideTables?: boolean;
+    blockId?: string;
+    tableMetadata?: BlockTableMetadata | null;
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -38,6 +46,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         alwaysShowAddRow = false,
         useTanStackTables = false,
         useGlideTables = false,
+        blockId,
+        tableMetadata,
     }) => {
         // Get global setting from doc store as fallback
         const {
@@ -62,8 +72,13 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(
-            async (dynamicReq: DynamicRequirement, isNew: boolean) => {
-                await onSaveRequirement(dynamicReq, isNew);
+            async (
+                dynamicReq: DynamicRequirement,
+                isNew: boolean,
+                userId?: string,
+                userName?: string,
+            ) => {
+                await onSaveRequirement(dynamicReq, isNew, userId, userName);
             },
             [onSaveRequirement],
         );
@@ -93,6 +108,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 showFilter: false,
                 isEditMode,
                 alwaysShowAddRow,
+                blockId,
+                tableMetadata,
             }),
             [
                 dynamicRequirements,
@@ -102,6 +119,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 handleRefresh,
                 isEditMode,
                 alwaysShowAddRow,
+                blockId,
+                tableMetadata,
             ],
         );
 
