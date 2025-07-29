@@ -237,6 +237,8 @@ export function GlideEditableTable<
         console.debug('[GlideEditableTable] Sorted Data:', sortedData);
     }, [sortedData]);
 
+    // Needs to be validated, I dont think change checks properly catch changed.
+    // So may be called more often then needed. Harmless but wastefull and may cause issues with concurrent editing.
     const saveTableMetadata = useCallback(async () => {
         if (!blockId) return;
 
@@ -619,8 +621,15 @@ export function GlideEditableTable<
         try {
             await props.onDeleteColumn?.(columnToDelete);
 
-            // Update local state and metadata after successful removal.
-            setLocalColumns((prev) => prev.filter((col) => col.id !== columnToDelete));
+            // Compute updated local columns *before* triggering state update
+            const newLocalColumns = localColumnsRef.current.filter(
+                (col) => col.id !== columnToDelete,
+            );
+
+            // Update ref and state, then call metadata update.
+            localColumnsRef.current = newLocalColumns;
+            setLocalColumns(newLocalColumns);
+
             saveTableMetadata();
         } catch (err) {
             console.error('[GlideEditableTable] Failed to delete column:', err);
