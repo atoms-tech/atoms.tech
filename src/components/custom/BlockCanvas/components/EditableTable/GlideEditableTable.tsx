@@ -1,6 +1,8 @@
 'use client';
 
 // We still need to validate role perms so readers canot exit, ect.
+import '@/styles/globals.css';
+
 import DataEditor, {
     DataEditorRef,
     GridCell,
@@ -10,7 +12,11 @@ import DataEditor, {
     Item,
     Rectangle,
 } from '@glideapps/glide-data-grid';
+import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { glideDarkTheme } from './glideDarkTheme';
+import { glideLightTheme } from './glideLightTheme';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
@@ -30,6 +36,8 @@ import { /*CellValue,*/ GlideTableProps } from './types';
 export function GlideEditableTable<
     T extends { id: string; position?: number; height?: number },
 >(props: GlideTableProps<T>) {
+    const { resolvedTheme } = useTheme();
+
     const {
         data,
         columns,
@@ -142,6 +150,20 @@ export function GlideEditableTable<
 
     const debouncedSave = useDebouncedSave();
 
+    const [_tableWidth, setTableWidth] = useState<number>(0);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (tableRef.current) {
+                setTableWidth(tableRef.current.offsetWidth);
+            }
+        };
+
+        handleResize(); // Run immediately on mount
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const params = useParams();
     const orgId = params?.orgId || '';
     const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
@@ -181,6 +203,7 @@ export function GlideEditableTable<
 
     const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>({});
 
+    // Build column definitions using user-defined column sizes (if available)
     const columnDefs: GridColumn[] = useMemo(
         () =>
             localColumns.map((col, idx) => ({
@@ -738,29 +761,27 @@ export function GlideEditableTable<
                     documentId=""
                 />
             )}
+
             <div
-                className="relative w-full overflow-x-auto brutalist-scrollbar"
-                style={{ maxWidth: '100%' }}
+                className="w-full"
                 ref={tableRef}
-                //onBlur={handleTableBlur}
                 tabIndex={-1}
+                style={{
+                    overflowX: 'hidden',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}
             >
-                <div
-                    style={{
-                        minWidth: '100%',
-                        maxWidth: '1000px',
-                        width: 'max-content',
-                    }}
-                >
+                <div style={{ width: '100%' }}>
                     <div style={{ height: 500 }}>
                         <DataEditor
                             ref={gridRef}
                             columns={columnDefs}
                             getCellContent={getCellContent}
-                            //onVisibleRegionChanged={onVisibleRegionChanged}
-                            onCellEdited={isEditMode ? onCellEdited : undefined} // <- only attach handler in edit mode
+                            onCellEdited={isEditMode ? onCellEdited : undefined}
                             rows={sortedData.length}
-                            rowHeight={(row) => sortedData[row]?.height ?? 34}
+                            rowHeight={(row) => sortedData[row]?.height ?? 43}
                             onColumnResize={handleColumnResize}
                             onColumnMoved={handleColumnMoved}
                             trailingRowOptions={{
@@ -769,7 +790,12 @@ export function GlideEditableTable<
                             }}
                             onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
-                            onRowMoved={handleRowMoved} // Enable row reordering
+                            onRowMoved={handleRowMoved}
+                            theme={
+                                resolvedTheme === 'dark'
+                                    ? glideDarkTheme
+                                    : glideLightTheme
+                            }
                             //onRowResize={handleRowResize}
                             onHeaderMenuClick={(col, bounds) => {
                                 setColumnMenu({ colIndex: col, bounds: bounds });
@@ -860,6 +886,12 @@ export function GlideEditableTable<
                             )}
                     </div>
                 </div>
+
+                <DeleteConfirmDialog
+                    open={deleteConfirmOpen}
+                    onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
+                    onConfirm={onDeleteConfirm || (() => {})}
+                />
             </div>
             <DeleteConfirmDialog
                 open={deleteConfirmOpen}
