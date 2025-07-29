@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, LayoutDashboard, LucideIcon, Sparkles, User } from 'lucide-react';
+import { Hammer, Home, LayoutDashboard, LucideIcon, Sparkles, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -87,6 +87,11 @@ function AppSidebar() {
             console.log('No personal organization found');
         }
     }, [personalOrg, router, enterpriseOrg]);
+
+    const navigateToAdmin = () => {
+        console.log('Navigating to admin page:');
+        router.push('/admin');
+    };
 
     const navigateToPinnedOrganization = useCallback(async () => {
         try {
@@ -213,6 +218,23 @@ function AppSidebar() {
                                             <Sparkles className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                             <span className="text-xs font-medium">
                                                 Playground
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
+
+                            {profile?.job_title === 'admin' && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToAdmin}
+                                        >
+                                            <Hammer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Admin
                                             </span>
                                         </Button>
                                     </SidebarMenuButton>
