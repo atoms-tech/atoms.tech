@@ -107,41 +107,7 @@ export const useColumnActions = ({
 
                 const column = columnData as Column;
 
-                // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } = await supabase
-                    .from('requirements')
-                    .select('*')
-                    .eq('block_id', blockId)
-                    .eq('is_deleted', false);
-
-                if (requirementsError) {
-                    throw requirementsError;
-                }
-
-                // Update each requirement's properties to include the new column
-                const updatePromises = requirements.map(async (req) => {
-                    // Create or update properties object
-                    const currentProperties = (req.properties || {}) as Record<
-                        string,
-                        unknown
-                    >;
-
-                    // Update properties using both:
-                    // 1. The column ID (for backwards compatibility with how we access properties)
-                    // 2. The property name (for consistency with how requirements are displayed)
-                    const updatedProperties = {
-                        ...currentProperties,
-                        [column.id]: defaultValue,
-                        [property.name]: defaultValue,
-                    };
-
-                    return supabase
-                        .from('requirements')
-                        .update({ properties: updatedProperties as Json })
-                        .eq('id', req.id);
-                });
-
-                await Promise.all(updatePromises);
+                // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
                 // Invalidate relevant queries
                 queryClient.invalidateQueries({
@@ -209,41 +175,7 @@ export const useColumnActions = ({
 
                 const column = columnData as Column;
 
-                // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } = await supabase
-                    .from('requirements')
-                    .select('*')
-                    .eq('block_id', blockId)
-                    .eq('is_deleted', false);
-
-                if (requirementsError) {
-                    throw requirementsError;
-                }
-
-                // Update each requirement's properties to include the new column
-                const updatePromises = requirements.map(async (req) => {
-                    // Create or update properties object
-                    const currentProperties = (req.properties || {}) as Record<
-                        string,
-                        unknown
-                    >;
-
-                    // Update properties using both:
-                    // 1. The column ID (for backwards compatibility with how we access properties)
-                    // 2. The property name (for consistency with how requirements are displayed)
-                    const updatedProperties = {
-                        ...currentProperties,
-                        [column.id]: defaultValue,
-                        [property.name]: defaultValue,
-                    };
-
-                    return supabase
-                        .from('requirements')
-                        .update({ properties: updatedProperties as Json })
-                        .eq('id', req.id);
-                });
-
-                await Promise.all(updatePromises);
+                // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
                 // Invalidate relevant queries
                 queryClient.invalidateQueries({
@@ -268,13 +200,21 @@ export const useColumnActions = ({
     const deleteColumn = useCallback(
         async (columnId: string, blockId: string) => {
             try {
+                console.log('[ColumnActions] Deleting column:', columnId);
+
                 // Step 1: Delete the column itself
                 const { error: columnError } = await supabase
                     .from('columns')
                     .delete()
                     .eq('id', columnId);
 
-                if (columnError) throw columnError;
+                if (columnError) {
+                    console.error(
+                        '[ColumnActions] Failed to delete column record:',
+                        columnError,
+                    );
+                    throw columnError;
+                }
 
                 // Step 2: Remove the column from each requirement's properties
                 const { data: requirements, error: requirementsError } = await supabase
@@ -296,7 +236,22 @@ export const useColumnActions = ({
                             ? { ...originalProps }
                             : {};
 
-                    delete currentProps[columnId];
+                    // Delete any key that has matching column_id
+                    for (const key of Object.keys(currentProps)) {
+                        const entry = currentProps[key];
+                        if (
+                            typeof entry === 'object' &&
+                            entry !== null &&
+                            'column_id' in entry &&
+                            entry.column_id === columnId
+                        ) {
+                            console.log(
+                                `[ColumnActions] Deleting key "${key}" from requirement ${req.id}`,
+                            );
+                            delete currentProps[key];
+                        }
+                    }
+                    delete currentProps[columnId]; // Clean up legacy bug. Should be remedied when editing a req but meh.
 
                     return supabase
                         .from('requirements')
@@ -314,7 +269,7 @@ export const useColumnActions = ({
                     queryKey: queryKeys.requirements.byBlock(blockId),
                 });
             } catch (error) {
-                console.error('Error deleting column:', error);
+                console.error('[ColumnActions] Error deleting column:', error);
                 throw error;
             }
         },

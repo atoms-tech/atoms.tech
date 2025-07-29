@@ -3,6 +3,8 @@
 import '@/styles/globals.css';
 
 // We still need to validate role perms so readers cannot exit, ect.
+import '@/styles/globals.css';
+
 import DataEditor, {
     DataEditorRef,
     GridCell,
@@ -53,9 +55,10 @@ export function GlideEditableTable<
         //onSaveNewRow,
         //onCancelNewRow,
         //isAddingNew = false,
-        deleteConfirmOpen = false,
-        onDeleteConfirm,
-        setDeleteConfirmOpen,
+        //deleteConfirmOpen = false,
+        //onDeleteConfirm,
+        //onDeleteColumn,
+        //setDeleteConfirmOpen,
         isLoading = false,
         blockId,
         //tableMetadata, // Unneeded: metadata is being used in parent to pass in settings, and saving uses local array to track.
@@ -74,6 +77,8 @@ export function GlideEditableTable<
 
     const { updateBlockMetadata } = useBlockMetadataActions();
     //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
+    const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
     // useEffect(() => {
     //     console.debug('[GlideEditableTable] Received tableMetadata:', tableMetadata);
@@ -206,6 +211,7 @@ export function GlideEditableTable<
             localColumns.map((col, idx) => ({
                 title: col.title,
                 width: colSizes[col.accessor] || col.width || 120, // prioritize user's resized width
+                width: colSizes[col.accessor] || col.width || 120,
                 hasMenu: true,
                 menuIcon: 'dots',
                 trailingRowOptions:
@@ -220,16 +226,11 @@ export function GlideEditableTable<
         [localColumns, colSizes],
     );
 
-    // Sort the local data (which includes user edits and new rows) by position
+    // Sort localData by metadata position key.
     const sortedData = useMemo(() => {
-        const sorted = [...localData].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-        );
-        console.debug(`[GlideEditableTable] Sorted Data (position):`, sorted);
-        return sorted;
+        return [...localData].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }, [localData]);
 
-    // Sort localData by metadata position key.
     const [columnMenu, setColumnMenu] = useState<
         | {
               colIndex: number;
@@ -262,6 +263,8 @@ export function GlideEditableTable<
         console.debug('[GlideEditableTable] Sorted Data:', sortedData);
     }, [sortedData]);
 
+    // Needs to be validated, I don't think change checks properly catch changed.
+    // So may be called more often then needed. Harmless but wasteful and may cause issues with concurrent editing.
     const saveTableMetadata = useCallback(async () => {
         if (!blockId) return;
 
@@ -335,83 +338,6 @@ export function GlideEditableTable<
             );
         }
     }, [blockId, columns, sortedData, updateBlockMetadata]);
-
-    // Methods have been combined into a single save metadata method. Remove after testing (initial results show we can delete these)
-    // // Method to save the column's metadata
-    // const saveColumnMetadata = useCallback(async () => {
-    //     const latestLocalColumns = localColumnsRef.current;
-
-    //     if (!blockId || latestLocalColumns.length === 0) return;
-
-    //     const originalColumnState = columns
-    //         .map((col) => ({
-    //             id: col.id,
-    //             position: col.position ?? 0,
-    //             width: col.width ?? undefined,
-    //         }))
-    //         .sort((a, b) => a.position - b.position);
-
-    //     const localColumnState = latestLocalColumns
-    //         .map((col, idx) => ({
-    //             id: col.id,
-    //             position: idx,
-    //             width: col.width ?? undefined,
-    //         }))
-    //         .sort((a, b) => a.position - b.position);
-
-    //     const isDifferent =
-    //         originalColumnState.length !== localColumnState.length ||
-    //         originalColumnState.some((col, idx) => {
-    //             const local = localColumnState[idx];
-    //             return (
-    //                 col.id !== local.id ||
-    //                 col.position !== local.position ||
-    //                 (col.width ?? null) !== (local.width ?? null)
-    //             );
-    //         });
-
-    //     if (!isDifferent) {
-    //         console.debug(
-    //             '[GlideEditableTable] No column metadata changes detected. Skipping save.',
-    //         );
-    //         return;
-    //     }
-
-    //     const updatedMetadata = {
-    //         columns: latestLocalColumns.map((col, idx) => ({
-    //             columnId: col.id,
-    //             position: idx,
-    //             ...(col.width !== undefined ? { width: col.width } : {}),
-    //         })),
-    //     };
-
-    //     try {
-    //         await updateBlockMetadata(blockId, updatedMetadata);
-    //         console.debug(
-    //             '[GlideEditableTable] Column metadata saved to block: ',
-    //             updatedMetadata,
-    //         );
-    //     } catch (err) {
-    //         console.error('[GlideEditableTable] Failed to save column metadata:', err);
-    //     }
-    // }, [blockId, columns, updateBlockMetadata]);
-
-    // const saveRowMetadata = useCallback(async () => {
-    //     if (!blockId || !sortedData.length) return;
-
-    //     const rowMetadata = sortedData.map((row, index) => ({
-    //         requirementId: row.id,
-    //         position: index,
-    //         ...(row.height !== undefined ? { height: row.height } : {}),
-    //     }));
-
-    //     try {
-    //         await updateBlockMetadata(blockId, { requirements: rowMetadata });
-    //         console.debug('[GlideEditableTable] Saved row metadata:', rowMetadata);
-    //     } catch (err) {
-    //         console.error('[GlideEditableTable] Failed to save row metadata:', err);
-    //     }
-    // }, [blockId, sortedData, updateBlockMetadata]);
 
     // References to latest version of save methods. Fixes stale reference when editing data on a newly added column.
     const handleSaveAllRef = useRef(handleSaveAll);
@@ -715,6 +641,31 @@ export function GlideEditableTable<
         [debouncedSave, sortedData],
     );
 
+    const handleColumnDeleteConfirm = useCallback(async () => {
+        if (!columnToDelete) return;
+
+        try {
+            await props.onDeleteColumn?.(columnToDelete);
+
+            // Compute updated local columns *before* triggering state update
+            const newLocalColumns = localColumnsRef.current.filter(
+                (col) => col.id !== columnToDelete,
+            );
+
+            // Update ref and state, then call metadata update.
+            localColumnsRef.current = newLocalColumns;
+            setLocalColumns(newLocalColumns);
+
+            saveTableMetadata();
+        } catch (err) {
+            console.error('[GlideEditableTable] Failed to delete column:', err);
+            return;
+        }
+        // Cleanup state on success.
+        setColumnToDelete(null);
+        setDeleteConfirmOpen(false);
+    }, [columnToDelete, props, saveTableMetadata]);
+
     // Modify Trailing Row Visuals
     columns.map((col, idx) => ({
         title: col.header,
@@ -833,7 +784,7 @@ export function GlideEditableTable<
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             rows={sortedData.length}
-                            rowHeight={(row) => sortedData[row]?.height ?? 34}
+                            rowHeight={(row) => sortedData[row]?.height ?? 43}
                             onColumnResize={handleColumnResize}
                             onColumnMoved={handleColumnMoved}
                             trailingRowOptions={{
@@ -843,15 +794,15 @@ export function GlideEditableTable<
                             onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
                             onRowMoved={handleRowMoved}
-                            onHeaderMenuClick={(col, bounds) => {
-                                setColumnMenu({ colIndex: col, bounds: bounds });
-                            }}
-                            // rowHeight={43}
                             theme={
                                 resolvedTheme === 'dark'
                                     ? glideDarkTheme
                                     : glideLightTheme
                             }
+                            //onRowResize={handleRowResize}
+                            onHeaderMenuClick={(col, bounds) => {
+                                setColumnMenu({ colIndex: col, bounds: bounds });
+                            }}
                         />
                         {columnMenu &&
                             renderLayer(
@@ -895,7 +846,24 @@ export function GlideEditableTable<
                                     </div>
                                     <div
                                         onClick={() => {
-                                            // Methods to delete column.
+                                            // Abstract to a handle method after testing
+                                            const colId =
+                                                localColumns[columnMenu.colIndex]?.id;
+                                            if (colId) {
+                                                console.log(
+                                                    'Column ID to delete:',
+                                                    colId,
+                                                );
+                                                setColumnToDelete(colId);
+                                                setDeleteConfirmOpen?.(true);
+
+                                                // Delay closing the menu slightly to ensure dialog opens cleanly
+                                                setTimeout(() => {
+                                                    setColumnMenu(undefined);
+                                                }, 0);
+                                            } else {
+                                                setColumnMenu(undefined);
+                                            }
                                         }}
                                         style={{
                                             padding: '6px 10px',
@@ -921,11 +889,10 @@ export function GlideEditableTable<
                             )}
                     </div>
                 </div>
-
                 <DeleteConfirmDialog
                     open={deleteConfirmOpen}
                     onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
-                    onConfirm={onDeleteConfirm || (() => {})}
+                    onConfirm={handleColumnDeleteConfirm}
                 />
             </div>
         </div>

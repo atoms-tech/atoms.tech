@@ -87,8 +87,9 @@ export interface GlideTableProps<T extends Record<string, CellValue> & { id: str
     extends EditableTableProps<T> {
     onAddRow?: () => void;
     deleteConfirmOpen?: boolean;
-    onDeleteConfirm?: () => void;
-    setDeleteConfirmOpen?: (open: boolean) => void;
+    //onDeleteConfirm?: () => void;
+    //setDeleteConfirmOpen?: (open: boolean) => void;
+    onDeleteColumn?: (columnId: string) => Promise<void>;
 
     onDragStart?: (args: GridDragEventArgs) => void;
     onDragOverCell?: (cell: Item, dataTransfer: DataTransfer | null) => void;
