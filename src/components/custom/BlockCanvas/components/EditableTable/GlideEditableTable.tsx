@@ -1,7 +1,6 @@
 'use client';
 
 import '@/styles/globals.css';
-
 // We still need to validate role perms so readers cannot exit, ect.
 import '@/styles/globals.css';
 
@@ -211,7 +210,6 @@ export function GlideEditableTable<
             localColumns.map((col, idx) => ({
                 title: col.title,
                 width: colSizes[col.accessor] || col.width || 120, // prioritize user's resized width
-                width: colSizes[col.accessor] || col.width || 120,
                 hasMenu: true,
                 menuIcon: 'dots',
                 trailingRowOptions:
