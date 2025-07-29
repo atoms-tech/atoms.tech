@@ -107,41 +107,7 @@ export const useColumnActions = ({
 
                 const column = columnData as Column;
 
-                // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } = await supabase
-                    .from('requirements')
-                    .select('*')
-                    .eq('block_id', blockId)
-                    .eq('is_deleted', false);
-
-                if (requirementsError) {
-                    throw requirementsError;
-                }
-
-                // Update each requirement's properties to include the new column
-                const updatePromises = requirements.map(async (req) => {
-                    // Create or update properties object
-                    const currentProperties = (req.properties || {}) as Record<
-                        string,
-                        unknown
-                    >;
-
-                    // Update properties using both:
-                    // 1. The column ID (for backwards compatibility with how we access properties)
-                    // 2. The property name (for consistency with how requirements are displayed)
-                    const updatedProperties = {
-                        ...currentProperties,
-                        [column.id]: defaultValue,
-                        [property.name]: defaultValue,
-                    };
-
-                    return supabase
-                        .from('requirements')
-                        .update({ properties: updatedProperties as Json })
-                        .eq('id', req.id);
-                });
-
-                await Promise.all(updatePromises);
+                // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
                 // Invalidate relevant queries
                 queryClient.invalidateQueries({
@@ -209,41 +175,7 @@ export const useColumnActions = ({
 
                 const column = columnData as Column;
 
-                // Step 3: Update all requirements with the new column
-                const { data: requirements, error: requirementsError } = await supabase
-                    .from('requirements')
-                    .select('*')
-                    .eq('block_id', blockId)
-                    .eq('is_deleted', false);
-
-                if (requirementsError) {
-                    throw requirementsError;
-                }
-
-                // Update each requirement's properties to include the new column
-                const updatePromises = requirements.map(async (req) => {
-                    // Create or update properties object
-                    const currentProperties = (req.properties || {}) as Record<
-                        string,
-                        unknown
-                    >;
-
-                    // Update properties using both:
-                    // 1. The column ID (for backwards compatibility with how we access properties)
-                    // 2. The property name (for consistency with how requirements are displayed)
-                    const updatedProperties = {
-                        ...currentProperties,
-                        [column.id]: defaultValue,
-                        [property.name]: defaultValue,
-                    };
-
-                    return supabase
-                        .from('requirements')
-                        .update({ properties: updatedProperties as Json })
-                        .eq('id', req.id);
-                });
-
-                await Promise.all(updatePromises);
+                // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
                 // Invalidate relevant queries
                 queryClient.invalidateQueries({
@@ -268,13 +200,21 @@ export const useColumnActions = ({
     const deleteColumn = useCallback(
         async (columnId: string, blockId: string) => {
             try {
+                console.log('[ColumnActions] Deleting column:', columnId);
+
                 // Step 1: Delete the column itself
                 const { error: columnError } = await supabase
                     .from('columns')
                     .delete()
                     .eq('id', columnId);
 
-                if (columnError) throw columnError;
+                if (columnError) {
+                    console.error(
+                        '[ColumnActions] Failed to delete column record:',
+                        columnError,
+                    );
+                    throw columnError;
+                }
 
                 // Step 2: Remove the column from each requirement's properties
                 const { data: requirements, error: requirementsError } = await supabase
@@ -296,7 +236,22 @@ export const useColumnActions = ({
                             ? { ...originalProps }
                             : {};
 
-                    delete currentProps[columnId];
+                    // Delete any key that has matching column_id
+                    for (const key of Object.keys(currentProps)) {
+                        const entry = currentProps[key];
+                        if (
+                            typeof entry === 'object' &&
+                            entry !== null &&
+                            'column_id' in entry &&
+                            entry.column_id === columnId
+                        ) {
+                            console.log(
+                                `[ColumnActions] Deleting key "${key}" from requirement ${req.id}`,
+                            );
+                            delete currentProps[key];
+                        }
+                    }
+                    delete currentProps[columnId]; // Clean up legacy bug. Should be remedied when editing a req but meh.
 
                     return supabase
                         .from('requirements')
@@ -314,104 +269,12 @@ export const useColumnActions = ({
                     queryKey: queryKeys.requirements.byBlock(blockId),
                 });
             } catch (error) {
-                console.error('Error deleting column:', error);
+                console.error('[ColumnActions] Error deleting column:', error);
                 throw error;
             }
         },
         [queryClient],
     );
-
-    // Not needed as we manage metadata at the block level.
-    // const updateColumnsMetadata = useCallback(
-    //     async (
-    //         blockId: string,
-    //         updates: { propertyName: string; width?: number; position: number }[],
-    //     ) => {
-    //         if (!blockId) {
-    //             throw new Error(
-    //                 '[updateColumnsMetadata] blockId is required but was undefined.',
-    //             );
-    //         }
-
-    //         // 1. Load all columns for this block (including their associated properties)
-    //         const { data: columnsData, error: fetchError } = await supabase
-    //             .from('columns')
-    //             .select('id, width, position, property:properties(name)')
-    //             .eq('block_id', blockId);
-
-    //         if (fetchError) {
-    //             console.error(
-    //                 '[updateColumnsMetadata] Failed to fetch columns:',
-    //                 fetchError,
-    //             );
-    //             throw fetchError;
-    //         }
-
-    //         const dbColumns = columnsData as {
-    //             id: string;
-    //             position: number;
-    //             width: number | null;
-    //             property: { name: string };
-    //         }[];
-
-    //         // 2. Match and prepare update payloads
-    //         const updatesToApply = updates
-    //             .map((col) => {
-    //                 const match = dbColumns.find(
-    //                     (c) => c.property?.name === col.propertyName,
-    //                 );
-    //                 if (!match) return null;
-
-    //                 return {
-    //                     id: match.id,
-    //                     position: col.position,
-    //                     width: col.width ?? match.width ?? 150,
-    //                     updated_at: new Date().toISOString(),
-    //                 };
-    //             })
-    //             .filter(
-    //                 (
-    //                     colFormat,
-    //                 ): colFormat is {
-    //                     id: string;
-    //                     position: number;
-    //                     width: number;
-    //                     updated_at: string;
-    //                 } => colFormat !== null,
-    //             );
-
-    //         if (updatesToApply.length === 0) {
-    //             console.warn('[updateColumnsMetadata] No matching columns to update.');
-    //             return;
-    //         }
-
-    //         // 3. Perform batch update
-    //         for (const update of updatesToApply) {
-    //             const { error: updateError } = await supabase
-    //                 .from('columns')
-    //                 .update({
-    //                     position: update.position,
-    //                     width: update.width,
-    //                     updated_at: update.updated_at,
-    //                 })
-    //                 .eq('id', update.id);
-
-    //             if (updateError) {
-    //                 console.error(
-    //                     `[updateColumnsMetadata] Failed to update column ${update.id}:`,
-    //                     updateError,
-    //                 );
-    //                 throw updateError;
-    //             }
-    //         }
-
-    //         // 4. Invalidate cache
-    //         await queryClient.invalidateQueries({
-    //             queryKey: queryKeys.blocks.detail(blockId),
-    //         });
-    //     },
-    //     [queryClient],
-    // );
 
     return {
         createPropertyAndColumn,
