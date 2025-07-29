@@ -886,18 +886,12 @@ export function GlideEditableTable<
                             )}
                     </div>
                 </div>
-
                 <DeleteConfirmDialog
                     open={deleteConfirmOpen}
                     onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
-                    onConfirm={onDeleteConfirm || (() => {})}
+                    onConfirm={handleColumnDeleteConfirm}
                 />
             </div>
-            <DeleteConfirmDialog
-                open={deleteConfirmOpen}
-                onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
-                onConfirm={handleColumnDeleteConfirm}
-            />
         </div>
     );
 }
