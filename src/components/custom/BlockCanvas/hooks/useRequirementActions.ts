@@ -23,7 +23,11 @@ import { Requirement, RequirementAiAnalysis } from '@/types/base/requirements.ty
 export type DynamicRequirement = {
     id: string;
     ai_analysis: RequirementAiAnalysis;
-    [key: string]: CellValue;
+} & {
+    position?: number;
+    height?: number;
+} & {
+    [key in Exclude<string, 'position' | 'height'>]?: CellValue;
 };
 
 interface UseRequirementActionsProps {
