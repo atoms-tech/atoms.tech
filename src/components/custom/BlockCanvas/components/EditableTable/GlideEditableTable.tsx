@@ -2,6 +2,7 @@
 
 // We still need to validate role perms so readers canot exit, ect.
 import '@/styles/globals.css';
+
 import DataEditor, {
     DataEditorRef,
     GridCell,
@@ -37,7 +38,7 @@ export function GlideEditableTable<
     T extends { id: string; position?: number; height?: number },
 >(props: GlideTableProps<T>) {
     const { resolvedTheme } = useTheme();
-      
+
     const {
         data,
         columns,
@@ -147,7 +148,6 @@ export function GlideEditableTable<
     };
 
     const debouncedSave = useDebouncedSave();
-
 
     const [_tableWidth, setTableWidth] = useState<number>(0);
 
