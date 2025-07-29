@@ -26,6 +26,7 @@ interface TableBlockContentProps {
         userName?: string,
     ) => Promise<void>;
     onDeleteRequirement: (dynamicReq: DynamicRequirement) => Promise<void>;
+    onDeleteColumn: (columnId: string) => Promise<void>;
     refreshRequirements: () => Promise<void>;
     isEditMode: boolean;
     alwaysShowAddRow?: boolean;
@@ -41,6 +42,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         columns,
         onSaveRequirement,
         onDeleteRequirement,
+        onDeleteColumn,
         refreshRequirements,
         isEditMode,
         alwaysShowAddRow = false,
@@ -110,6 +112,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 alwaysShowAddRow,
                 blockId,
                 tableMetadata,
+                onDeleteColumn,
             }),
             [
                 dynamicRequirements,
@@ -121,6 +124,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 alwaysShowAddRow,
                 blockId,
                 tableMetadata,
+                onDeleteColumn,
             ],
         );
 

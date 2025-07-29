@@ -265,100 +265,157 @@ export const useColumnActions = ({
         [queryClient, orgId],
     );
 
-    const updateColumnsMetadata = useCallback(
-        async (
-            blockId: string,
-            updates: { propertyName: string; width?: number; position: number }[],
-        ) => {
-            if (!blockId) {
-                throw new Error(
-                    '[updateColumnsMetadata] blockId is required but was undefined.',
-                );
-            }
-
-            // 1. Load all columns for this block (including their associated properties)
-            const { data: columnsData, error: fetchError } = await supabase
-                .from('columns')
-                .select('id, width, position, property:properties(name)')
-                .eq('block_id', blockId);
-
-            if (fetchError) {
-                console.error(
-                    '[updateColumnsMetadata] Failed to fetch columns:',
-                    fetchError,
-                );
-                throw fetchError;
-            }
-
-            const dbColumns = columnsData as {
-                id: string;
-                position: number;
-                width: number | null;
-                property: { name: string };
-            }[];
-
-            // 2. Match and prepare update payloads
-            const updatesToApply = updates
-                .map((col) => {
-                    const match = dbColumns.find(
-                        (c) => c.property?.name === col.propertyName,
-                    );
-                    if (!match) return null;
-
-                    return {
-                        id: match.id,
-                        position: col.position,
-                        width: col.width ?? match.width ?? 150,
-                        updated_at: new Date().toISOString(),
-                    };
-                })
-                .filter(
-                    (
-                        colFormat,
-                    ): colFormat is {
-                        id: string;
-                        position: number;
-                        width: number;
-                        updated_at: string;
-                    } => colFormat !== null,
-                );
-
-            if (updatesToApply.length === 0) {
-                console.warn('[updateColumnsMetadata] No matching columns to update.');
-                return;
-            }
-
-            // 3. Perform batch update
-            for (const update of updatesToApply) {
-                const { error: updateError } = await supabase
+    const deleteColumn = useCallback(
+        async (columnId: string, blockId: string) => {
+            try {
+                // Step 1: Delete the column itself
+                const { error: columnError } = await supabase
                     .from('columns')
-                    .update({
-                        position: update.position,
-                        width: update.width,
-                        updated_at: update.updated_at,
-                    })
-                    .eq('id', update.id);
+                    .delete()
+                    .eq('id', columnId);
 
-                if (updateError) {
-                    console.error(
-                        `[updateColumnsMetadata] Failed to update column ${update.id}:`,
-                        updateError,
-                    );
-                    throw updateError;
-                }
+                if (columnError) throw columnError;
+
+                // Step 2: Remove the column from each requirement's properties
+                const { data: requirements, error: requirementsError } = await supabase
+                    .from('requirements')
+                    .select('*')
+                    .eq('block_id', blockId)
+                    .eq('is_deleted', false);
+
+                if (requirementsError) throw requirementsError;
+
+                const updatePromises = requirements.map((req) => {
+                    const originalProps = req.properties;
+
+                    // Ensure it's an object before spreading
+                    const currentProps =
+                        originalProps &&
+                        typeof originalProps === 'object' &&
+                        !Array.isArray(originalProps)
+                            ? { ...originalProps }
+                            : {};
+
+                    delete currentProps[columnId];
+
+                    return supabase
+                        .from('requirements')
+                        .update({ properties: currentProps as Json })
+                        .eq('id', req.id);
+                });
+
+                await Promise.all(updatePromises);
+
+                // Invalidate related caches
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.blocks.detail(blockId),
+                });
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.requirements.byBlock(blockId),
+                });
+            } catch (error) {
+                console.error('Error deleting column:', error);
+                throw error;
             }
-
-            // 4. Invalidate cache
-            await queryClient.invalidateQueries({
-                queryKey: queryKeys.blocks.detail(blockId),
-            });
         },
         [queryClient],
     );
 
+    // Not needed as we manage metadata at the block level.
+    // const updateColumnsMetadata = useCallback(
+    //     async (
+    //         blockId: string,
+    //         updates: { propertyName: string; width?: number; position: number }[],
+    //     ) => {
+    //         if (!blockId) {
+    //             throw new Error(
+    //                 '[updateColumnsMetadata] blockId is required but was undefined.',
+    //             );
+    //         }
+
+    //         // 1. Load all columns for this block (including their associated properties)
+    //         const { data: columnsData, error: fetchError } = await supabase
+    //             .from('columns')
+    //             .select('id, width, position, property:properties(name)')
+    //             .eq('block_id', blockId);
+
+    //         if (fetchError) {
+    //             console.error(
+    //                 '[updateColumnsMetadata] Failed to fetch columns:',
+    //                 fetchError,
+    //             );
+    //             throw fetchError;
+    //         }
+
+    //         const dbColumns = columnsData as {
+    //             id: string;
+    //             position: number;
+    //             width: number | null;
+    //             property: { name: string };
+    //         }[];
+
+    //         // 2. Match and prepare update payloads
+    //         const updatesToApply = updates
+    //             .map((col) => {
+    //                 const match = dbColumns.find(
+    //                     (c) => c.property?.name === col.propertyName,
+    //                 );
+    //                 if (!match) return null;
+
+    //                 return {
+    //                     id: match.id,
+    //                     position: col.position,
+    //                     width: col.width ?? match.width ?? 150,
+    //                     updated_at: new Date().toISOString(),
+    //                 };
+    //             })
+    //             .filter(
+    //                 (
+    //                     colFormat,
+    //                 ): colFormat is {
+    //                     id: string;
+    //                     position: number;
+    //                     width: number;
+    //                     updated_at: string;
+    //                 } => colFormat !== null,
+    //             );
+
+    //         if (updatesToApply.length === 0) {
+    //             console.warn('[updateColumnsMetadata] No matching columns to update.');
+    //             return;
+    //         }
+
+    //         // 3. Perform batch update
+    //         for (const update of updatesToApply) {
+    //             const { error: updateError } = await supabase
+    //                 .from('columns')
+    //                 .update({
+    //                     position: update.position,
+    //                     width: update.width,
+    //                     updated_at: update.updated_at,
+    //                 })
+    //                 .eq('id', update.id);
+
+    //             if (updateError) {
+    //                 console.error(
+    //                     `[updateColumnsMetadata] Failed to update column ${update.id}:`,
+    //                     updateError,
+    //                 );
+    //                 throw updateError;
+    //             }
+    //         }
+
+    //         // 4. Invalidate cache
+    //         await queryClient.invalidateQueries({
+    //             queryKey: queryKeys.blocks.detail(blockId),
+    //         });
+    //     },
+    //     [queryClient],
+    // );
+
     return {
         createPropertyAndColumn,
         createColumnFromProperty,
-        updateColumnsMetadata,
+        deleteColumn,
     };
 };

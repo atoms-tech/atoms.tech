@@ -206,11 +206,12 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const params = useParams();
     const { currentOrganization } = useOrganization();
-    const { createPropertyAndColumn, createColumnFromProperty } = useColumnActions({
-        orgId: currentOrganization?.id || '',
-        projectId: params.projectId as string,
-        documentId: params.documentId as string,
-    });
+    const { createPropertyAndColumn, createColumnFromProperty, deleteColumn } =
+        useColumnActions({
+            orgId: currentOrganization?.id || '',
+            projectId: params.projectId as string,
+            documentId: params.documentId as string,
+        });
     const projectId = params?.projectId as string;
 
     // IMPORTANT: Initialize localRequirements once from block.requirements
@@ -419,6 +420,18 @@ export const TableBlock: React.FC<BlockProps> = ({
         [createColumnFromProperty, block.id, refreshRequirements, userProfile?.id],
     );
 
+    // Memoize handler to pass down to table level.
+    const handleDeleteColumn = useCallback(
+        async (columnId: string) => {
+            try {
+                await deleteColumn(columnId, block.id);
+            } catch (err) {
+                console.error('Failed to delete column:', err);
+            }
+        },
+        [block.id, deleteColumn],
+    );
+
     // Memoize handleSaveRequirement
     const handleSaveRequirement = useCallback(
         async (
@@ -497,6 +510,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             columns={columns}
                             onSaveRequirement={handleSaveRequirement}
                             onDeleteRequirement={handleDeleteRequirement}
+                            onDeleteColumn={handleDeleteColumn}
                             refreshRequirements={refreshRequirements}
                             isEditMode={isEditMode}
                             alwaysShowAddRow={isEditMode}

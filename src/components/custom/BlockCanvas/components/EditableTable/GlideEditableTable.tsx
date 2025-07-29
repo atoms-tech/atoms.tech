@@ -1,24 +1,28 @@
 'use client';
 
+// We still need to validate role perms so readers canot exit, ect.
 import DataEditor, {
-    //Rectangle,
     DataEditorRef,
     GridCell,
     GridCellKind,
     GridColumn,
     //GridDragEventArgs,
     Item,
+    Rectangle,
 } from '@glideapps/glide-data-grid';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
 import debounce from 'lodash/debounce';
+import { useParams } from 'next/navigation';
+import { useLayer } from 'react-laag';
 
 import {
     BlockTableMetadata,
     useBlockMetadataActions,
 } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
+//import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
@@ -61,6 +65,7 @@ export function GlideEditableTable<
     const userName = profile?.full_name || '';
 
     const { updateBlockMetadata } = useBlockMetadataActions();
+    //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
 
     // useEffect(() => {
     //     console.debug('[GlideEditableTable] Received tableMetadata:', tableMetadata);
@@ -136,6 +141,23 @@ export function GlideEditableTable<
 
     const debouncedSave = useDebouncedSave();
 
+    const params = useParams();
+    const orgId = params?.orgId || '';
+    const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+    const documentId = params?.documentId || '';
+
+    if (!orgId) {
+        console.error('Project ID is missing from the URL.');
+    }
+
+    if (!projectId) {
+        console.error('Project ID is missing from the URL.');
+    }
+
+    if (!documentId) {
+        console.error('Project ID is missing from the URL.');
+    }
+
     // Normalize columns to use `title` instead of `header` if needed
     const normalizedColumns = useMemo(() => {
         return columns.map((col) => ({
@@ -163,6 +185,8 @@ export function GlideEditableTable<
             localColumns.map((col, idx) => ({
                 title: col.title,
                 width: colSizes[col.accessor] || col.width || 120,
+                hasMenu: true,
+                menuIcon: 'dots',
                 trailingRowOptions:
                     idx === 0
                         ? {
@@ -179,6 +203,34 @@ export function GlideEditableTable<
     const sortedData = useMemo(() => {
         return [...localData].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }, [localData]);
+
+    const [columnMenu, setColumnMenu] = useState<
+        | {
+              colIndex: number;
+              bounds: Rectangle;
+          }
+        | undefined
+    >(undefined);
+
+    const { renderLayer, layerProps } = useLayer({
+        isOpen: columnMenu !== undefined,
+        auto: true,
+        placement: 'bottom-end',
+        triggerOffset: 2,
+
+        trigger: {
+            getBounds: () => ({
+                left: columnMenu?.bounds.x ?? 0,
+                top: columnMenu?.bounds.y ?? 0,
+                width: columnMenu?.bounds.width ?? 0,
+                height: columnMenu?.bounds.height ?? 0,
+                right: (columnMenu?.bounds.x ?? 0) + (columnMenu?.bounds.width ?? 0),
+                bottom: (columnMenu?.bounds.y ?? 0) + (columnMenu?.bounds.height ?? 0),
+            }),
+        },
+
+        onOutsideClick: () => setColumnMenu(undefined),
+    });
 
     useEffect(() => {
         console.debug('[GlideEditableTable] Sorted Data:', sortedData);
@@ -717,6 +769,10 @@ export function GlideEditableTable<
         return <TableLoadingSkeleton columns={columns.length} />;
     }
 
+    function insertColumnAt(colIndex: number) {
+        console.log('Function not implemented, but got index: ', colIndex);
+    }
+
     return (
         <div className="w-full">
             {showFilter && (
@@ -764,7 +820,76 @@ export function GlideEditableTable<
                             rowMarkers="both"
                             onRowMoved={handleRowMoved} // Enable row reordering
                             //onRowResize={handleRowResize}
+                            onHeaderMenuClick={(col, bounds) => {
+                                setColumnMenu({ colIndex: col, bounds: bounds });
+                            }}
                         />
+                        {columnMenu &&
+                            renderLayer(
+                                <div
+                                    {...layerProps}
+                                    style={{
+                                        ...layerProps.style,
+                                        background: 'white',
+                                        border: '1px solid #ccc',
+                                        borderRadius: 4,
+                                        boxShadow: '0px 2px 6px rgba(0,0,0,0.15)',
+                                        padding: 8,
+                                        zIndex: 1000,
+                                    }}
+                                >
+                                    <div
+                                        onClick={() => {
+                                            insertColumnAt(columnMenu.colIndex);
+                                            setColumnMenu(undefined);
+                                        }}
+                                        style={{
+                                            padding: '6px 10px',
+                                            cursor: 'pointer',
+                                            color: 'black',
+                                        }}
+                                    >
+                                        + Add column left
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            insertColumnAt(columnMenu.colIndex + 1);
+                                            setColumnMenu(undefined);
+                                        }}
+                                        style={{
+                                            padding: '6px 10px',
+                                            cursor: 'pointer',
+                                            color: 'black',
+                                        }}
+                                    >
+                                        + Add column right
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            // Methods to delete column.
+                                        }}
+                                        style={{
+                                            padding: '6px 10px',
+                                            cursor: 'pointer',
+                                            color: 'red',
+                                        }}
+                                    >
+                                        X Delete Column
+                                    </div>
+                                    <div
+                                        onClick={() => {
+                                            setColumnMenu(undefined);
+                                        }}
+                                        style={{
+                                            padding: '6px 10px',
+                                            cursor: 'pointer',
+                                            color: 'black',
+                                        }}
+                                    >
+                                        x Close Menu
+                                    </div>
+                                </div>,
+                            )}
                     </div>
                 </div>
             </div>
