@@ -141,7 +141,7 @@ export function GlideEditableTable<T extends { id: string; position?: number }>(
 
     const debouncedSave = useDebouncedSave();
 
-    // const [tableWidth, setTableWidth] = useState<number>(0);
+    const [_tableWidth, setTableWidth] = useState<number>(0);
 
     useEffect(() => {
         const handleResize = () => {
