@@ -4,7 +4,7 @@
 import { Theme } from '@glideapps/glide-data-grid';
 
 export const glideLightTheme: Partial<Theme> = {
-    accentColor: '#4d00c1ff',
+    accentColor: '#7C3AED',
     accentLight: '#e5e7eb', // Tailwind gray-200
     bgCell: '#ffffff', // White cell background
     bgHeader: '#f9fafb', // Slightly off-white header

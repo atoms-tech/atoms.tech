@@ -4,7 +4,7 @@
 import { Theme } from '@glideapps/glide-data-grid';
 
 export const glideDarkTheme: Partial<Theme> = {
-    accentColor: '#4d00c1ff', // border color for selected cells
+    accentColor: '#7C3AED', // border color for selected cells
     accentLight: '#1f1f1fff', // when selecting a cell
     bgCell: '#09090bff', // color of the cell background
     bgHeader: '#09090bff', // header background color
