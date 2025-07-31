@@ -527,12 +527,12 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
             return {
                 kind: GridCellKind.Text,
-                allowOverlay: true,
+                allowOverlay: isEditMode,
                 data: value?.toString() ?? '',
                 displayData: value?.toString() ?? '',
             };
         },
-        [sortedData, localColumns],
+        [sortedData, localColumns, isEditMode],
     );
 
     const onCellEdited = useCallback(
@@ -776,6 +776,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         console.log('Function not implemented, but got index: ', colIndex);
     }
 
+    // Note: if we want to clear the highlighting on the cells on blur, need to use girdSelection in DataEditor and track manually.
     return (
         <div className="w-full">
             {showFilter && (
@@ -812,31 +813,44 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             onCellActivated={isEditMode ? undefined : handleCellActivated}
                             rows={sortedData.length}
                             rowHeight={(row) => sortedData[row]?.height ?? 43}
-                            onColumnResize={handleColumnResize}
-                            onColumnMoved={handleColumnMoved}
+                            onColumnResize={isEditMode ? handleColumnResize : undefined}
+                            onColumnMoved={isEditMode ? handleColumnMoved : undefined}
                             trailingRowOptions={{
                                 tint: true,
                                 sticky: true,
                             }}
                             onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
-                            onRowMoved={handleRowMoved}
+                            onRowMoved={isEditMode ? handleRowMoved : undefined}
                             theme={
                                 resolvedTheme === 'dark'
                                     ? glideDarkTheme
                                     : glideLightTheme
                             }
                             //onRowResize={handleRowResize}
-                            onHeaderMenuClick={(col, bounds) => {
-                                setColumnMenu({ colIndex: col, bounds: bounds });
-                            }}
+                            onHeaderMenuClick={
+                                isEditMode
+                                    ? (col, bounds) => {
+                                          setColumnMenu({
+                                              colIndex: col,
+                                              bounds: bounds,
+                                          });
+                                      }
+                                    : undefined
+                            }
                         />
                         <RequirementAnalysisSidebar
                             requirement={selectedRequirement}
                             open={isAiSidebarOpen}
                             onOpenChange={(open) => {
                                 setIsAiSidebarOpen(open);
-                                if (!open) setSelectedRequirementId(null);
+                                if (!open) {
+                                    setSelectedRequirementId(null);
+                                    // Refocus after delay to accomodate keyboard controls.
+                                    setTimeout(() => {
+                                        gridRef.current?.focus();
+                                    }, 50);
+                                }
                             }}
                             columns={localColumns as EditableColumn<DynamicRequirement>[]}
                         />

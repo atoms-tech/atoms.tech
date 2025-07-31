@@ -158,22 +158,26 @@ const TableHeader: React.FC<{
                             </Button>
                         </>
                     )}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setIsAddColumnOpen(true)}>
-                                Add Column
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={onDelete}>
-                                Delete Table
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                    {isEditMode && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    onClick={() => setIsAddColumnOpen(true)}
+                                >
+                                    Add Column
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={onDelete}>
+                                    Delete Table
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
                 </div>
             </div>
             <AddColumnDialog
