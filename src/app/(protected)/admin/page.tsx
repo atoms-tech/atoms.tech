@@ -27,6 +27,7 @@ type User = {
     full_name: string | null;
     id: string;
     is_approved: boolean;
+    created_at: string | null;
 };
 
 export default function AdminPage() {
@@ -38,7 +39,8 @@ export default function AdminPage() {
         (async () => {
             const { data, error } = await supabase
                 .from('profiles')
-                .select('email, full_name, id, is_approved');
+                .select('email, full_name, id, is_approved, created_at')
+                .order('created_at', { ascending: false });
             if (error) {
                 console.error('Error retrieving pending members:', error);
                 return;
