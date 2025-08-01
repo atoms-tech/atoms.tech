@@ -669,18 +669,22 @@ ${'='.repeat(50)}
 
     return (
         <>
-            {/* Backdrop */}
+            {/* Backdrop - only on mobile/tablet */}
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
                     onClick={onClose}
                 />
             )}
-            {/* Panel */}
+
+            {/* Panel with responsive positioning */}
             <div
                 ref={panelRef}
                 className={cn(
-                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 shadow-xl z-50 transition-all duration-300 ease-out flex flex-col',
+                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 shadow-xl transition-all duration-300 ease-out flex flex-col',
+                    // Mobile/tablet: overlay with high z-index
+                    'z-50 md:z-30',
+                    // Transform based on open state
                     isOpen ? 'translate-x-0' : 'translate-x-full',
                 )}
                 style={{ width: `${panelWidth}px` }}

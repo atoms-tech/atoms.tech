@@ -1,26 +1,13 @@
-const GUMLOOP_API_KEY = process.env.NEXT_PUBLIC_GUMLOOP_API_KEY;
-const GUMLOOP_API_URL =
-    process.env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1';
-const USER_ID = process.env.NEXT_PUBLIC_GUMLOOP_USER_ID;
-const GUMLOOP_FILE_CONVERT_FLOW_ID = process.env.NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID;
-const GUMLOOP_REQ_ANALYSIS_FLOW_ID = process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID;
-const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID;
-const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID =
-    process.env.NEXT_PUBLIC_GUMLOOP_TEXT_TO_MERMAID_FLOW_ID;
+import { apiConfig } from '@/lib/utils/env-validation';
 
-for (const [key, value] of Object.entries({
-    GUMLOOP_API_KEY,
-    USER_ID,
-    GUMLOOP_FILE_CONVERT_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_FLOW_ID,
-    GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID,
-    GUMLOOP_TEXT_TO_MERMAID_FLOW_ID,
-})) {
-    if (!value) {
-        throw new Error(`Missing required environment variable: NEXT_PUBLIC_${key}`);
-    }
-}
+const GUMLOOP_API_KEY = apiConfig.gumloop.apiKey;
+const GUMLOOP_API_URL = apiConfig.gumloop.apiUrl;
+const USER_ID = apiConfig.gumloop.userId;
+const GUMLOOP_FILE_CONVERT_FLOW_ID = apiConfig.gumloop.flows.fileConvert;
+const GUMLOOP_REQ_ANALYSIS_FLOW_ID = apiConfig.gumloop.flows.reqAnalysis;
+const GUMLOOP_REQ_ANALYSIS_REASONING_FLOW_ID =
+    apiConfig.gumloop.flows.reqAnalysisReasoning;
+const GUMLOOP_TEXT_TO_MERMAID_FLOW_ID = apiConfig.gumloop.flows.textToMermaid;
 
 type PipelineType =
     | 'file-processing'
@@ -82,6 +69,13 @@ export class GumloopService {
     }
 
     async uploadFiles(files: File[]): Promise<string[]> {
+        // Validate required environment variables
+        if (!GUMLOOP_API_KEY || !USER_ID) {
+            throw new Error(
+                'Missing required Gumloop environment variables: NEXT_PUBLIC_GUMLOOP_API_KEY and NEXT_PUBLIC_GUMLOOP_USER_ID',
+            );
+        }
+
         console.log(
             'Starting file upload process:',
             files.map((f) => ({ name: f.name, size: f.size, type: f.type })),
@@ -173,6 +167,13 @@ export class GumloopService {
         customPipelineInputs,
         savedItemId,
     }: StartPipelineParams): Promise<StartPipelineResponse> {
+        // Validate required environment variables
+        if (!GUMLOOP_API_KEY || !USER_ID) {
+            throw new Error(
+                'Missing required Gumloop environment variables: NEXT_PUBLIC_GUMLOOP_API_KEY and NEXT_PUBLIC_GUMLOOP_USER_ID',
+            );
+        }
+
         let pipeline_id = savedItemId;
 
         // If no savedItemId is provided, use the pipeline type to determine the ID
@@ -311,6 +312,13 @@ export class GumloopService {
     async getPipelineRun({
         runId,
     }: GetPipelineRunParams): Promise<PipelineRunStatusResponse> {
+        // Validate required environment variables
+        if (!GUMLOOP_API_KEY || !USER_ID) {
+            throw new Error(
+                'Missing required Gumloop environment variables: NEXT_PUBLIC_GUMLOOP_API_KEY and NEXT_PUBLIC_GUMLOOP_USER_ID',
+            );
+        }
+
         console.log('Getting pipeline run status:', {
             runId,
             userId: USER_ID,

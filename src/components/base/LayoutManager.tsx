@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
 
 import AppSidebar from '@/components/base/AppSidebar';
 import { AgentDemo } from '@/components/custom/AgentChat';
+import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
 import { EditModeFloatingToggle } from '@/components/custom/BlockCanvas/components/EditModeToggle';
 import HorizontalToolbar from '@/components/custom/HorizontalToolbar';
 import VerticalToolbar from '@/components/custom/VerticalToolbar';
@@ -32,6 +33,9 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
         toggleSidebar,
     } = useLayout();
 
+    // Get agent panel state for layout adjustments
+    const { isOpen: isAgentPanelOpen, panelWidth } = useAgentStore();
+
     const pathname = usePathname();
     const _isSidebarExpanded = sidebarState === 'expanded';
 
@@ -47,6 +51,10 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
 
     // Show horizontal toolbar on mobile and tablet
     const showHorizontalToolbar = isMobile || isTablet;
+
+    // Calculate right margin for main content when agent panel is open
+    // Only apply on desktop (md and above) - mobile/tablet keep overlay behavior
+    const rightMargin = !isMobile && !isTablet && isAgentPanelOpen ? panelWidth : 0;
 
     // If layout is not ready, render a minimal container with loading spinner to prevent layout shift
     if (!isLayoutReady) {
@@ -70,13 +78,16 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             {/* Sidebar */}
             <AppSidebar />
 
-            {/* Main content area with animation */}
+            {/* Main content area with animation and right margin for agent panel */}
             {/* Content wrapper */}
             <div
                 className={cn(
-                    'flex-1 md:pl-6 lg:pl-8 pt-16',
+                    'flex-1 md:pl-6 lg:pl-8 pt-16 transition-all duration-300 ease-out',
                     showHorizontalToolbar && 'pt-16', // Extra padding when horizontal toolbar is active
                 )}
+                style={{
+                    marginRight: `${rightMargin}px`,
+                }}
             >
                 {children}
             </div>
