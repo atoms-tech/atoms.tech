@@ -17,7 +17,7 @@ const envSchema = z.object({
 
     // Optional API Keys (can be undefined in development)
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().optional(),
-    NEXT_PUBLIC_GUMLOOP_API_URL: z.string().url().optional(),
+    NEXT_PUBLIC_GUMLOOP_API_URL: z.string().url().optional().or(z.string().optional()),
     NEXT_PUBLIC_GUMLOOP_USER_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID: z.string().optional(),
