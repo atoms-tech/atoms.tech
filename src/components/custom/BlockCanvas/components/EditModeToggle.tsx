@@ -64,7 +64,7 @@ export const EditModeFloatingToggle = memo(() => {
 
     return (
         <motion.div
-            className="fixed bottom-8 right-8 z-50"
+            className="fixed bottom-4 right-8 z-50"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
