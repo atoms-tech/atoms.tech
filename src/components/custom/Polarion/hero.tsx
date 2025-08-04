@@ -7,7 +7,8 @@ export function PolarionHero() {
                 <div className="max-w-6xl mx-auto">
                     {/* Main Title */}
                     <h1 className="text-[48px] sm:text-[64px] md:text-[80px] lg:text-[96px] xl:text-[128px] font-black tracking-tighter text-white leading-none mb-8">
-                        POLARION, MEET CURSOR-LEVEL AI
+                        POLARION
+                        <br /> MEET CURSOR-LEVEL AI
                     </h1>
 
                     {/* Subtitle */}
