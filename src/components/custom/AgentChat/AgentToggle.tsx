@@ -40,7 +40,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     return (
         <div
             className={cn(
-                'fixed right-6 bottom-6 z-40 transition-all duration-300 ease-out',
+                'fixed right-6 bottom-20 z-40 transition-all duration-300 ease-out',
                 className,
             )}
         >

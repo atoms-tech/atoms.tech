@@ -25,19 +25,22 @@ import debounce from 'lodash/debounce';
 import { useParams } from 'next/navigation';
 import { useLayer } from 'react-laag';
 
+//import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
 import {
     BlockTableMetadata,
     useBlockMetadataActions,
 } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
+import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 //import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
-import { /*CellValue,*/ GlideTableProps } from './types';
+import { /*CellValue,*/ EditableColumn, GlideTableProps } from './types';
 
-export function GlideEditableTable<
-    T extends { id: string; position?: number; height?: number },
->(props: GlideTableProps<T>) {
+export function GlideEditableTable<T extends DynamicRequirement = DynamicRequirement>(
+    props: GlideTableProps<T>,
+) {
     const { resolvedTheme } = useTheme();
 
     const {
@@ -78,6 +81,12 @@ export function GlideEditableTable<
     //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+    // States for AI Analysis Sidebar
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
+        null,
+    );
+    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
 
     // useEffect(() => {
     //     console.debug('[GlideEditableTable] Received tableMetadata:', tableMetadata);
@@ -228,6 +237,11 @@ export function GlideEditableTable<
     const sortedData = useMemo(() => {
         return [...localData].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }, [localData]);
+
+    // For AI Sidebar
+    const selectedRequirement = useMemo(() => {
+        return sortedData.find((r) => r.id === selectedRequirementId) || null;
+    }, [sortedData, selectedRequirementId]);
 
     const [columnMenu, setColumnMenu] = useState<
         | {
@@ -513,12 +527,12 @@ export function GlideEditableTable<
 
             return {
                 kind: GridCellKind.Text,
-                allowOverlay: true,
+                allowOverlay: isEditMode,
                 data: value?.toString() ?? '',
                 displayData: value?.toString() ?? '',
             };
         },
-        [sortedData, localColumns],
+        [sortedData, localColumns, isEditMode],
     );
 
     const onCellEdited = useCallback(
@@ -740,6 +754,20 @@ export function GlideEditableTable<
         };
     }, [handleKeyDown]);
 
+    // Open side panel for AI Analysis
+    const handleCellActivated = useCallback(
+        (cell: Item) => {
+            if (!isEditMode) {
+                const row = sortedData[cell[1]];
+                if (row?.id) {
+                    setSelectedRequirementId(row.id);
+                    setIsAiSidebarOpen(true);
+                }
+            }
+        },
+        [isEditMode, sortedData],
+    );
+
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
@@ -748,6 +776,7 @@ export function GlideEditableTable<
         console.log('Function not implemented, but got index: ', colIndex);
     }
 
+    // Note: if we want to clear the highlighting on the cells on blur, need to use girdSelection in DataEditor and track manually.
     return (
         <div className="w-full">
             {showFilter && (
@@ -781,26 +810,49 @@ export function GlideEditableTable<
                             columns={columnDefs}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
+                            onCellActivated={isEditMode ? undefined : handleCellActivated}
                             rows={sortedData.length}
                             rowHeight={(row) => sortedData[row]?.height ?? 43}
-                            onColumnResize={handleColumnResize}
-                            onColumnMoved={handleColumnMoved}
+                            onColumnResize={isEditMode ? handleColumnResize : undefined}
+                            onColumnMoved={isEditMode ? handleColumnMoved : undefined}
                             trailingRowOptions={{
                                 tint: true,
                                 sticky: true,
                             }}
                             onRowAppended={isEditMode ? handleRowAppended : undefined}
                             rowMarkers="both"
-                            onRowMoved={handleRowMoved}
+                            onRowMoved={isEditMode ? handleRowMoved : undefined}
                             theme={
                                 resolvedTheme === 'dark'
                                     ? glideDarkTheme
                                     : glideLightTheme
                             }
                             //onRowResize={handleRowResize}
-                            onHeaderMenuClick={(col, bounds) => {
-                                setColumnMenu({ colIndex: col, bounds: bounds });
+                            onHeaderMenuClick={
+                                isEditMode
+                                    ? (col, bounds) => {
+                                          setColumnMenu({
+                                              colIndex: col,
+                                              bounds: bounds,
+                                          });
+                                      }
+                                    : undefined
+                            }
+                        />
+                        <RequirementAnalysisSidebar
+                            requirement={selectedRequirement}
+                            open={isAiSidebarOpen}
+                            onOpenChange={(open) => {
+                                setIsAiSidebarOpen(open);
+                                if (!open) {
+                                    setSelectedRequirementId(null);
+                                    // Refocus after delay to accomodate keyboard controls.
+                                    setTimeout(() => {
+                                        gridRef.current?.focus();
+                                    }, 50);
+                                }
                             }}
+                            columns={localColumns as EditableColumn<DynamicRequirement>[]}
                         />
                         {columnMenu &&
                             renderLayer(

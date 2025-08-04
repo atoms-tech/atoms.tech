@@ -241,7 +241,7 @@ export default function RequirementPage() {
                     }
 
                     setAnalysisData({
-                        reqId: mergedData['REQ ID'],
+                        reqId: requirement?.name || 'No Requirement ID',
                         originalRequirement: mergedData['Original Requirement'],
                         earsRequirement: mergedData['EARS Generated Requirement'],
                         earsPattern: mergedData['EARS Pattern'],
@@ -268,7 +268,7 @@ export default function RequirementPage() {
         }
         setAnalysisPipelineRunId('');
         setIsAnalysing(false);
-    }, [analysisResponse]);
+    }, [analysisResponse, requirement?.name]);
 
     // Create a ref for the textarea to focus it when needed
     // const textareaRef = useRef<HTMLTextAreaElement>(null);

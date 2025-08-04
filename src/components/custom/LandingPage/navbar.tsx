@@ -53,6 +53,7 @@ export function Navbar() {
     const navLinks = [
         { href: '/#features', label: 'Features' },
         { href: '/#industries', label: 'Industries' },
+        { href: '/polarion', label: 'Polarion' },
         { href: '/#contact', label: 'Contact' },
     ];
 

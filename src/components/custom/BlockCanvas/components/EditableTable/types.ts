@@ -1,5 +1,6 @@
 import { GridDragEventArgs, Item } from '@glideapps/glide-data-grid';
 
+import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { BlockTableMetadata } from '@/components/custom/BlockCanvas/types';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
@@ -59,9 +60,7 @@ export interface EditableColumn<T> {
     };
 }
 
-export interface EditableTableProps<
-    T extends Record<string, CellValue> & { id: string },
-> {
+export interface EditableTableProps<T extends DynamicRequirement> {
     data: T[];
     columns: EditableColumn<T>[];
     onSave?: (
@@ -83,7 +82,7 @@ export interface EditableTableProps<
 }
 
 // Additional props needed for GlideDataTables. Allows hooking into the existing EditableTableProps like isLoading
-export interface GlideTableProps<T extends Record<string, CellValue> & { id: string }>
+export interface GlideTableProps<T extends DynamicRequirement>
     extends EditableTableProps<T> {
     onAddRow?: () => void;
     deleteConfirmOpen?: boolean;

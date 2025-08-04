@@ -42,6 +42,7 @@ export async function updateSession(request: NextRequest) {
     // Ignore pages that don't need authentication
     if (
         request.nextUrl.pathname !== '/' &&
+        request.nextUrl.pathname !== '/polarion' &&
         !request.nextUrl.pathname.startsWith('/login') &&
         !request.nextUrl.pathname.startsWith('/auth') &&
         !request.nextUrl.pathname.startsWith('/signup')
