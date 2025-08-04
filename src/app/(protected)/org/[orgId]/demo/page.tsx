@@ -120,7 +120,7 @@ export default function RequirementPage() {
                     }
 
                     setAnalysisData({
-                        reqId: mergedData['REQ ID'],
+                        reqId: 'No Requirement ID',
                         originalRequirement: mergedData['Original Requirement'],
                         earsRequirement: mergedData['EARS Generated Requirement'],
                         earsPattern: mergedData['EARS Pattern'],

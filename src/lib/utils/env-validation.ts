@@ -17,7 +17,7 @@ const envSchema = z.object({
 
     // Optional API Keys (can be undefined in development)
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().optional(),
-    NEXT_PUBLIC_GUMLOOP_API_URL: z.string().url().optional().or(z.string().optional()),
+    NEXT_PUBLIC_GUMLOOP_API_URL: z.string().url().optional(),
     NEXT_PUBLIC_GUMLOOP_USER_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_FILE_CONVERT_FLOW_ID: z.string().optional(),
     NEXT_PUBLIC_GUMLOOP_REQ_ANALYSIS_FLOW_ID: z.string().optional(),
@@ -88,15 +88,8 @@ export type EnvConfig = z.infer<typeof envSchema>;
 export function validateEnv(): EnvConfig {
     const env = process.env;
     const isProduction = env.NODE_ENV === 'production';
-    const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
 
     try {
-        // During build time, use development schema to avoid blocking builds
-        if (isBuildTime) {
-            console.warn('⚠️  Build time detected, using development environment schema');
-            return envSchema.parse(env);
-        }
-
         // Use production schema in production, regular schema otherwise
         const schema = isProduction ? productionEnvSchema : envSchema;
         return schema.parse(env);
@@ -109,16 +102,14 @@ export function validateEnv(): EnvConfig {
             });
         }
 
-        if (isProduction && !isBuildTime) {
-            // In production (but not during build), fail hard
+        if (isProduction) {
+            // In production, fail hard
             process.exit(1);
         } else {
-            // In development or build time, warn but continue with safe parsing
-            console.warn(
-                '⚠️  Continuing with invalid environment in development/build mode',
-            );
+            // In development, warn but continue with safe parsing
+            console.warn('⚠️  Continuing with invalid environment in development mode');
 
-            // Try to parse with the development schema (which has optional vars)
+            // Try to parse with the development schema (which has optional Supabase vars)
             const result = envSchema.safeParse(env);
             if (result.success) {
                 return result.data;
