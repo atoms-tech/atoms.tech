@@ -13,13 +13,13 @@ export const glideDarkTheme: Partial<Theme> = {
     textDark: '#ffffffff', // default text color (non header)
     textMedium: '#b5b5b5ff', // add row text color at bottom
     textLight: '#ffffffff', // row number text color
-    headerFontStyle: 'bold 14px sans-serif',
+    headerFontStyle: 'bold 16px',
 
     fontFamily: 'sans-serif',
 
-    editorFontSize: '12px', // font size for cell being typed
+    editorFontSize: '14px', // font size for cell being typed
 
     textHeader: '#ffffffff', // header text color
 
-    baseFontStyle: '50px sans-serif', // base font style for the grid
+    baseFontStyle: '14px', // base font style (size) for the grid
 };

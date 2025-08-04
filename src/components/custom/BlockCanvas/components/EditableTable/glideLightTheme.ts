@@ -11,8 +11,9 @@ export const glideLightTheme: Partial<Theme> = {
     textDark: '#1f2937', // Dark text
     textMedium: '#4b5563', // Gray-600
     textLight: '#9ca3af', // Gray-400
-    headerFontStyle: 'bold 14px sans-serif',
+    headerFontStyle: 'bold 16px',
     fontFamily: 'sans-serif',
 
-    baseFontStyle: '16px sans-serif', // base font style for the grid
+    editorFontSize: '14px', // font size for cell being typed
+    baseFontStyle: '14px', // base font style for the grid
 };
