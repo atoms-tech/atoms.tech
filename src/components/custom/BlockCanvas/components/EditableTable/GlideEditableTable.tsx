@@ -854,18 +854,32 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             }}
                             columns={localColumns as EditableColumn<DynamicRequirement>[]}
                         />
+
                         {columnMenu &&
                             renderLayer(
                                 <div
                                     {...layerProps}
                                     style={{
                                         ...layerProps.style,
-                                        background: 'white',
-                                        border: '1px solid #ccc',
-                                        borderRadius: 4,
-                                        boxShadow: '0px 2px 6px rgba(0,0,0,0.15)',
-                                        padding: 8,
+                                        background:
+                                            resolvedTheme === 'dark'
+                                                ? '#1f1f1f'
+                                                : '#ffffff', // background color
+                                        border:
+                                            resolvedTheme === 'dark'
+                                                ? '1px solid #444'
+                                                : '1px solid #ccc', // border
+                                        borderRadius: 5,
+                                        // dropdown shadows
+                                        boxShadow:
+                                            resolvedTheme === 'dark'
+                                                ? '0px 6px 16px rgba(0, 0, 0, 0.6)'
+                                                : '0px 6px 16px rgba(0, 0, 0, 0.12)',
+                                        padding: 6,
                                         zIndex: 1000,
+                                        color:
+                                            resolvedTheme === 'dark' ? '#ffffff' : '#222',
+                                        minWidth: 160,
                                     }}
                                 >
                                     <div
@@ -874,29 +888,80 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                             setColumnMenu(undefined);
                                         }}
                                         style={{
-                                            padding: '6px 10px',
+                                            padding: '8px 12px',
                                             cursor: 'pointer',
-                                            color: 'black',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee', // subtle divider between items
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222', // text color
+                                            transition: 'background 0.2s ease',
                                         }}
+                                        onMouseEnter={
+                                            (e) =>
+                                                (e.currentTarget.style.background =
+                                                    resolvedTheme === 'dark'
+                                                        ? '#3a3a3a'
+                                                        : '#e6e6e6') // hover background effect
+                                        }
+                                        onMouseLeave={
+                                            (e) =>
+                                                (e.currentTarget.style.background =
+                                                    resolvedTheme === 'dark'
+                                                        ? '#1f1f1f'
+                                                        : '#f9f9f9') // revert when mouse leaves
+                                        }
                                     >
-                                        + Add column left
+                                        + Add Column Left
                                     </div>
+
                                     <div
                                         onClick={() => {
                                             insertColumnAt(columnMenu.colIndex + 1);
                                             setColumnMenu(undefined);
                                         }}
                                         style={{
-                                            padding: '6px 10px',
+                                            padding: '8px 12px',
                                             cursor: 'pointer',
-                                            color: 'black',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222',
+                                            transition: 'background 0.2s ease',
                                         }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
                                     >
-                                        + Add column right
+                                        + Add Column Right
                                     </div>
+
                                     <div
                                         onClick={() => {
-                                            // Abstract to a handle method after testing
                                             const colId =
                                                 localColumns[columnMenu.colIndex]?.id;
                                             if (colId) {
@@ -906,8 +971,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                                 );
                                                 setColumnToDelete(colId);
                                                 setDeleteConfirmOpen?.(true);
-
-                                                // Delay closing the menu slightly to ensure dialog opens cleanly
                                                 setTimeout(() => {
                                                     setColumnMenu(undefined);
                                                 }, 0);
@@ -916,22 +979,67 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                             }
                                         }}
                                         style={{
-                                            padding: '6px 10px',
+                                            padding: '8px 12px',
                                             cursor: 'pointer',
-                                            color: 'red',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#ed3f3f'
+                                                    : 'red',
+                                            transition: 'background 0.2s ease',
                                         }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
                                     >
-                                        X Delete Column
+                                        x Delete Column
                                     </div>
+
                                     <div
                                         onClick={() => {
                                             setColumnMenu(undefined);
                                         }}
                                         style={{
-                                            padding: '6px 10px',
+                                            padding: '8px 12px',
                                             cursor: 'pointer',
-                                            color: 'black',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222',
+                                            transition: 'background 0.2s ease',
                                         }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
                                     >
                                         x Close Menu
                                     </div>
