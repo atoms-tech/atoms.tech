@@ -17,7 +17,8 @@ interface BreadcrumbProps {
 
 const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
     const router = useRouter();
-    const pathSegments = usePathname().split('/').filter(Boolean);
+    const pathname = usePathname();
+    const pathSegments = pathname?.split('/').filter(Boolean) || [];
 
     const breadcrumbs: string[] = [];
 

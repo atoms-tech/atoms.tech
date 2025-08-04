@@ -1,0 +1,486 @@
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactNode } from 'react';
+
+import { useChunkr } from '@/hooks/useChunkr';
+import { TaskStatus } from '@/lib/services/chunkr';
+
+// Mock fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
+// Mock window.location
+Object.defineProperty(window, 'location', {
+    value: {
+        href: 'https://example.com',
+    },
+    writable: true,
+});
+
+// Create a wrapper for React Query
+const createWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+
+    return ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    );
+};
+
+describe('useChunkr', () => {
+    let wrapper: ReturnType<typeof createWrapper>;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        wrapper = createWrapper();
+    });
+
+    describe('initialization', () => {
+        it('should initialize with default values', () => {
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe(null);
+            expect(typeof result.current.startOcrTask).toBe('function');
+            expect(typeof result.current.getTaskStatus).toBe('function');
+            expect(typeof result.current.getTaskStatuses).toBe('function');
+            expect(typeof result.current.clearCache).toBe('function');
+        });
+
+        it('should initialize with custom options', () => {
+            const options = { skipCache: true };
+            const { result } = renderHook(() => useChunkr(options), { wrapper });
+
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe(null);
+        });
+    });
+
+    describe('startOcrTask', () => {
+        it('should start OCR task successfully', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+                new File(['test content 2'], 'test2.pdf', { type: 'application/pdf' }),
+            ];
+
+            const mockResponse = {
+                taskIds: ['task-1', 'task-2'],
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskIds = await result.current.startOcrTask(mockFiles);
+
+            expect(taskIds).toEqual(['task-1', 'task-2']);
+            expect(mockFetch).toHaveBeenCalledWith('/api/ocr', {
+                method: 'POST',
+                body: expect.any(FormData),
+            });
+        });
+
+        it('should handle OCR task failure', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            const mockError = {
+                error: 'OCR processing failed',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue(mockError),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            await expect(result.current.startOcrTask(mockFiles)).rejects.toThrow(
+                'OCR pipeline initiation failed: OCR processing failed',
+            );
+        });
+
+        it('should handle OCR task failure with no error message', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            await expect(result.current.startOcrTask(mockFiles)).rejects.toThrow(
+                'OCR pipeline initiation failed: Internal Server Error',
+            );
+        });
+
+        it('should set error state on OCR task failure', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue({}),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            try {
+                await result.current.startOcrTask(mockFiles);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            await waitFor(() => {
+                expect(result.current.error).toBeTruthy();
+            });
+        });
+    });
+
+    describe('getTaskStatus', () => {
+        it('should fetch task status successfully', async () => {
+            const mockTaskId = 'task-123';
+            const mockResponse = {
+                status: TaskStatus.PROCESSING,
+                progress: 50,
+                message: 'Processing...',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus(mockTaskId);
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                'https://example.com/api/ocr?taskId=task-123',
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+        });
+
+        it('should handle task status fetch failure', async () => {
+            const mockTaskId = 'task-123';
+            const mockError = {
+                error: 'Task not found',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: jest.fn().mockResolvedValue(mockError),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus(mockTaskId);
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.error).toBeTruthy();
+            });
+        });
+
+        it('should handle empty task ID', () => {
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus('');
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            expect(queryResult.current.data).toBeUndefined();
+        });
+    });
+
+    describe('getTaskStatuses', () => {
+        it('should fetch multiple task statuses successfully', async () => {
+            const mockTaskIds = ['task-1', 'task-2'];
+            const mockResponse1 = {
+                status: TaskStatus.PROCESSING,
+                progress: 50,
+                message: 'Processing...',
+            };
+            const mockResponse2 = {
+                status: TaskStatus.COMPLETED,
+                progress: 100,
+                message: 'Completed',
+            };
+
+            mockFetch
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: jest.fn().mockResolvedValue(mockResponse1),
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: jest.fn().mockResolvedValue(mockResponse2),
+                });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatuses = result.current.getTaskStatuses(mockTaskIds);
+            const { result: queryResult } = renderHook(() => taskStatuses, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.length).toBe(2);
+                expect(queryResult.current[0].data).toEqual(mockResponse1);
+                expect(queryResult.current[1].data).toEqual(mockResponse2);
+            });
+        });
+
+        it('should handle empty task IDs array', () => {
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatuses = result.current.getTaskStatuses([]);
+            const { result: queryResult } = renderHook(() => taskStatuses, { wrapper });
+
+            expect(queryResult.current).toEqual([]);
+        });
+    });
+
+    describe('refetch intervals', () => {
+        it('should refetch when task is starting', async () => {
+            const mockTaskId = 'task-123';
+            const mockResponse = {
+                status: TaskStatus.STARTING,
+                progress: 0,
+                message: 'Starting...',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus(mockTaskId);
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should have refetch interval set
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+
+        it('should refetch when task is processing', async () => {
+            const mockTaskId = 'task-123';
+            const mockResponse = {
+                status: TaskStatus.PROCESSING,
+                progress: 50,
+                message: 'Processing...',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus(mockTaskId);
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should have refetch interval set
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+
+        it('should not refetch when task is completed', async () => {
+            const mockTaskId = 'task-123';
+            const mockResponse = {
+                status: TaskStatus.COMPLETED,
+                progress: 100,
+                message: 'Completed',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus(mockTaskId);
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should not have refetch interval for completed tasks
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+    });
+
+    describe('clearCache', () => {
+        it('should clear cache for specific task', () => {
+            const mockTaskId = 'task-123';
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            // Should not throw
+            expect(() => result.current.clearCache(mockTaskId)).not.toThrow();
+        });
+
+        it('should clear all cache when no task ID provided', () => {
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            // Should not throw
+            expect(() => result.current.clearCache()).not.toThrow();
+        });
+    });
+
+    describe('options', () => {
+        it('should disable cache when skipCache is true', () => {
+            const options = { skipCache: true };
+            const { result } = renderHook(() => useChunkr(options), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus('task-123');
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            expect(queryResult.current.isLoading).toBe(false);
+        });
+
+        it('should enable cache when skipCache is false', () => {
+            const options = { skipCache: false };
+            const { result } = renderHook(() => useChunkr(options), { wrapper });
+
+            const taskStatus = result.current.getTaskStatus('task-123');
+            const { result: queryResult } = renderHook(() => taskStatus, { wrapper });
+
+            expect(queryResult.current.isLoading).toBe(true);
+        });
+    });
+
+    describe('error handling', () => {
+        it('should handle network errors', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            await expect(result.current.startOcrTask(mockFiles)).rejects.toThrow(
+                'Network error',
+            );
+        });
+
+        it('should handle JSON parsing errors', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            await expect(result.current.startOcrTask(mockFiles)).rejects.toThrow(
+                'Invalid JSON',
+            );
+        });
+    });
+
+    describe('loading states', () => {
+        it('should track loading state for startOcrTask', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            let resolvePromise: (value: any) => void;
+            const pendingPromise = new Promise((resolve) => {
+                resolvePromise = resolve;
+            });
+
+            mockFetch.mockReturnValueOnce(pendingPromise);
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            const taskPromise = result.current.startOcrTask(mockFiles);
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(true);
+            });
+
+            resolvePromise!({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ taskIds: ['task-1'] }),
+            });
+
+            await taskPromise;
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+        });
+    });
+
+    describe('FormData handling', () => {
+        it('should create FormData with multiple files', async () => {
+            const mockFiles = [
+                new File(['content1'], 'file1.pdf', { type: 'application/pdf' }),
+                new File(['content2'], 'file2.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ taskIds: ['task-1', 'task-2'] }),
+            });
+
+            const { result } = renderHook(() => useChunkr(), { wrapper });
+
+            await result.current.startOcrTask(mockFiles);
+
+            expect(mockFetch).toHaveBeenCalledWith('/api/ocr', {
+                method: 'POST',
+                body: expect.any(FormData),
+            });
+
+            const formData = mockFetch.mock.calls[0][1].body as FormData;
+            expect(formData.getAll('files')).toHaveLength(2);
+        });
+    });
+});

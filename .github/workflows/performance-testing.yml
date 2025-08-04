@@ -1,0 +1,528 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of performance test to run'
+        required: true
+        default: 'lighthouse'
+        type: choice
+        options:
+        - lighthouse
+        - web-vitals
+        - full
+        - ci
+      target_url:
+        description: 'Target URL for testing'
+        required: false
+        default: ''
+
+jobs:
+  performance-lighthouse:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'lighthouse' || github.event.inputs.test_type == 'full' || github.event.inputs.test_type == 'ci' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Install Lighthouse CI
+      run: npm install -g @lhci/cli
+
+    - name: Run Lighthouse CI
+      run: npm run test:performance:lighthouse-ci
+      env:
+        LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+    - name: Upload Lighthouse reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lighthouse-reports
+        path: |
+          tests/performance-reports/
+          .lighthouseci/
+        retention-days: 30
+
+    - name: Comment PR with Lighthouse results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          try {
+            const reportPath = path.join(process.cwd(), '.lighthouseci', 'manifest.json');
+            if (fs.existsSync(reportPath)) {
+              const manifest = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              const summary = manifest.summary || {};
+              
+              const comment = `## 🚀 Lighthouse Performance Report
+              
+              | Metric | Score |
+              |--------|-------|
+              | Performance | ${summary.performance || 'N/A'} |
+              | Accessibility | ${summary.accessibility || 'N/A'} |
+              | Best Practices | ${summary['best-practices'] || 'N/A'} |
+              | SEO | ${summary.seo || 'N/A'} |
+              
+              [View detailed report](${manifest.htmlReportUrl || 'Report not available'})
+              
+              *Automated by Performance Testing CI*`;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+          } catch (error) {
+            console.log('Could not post Lighthouse results:', error.message);
+          }
+
+  performance-web-vitals:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'web-vitals' || github.event.inputs.test_type == 'full' || github.event.inputs.test_type == 'ci' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Run Core Web Vitals tests
+      run: npm run test:performance:web-vitals
+      env:
+        CI: true
+
+    - name: Run Web Vitals monitoring tests
+      run: npm run test:performance:web-vitals-monitoring
+      env:
+        CI: true
+
+    - name: Upload Web Vitals reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: web-vitals-reports
+        path: tests/performance-reports/
+        retention-days: 30
+
+  performance-budgets:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'full' || github.event.inputs.test_type == 'ci' || github.event_name != 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run Performance Budget tests
+      run: npm run test:performance:budgets
+      env:
+        CI: true
+
+    - name: Upload budget reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: budget-reports
+        path: tests/performance-reports/
+        retention-days: 30
+
+    - name: Check budget violations
+      run: |
+        if [ -f "tests/performance-reports/budget-report.json" ]; then
+          node -e "
+            const report = require('./tests/performance-reports/budget-report.json');
+            const critical = report.summary.critical || 0;
+            console.log('Critical budget violations:', critical);
+            if (critical > 0) {
+              console.error('❌ Critical performance budget violations detected!');
+              process.exit(1);
+            } else {
+              console.log('✅ All critical performance budgets met');
+            }
+          "
+        fi
+
+  performance-full:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_type == 'full' || github.event_name == 'schedule'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Run comprehensive performance tests
+      run: npm run test:performance:full
+      env:
+        CI: true
+        HEADLESS: true
+
+    - name: Upload comprehensive reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-full-reports
+        path: |
+          tests/performance-reports/
+          test-results/
+        retention-days: 30
+
+    - name: Generate performance summary
+      if: always()
+      run: |
+        node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          const reportsDir = 'tests/performance-reports';
+          const summary = {
+            timestamp: new Date().toISOString(),
+            tests: [],
+            overall: { passed: 0, failed: 0, warnings: 0 }
+          };
+          
+          try {
+            const files = fs.readdirSync(reportsDir);
+            files.filter(f => f.endsWith('.json')).forEach(file => {
+              try {
+                const report = JSON.parse(fs.readFileSync(path.join(reportsDir, file), 'utf8'));
+                summary.tests.push({
+                  name: file,
+                  status: 'completed',
+                  timestamp: report.timestamp || new Date().toISOString()
+                });
+              } catch (e) {
+                console.warn('Could not parse report:', file);
+              }
+            });
+            
+            console.log('Performance Test Summary:');
+            console.log('Tests completed:', summary.tests.length);
+            console.log('Reports generated in:', reportsDir);
+            
+            fs.writeFileSync('performance-summary.json', JSON.stringify(summary, null, 2));
+          } catch (error) {
+            console.error('Error generating summary:', error.message);
+          }
+        "
+
+  performance-monitoring:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event.inputs.test_type == 'full'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Run offline performance tests
+      run: npm run test:performance:offline
+      env:
+        CI: true
+
+    - name: Start performance dashboard (background)
+      run: |
+        npm run test:performance:dashboard &
+        sleep 10
+      env:
+        CI: true
+
+    - name: Collect monitoring data
+      run: |
+        # Let dashboard collect data for 2 minutes
+        sleep 120
+        
+        # Stop dashboard
+        pkill -f performance-dashboard || true
+
+    - name: Upload monitoring reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: monitoring-reports
+        path: tests/performance-reports/
+        retention-days: 30
+
+  performance-regression:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Run baseline performance tests
+      run: npm run test:performance:ci
+      env:
+        CI: true
+        PERFORMANCE_BASELINE: true
+
+    - name: Store baseline results
+      run: |
+        mkdir -p baseline-results
+        cp -r tests/performance-reports/* baseline-results/ || true
+
+    - name: Checkout base branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.base_ref }}
+
+    - name: Install dependencies (base)
+      run: npm ci
+
+    - name: Build application (base)
+      run: npm run build
+
+    - name: Start application (base)
+      run: |
+        npm start &
+        npx wait-on http://localhost:3000 --timeout 60000
+      env:
+        NODE_ENV: production
+
+    - name: Run current performance tests
+      run: npm run test:performance:ci
+      env:
+        CI: true
+        PERFORMANCE_CURRENT: true
+
+    - name: Compare performance results
+      run: |
+        node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          function getLatestReport(dir, pattern) {
+            try {
+              const files = fs.readdirSync(dir).filter(f => f.includes(pattern));
+              return files.length > 0 ? require(path.join(process.cwd(), dir, files[0])) : null;
+            } catch (e) {
+              return null;
+            }
+          }
+          
+          const baseline = getLatestReport('baseline-results', 'lighthouse') || {};
+          const current = getLatestReport('tests/performance-reports', 'lighthouse') || {};
+          
+          const comparison = {
+            timestamp: new Date().toISOString(),
+            baseline: baseline.performanceScore || 0,
+            current: current.performanceScore || 0,
+            regression: 0,
+            status: 'unknown'
+          };
+          
+          if (baseline.performanceScore && current.performanceScore) {
+            comparison.regression = baseline.performanceScore - current.performanceScore;
+            comparison.status = comparison.regression > 5 ? 'regression' : 'acceptable';
+          }
+          
+          console.log('Performance Comparison:');
+          console.log('Baseline score:', comparison.baseline);
+          console.log('Current score:', comparison.current);
+          console.log('Regression:', comparison.regression.toFixed(2), 'points');
+          console.log('Status:', comparison.status);
+          
+          fs.writeFileSync('performance-comparison.json', JSON.stringify(comparison, null, 2));
+          
+          if (comparison.status === 'regression') {
+            console.error('❌ Performance regression detected!');
+            process.exit(1);
+          }
+        "
+
+    - name: Comment PR with regression analysis
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const comparison = JSON.parse(fs.readFileSync('performance-comparison.json', 'utf8'));
+            
+            const status = comparison.status === 'regression' ? '❌' : '✅';
+            const regressionText = comparison.regression > 0 ? 
+              \`📉 \${comparison.regression.toFixed(2)} points slower\` : 
+              \`📈 \${Math.abs(comparison.regression).toFixed(2)} points faster\`;
+            
+            const comment = \`## \${status} Performance Regression Analysis
+            
+            | Metric | Baseline | Current | Change |
+            |--------|----------|---------|--------|
+            | Performance Score | \${comparison.baseline} | \${comparison.current} | \${regressionText} |
+            
+            **Status:** \${comparison.status}
+            
+            \${comparison.status === 'regression' ? 
+              '⚠️ **Performance regression detected!** Please review and optimize before merging.' : 
+              '✅ Performance is within acceptable range.'}
+            
+            *Automated by Performance Regression CI*\`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not post regression analysis:', error.message);
+          }
+
+  performance-alerts:
+    runs-on: ubuntu-latest
+    if: failure() && (github.event_name == 'schedule' || github.event_name == 'push')
+    needs: [performance-lighthouse, performance-web-vitals, performance-budgets]
+    
+    steps:
+    - name: Send performance alert
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const issue = {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: \`🚨 Performance Alert - \${new Date().toISOString().split('T')[0]}\`,
+            body: \`## Performance Test Failure Alert
+            
+            One or more performance tests have failed on the \${context.ref} branch.
+            
+            **Branch:** \${context.ref}
+            **Commit:** \${context.sha}
+            **Workflow:** \${context.workflow}
+            
+            Please check the failed tests and investigate performance regressions.
+            
+            [View workflow run](\${context.payload.repository.html_url}/actions/runs/\${context.runId})
+            
+            *Automated performance monitoring alert*\`,
+            labels: ['performance', 'alert', 'needs-investigation']
+          };
+          
+          github.rest.issues.create(issue);

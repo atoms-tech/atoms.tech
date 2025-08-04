@@ -1,0 +1,451 @@
+{
+  "sessionId": "feature-health-1752637561682",
+  "timestamp": "2025-07-16T03:46:02.409Z",
+  "features": {
+    "authentication": {
+      "name": "Authentication",
+      "critical": true,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "login": {
+          "name": "login",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "logout": {
+          "name": "logout",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "signup": {
+          "name": "signup",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "password-reset": {
+          "name": "password-reset",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    },
+    "userProfile": {
+      "name": "User Profile",
+      "critical": true,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "view-profile": {
+          "name": "view-profile",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "edit-profile": {
+          "name": "edit-profile",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "upload-avatar": {
+          "name": "upload-avatar",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    },
+    "dashboard": {
+      "name": "Dashboard",
+      "critical": true,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "load-dashboard": {
+          "name": "load-dashboard",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "navigate-sections": {
+          "name": "navigate-sections",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "quick-actions": {
+          "name": "quick-actions",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    },
+    "dataManagement": {
+      "name": "Data Management",
+      "critical": true,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "load-data": {
+          "name": "load-data",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "filter-data": {
+          "name": "filter-data",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "sort-data": {
+          "name": "sort-data",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "export-data": {
+          "name": "export-data",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    },
+    "settings": {
+      "name": "Settings",
+      "critical": false,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "access-settings": {
+          "name": "access-settings",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "change-theme": {
+          "name": "change-theme",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "update-notifications": {
+          "name": "update-notifications",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    },
+    "fileManagement": {
+      "name": "File Management",
+      "critical": false,
+      "status": "unknown",
+      "tests": [],
+      "metrics": {
+        "reliability": {
+          "score": 0,
+          "tests": 0,
+          "failures": 0
+        },
+        "performance": {
+          "averageTime": 0,
+          "maxTime": 0,
+          "samples": []
+        },
+        "accessibility": {
+          "score": 0,
+          "violations": [],
+          "passes": []
+        }
+      },
+      "userFlows": {
+        "upload-file": {
+          "name": "upload-file",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "view-files": {
+          "name": "view-files",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "preview-file": {
+          "name": "preview-file",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        },
+        "delete-file": {
+          "name": "delete-file",
+          "tests": [],
+          "status": "unknown",
+          "performance": [],
+          "reliability": 0,
+          "lastTested": null
+        }
+      },
+      "lastUpdated": null,
+      "health": 0,
+      "alerts": [],
+      "trends": []
+    }
+  },
+  "userFlows": {},
+  "crossFeatureImpacts": {},
+  "healthMetrics": {
+    "overall": 0,
+    "byFeature": {
+      "Authentication": 0,
+      "User Profile": 0,
+      "Dashboard": 0,
+      "Data Management": 0,
+      "Settings": 0,
+      "File Management": 0
+    },
+    "trends": []
+  },
+  "alerts": [
+    {
+      "level": "critical",
+      "type": "overall-health",
+      "message": "Overall system health is low: 0%",
+      "timestamp": "2025-07-16T03:46:02.424Z"
+    }
+  ],
+  "recommendations": [
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Authentication",
+      "message": "Improve Authentication health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 4 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "User Profile",
+      "message": "Improve User Profile health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 3 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Dashboard",
+      "message": "Improve Dashboard health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 3 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Data Management",
+      "message": "Improve Data Management health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 4 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Settings",
+      "message": "Improve Settings health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 3 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "File Management",
+      "message": "Improve File Management health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 4 user flows"
+      ]
+    },
+    {
+      "type": "coverage",
+      "priority": "medium",
+      "message": "Add tests for 6 untested features",
+      "features": [
+        "Authentication",
+        "User Profile",
+        "Dashboard",
+        "Data Management",
+        "Settings",
+        "File Management"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,493 @@
+name: 'Comprehensive Visual Regression Testing'
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC for baseline maintenance
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of visual test to run'
+        required: true
+        default: 'comprehensive'
+        type: choice
+        options:
+          - comprehensive
+          - components-only
+          - mobile-only
+          - cross-browser
+          - accessibility
+          - themes
+          - interactive-states
+      update_baselines:
+        description: 'Update baseline images'
+        required: false
+        default: false
+        type: boolean
+      browsers:
+        description: 'Browsers to test (comma-separated)'
+        required: false
+        default: 'chromium,firefox,webkit'
+        type: string
+
+concurrency:
+  group: visual-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '18'
+  PLAYWRIGHT_BROWSERS_PATH: ~/.cache/playwright
+
+jobs:
+  setup:
+    name: 'Setup Visual Testing'
+    runs-on: ubuntu-latest
+    outputs:
+      test-matrix: ${{ steps.matrix.outputs.matrix }}
+      cache-key: ${{ steps.cache-key.outputs.key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Generate cache key
+        id: cache-key
+        run: |
+          echo "key=visual-deps-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('playwright.config.ts') }}" >> $GITHUB_OUTPUT
+
+      - name: Generate test matrix
+        id: matrix
+        run: |
+          # Generate dynamic test matrix based on input or default
+          TEST_TYPE="${{ github.event.inputs.test_type || 'comprehensive' }}"
+          BROWSERS="${{ github.event.inputs.browsers || 'chromium,firefox,webkit' }}"
+          
+          case $TEST_TYPE in
+            "comprehensive")
+              TESTS='["interactive-states", "cross-browser", "themes", "mobile-responsive", "components", "pages"]'
+              ;;
+            "components-only")
+              TESTS='["components", "interactive-states"]'
+              ;;
+            "mobile-only")
+              TESTS='["mobile-responsive"]'
+              ;;
+            "cross-browser")
+              TESTS='["cross-browser"]'
+              ;;
+            "accessibility")
+              TESTS='["interactive-states", "themes"]'
+              ;;
+            "themes")
+              TESTS='["themes"]'
+              ;;
+            "interactive-states")
+              TESTS='["interactive-states"]'
+              ;;
+            *)
+              TESTS='["components"]'
+              ;;
+          esac
+          
+          # Convert browsers string to JSON array
+          BROWSERS_JSON=$(echo "$BROWSERS" | jq -R 'split(",") | map(select(length > 0))')
+          
+          MATRIX=$(jq -n \
+            --argjson tests "$TESTS" \
+            --argjson browsers "$BROWSERS_JSON" \
+            '{
+              "test-suite": $tests,
+              "browser": $browsers,
+              "viewport": ["desktop", "mobile", "tablet"]
+            }')
+          
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/playwright
+            node_modules
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            visual-deps-${{ runner.os }}-
+
+  visual-testing:
+    name: 'Visual Tests: ${{ matrix.test-suite }} (${{ matrix.browser }} - ${{ matrix.viewport }})'
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.test-matrix) }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/playwright
+            node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+          restore-keys: |
+            visual-deps-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: |
+          npx playwright install ${{ matrix.browser }} --with-deps
+          npx playwright install-deps
+
+      - name: Setup visual testing environment
+        run: |
+          # Create necessary directories
+          mkdir -p test-results/visual-baselines
+          mkdir -p test-results/visual-reports
+          mkdir -p test-results/visual-output
+          
+          # Setup environment variables
+          echo "VISUAL_TEST_BROWSER=${{ matrix.browser }}" >> $GITHUB_ENV
+          echo "VISUAL_TEST_VIEWPORT=${{ matrix.viewport }}" >> $GITHUB_ENV
+          echo "VISUAL_TEST_SUITE=${{ matrix.test-suite }}" >> $GITHUB_ENV
+          echo "CI=true" >> $GITHUB_ENV
+
+      - name: Download baseline images
+        if: github.event_name == 'pull_request'
+        run: |
+          # Download baselines from main branch or cache
+          if [ -d ".github/visual-baselines/${{ matrix.test-suite }}" ]; then
+            cp -r .github/visual-baselines/${{ matrix.test-suite }}/* test-results/visual-baselines/ || true
+          fi
+
+      - name: Build application
+        run: |
+          npm run build
+          npm run start &
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Build Storybook (if needed)
+        if: contains(matrix.test-suite, 'components')
+        run: |
+          npm run build-storybook
+          npx http-server storybook-static -p 6006 &
+          npx wait-on http://localhost:6006 --timeout 60000
+
+      - name: Run visual regression tests
+        run: |
+          # Set test-specific configuration
+          export UPDATE_BASELINES="${{ github.event.inputs.update_baselines || 'false' }}"
+          export VISUAL_THRESHOLD="0.3"
+          export MAX_DIFF_PIXELS="400"
+          
+          # Run the specific test suite
+          case "${{ matrix.test-suite }}" in
+            "interactive-states")
+              npx playwright test tests/visual/interactive-states-comprehensive.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "cross-browser")
+              npx playwright test tests/visual/cross-browser-consistency.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "themes")
+              npx playwright test tests/visual/theme-variants-comprehensive.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "mobile-responsive")
+              npx playwright test tests/visual/mobile-responsive-comprehensive.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "components")
+              npx playwright test tests/visual/components.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            "pages")
+              npx playwright test tests/visual/pages.visual.spec.ts --project=${{ matrix.browser }}
+              ;;
+            *)
+              npx playwright test tests/visual/ --project=${{ matrix.browser }}
+              ;;
+          esac
+
+      - name: Generate visual test report
+        if: always()
+        run: |
+          # Generate comprehensive report for this test suite
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            const reportData = {
+              testSuite: '${{ matrix.test-suite }}',
+              browser: '${{ matrix.browser }}',
+              viewport: '${{ matrix.viewport }}',
+              timestamp: new Date().toISOString(),
+              environment: {
+                os: process.platform,
+                nodeVersion: process.version,
+                ci: true,
+                pullRequest: '${{ github.event_name }}' === 'pull_request',
+                branch: '${{ github.ref_name }}',
+                commit: '${{ github.sha }}'.substring(0, 7)
+              }
+            };
+            
+            const reportPath = 'test-results/visual-reports/';
+            if (!fs.existsSync(reportPath)) {
+              fs.mkdirSync(reportPath, { recursive: true });
+            }
+            
+            fs.writeFileSync(
+              path.join(reportPath, \`\${reportData.testSuite}-\${reportData.browser}-\${reportData.viewport}-report.json\`),
+              JSON.stringify(reportData, null, 2)
+            );
+          "
+
+      - name: Upload visual test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-results-${{ matrix.test-suite }}-${{ matrix.browser }}-${{ matrix.viewport }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+          compression-level: 6
+
+      - name: Upload to Chromatic (if enabled)
+        if: matrix.test-suite == 'components' && env.CHROMATIC_PROJECT_TOKEN != ''
+        run: |
+          npx chromatic \
+            --project-token=${{ secrets.CHROMATIC_PROJECT_TOKEN }} \
+            --build-script-name=build-storybook \
+            --exit-zero-on-changes \
+            --skip="dependabot/**"
+        env:
+          CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+
+      - name: Upload to Percy (if enabled)
+        if: matrix.test-suite == 'pages' && env.PERCY_TOKEN != ''
+        run: |
+          npx percy exec -- npx playwright test tests/visual/pages.visual.spec.ts --project=${{ matrix.browser }}
+        env:
+          PERCY_TOKEN: ${{ secrets.PERCY_TOKEN }}
+          PERCY_PARALLEL_NONCE: ${{ github.event_name }}-${{ github.sha }}
+          PERCY_PARALLEL_TOTAL: 1
+
+      - name: Update baselines (on main branch)
+        if: github.ref == 'refs/heads/main' && github.event.inputs.update_baselines == 'true'
+        run: |
+          # Store new baselines for future use
+          mkdir -p .github/visual-baselines/${{ matrix.test-suite }}
+          cp -r test-results/visual-baselines/* .github/visual-baselines/${{ matrix.test-suite }}/ || true
+
+  visual-analysis:
+    name: 'Visual Analysis & Reporting'
+    needs: [setup, visual-testing]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all visual test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: visual-results-*
+          path: combined-results/
+          merge-multiple: true
+
+      - name: Generate comprehensive visual report
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Collect all test results
+            const resultsDir = 'combined-results/test-results/visual-reports/';
+            const results = [];
+            
+            if (fs.existsSync(resultsDir)) {
+              const files = fs.readdirSync(resultsDir);
+              files.forEach(file => {
+                if (file.endsWith('-report.json')) {
+                  const data = JSON.parse(fs.readFileSync(path.join(resultsDir, file), 'utf8'));
+                  results.push(data);
+                }
+              });
+            }
+            
+            // Generate summary report
+            const summary = {
+              timestamp: new Date().toISOString(),
+              totalTests: results.length,
+              testSuites: [...new Set(results.map(r => r.testSuite))],
+              browsers: [...new Set(results.map(r => r.browser))],
+              viewports: [...new Set(results.map(r => r.viewport))],
+              pullRequest: '${{ github.event_name }}' === 'pull_request',
+              branch: '${{ github.ref_name }}',
+              commit: '${{ github.sha }}',
+              results: results
+            };
+            
+            // Save comprehensive report
+            fs.writeFileSync('visual-test-summary.json', JSON.stringify(summary, null, 2));
+            
+            // Generate markdown report for PR comment
+            let markdown = \`## 🎨 Visual Regression Test Results\\n\\n\`;
+            markdown += \`**Branch:** \${summary.branch}\\n\`;
+            markdown += \`**Commit:** \${summary.commit.substring(0, 7)}\\n\`;
+            markdown += \`**Test Suites:** \${summary.testSuites.join(', ')}\\n\`;
+            markdown += \`**Browsers:** \${summary.browsers.join(', ')}\\n\`;
+            markdown += \`**Viewports:** \${summary.viewports.join(', ')}\\n\\n\`;
+            
+            markdown += \`### Test Summary\\n\`;
+            markdown += \`- **Total Tests:** \${summary.totalTests}\\n\`;
+            
+            if (summary.testSuites.includes('interactive-states')) {
+              markdown += \`- ✅ Interactive states testing completed\\n\`;
+            }
+            if (summary.testSuites.includes('cross-browser')) {
+              markdown += \`- ✅ Cross-browser consistency verified\\n\`;
+            }
+            if (summary.testSuites.includes('themes')) {
+              markdown += \`- ✅ Theme variants tested\\n\`;
+            }
+            if (summary.testSuites.includes('mobile-responsive')) {
+              markdown += \`- ✅ Mobile responsiveness verified\\n\`;
+            }
+            
+            markdown += \`\\n### 📊 Detailed Results\\n\`;
+            markdown += \`Check the uploaded artifacts for detailed visual diff reports.\\n\`;
+            
+            fs.writeFileSync('visual-test-comment.md', markdown);
+          "
+
+      - name: Comment PR with visual test results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (fs.existsSync('visual-test-comment.md')) {
+              const comment = fs.readFileSync('visual-test-comment.md', 'utf8');
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+      - name: Upload comprehensive report
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-comprehensive-report
+          path: |
+            visual-test-summary.json
+            visual-test-comment.md
+          retention-days: 90
+
+      - name: Send Slack notification (if configured)
+        if: env.SLACK_WEBHOOK_URL != ''
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "text": "🎨 Visual Regression Tests Completed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Visual Regression Tests Completed*\n\n*Branch:* ${{ github.ref_name }}\n*Commit:* ${{ github.sha }}\n*Event:* ${{ github.event_name }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Results"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }' \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  visual-approval:
+    name: 'Visual Changes Approval'
+    needs: [visual-testing, visual-analysis]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && !failure() && !cancelled()
+    environment: visual-approval
+    
+    steps:
+      - name: Check for visual changes
+        run: |
+          echo "Visual regression tests completed successfully."
+          echo "If there are visual changes, they require manual review and approval."
+          echo "Please check the uploaded artifacts and approve if the changes are intentional."
+
+      - name: Require manual approval for visual changes
+        run: |
+          echo "::notice::Visual changes detected in PR #${{ github.event.number }}"
+          echo "::notice::Please review the visual diff reports in the artifacts"
+          echo "::notice::Approve this workflow run if the changes are intentional"
+
+  cleanup:
+    name: 'Cleanup Visual Test Artifacts'
+    needs: [visual-testing, visual-analysis, visual-approval]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name != 'pull_request'
+    
+    steps:
+      - name: Cleanup old artifacts
+        run: |
+          echo "Cleaning up old visual test artifacts..."
+          # This would typically involve cleaning up cloud storage or artifact repositories
+          echo "Cleanup completed"

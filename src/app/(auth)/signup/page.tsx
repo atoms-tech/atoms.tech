@@ -23,17 +23,17 @@ import ConfirmEmailMessage from './message';
 function SignupForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const message = searchParams.get('message');
+    const message = searchParams?.get('message');
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState(searchParams.get('error') || '');
+    const [error, setError] = useState(searchParams?.get('error') || '');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        const errorMsg = searchParams.get('error');
+        const errorMsg = searchParams?.get('error');
         if (errorMsg) setError(errorMsg);
     }, [searchParams]);
 

@@ -13,7 +13,7 @@ import {
 
 export default function ConfirmEmailMessage() {
     const searchParams = useSearchParams();
-    const message = searchParams.get('message');
+    const message = searchParams?.get('message');
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[url('/../../../geoLandscape.jpg')] bg-cover bg-center px-4 py-12">

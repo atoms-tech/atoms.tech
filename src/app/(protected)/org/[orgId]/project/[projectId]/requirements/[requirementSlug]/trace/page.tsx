@@ -73,10 +73,10 @@ export default function TracePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isDeleteMode, setIsDeleteMode] = useState(false);
 
-    const requirementId = params.requirementSlug as string;
+    const requirementId = params?.requirementSlug as string || '';
 
     // Get documentId from URL query parameter instead of document store
-    const documentId = searchParams.get('documentId') || '';
+    const documentId = searchParams?.get('documentId') || '';
     const { data: requirements, isLoading: isLoadingRequirements } =
         useDocumentRequirements(documentId);
     const { data: outgoingLinks } = useTraceLinks(requirementId, 'requirement');
@@ -215,7 +215,7 @@ export default function TracePage() {
                             </CardDescription>
                         </div>
                         <Link
-                            href={`/org/${params.orgId}/project/${params.projectId}/requirements/${params.requirementSlug}/trace/diagram`}
+                            href={`/org/${params?.orgId}/project/${params?.projectId}/requirements/${params?.requirementSlug}/trace/diagram`}
                             passHref
                         >
                             <Button

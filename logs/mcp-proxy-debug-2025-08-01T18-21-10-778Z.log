@@ -1,0 +1,30 @@
+[2025-08-01T18:21:14.029Z] [LOG] ML components initialized for PromptAnalyzer
+[2025-08-01T18:21:14.392Z] [LOG] ML components initialized for PromptAnalyzer
+[2025-08-01T18:21:14.498Z] [LOG] Initializing Claude Code integration system
+[2025-08-01T18:21:14.509Z] [LOG] Initializing HookManager
+[2025-08-01T18:21:14.538Z] [LOG] Initializing Multi-Tenant System...
+[2025-08-01T18:21:14.562Z] [LOG] Starting memory pattern detection
+[2025-08-01T18:21:14.570Z] [LOG] Initializing intelligent memory pool manager
+[2025-08-01T18:21:14.571Z] [LOG] Recommended V8 flags for memory optimization: ["--max-old-space-size=4096","--optimize-for-size","--gc-interval=100","--expose-gc"]
+[2025-08-01T18:21:14.588Z] [LOG] Advanced Serverless System with Predictive Optimization initialized
+[2025-08-01T18:21:14.600Z] [LOG] Resource Pool Manager initialized
+[2025-08-01T18:21:14.605Z] [LOG] Predictive Resource Manager initialized
+[2025-08-01T18:21:14.608Z] [LOG] Tenant behavior analysis system initialized
+[2025-08-01T18:21:14.648Z] [LOG] Cross-Tenant Optimizer initialized
+[2025-08-01T18:21:14.649Z] [LOG] Multi-Tenant System initialized successfully
+[2025-08-01T18:21:14.711Z] [LOG] [Advanced Systems] All worker systems initialized successfully
+[2025-08-01T18:21:15.073Z] [LOG] Hook registered {"hookId":"hook_1754072475066_dhuqaffv4","name":"Security Validation","type":"pre_tool"}
+[2025-08-01T18:21:15.078Z] [LOG] Hook registered {"hookId":"hook_1754072475076_xlwxbyii0","name":"Progress Logger","type":"progress"}
+[2025-08-01T18:21:15.078Z] [LOG] Hook registered {"hookId":"hook_1754072475078_emnq02hjf","name":"Error Reporter","type":"error"}
+[2025-08-01T18:21:16.737Z] [LOG] HookManager initialized {"hookCount":3}
+[2025-08-01T18:21:16.866Z] [LOG] Initializing SessionManager
+[2025-08-01T18:21:17.405Z] [LOG] No existing sessions found, starting fresh
+[2025-08-01T18:21:17.407Z] [LOG] SessionManager initialized {"sessionCount":0}
+[2025-08-01T18:21:17.412Z] [LOG] Initializing AsyncControlManager
+[2025-08-01T18:21:17.415Z] [LOG] AsyncControlManager initialized
+[2025-08-01T18:21:17.418Z] [LOG] Claude Code integration system initialized successfully
+[2025-08-01T18:21:25.033Z] [ERROR] Emergency memory situation detected
+[2025-08-01T18:21:25.051Z] [ERROR] Emergency protocol activated: memory_pressure {"pressure":0.9854927062988281}
+[2025-08-01T18:21:25.052Z] [LOG] Handling memory emergency
+[2025-08-01T18:21:35.777Z] [ERROR] Emergency memory situation detected
+[2025-08-01T18:21:44.993Z] [ERROR] Failed to collect V8 stats: {}

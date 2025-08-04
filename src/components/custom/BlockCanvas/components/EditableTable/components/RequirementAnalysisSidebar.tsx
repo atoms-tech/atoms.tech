@@ -28,8 +28,8 @@ export const RequirementAnalysisSidebar: React.FC<Props> = ({
 }) => {
     const router = useRouter();
     const params = useParams();
-    const orgId = params.orgId as string;
-    const projectId = params.projectId as string;
+    const orgId = params?.orgId as string || '';
+    const projectId = params?.projectId as string || '';
     const { currentDocument } = useDocumentStore();
 
     if (!requirement) return null;
@@ -39,7 +39,7 @@ export const RequirementAnalysisSidebar: React.FC<Props> = ({
     };
 
     const handleNavigateToTrace = () => {
-        const documentId = currentDocument?.id || params.documentId;
+        const documentId = currentDocument?.id || params?.documentId;
         router.push(
             `/org/${orgId}/project/${projectId}/requirements/${requirement.id}/trace?documentId=${documentId}`,
         );
@@ -48,7 +48,7 @@ export const RequirementAnalysisSidebar: React.FC<Props> = ({
     const handleNavigateToDiagram = () => {
         const description = String(requirement['Description'] || '');
         if (typeof window !== 'undefined') {
-            const documentId = (currentDocument?.id || params.documentId) as string;
+            const documentId = (currentDocument?.id || params?.documentId) as string;
             sessionStorage.setItem('pendingDiagramPrompt', description);
             sessionStorage.setItem('pendingDiagramRequirementId', requirement.id);
             sessionStorage.setItem('pendingDiagramDocumentId', documentId);

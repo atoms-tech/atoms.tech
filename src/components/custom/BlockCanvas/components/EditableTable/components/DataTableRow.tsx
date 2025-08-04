@@ -47,8 +47,8 @@ export function DataTableRow<
     const [isOpen, setIsOpen] = React.useState(false);
     const router = useRouter();
     const params = useParams();
-    const orgId = params.orgId as string;
-    const projectId = params.projectId as string;
+    const orgId = params?.orgId as string || '';
+    const projectId = params?.projectId as string || '';
     const { currentDocument } = useDocumentStore();
 
     const handleRowClick = () => {
@@ -63,7 +63,7 @@ export function DataTableRow<
 
     const handleNavigateToTrace = () => {
         // Include the document ID as a query parameter
-        const documentId = currentDocument?.id || params.documentId;
+        const documentId = currentDocument?.id || params?.documentId;
         router.push(
             `/org/${orgId}/project/${projectId}/requirements/${item.id}/trace?documentId=${documentId}`,
         );
@@ -72,7 +72,7 @@ export function DataTableRow<
     const handleNavigateToDiagram = () => {
         const description = String(item['Description'] || '');
         if (typeof window !== 'undefined') {
-            const documentId = (currentDocument?.id || params.documentId) as string;
+            const documentId = (currentDocument?.id || params?.documentId) as string;
             sessionStorage.setItem('pendingDiagramPrompt', description);
             sessionStorage.setItem('pendingDiagramRequirementId', item.id);
             sessionStorage.setItem('pendingDiagramDocumentId', documentId);

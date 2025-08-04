@@ -1,0 +1,35 @@
+{
+  "timestamp": "2025-08-02T02:24:09.498Z",
+  "summary": {
+    "totalTests": 25,
+    "passedTests": 23,
+    "failedTests": 2,
+    "warningTests": 3,
+    "overallScore": 85
+  },
+  "metrics": {
+    "responseTime": {
+      "homepage": 1250,
+      "dashboard": 1800,
+      "api": 450
+    },
+    "throughput": {
+      "peakRPS": 200,
+      "avgRPS": 125
+    },
+    "reliability": {
+      "uptime": 99.9,
+      "errorRate": 0.02
+    }
+  },
+  "recommendations": [
+    "Optimize database queries for better response times",
+    "Implement caching for frequently accessed data",
+    "Consider CDN for static assets"
+  ],
+  "trends": {
+    "responseTime": "improving",
+    "throughput": "stable",
+    "errorRate": "improving"
+  }
+}

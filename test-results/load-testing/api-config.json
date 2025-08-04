@@ -1,0 +1,51 @@
+{
+  "config": {
+    "target": "http://localhost:3000",
+    "phases": [
+      {
+        "duration": 60,
+        "arrivalRate": 1,
+        "rampTo": 8
+      },
+      {
+        "duration": 120,
+        "arrivalRate": 8
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "API Health Check",
+        "weight": 30,
+        "flow": [
+          {
+            "get": {
+              "url": "/api/health"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Static Assets",
+        "weight": 40,
+        "flow": [
+          {
+            "get": {
+              "url": "/_next/static/css/app/layout.css"
+            }
+          }
+        ]
+      },
+      {
+        "name": "API Routes",
+        "weight": 30,
+        "flow": [
+          {
+            "get": {
+              "url": "/api/auth/session"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -26,7 +26,8 @@ export default function TestBed() {
         status: 'draft' as Database['public']['Enums']['test_status'],
         test_id: '',
     });
-    const { projectId } = useParams();
+    const params = useParams();
+    const projectId = params?.projectId as string || '';
     const { toast } = useToast();
     const createTestReq = useCreateTestReq();
 

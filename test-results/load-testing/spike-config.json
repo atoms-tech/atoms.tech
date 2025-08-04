@@ -1,0 +1,19 @@
+{
+  "config": {
+    "target": "http://localhost:3000",
+    "phases": [
+      {
+        "duration": 30,
+        "arrivalRate": 1
+      },
+      {
+        "duration": 30,
+        "arrivalRate": 25
+      },
+      {
+        "duration": 30,
+        "arrivalRate": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,708 @@
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactNode } from 'react';
+
+import { useGumloop } from '@/hooks/useGumloop';
+
+// Mock fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
+// Mock window.location
+Object.defineProperty(window, 'location', {
+    value: {
+        href: 'https://example.com',
+    },
+    writable: true,
+});
+
+// Create a wrapper for React Query
+const createWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+
+    return ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    );
+};
+
+describe('useGumloop', () => {
+    let wrapper: ReturnType<typeof createWrapper>;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        wrapper = createWrapper();
+    });
+
+    describe('initialization', () => {
+        it('should initialize with default values', () => {
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe(null);
+            expect(typeof result.current.uploadFiles).toBe('function');
+            expect(typeof result.current.startPipeline).toBe('function');
+            expect(typeof result.current.getPipelineRun).toBe('function');
+            expect(typeof result.current.clearCache).toBe('function');
+        });
+
+        it('should initialize with custom options', () => {
+            const options = { skipCache: true };
+            const { result } = renderHook(() => useGumloop(options), { wrapper });
+
+            expect(result.current.loading).toBe(false);
+            expect(result.current.error).toBe(null);
+        });
+    });
+
+    describe('uploadFiles', () => {
+        it('should upload files successfully', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+                new File(['test content 2'], 'test2.pdf', { type: 'application/pdf' }),
+            ];
+
+            const mockResponse = {
+                files: ['uploaded-file-1.pdf', 'uploaded-file-2.pdf'],
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const uploadedFiles = await result.current.uploadFiles(mockFiles);
+
+            expect(uploadedFiles).toEqual(['uploaded-file-1.pdf', 'uploaded-file-2.pdf']);
+            expect(mockFetch).toHaveBeenCalledWith('/api/upload', {
+                method: 'POST',
+                body: expect.any(FormData),
+            });
+        });
+
+        it('should handle upload failure', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            const mockError = {
+                error: 'Upload failed',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue(mockError),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.uploadFiles(mockFiles)).rejects.toThrow(
+                'Upload failed: Upload failed',
+            );
+        });
+
+        it('should handle upload failure with no error message', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.uploadFiles(mockFiles)).rejects.toThrow(
+                'Upload failed: Internal Server Error',
+            );
+        });
+
+        it('should set error state on upload failure', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue({}),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            try {
+                await result.current.uploadFiles(mockFiles);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            await waitFor(() => {
+                expect(result.current.error).toBeTruthy();
+            });
+        });
+    });
+
+    describe('startPipeline', () => {
+        it('should start pipeline successfully', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf', 'file2.pdf'] },
+            };
+
+            const mockResponse = {
+                runId: 'run-456',
+                status: 'RUNNING',
+                message: 'Pipeline started',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineResponse = await result.current.startPipeline(mockParams);
+
+            expect(pipelineResponse).toEqual(mockResponse);
+            expect(mockFetch).toHaveBeenCalledWith('/api/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'startPipeline',
+                    ...mockParams,
+                }),
+            });
+        });
+
+        it('should handle pipeline start failure', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            const mockError = {
+                error: 'Pipeline start failed',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue(mockError),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.startPipeline(mockParams)).rejects.toThrow(
+                'Pipeline start failed: Pipeline start failed',
+            );
+        });
+
+        it('should handle pipeline start failure with no error message', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.startPipeline(mockParams)).rejects.toThrow(
+                'Pipeline start failed: Internal Server Error',
+            );
+        });
+
+        it('should set error state on pipeline start failure', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue({}),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            try {
+                await result.current.startPipeline(mockParams);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            await waitFor(() => {
+                expect(result.current.error).toBeTruthy();
+            });
+        });
+    });
+
+    describe('getPipelineRun', () => {
+        it('should fetch pipeline run status successfully', async () => {
+            const mockRunId = 'run-123';
+            const mockOrgId = 'org-456';
+            const mockResponse = {
+                runId: mockRunId,
+                state: 'RUNNING',
+                progress: 50,
+                message: 'Processing...',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun(mockRunId, mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            expect(mockFetch).toHaveBeenCalledWith(
+                `https://example.com/api/ai?runId=${mockRunId}&organizationId=${mockOrgId}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+        });
+
+        it('should handle pipeline run fetch failure', async () => {
+            const mockRunId = 'run-123';
+            const mockOrgId = 'org-456';
+            const mockError = {
+                error: 'Pipeline run not found',
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 404,
+                statusText: 'Not Found',
+                json: jest.fn().mockResolvedValue(mockError),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun(mockRunId, mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.error).toBeTruthy();
+            });
+        });
+
+        it('should handle empty run ID', () => {
+            const mockOrgId = 'org-456';
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun('', mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            expect(queryResult.current.data).toBeUndefined();
+        });
+    });
+
+    describe('refetch intervals', () => {
+        it('should refetch when pipeline is running', async () => {
+            const mockRunId = 'run-123';
+            const mockOrgId = 'org-456';
+            const mockResponse = {
+                runId: mockRunId,
+                state: 'RUNNING',
+                progress: 50,
+                message: 'Processing...',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun(mockRunId, mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should have refetch interval set
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+
+        it('should not refetch when pipeline is done', async () => {
+            const mockRunId = 'run-123';
+            const mockOrgId = 'org-456';
+            const mockResponse = {
+                runId: mockRunId,
+                state: 'DONE',
+                progress: 100,
+                message: 'Completed',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun(mockRunId, mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should not have refetch interval for completed pipelines
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+
+        it('should not refetch when pipeline failed', async () => {
+            const mockRunId = 'run-123';
+            const mockOrgId = 'org-456';
+            const mockResponse = {
+                runId: mockRunId,
+                state: 'FAILED',
+                progress: 0,
+                message: 'Pipeline failed',
+            };
+
+            mockFetch.mockResolvedValue({
+                ok: true,
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun(mockRunId, mockOrgId);
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            await waitFor(() => {
+                expect(queryResult.current.data).toEqual(mockResponse);
+            });
+
+            // Should not have refetch interval for failed pipelines
+            expect(queryResult.current.dataUpdatedAt).toBeTruthy();
+        });
+    });
+
+    describe('clearCache', () => {
+        it('should clear cache for specific pipeline run', () => {
+            const mockRunId = 'run-123';
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            // Should not throw
+            expect(() => result.current.clearCache(mockRunId)).not.toThrow();
+        });
+
+        it('should clear all cache when no run ID provided', () => {
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            // Should not throw
+            expect(() => result.current.clearCache()).not.toThrow();
+        });
+    });
+
+    describe('options', () => {
+        it('should disable cache when skipCache is true', () => {
+            const options = { skipCache: true };
+            const { result } = renderHook(() => useGumloop(options), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun('run-123', 'org-456');
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            expect(queryResult.current.isLoading).toBe(false);
+        });
+
+        it('should enable cache when skipCache is false', () => {
+            const options = { skipCache: false };
+            const { result } = renderHook(() => useGumloop(options), { wrapper });
+
+            const pipelineRun = result.current.getPipelineRun('run-123', 'org-456');
+            const { result: queryResult } = renderHook(() => pipelineRun, { wrapper });
+
+            expect(queryResult.current.isLoading).toBe(true);
+        });
+    });
+
+    describe('error handling', () => {
+        it('should handle network errors in uploadFiles', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.uploadFiles(mockFiles)).rejects.toThrow(
+                'Network error',
+            );
+        });
+
+        it('should handle network errors in startPipeline', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.startPipeline(mockParams)).rejects.toThrow(
+                'Network error',
+            );
+        });
+
+        it('should handle JSON parsing errors', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockRejectedValue(new Error('Invalid JSON')),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await expect(result.current.uploadFiles(mockFiles)).rejects.toThrow(
+                'Invalid JSON',
+            );
+        });
+    });
+
+    describe('loading states', () => {
+        it('should track loading state for uploadFiles', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            let resolvePromise: (value: any) => void;
+            const pendingPromise = new Promise((resolve) => {
+                resolvePromise = resolve;
+            });
+
+            mockFetch.mockReturnValueOnce(pendingPromise);
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const uploadPromise = result.current.uploadFiles(mockFiles);
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(true);
+            });
+
+            resolvePromise!({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ files: ['file1.pdf'] }),
+            });
+
+            await uploadPromise;
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+        });
+
+        it('should track loading state for startPipeline', async () => {
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            let resolvePromise: (value: any) => void;
+            const pendingPromise = new Promise((resolve) => {
+                resolvePromise = resolve;
+            });
+
+            mockFetch.mockReturnValueOnce(pendingPromise);
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const pipelinePromise = result.current.startPipeline(mockParams);
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(true);
+            });
+
+            resolvePromise!({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ runId: 'run-456' }),
+            });
+
+            await pipelinePromise;
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+        });
+
+        it('should track combined loading state', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            let resolveUpload: (value: any) => void;
+            let resolvePipeline: (value: any) => void;
+            const uploadPromise = new Promise((resolve) => {
+                resolveUpload = resolve;
+            });
+            const pipelinePromise = new Promise((resolve) => {
+                resolvePipeline = resolve;
+            });
+
+            mockFetch
+                .mockReturnValueOnce(uploadPromise)
+                .mockReturnValueOnce(pipelinePromise);
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            const uploadTask = result.current.uploadFiles(mockFiles);
+            const pipelineTask = result.current.startPipeline(mockParams);
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(true);
+            });
+
+            resolveUpload!({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ files: ['file1.pdf'] }),
+            });
+
+            await uploadTask;
+
+            // Should still be loading due to pipeline
+            await waitFor(() => {
+                expect(result.current.loading).toBe(true);
+            });
+
+            resolvePipeline!({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ runId: 'run-456' }),
+            });
+
+            await pipelineTask;
+
+            await waitFor(() => {
+                expect(result.current.loading).toBe(false);
+            });
+        });
+    });
+
+    describe('FormData handling', () => {
+        it('should create FormData with multiple files', async () => {
+            const mockFiles = [
+                new File(['content1'], 'file1.pdf', { type: 'application/pdf' }),
+                new File(['content2'], 'file2.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: true,
+                json: jest.fn().mockResolvedValue({ files: ['file1.pdf', 'file2.pdf'] }),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            await result.current.uploadFiles(mockFiles);
+
+            expect(mockFetch).toHaveBeenCalledWith('/api/upload', {
+                method: 'POST',
+                body: expect.any(FormData),
+            });
+
+            const formData = mockFetch.mock.calls[0][1].body as FormData;
+            expect(formData.getAll('files')).toHaveLength(2);
+        });
+    });
+
+    describe('error aggregation', () => {
+        it('should aggregate errors from multiple sources', async () => {
+            const mockFiles = [
+                new File(['test content'], 'test.pdf', { type: 'application/pdf' }),
+            ];
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue({ error: 'Upload failed' }),
+            });
+
+            const { result } = renderHook(() => useGumloop(), { wrapper });
+
+            try {
+                await result.current.uploadFiles(mockFiles);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            await waitFor(() => {
+                expect(result.current.error).toBeTruthy();
+            });
+
+            // Now test pipeline error
+            const mockParams = {
+                pipelineId: 'pipeline-123',
+                input: { files: ['file1.pdf'] },
+            };
+
+            mockFetch.mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                statusText: 'Internal Server Error',
+                json: jest.fn().mockResolvedValue({ error: 'Pipeline failed' }),
+            });
+
+            try {
+                await result.current.startPipeline(mockParams);
+            } catch (error) {
+                // Expected to throw
+            }
+
+            await waitFor(() => {
+                expect(result.current.error).toBeTruthy();
+            });
+        });
+    });
+});

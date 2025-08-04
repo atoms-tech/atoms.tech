@@ -1,0 +1,328 @@
+name: Coverage Quality Gates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run coverage analysis daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  ENFORCE_QUALITY_GATES: 'true'
+  NOTIFY_ON_FAILURE: 'true'
+
+jobs:
+  coverage-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for trend analysis
+
+      - name: 📦 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci
+          npm run prepare
+
+      - name: 🔧 Setup test environment
+        run: |
+          # Create required directories
+          mkdir -p coverage
+          mkdir -p test-results/coverage
+          mkdir -p test-results/quality-gates
+          
+          # Setup environment variables
+          echo "CI=true" >> $GITHUB_ENV
+          echo "NODE_ENV=test" >> $GITHUB_ENV
+
+      - name: 🧪 Run enhanced coverage tests
+        run: |
+          npm run test:coverage:enhanced
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: 📊 Generate coverage analysis
+        run: |
+          npm run test:coverage:analyze
+        continue-on-error: true
+
+      - name: 🚪 Evaluate quality gates
+        id: quality_gates
+        run: |
+          npm run test:coverage:quality-gates
+          echo "quality_gates_result=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: 📈 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: 📋 Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-node-${{ matrix.node-version }}
+          path: |
+            coverage/
+            test-results/coverage/
+            test-results/quality-gates/
+          retention-days: 30
+
+      - name: 📊 Generate coverage summary
+        run: |
+          echo "## 📊 Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract coverage percentages from coverage-summary.json
+          if [ -f "coverage/coverage-summary.json" ]; then
+            LINES_PCT=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+            BRANCHES_PCT=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct // 0')
+            FUNCTIONS_PCT=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct // 0')
+            STATEMENTS_PCT=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct // 0')
+            
+            echo "| Metric | Coverage | Target | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|----------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Lines | ${LINES_PCT}% | 100% | $([ $(echo "$LINES_PCT >= 100" | bc -l) -eq 1 ] && echo "✅" || echo "❌") |" >> $GITHUB_STEP_SUMMARY
+            echo "| Branches | ${BRANCHES_PCT}% | 100% | $([ $(echo "$BRANCHES_PCT >= 100" | bc -l) -eq 1 ] && echo "✅" || echo "❌") |" >> $GITHUB_STEP_SUMMARY
+            echo "| Functions | ${FUNCTIONS_PCT}% | 100% | $([ $(echo "$FUNCTIONS_PCT >= 100" | bc -l) -eq 1 ] && echo "✅" || echo "❌") |" >> $GITHUB_STEP_SUMMARY
+            echo "| Statements | ${STATEMENTS_PCT}% | 100% | $([ $(echo "$STATEMENTS_PCT >= 100" | bc -l) -eq 1 ] && echo "✅" || echo "❌") |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Coverage data not available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🎯 Add quality gates summary
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚪 Quality Gates" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "test-results/quality-gates/quality-gates-results.json" ]; then
+            OVERALL_PASSED=$(cat test-results/quality-gates/quality-gates-results.json | jq -r '.overall.passed')
+            QUALITY_SCORE=$(cat test-results/quality-gates/quality-gates-results.json | jq -r '.overall.score')
+            GATES_PASSED=$(cat test-results/quality-gates/quality-gates-results.json | jq -r '.summary.passed')
+            GATES_TOTAL=$(cat test-results/quality-gates/quality-gates-results.json | jq -r '.summary.total')
+            GATES_FAILED=$(cat test-results/quality-gates/quality-gates-results.json | jq -r '.summary.failed')
+            
+            if [ "$OVERALL_PASSED" = "true" ]; then
+              echo "✅ **Overall Status: PASSED**" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Overall Status: FAILED**" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "- **Quality Score**: ${QUALITY_SCORE}/100" >> $GITHUB_STEP_SUMMARY
+            echo "- **Gates Passed**: ${GATES_PASSED}/${GATES_TOTAL}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Gates Failed**: ${GATES_FAILED}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Quality gates data not available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read coverage data
+            let coverageComment = '## 📊 Coverage Report\n\n';
+            
+            try {
+              const coverageSummary = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+              const total = coverageSummary.total;
+              
+              coverageComment += '| Metric | Coverage | Target | Status |\n';
+              coverageComment += '|--------|----------|--------|--------|\n';
+              coverageComment += `| Lines | ${total.lines.pct.toFixed(2)}% | 100% | ${total.lines.pct >= 100 ? '✅' : '❌'} |\n`;
+              coverageComment += `| Branches | ${total.branches.pct.toFixed(2)}% | 100% | ${total.branches.pct >= 100 ? '✅' : '❌'} |\n`;
+              coverageComment += `| Functions | ${total.functions.pct.toFixed(2)}% | 100% | ${total.functions.pct >= 100 ? '✅' : '❌'} |\n`;
+              coverageComment += `| Statements | ${total.statements.pct.toFixed(2)}% | 100% | ${total.statements.pct >= 100 ? '✅' : '❌'} |\n\n`;
+            } catch (error) {
+              coverageComment += '❌ Coverage data not available\n\n';
+            }
+            
+            // Read quality gates data
+            try {
+              const qualityGates = JSON.parse(fs.readFileSync('test-results/quality-gates/quality-gates-results.json', 'utf8'));
+              
+              coverageComment += '## 🚪 Quality Gates\n\n';
+              coverageComment += `**Overall Status**: ${qualityGates.overall.passed ? '✅ PASSED' : '❌ FAILED'}\n`;
+              coverageComment += `**Quality Score**: ${qualityGates.overall.score}/100\n`;
+              coverageComment += `**Gates Passed**: ${qualityGates.summary.passed}/${qualityGates.summary.total}\n\n`;
+              
+              if (!qualityGates.overall.passed) {
+                coverageComment += '### ❌ Failed Gates\n\n';
+                Object.entries(qualityGates.gates).forEach(([gateId, gate]) => {
+                  if (!gate.passed) {
+                    coverageComment += `- **${gateId}**: ${gate.message}\n`;
+                  }
+                });
+              }
+            } catch (error) {
+              coverageComment += '❌ Quality gates data not available\n';
+            }
+            
+            coverageComment += '\n---\n';
+            coverageComment += '*Coverage report generated automatically*';
+            
+            // Find existing coverage comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const existingComment = comments.find(comment => 
+              comment.body.includes('## 📊 Coverage Report')
+            );
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: coverageComment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: coverageComment
+              });
+            }
+
+      - name: ❌ Fail if quality gates failed
+        if: steps.quality_gates.outputs.quality_gates_result != '0'
+        run: |
+          echo "❌ Coverage quality gates failed!"
+          echo "Review the coverage report and quality gates results above."
+          exit 1
+
+  coverage-trend-analysis:
+    runs-on: ubuntu-latest
+    needs: coverage-analysis
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 📥 Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports-node-18
+          path: ./
+
+      - name: 📈 Analyze coverage trends
+        run: |
+          # Run trend analysis
+          npm run test:coverage:trend
+          
+          # Generate trend report
+          echo "## 📈 Coverage Trends" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "test-results/quality-gates/coverage-trend.json" ]; then
+            # Extract latest trend data
+            LATEST_SCORE=$(cat test-results/quality-gates/coverage-trend.json | jq -r '.history[-1].score // 0')
+            PREVIOUS_SCORE=$(cat test-results/quality-gates/coverage-trend.json | jq -r '.history[-2].score // 0')
+            TREND_DIRECTION=$(echo "$LATEST_SCORE - $PREVIOUS_SCORE" | bc -l)
+            
+            echo "- **Current Score**: ${LATEST_SCORE}/100" >> $GITHUB_STEP_SUMMARY
+            echo "- **Previous Score**: ${PREVIOUS_SCORE}/100" >> $GITHUB_STEP_SUMMARY
+            
+            if [ $(echo "$TREND_DIRECTION > 0" | bc -l) -eq 1 ]; then
+              echo "- **Trend**: 📈 Improving (+$(echo "$TREND_DIRECTION" | bc -l))" >> $GITHUB_STEP_SUMMARY
+            elif [ $(echo "$TREND_DIRECTION < 0" | bc -l) -eq 1 ]; then
+              echo "- **Trend**: 📉 Declining ($(echo "$TREND_DIRECTION" | bc -l))" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **Trend**: ➡️ Stable (no change)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "❌ Trend data not available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: 🏷️ Generate coverage badges
+        run: |
+          npm run test:coverage:badges
+
+      - name: 📊 Upload trend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-trends
+          path: |
+            test-results/quality-gates/coverage-trend.json
+            test-results/coverage/coverage-badges.json
+          retention-days: 90
+
+  coverage-notification:
+    runs-on: ubuntu-latest
+    needs: [coverage-analysis, coverage-trend-analysis]
+    if: failure() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 🔔 Notify coverage failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create an issue for coverage failure
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Coverage Quality Gates Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## 🚨 Coverage Quality Gates Failure
+
+The coverage quality gates have failed on the main branch.
+
+**Workflow**: ${context.workflow}
+**Run ID**: ${context.runId}
+**Commit**: ${context.sha}
+
+### Required Actions:
+1. Review the failed coverage quality gates
+2. Increase test coverage for failing components
+3. Ensure all quality gates pass before merging
+
+### Links:
+- [Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+- [Coverage Report](${context.payload.repository.html_url}/actions/runs/${context.runId})
+
+This issue will be automatically closed when coverage quality gates pass again.
+              `,
+              labels: ['coverage', 'quality-gates', 'urgent']
+            });
+            
+            console.log('Created coverage failure issue:', issue.data.number);
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true

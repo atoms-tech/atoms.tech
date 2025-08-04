@@ -1,0 +1,49 @@
+{
+  "sessionId": "feature-health-1752637561682",
+  "timestamp": "2025-07-16T03:46:02.409Z",
+  "overallHealth": 0,
+  "status": "critical",
+  "criticalAlerts": 1,
+  "featuresCount": {
+    "total": 6,
+    "healthy": 0,
+    "warning": 0,
+    "critical": 0,
+    "untested": 6
+  },
+  "topRecommendations": [
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Authentication",
+      "message": "Improve Authentication health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 4 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "User Profile",
+      "message": "Improve User Profile health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 3 user flows"
+      ]
+    },
+    {
+      "type": "feature-improvement",
+      "priority": "medium",
+      "feature": "Dashboard",
+      "message": "Improve Dashboard health (current: 0%)",
+      "suggestions": [
+        "Investigate and fix failing tests",
+        "Add retry logic for flaky operations",
+        "Add tests for 3 user flows"
+      ]
+    }
+  ]
+}

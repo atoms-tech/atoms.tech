@@ -1,0 +1,65 @@
+{
+  "config": {
+    "target": "http://localhost:3000",
+    "phases": [
+      {
+        "duration": 60,
+        "arrivalRate": 1,
+        "rampTo": 5
+      },
+      {
+        "duration": 120,
+        "arrivalRate": 5
+      },
+      {
+        "duration": 60,
+        "arrivalRate": 5,
+        "rampTo": 1
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "Homepage Load",
+        "weight": 40,
+        "flow": [
+          {
+            "get": {
+              "url": "/"
+            }
+          },
+          {
+            "think": 2
+          }
+        ]
+      },
+      {
+        "name": "Authentication Flow",
+        "weight": 30,
+        "flow": [
+          {
+            "get": {
+              "url": "/login"
+            }
+          },
+          {
+            "think": 3
+          }
+        ]
+      },
+      {
+        "name": "Dashboard Access",
+        "weight": 30,
+        "flow": [
+          {
+            "get": {
+              "url": "/home"
+            }
+          },
+          {
+            "think": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -8,7 +8,7 @@ import { useDocumentStore } from '@/store/document.store';
 
 export default function DocumentLayout({ children }: { children: React.ReactNode }) {
     const params = useParams();
-    const documentId = params.documentId as string;
+    const documentId = params?.documentId as string || '';
 
     const { setCurrentDocument } = useDocumentStore();
     const { data: document } = useDocument(documentId);

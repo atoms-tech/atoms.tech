@@ -1,0 +1,276 @@
+{
+  "config": {
+    "configFile": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/playwright.config.ts",
+    "rootDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/scripts/agent-testing/global-setup.js",
+    "globalTeardown": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/scripts/agent-testing/global-teardown.js",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "test-results/playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/agent-context/test-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/junit/results.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Chrome",
+        "name": "Mobile Chrome",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Mobile Safari",
+        "name": "Mobile Safari",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Microsoft Edge",
+        "name": "Microsoft Edge",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "Google Chrome",
+        "name": "Google Chrome",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-chromium",
+        "name": "visual-chromium",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-firefox",
+        "name": "visual-firefox",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-webkit",
+        "name": "visual-webkit",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-mobile",
+        "name": "visual-mobile",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-tablet",
+        "name": "visual-tablet",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-retina",
+        "name": "visual-retina",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/test-results/playwright-output",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "visual-accessibility",
+        "name": "visual-accessibility",
+        "testDir": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "/.*\\.accessibility\\.visual\\.spec\\.ts$/"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.54.1",
+    "workers": 5,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://127.0.0.1:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: Cannot find package 'axe-playwright' imported from /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e/accessibility-coverage/accessibility-e2e.spec.ts",
+      "stack": "Error: Cannot find package 'axe-playwright' imported from /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e/accessibility-coverage/accessibility-e2e.spec.ts"
+    },
+    {
+      "message": "SyntaxError: /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e/cross-browser/browser-compatibility.spec.ts: `import` can only be used in `import()` or `import.meta`. (364:40)\n\n  362 |                         asyncAwait: (async function() {}).constructor,\n  363 |                         classes: typeof class {} === 'function',\n> 364 |                         modules: typeof import !== 'undefined',\n      |                                         ^\n  365 |                         destructuring: (() => {\n  366 |                             try {\n  367 |                                 const [a] = [1];",
+      "stack": "SyntaxError: /Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e/cross-browser/browser-compatibility.spec.ts: `import` can only be used in `import()` or `import.meta`. (364:40)\n\n  362 |                         asyncAwait: (async function() {}).constructor,\n  363 |                         classes: typeof class {} === 'function',\n> 364 |                         modules: typeof import !== 'undefined',\n      |                                         ^\n  365 |                         destructuring: (() => {\n  366 |                             try {\n  367 |                                 const [a] = [1];",
+      "location": {
+        "file": "/Users/kooshapari/temp-PRODVERCEL/485/shiv/atoms.tech/tests/e2e/cross-browser/browser-compatibility.spec.ts",
+        "line": 364,
+        "column": 40
+      },
+      "snippet": "\u001b[90m   at \u001b[39mcross-browser/browser-compatibility.spec.ts:364\n\n  362 |                         asyncAwait: (async function() {}).constructor,\n  363 |                         classes: typeof class {} === 'function',\n> 364 |                         modules: typeof import !== 'undefined',\n      |                                        ^\n  365 |                         destructuring: (() => {\n  366 |                             try {\n  367 |                                 const [a] = [1];"
+    }
+  ],
+  "stats": {
+    "startTime": "2025-07-16T03:46:30.649Z",
+    "duration": 291.8120000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

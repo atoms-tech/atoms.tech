@@ -1,0 +1,53 @@
+{
+  "timestamp": 1754101449495,
+  "system": {
+    "uptime": 11.965888542,
+    "memory": {
+      "rss": 118767616,
+      "heapTotal": 193675264,
+      "heapUsed": 80782912,
+      "external": 5731197,
+      "arrayBuffers": 2064125
+    },
+    "cpu": {
+      "user": 4037266,
+      "system": 699409
+    },
+    "version": "v24.4.0"
+  },
+  "performance": {
+    "responseTime": {
+      "avg": 450,
+      "p95": 800,
+      "p99": 1200
+    },
+    "throughput": {
+      "requestsPerSecond": 125,
+      "totalRequests": 45000
+    },
+    "errors": {
+      "rate": 0.02,
+      "totalErrors": 900
+    }
+  },
+  "database": {
+    "connections": {
+      "active": 15,
+      "idle": 5,
+      "total": 20
+    },
+    "queries": {
+      "avgTime": 85,
+      "slowQueries": 12,
+      "totalQueries": 8500
+    }
+  },
+  "health": {
+    "status": "healthy",
+    "checks": {
+      "database": "up",
+      "redis": "up",
+      "external_api": "up"
+    }
+  }
+}

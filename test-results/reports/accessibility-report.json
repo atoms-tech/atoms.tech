@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-07-15T18:18:20.251Z",
+  "violations": [],
+  "passes": [],
+  "summary": {
+    "totalChecks": 0,
+    "violations": 0,
+    "warnings": 0,
+    "passes": 0,
+    "wcagLevel": "AA"
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-07-15T18:18:20.249Z",
+  "e2eCoverage": {
+    "components": [
+      {
+        "name": "Authentication",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "UserProfile",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Dashboard",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Settings",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Navigation",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "DataTable",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "FileUpload",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "DocumentEditor",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      }
+    ],
+    "userFlows": [
+      {
+        "name": "User Login/Logout",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Profile Management",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Document Creation",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Data Export",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "Settings Configuration",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      },
+      {
+        "name": "File Upload/Download",
+        "tested": false,
+        "testCount": 0,
+        "lastTested": null
+      }
+    ],
+    "featureAreas": [],
+    "criticalPaths": []
+  },
+  "summary": {
+    "totalComponents": 8,
+    "testedComponents": 0,
+    "coveragePercentage": 0,
+    "missingTests": [
+      "Authentication",
+      "UserProfile",
+      "Dashboard",
+      "Settings",
+      "Navigation",
+      "DataTable",
+      "FileUpload",
+      "DocumentEditor"
+    ]
+  }
+}

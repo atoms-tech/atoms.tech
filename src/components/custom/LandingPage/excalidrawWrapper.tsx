@@ -125,8 +125,9 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     }, [theme, resolvedTheme]);
 
     const { user } = useUser();
-    const organizationId = usePathname().split('/')[2];
-    const projectId = usePathname().split('/')[4];
+    const pathname = usePathname();
+    const organizationId = pathname?.split('/')[2] || '';
+    const projectId = pathname?.split('/')[4] || '';
     const router = useRouter();
 
     // Tooltip state for selected requirement-linked element

@@ -213,8 +213,8 @@ export const TableBlock: React.FC<BlockProps> = ({
     const { createPropertyAndColumn, createColumnFromProperty, deleteColumn } =
         useColumnActions({
             orgId: currentOrganization?.id || '',
-            projectId: params.projectId as string,
-            documentId: params.documentId as string,
+            projectId: params?.projectId as string || '',
+            documentId: params?.documentId as string || '',
         });
     const projectId = params?.projectId as string;
 
@@ -494,7 +494,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     dragActivators={dragActivators}
                     orgId={currentOrganization?.id || ''}
                     projectId={projectId}
-                    documentId={params.documentId as string}
+                    documentId={params?.documentId as string || ''}
                 />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
                     {!block.columns ||
@@ -533,7 +533,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                 onSaveFromProperty={handleAddColumnFromProperty}
                 orgId={currentOrganization?.id || ''}
                 projectId={projectId}
-                documentId={params.documentId as string}
+                documentId={params?.documentId as string || ''}
             />
         </div>
     );

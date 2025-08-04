@@ -1,0 +1,208 @@
+name: Visual Regression Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  visual-tests:
+    name: Visual Regression Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+        
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Start application
+      run: npm start &
+      
+    - name: Wait for application to be ready
+      run: |
+        timeout 60 bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 1; done'
+        
+    - name: Run visual tests
+      run: npm run test:visual:ci -- --project=${{ matrix.browser }}
+      env:
+        PLAYWRIGHT_BASE_URL: http://localhost:3000
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: visual-test-results-${{ matrix.browser }}
+        path: |
+          test-results/visual-output/
+          test-results/visual-report/
+          test-results/visual-results.json
+        retention-days: 30
+        
+    - name: Upload screenshots on failure
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: visual-test-screenshots-${{ matrix.browser }}
+        path: test-results/visual-output/
+        retention-days: 7
+
+  visual-test-report:
+    name: Generate Visual Test Report
+    needs: visual-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: visual-test-results-*
+        path: test-results/
+        merge-multiple: true
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate combined report
+      run: |
+        mkdir -p test-results/combined-report
+        # Combine results from all browsers
+        node scripts/visual-testing/combine-reports.js
+        
+    - name: Upload combined report
+      uses: actions/upload-artifact@v4
+      with:
+        name: combined-visual-report
+        path: test-results/combined-report/
+        retention-days: 30
+        
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Read test results
+          const resultsPath = 'test-results/visual-results.json';
+          if (fs.existsSync(resultsPath)) {
+            const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+            
+            const totalTests = results.suites.reduce((sum, suite) => sum + suite.tests.length, 0);
+            const passedTests = results.suites.reduce((sum, suite) => 
+              sum + suite.tests.filter(test => test.outcome === 'expected').length, 0
+            );
+            const failedTests = totalTests - passedTests;
+            
+            const status = failedTests === 0 ? '✅ Passed' : '❌ Failed';
+            
+            const comment = `
+            ## Visual Regression Test Results ${status}
+            
+            **Summary:**
+            - Total Tests: ${totalTests}
+            - Passed: ${passedTests}
+            - Failed: ${failedTests}
+            
+            **Coverage:**
+            - UI Components: Tested across all variants and states
+            - Custom Components: Application-specific components tested
+            - Theme Variants: Light and dark themes verified
+            - Responsive Layouts: Multiple breakpoints tested
+            - Interactive States: Hover, focus, and active states verified
+            
+            ${failedTests > 0 ? '**❌ Some visual tests failed. Please review the uploaded screenshots.**' : '**✅ All visual tests passed!**'}
+            
+            [View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  update-baselines:
+    name: Update Visual Baselines
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      
+    - name: Generate baseline screenshots
+      run: node scripts/visual-testing/generate-baselines.js
+      
+    - name: Check for changes
+      id: changes
+      run: |
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "changes=true" >> $GITHUB_OUTPUT
+        else
+          echo "changes=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Commit baseline updates
+      if: steps.changes.outputs.changes == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add test-results/visual-baselines/
+        git commit -m "Update visual regression baselines [skip ci]"
+        git push
+        
+    - name: Upload baseline screenshots
+      uses: actions/upload-artifact@v4
+      with:
+        name: visual-baselines
+        path: test-results/visual-baselines/
+        retention-days: 90

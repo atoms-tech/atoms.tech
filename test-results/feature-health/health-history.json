@@ -1,0 +1,44 @@
+{
+  "sessions": [
+    {
+      "sessionId": "feature-health-1752603536947",
+      "timestamp": "2025-07-15T18:18:57.308Z",
+      "overallHealth": 0,
+      "featureHealth": {
+        "Authentication": 0,
+        "User Profile": 0,
+        "Dashboard": 0,
+        "Data Management": 0,
+        "Settings": 0,
+        "File Management": 0
+      },
+      "alerts": 1
+    },
+    {
+      "sessionId": "feature-health-1752637561682",
+      "timestamp": "2025-07-16T03:46:02.409Z",
+      "overallHealth": 0,
+      "featureHealth": {
+        "Authentication": 0,
+        "User Profile": 0,
+        "Dashboard": 0,
+        "Data Management": 0,
+        "Settings": 0,
+        "File Management": 0
+      },
+      "alerts": 1
+    }
+  ],
+  "latest": {
+    "overall": 0,
+    "byFeature": {
+      "Authentication": 0,
+      "User Profile": 0,
+      "Dashboard": 0,
+      "Data Management": 0,
+      "Settings": 0,
+      "File Management": 0
+    },
+    "trends": []
+  }
+}

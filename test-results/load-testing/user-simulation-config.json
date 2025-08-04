@@ -1,0 +1,100 @@
+{
+  "config": {
+    "target": "http://localhost:3000",
+    "phases": [
+      {
+        "duration": 120,
+        "arrivalRate": 1,
+        "rampTo": 5
+      },
+      {
+        "duration": 180,
+        "arrivalRate": 5
+      }
+    ],
+    "scenarios": [
+      {
+        "name": "New User Journey",
+        "weight": 25,
+        "flow": [
+          {
+            "get": {
+              "url": "/"
+            }
+          },
+          {
+            "think": 3
+          },
+          {
+            "get": {
+              "url": "/signup"
+            }
+          },
+          {
+            "think": 5
+          },
+          {
+            "get": {
+              "url": "/login"
+            }
+          },
+          {
+            "think": 2
+          }
+        ]
+      },
+      {
+        "name": "Returning User Journey",
+        "weight": 50,
+        "flow": [
+          {
+            "get": {
+              "url": "/login"
+            }
+          },
+          {
+            "think": 2
+          },
+          {
+            "get": {
+              "url": "/home"
+            }
+          },
+          {
+            "think": 8
+          },
+          {
+            "get": {
+              "url": "/org/demo"
+            }
+          },
+          {
+            "think": 5
+          }
+        ]
+      },
+      {
+        "name": "Browse and Exit",
+        "weight": 25,
+        "flow": [
+          {
+            "get": {
+              "url": "/"
+            }
+          },
+          {
+            "think": 5
+          },
+          {
+            "get": {
+              "url": "/login"
+            }
+          },
+          {
+            "think": 2
+          }
+        ]
+      }
+    ]
+  }
+}

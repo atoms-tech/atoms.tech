@@ -1,0 +1,39 @@
+{
+  "sessionId": "e2e-1752603466863",
+  "timestamp": "2025-07-15T18:18:20.258Z",
+  "testRun": {
+    "id": "local-1752603466866",
+    "commit": "local-development",
+    "branch": "local"
+  },
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 0,
+    "timestamp": "2025-07-15T18:18:20.241Z",
+    "features": {
+      "authentication": true,
+      "userProfiles": true,
+      "dashboard": true,
+      "settings": true,
+      "accessibility": true
+    },
+    "environment": "test",
+    "browser": "chromium"
+  },
+  "recommendations": [
+    {
+      "type": "warning",
+      "message": "Low test coverage detected",
+      "action": "Add more E2E tests for critical user flows"
+    }
+  ],
+  "nextActions": [
+    "Add more comprehensive E2E tests",
+    "Review performance metrics",
+    "Check accessibility compliance",
+    "Update test documentation"
+  ]
+}

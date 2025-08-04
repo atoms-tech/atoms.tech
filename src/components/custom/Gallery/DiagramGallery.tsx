@@ -65,7 +65,7 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
     const [error, setError] = useState<string | null>(null);
 
     const pathname = usePathname();
-    const projectId = pathname.split('/')[4];
+    const projectId = pathname?.split('/')[4] || '';
 
     // Fetch all diagrams for the current project
     const fetchDiagrams = useCallback(async () => {

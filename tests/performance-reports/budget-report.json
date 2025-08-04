@@ -1,0 +1,64 @@
+{
+  "timestamp": "2025-08-02T02:24:05.637Z",
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "results": [
+    {
+      "description": "Resource: totalPageSize",
+      "value": 1800,
+      "budget": 2000,
+      "unit": "KB",
+      "priority": "high",
+      "passed": true,
+      "percentage": 90,
+      "severity": "success"
+    },
+    {
+      "description": "Resource: totalJavaScript",
+      "value": 450,
+      "budget": 500,
+      "unit": "KB",
+      "priority": "high",
+      "passed": true,
+      "percentage": 90,
+      "severity": "success"
+    },
+    {
+      "description": "Resource: totalCSS",
+      "value": 85,
+      "budget": 100,
+      "unit": "KB",
+      "priority": "medium",
+      "passed": true,
+      "percentage": 85,
+      "severity": "success"
+    },
+    {
+      "description": "Resource: totalImages",
+      "value": 950,
+      "budget": 1000,
+      "unit": "KB",
+      "priority": "medium",
+      "passed": true,
+      "percentage": 95,
+      "severity": "success"
+    },
+    {
+      "description": "Resource: totalFonts",
+      "value": 120,
+      "budget": 150,
+      "unit": "KB",
+      "priority": "medium",
+      "passed": true,
+      "percentage": 80,
+      "severity": "success"
+    }
+  ]
+}

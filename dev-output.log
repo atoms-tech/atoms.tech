@@ -1,0 +1,17 @@
+
+> atoms.tech@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, using available port 3001 instead.
+   ▲ Next.js 15.3.5
+   - Local:        http://localhost:3001
+   - Network:      http://10.182.148.112:3001
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     ✓ reactCompiler
+
+ ✓ Starting...
+[TypeError: The "to" argument must be of type string. Received undefined] {
+  code: 'ERR_INVALID_ARG_TYPE'
+}
+[?25h

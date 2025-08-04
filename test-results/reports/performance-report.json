@@ -1,0 +1,14 @@
+{
+  "timestamp": "2025-07-15T18:18:20.246Z",
+  "metrics": {
+    "loadTimes": [],
+    "networkRequests": [],
+    "memoryUsage": [],
+    "coreWebVitals": []
+  },
+  "summary": {
+    "averageLoadTime": 0,
+    "totalRequests": 0,
+    "performanceScore": 0
+  }
+}
