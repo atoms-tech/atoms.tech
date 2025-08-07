@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { v4 as _uuidv4 } from 'uuid';
 
 import { CellValue } from '@/components/custom/BlockCanvas/components/EditableTable/types';
@@ -47,6 +47,7 @@ export const useRequirementActions = ({
 }: UseRequirementActionsProps) => {
     const _createRequirementMutation = useCreateRequirement();
     const _updateRequirementMutation = useUpdateRequirement();
+    const deletedRowIdsRef = useRef<Set<string>>(new Set());
 
     // Function to refresh requirements from the database
     const refreshRequirements = useCallback(async () => {
@@ -143,46 +144,52 @@ export const useRequirementActions = ({
             return [];
         }
 
-        return localRequirements.map((req) => {
-            const dynamicReq: DynamicRequirement = {
-                id: req.id,
-                ai_analysis: req.ai_analysis as RequirementAiAnalysis,
-            };
+        return localRequirements
+            .filter((req) => !deletedRowIdsRef.current.has(req.id)) // Filter out deleted
+            .map((req) => {
+                const dynamicReq: DynamicRequirement = {
+                    id: req.id,
+                    ai_analysis: req.ai_analysis as RequirementAiAnalysis,
+                };
 
-            // Extract values from properties object
-            if (req.properties) {
-                Object.entries(req.properties).forEach(([key, prop]) => {
-                    if (typeof prop === 'object' && prop !== null && 'value' in prop) {
-                        // Ensure we only assign CellValue compatible values
-                        const value = prop.value;
+                // Extract values from properties object
+                if (req.properties) {
+                    Object.entries(req.properties).forEach(([key, prop]) => {
                         if (
-                            typeof value === 'string' ||
-                            typeof value === 'number' ||
-                            value instanceof Date ||
-                            Array.isArray(value) ||
-                            value === null
+                            typeof prop === 'object' &&
+                            prop !== null &&
+                            'value' in prop
                         ) {
-                            dynamicReq[key] = value as CellValue;
+                            // Ensure we only assign CellValue compatible values
+                            const value = prop.value;
+                            if (
+                                typeof value === 'string' ||
+                                typeof value === 'number' ||
+                                value instanceof Date ||
+                                Array.isArray(value) ||
+                                value === null
+                            ) {
+                                dynamicReq[key] = value as CellValue;
+                            } else {
+                                dynamicReq[key] = String(value);
+                            }
+                        } else if (
+                            typeof prop === 'string' ||
+                            typeof prop === 'number' ||
+                            prop === null ||
+                            (Array.isArray(prop) &&
+                                prop.every((item) => typeof item === 'string'))
+                        ) {
+                            dynamicReq[key] = prop as CellValue;
                         } else {
-                            dynamicReq[key] = String(value);
+                            // Convert other types to string
+                            dynamicReq[key] = String(prop);
                         }
-                    } else if (
-                        typeof prop === 'string' ||
-                        typeof prop === 'number' ||
-                        prop === null ||
-                        (Array.isArray(prop) &&
-                            prop.every((item) => typeof item === 'string'))
-                    ) {
-                        dynamicReq[key] = prop as CellValue;
-                    } else {
-                        // Convert other types to string
-                        dynamicReq[key] = String(prop);
-                    }
-                });
-            }
+                    });
+                }
 
-            return dynamicReq;
-        });
+                return dynamicReq;
+            });
     };
 
     // Helper function to format enum values for display
@@ -484,12 +491,17 @@ export const useRequirementActions = ({
     // Delete a requirement
     const deleteRequirement = async (dynamicReq: DynamicRequirement, _userId: string) => {
         try {
+            deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
+
             const { error } = await supabase
                 .from('requirements')
                 .delete()
                 .eq('id', dynamicReq.id);
 
-            if (error) throw error;
+            if (error) {
+                deletedRowIdsRef.current.delete(dynamicReq.id);
+                throw error;
+            }
 
             // Update local state by removing the deleted requirement immediately without refetching
             setLocalRequirements((prev) =>

@@ -5,10 +5,12 @@ import '@/styles/globals.css';
 import '@/styles/globals.css';
 
 import DataEditor, {
+    CompactSelection,
     DataEditorRef,
     GridCell,
     GridCellKind,
     GridColumn,
+    GridSelection,
     //GridDragEventArgs,
     Item,
     Rectangle,
@@ -71,6 +73,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
     const prevEditModeRef = useRef<boolean>(isEditMode);
     const isSavingRef = useRef(false);
+    const deletedRowIdsRef = useRef<Set<string>>(new Set());
+    const deletedColumnIdsRef = useRef<Set<string>>(new Set());
 
     // Get user site profile info for saves.
     const { profile } = useUser();
@@ -235,13 +239,31 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     // Sort localData by metadata position key.
     const sortedData = useMemo(() => {
-        return [...localData].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        return [...localData]
+            .filter((row) => !deletedRowIdsRef.current.has(row.id))
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
     }, [localData]);
+
+    const sortedDataRef = useRef<T[]>([]);
+    useEffect(() => {
+        sortedDataRef.current = sortedData;
+    }, [sortedData]);
 
     // For AI Sidebar
     const selectedRequirement = useMemo(() => {
         return sortedData.find((r) => r.id === selectedRequirementId) || null;
     }, [sortedData, selectedRequirementId]);
+
+    // Row deletion and selection tracking logic
+    const [gridSelection, setGridSelection] = useState<GridSelection>({
+        rows: CompactSelection.empty(),
+        columns: CompactSelection.empty(),
+    });
+    const [rowDeleteConfirmOpen, setRowDeleteConfirmOpen] = useState(false);
+    const [rowsToDelete, setRowsToDelete] = useState<T[]>([]);
+    const handleGridSelectionChange = useCallback((newSelection: GridSelection) => {
+        setGridSelection(newSelection);
+    }, []);
 
     const [columnMenu, setColumnMenu] = useState<
         | {
@@ -281,7 +303,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         if (!blockId) return;
 
         const latestLocalColumns = localColumnsRef.current;
-        const latestSortedData = sortedData; // Already sorted by position
+        const latestSortedData = sortedDataRef.current;
 
         const columnMetadata = latestLocalColumns.map((col, idx) => ({
             columnId: col.id,
@@ -349,7 +371,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 err,
             );
         }
-    }, [blockId, columns, sortedData, updateBlockMetadata]);
+    }, [blockId, columns, updateBlockMetadata]);
 
     // References to latest version of save methods. Fixes stale reference when editing data on a newly added column.
     const handleSaveAllRef = useRef(handleSaveAll);
@@ -362,13 +384,40 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         saveTableMetadataRef.current = saveTableMetadata;
     }, [saveTableMetadata]);
 
-    // Sync db row changes with existing pending changes for local data.
+    // Check DB sync, reset local edit refs.
+    useEffect(() => {
+        // If all deleted IDs are missing from incoming data, assume server is up to date.
+        const incomingIds = new Set(data.map((r) => r.id));
+        const allDeletedSynced = [...deletedRowIdsRef.current].every(
+            (id) => !incomingIds.has(id),
+        );
+
+        if (allDeletedSynced) {
+            deletedRowIdsRef.current.clear();
+            //console.debug('[GlideEditableTable] Cleared deletedRowIdsRef after DB sync.');
+        }
+
+        // If all deleted IDs are missing from incoming columns, assume synced
+        const incomingColumnIds = new Set(columns.map((c) => c.id));
+        const allDeletedColumnsSynced = [...deletedColumnIdsRef.current].every(
+            (id) => !incomingColumnIds.has(id),
+        );
+
+        if (allDeletedColumnsSynced) {
+            deletedColumnIdsRef.current.clear();
+            //console.debug('[GlideEditableTable] Cleared deletedColumnIdsRef after DB sync.');
+        }
+    }, [columns, data]);
+
+    // Sync db row changes with existing pending changes for local data. (method also probably needs validation)
     useEffect(() => {
         // 1. Build a map of pending edits
         const pendingEdits = editingDataRef.current;
 
+        const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
+
         // 2. Detect any differences between new props.data and current localData + pendingEdits
-        const mergedData = data.map((incomingRow) => {
+        const mergedData = filteredData.map((incomingRow) => {
             const pending = pendingEdits[incomingRow.id];
             return pending ? { ...incomingRow, ...pending } : incomingRow;
         });
@@ -379,12 +428,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         const mergedIds = mergedData.map((r) => r.id);
 
         // Check if the sets of IDs are equal (regardless of order)
-        const localIdSet = new Set(localIds);
-        const mergedIdSet = new Set(mergedIds);
-
         const sameIdSet =
-            localIdSet.size === mergedIdSet.size &&
-            [...localIdSet].every((id) => mergedIdSet.has(id));
+            new Set(localIds).size === new Set(mergedIds).size &&
+            localIds.every((id) => mergedIds.includes(id));
 
         // Only consider content mismatch if sets are different or content differs.
         const contentMismatch =
@@ -411,12 +457,13 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         // }
     }, [data, localData]);
 
-    // Watch for changes in columns from db
+    // Watch for changes in columns from db (this method is prob bad rn and needs testing w/ multi user.)
     useEffect(() => {
         const normalized = columns.map((col) => ({
             ...col,
             title: col.header,
         }));
+
         const sortedNormalized = [...normalized].sort(
             (a, b) => (a.position ?? 0) - (b.position ?? 0),
         );
@@ -426,6 +473,16 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
         const columnsAdded = [...normalizedAccessors].filter(
             (a) => !localAccessors.has(a),
+        );
+
+        // Filter out deleted columns from being re-added
+        const filteredColumnsAdded = columnsAdded.filter(
+            (accessor) =>
+                ![...deletedColumnIdsRef.current].some(
+                    (deletedId) =>
+                        sortedNormalized.find((col) => col.accessor === accessor)?.id ===
+                        deletedId,
+                ),
         );
         const columnsRemoved = [...localAccessors].filter(
             (a) => !normalizedAccessors.has(a),
@@ -437,7 +494,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             // Merge new columns at end, preserving existing column order and metadata
             const merged = [...localColumns];
 
-            for (const added of columnsAdded) {
+            for (const added of filteredColumnsAdded) {
                 const newCol = sortedNormalized.find((c) => c.accessor === added);
                 if (newCol) merged.push(newCol);
             }
@@ -450,31 +507,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             setLocalColumns(filtered);
         }
     }, [columns, localColumns]);
-
-    // Debugs for tracing loading issues, ignore.
-    // const instanceId = useMemo(() => Math.random().toString(36).slice(2), []);
-    // console.debug(`[GlideEditableTable] MOUNT instance=${instanceId}`);
-    // console.debug('[GlideEditableTable] Local Columns:', localColumns);
-    // useEffect(() => {
-    //     console.debug(`[GlideEditableTable] PROPS for instance=${instanceId}:`, {
-    //         dataLength: data.length,
-    //         columnCount: columns.length,
-    //         firstRow: data[0],
-    //         columns,
-    //     });
-    // }, [data, columns, instanceId]);
-
-    // useEffect(() => {
-    //     console.debug('[GlideEditableTable] Props:', {
-    //         dataLength: data?.length,
-    //         columns,
-    //         firstRow: data?.[0],
-    //     });
-    // }, [data, columns]);
-
-    // useEffect(() => {
-    //     console.debug('[Glide TABLE INIT] Local Columns:', localColumns);
-    // }, [localColumns]);
 
     const handleColumnResize = useCallback(
         (col: GridColumn, newSize: number) => {
@@ -549,13 +581,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
             if (originalValue?.toString() === newValueStr) return;
 
-            // console.debug('[onCellEdited] Detected change:', {
-            //     rowId,
-            //     accessor,
-            //     oldValue: originalValue,
-            //     newValue: newValueStr,
-            // });
-
             // Optimistically update local data
             setLocalData((prev) => {
                 const updated = [...prev];
@@ -596,7 +621,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     // Add a new row.
     const handleRowAppended = useCallback(() => {
-        const maxPosition = Math.max(0, ...data.map((d) => d.position ?? 0));
+        const maxPosition = Math.max(0, ...localData.map((d) => d.position ?? 0));
         const newRow = {
             ...columns.reduce(
                 (acc, col) => {
@@ -612,7 +637,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         //console.debug('[handleRowAppended] New row created:', newRow);
         setLocalData((prev) => [...prev, newRow]);
         onSave?.(newRow, true);
-    }, [columns, data, onSave]);
+        void saveTableMetadata();
+    }, [columns, localData, onSave, saveTableMetadata]);
 
     const handleRowMoved = useCallback(
         (from: number, to: number) => {
@@ -653,11 +679,15 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         [debouncedSave, sortedData],
     );
 
+    // Call column deletion on passed Column ID
     const handleColumnDeleteConfirm = useCallback(async () => {
         if (!columnToDelete) return;
 
         try {
             await props.onDeleteColumn?.(columnToDelete);
+
+            // Update local deletion tracker
+            deletedColumnIdsRef.current.add(columnToDelete);
 
             // Compute updated local columns *before* triggering state update
             const newLocalColumns = localColumnsRef.current.filter(
@@ -678,7 +708,35 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         setDeleteConfirmOpen(false);
     }, [columnToDelete, props, saveTableMetadata]);
 
-    // Modify Trailing Row Visuals
+    // Call row deletion on array of selected Dynamic Requirement objects.
+    const handleRowDeleteConfirm = useCallback(async () => {
+        if (rowsToDelete.length === 0) return;
+
+        // Update local deletion tracker
+        const deletedIds = rowsToDelete.map((r) => r.id);
+        for (const id of deletedIds) {
+            deletedRowIdsRef.current.add(id);
+        }
+
+        // Update local state.
+        setLocalData((prev) => prev.filter((r) => !deletedIds.includes(r.id)));
+
+        // Call DB deletes, sync local metadata to db.
+        for (const row of rowsToDelete) {
+            props.onDelete?.(row);
+        }
+        void saveTableMetadata();
+
+        // Cleanup.
+        setRowsToDelete([]);
+        setRowDeleteConfirmOpen(false);
+        setGridSelection({
+            rows: CompactSelection.empty(),
+            columns: CompactSelection.empty(),
+        });
+    }, [rowsToDelete, saveTableMetadata, props]);
+
+    // Modify Trailing Row Visuals.
     columns.map((col, idx) => ({
         title: col.header,
         width: colSizes[col.accessor] || col.width || 120,
@@ -754,9 +812,12 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         };
     }, [handleKeyDown]);
 
-    // Open side panel for AI Analysis
+    //  Handel Open side panel for AI Analysis
     const handleCellActivated = useCallback(
         (cell: Item) => {
+            //const [_, row] = cell;
+            //setActiveRowIndex(row);
+
             if (!isEditMode) {
                 const row = sortedData[cell[1]];
                 if (row?.id) {
@@ -815,6 +876,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             rowHeight={(row) => sortedData[row]?.height ?? 43}
                             onColumnResize={isEditMode ? handleColumnResize : undefined}
                             onColumnMoved={isEditMode ? handleColumnMoved : undefined}
+                            gridSelection={gridSelection}
+                            onGridSelectionChange={handleGridSelectionChange}
                             trailingRowOptions={{
                                 tint: true,
                                 sticky: true,
@@ -838,6 +901,83 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                       }
                                     : undefined
                             }
+                            // Right side DOM element for row actions (deletion). Should prob be own component.
+                            rightElement={
+                                isEditMode && gridSelection.rows.length > 0
+                                    ? (() => {
+                                          const selectedRowIndices =
+                                              gridSelection.rows.toArray();
+                                          const rowsToDelete = selectedRowIndices.map(
+                                              (i) => sortedData[i],
+                                          );
+
+                                          return (
+                                              <div
+                                                  style={{
+                                                      position: 'absolute',
+                                                      bottom: 16,
+                                                      right: 16,
+                                                      zIndex: 1000,
+                                                      pointerEvents: 'auto',
+                                                      transition:
+                                                          'opacity 0.2s ease-in-out',
+                                                  }}
+                                              >
+                                                  <button
+                                                      onClick={() => {
+                                                          setRowsToDelete(rowsToDelete);
+                                                          setRowDeleteConfirmOpen(true);
+                                                      }}
+                                                      style={{
+                                                          height: 42,
+                                                          lineHeight: '42px',
+                                                          padding: '0 24px',
+                                                          backgroundColor: '#7C3AED',
+                                                          color: 'white',
+                                                          border: 'none',
+                                                          borderRadius: 10, // moderate rounded
+                                                          fontWeight: 600,
+                                                          fontSize: 14,
+                                                          cursor: 'pointer',
+                                                          boxShadow:
+                                                              '0 4px 16px rgba(0, 0, 0, 0.15)',
+                                                          backdropFilter: 'blur(10px)',
+                                                          background:
+                                                              resolvedTheme === 'dark'
+                                                                  ? 'rgba(124, 58, 237, 0.8)'
+                                                                  : 'rgba(124, 58, 237, 0.85)',
+                                                          transition:
+                                                              'background 0.2s ease-in-out',
+                                                          whiteSpace: 'nowrap',
+                                                          display: 'inline-block',
+                                                      }}
+                                                      onMouseEnter={(e) =>
+                                                          (e.currentTarget.style.backgroundColor =
+                                                              resolvedTheme === 'dark'
+                                                                  ? 'rgba(140, 95, 202, 1)'
+                                                                  : 'rgba(140, 95, 202, 1)')
+                                                      }
+                                                      onMouseLeave={(e) =>
+                                                          (e.currentTarget.style.backgroundColor =
+                                                              resolvedTheme === 'dark'
+                                                                  ? 'rgba(124, 58, 237, 0.8)'
+                                                                  : 'rgba(124, 58, 237, 0.85)')
+                                                      }
+                                                  >
+                                                      Delete {selectedRowIndices.length}{' '}
+                                                      Row
+                                                      {selectedRowIndices.length !== 1
+                                                          ? 's'
+                                                          : ''}
+                                                  </button>
+                                              </div>
+                                          );
+                                      })()
+                                    : null
+                            }
+                            rightElementProps={{
+                                sticky: true,
+                            }}
                         />
                         <RequirementAnalysisSidebar
                             requirement={selectedRequirement}
@@ -1051,6 +1191,16 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     open={deleteConfirmOpen}
                     onOpenChange={(open) => setDeleteConfirmOpen?.(open)}
                     onConfirm={handleColumnDeleteConfirm}
+                />
+                <DeleteConfirmDialog
+                    open={rowDeleteConfirmOpen}
+                    onOpenChange={(open) => {
+                        setRowDeleteConfirmOpen(open);
+                        if (!open) {
+                            setRowsToDelete([]);
+                        }
+                    }}
+                    onConfirm={handleRowDeleteConfirm}
                 />
             </div>
         </div>

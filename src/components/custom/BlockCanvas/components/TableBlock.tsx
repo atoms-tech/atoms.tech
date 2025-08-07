@@ -471,6 +471,13 @@ export const TableBlock: React.FC<BlockProps> = ({
         async (dynamicReq: DynamicRequirement) => {
             if (!userProfile?.id) return;
             await deleteRequirement(dynamicReq, userProfile.id);
+
+            // Immediately remove from local state to prevent reappear
+            setLocalRequirements((prev) =>
+                prev.filter((req) => req.id !== dynamicReq.id),
+            );
+
+            //await refreshRequirements(); // Temp fix for better syncing. Should push down to table level or track deleted reqs at block level later.
         },
         [deleteRequirement, userProfile?.id],
     );
