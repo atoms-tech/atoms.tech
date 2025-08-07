@@ -1,14 +1,17 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import '@/styles/globals.css';
+
 // We still need to validate role perms so readers cannot exit, ect.
-import '@/styles/globals.css';
 
 import DataEditor, {
     DataEditorRef,
     GridCell,
     GridCellKind,
     GridColumn,
+    GridSelection,
+    // CompactSelection,
     //GridDragEventArgs,
     Item,
     Rectangle,
@@ -38,6 +41,11 @@ import { useUser } from '@/lib/providers/user.provider';
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 import { /*CellValue,*/ EditableColumn, GlideTableProps } from './types';
 
+// import { /*CellValue,*/ GlideTableProps } from './types';
+// import { ChartNoAxesColumnDecreasingIcon } from 'lucide-react';
+// import { table } from 'console';
+// import { string } from 'zod';
+
 export function GlideEditableTable<T extends DynamicRequirement = DynamicRequirement>(
     props: GlideTableProps<T>,
 ) {
@@ -65,6 +73,11 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         blockId,
         //tableMetadata, // Unneeded: metadata is being used in parent to pass in settings, and saving uses local array to track.
     } = props;
+
+    const [selection, setSelection] = useState<GridSelection | undefined>(undefined);
+    const selectionRef = useRef<GridSelection | undefined>(undefined);
+    const isPastingRef = useRef(false);
+    const pasteOperationIdRef = useRef(0);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
@@ -100,44 +113,36 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     }, [editingData]);
 
     const handleSaveAll = useCallback(async () => {
-        const currentEdits = editingDataRef.current;
-
         if (isSavingRef.current) {
-            console.debug('[GlideEditableTable] Save already in progress. Skipping.');
             return;
         }
 
         isSavingRef.current = true;
-        console.debug('[GlideEditableTable] Saving all pending data...');
 
         try {
-            const hasEdits = Object.keys(currentEdits).length > 0;
+            const currentEdits = editingDataRef.current;
+            const rows = Object.entries(currentEdits);
 
-            if (!hasEdits) {
-                console.debug('[GlideEditableTable] No changes to save.');
+            if (rows.length === 0) {
                 return;
             }
 
-            // Save row changes
-            for (const [rowId, changes] of Object.entries(currentEdits)) {
+            for (const [rowId, changes] of rows) {
                 const originalItem = data.find((d) => d.id === rowId);
-                if (!originalItem) continue;
-
-                const fullItem: T = {
-                    ...originalItem,
-                    ...changes,
-                };
-
+                if (!originalItem) {
+                    continue;
+                }
+                const fullItem: T = { ...originalItem, ...changes };
                 await onSave?.(fullItem, false, userId, userName);
-                console.debug(`[GlideEditableTable] Saved row ${rowId}`);
             }
 
-            // TODO: Update Column metadata (also need to track w/ local columns vs passed.)
-
-            setEditingData({});
             await onPostSave?.();
-        } catch (err) {
-            console.error('[GlideEditableTable] Error saving all changes:', err);
+
+            // small delay to let the updated props.data come in, then clear buffer
+            await new Promise((r) => setTimeout(r, 250));
+            setEditingData({});
+        } catch {
+            // see this testing
         } finally {
             isSavingRef.current = false;
         }
@@ -364,51 +369,47 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     // Sync db row changes with existing pending changes for local data.
     useEffect(() => {
-        // 1. Build a map of pending edits
+        if (isPastingRef.current) {
+            return;
+        }
+        if (isSavingRef.current) {
+            return;
+        }
+
         const pendingEdits = editingDataRef.current;
 
-        // 2. Detect any differences between new props.data and current localData + pendingEdits
-        const mergedData = data.map((incomingRow) => {
-            const pending = pendingEdits[incomingRow.id];
-            return pending ? { ...incomingRow, ...pending } : incomingRow;
+        const _localById = new Map(localData.map((r) => [r.id, r]));
+
+        // merge server rows with any pending edits
+        const mergedIncoming = data.map((incoming) => {
+            const rowId = incoming.id;
+            const pending = pendingEdits[rowId] ?? {};
+            return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
         });
 
-        // 3. Compare mergedData with current localData
-        //const isSameLength = mergedData.length === localData.length;
-        const localIds = localData.map((r) => r.id);
-        const mergedIds = mergedData.map((r) => r.id);
+        const extraLocal = localData.filter((r) => !data.some((d) => d.id === r.id));
 
-        // Check if the sets of IDs are equal (regardless of order)
-        const localIdSet = new Set(localIds);
-        const mergedIdSet = new Set(mergedIds);
+        const newMerged = [...mergedIncoming, ...extraLocal];
 
-        const sameIdSet =
-            localIdSet.size === mergedIdSet.size &&
-            [...localIdSet].every((id) => mergedIdSet.has(id));
-
-        // Only consider content mismatch if sets are different or content differs.
-        const contentMismatch =
-            !sameIdSet ||
-            mergedData.some((row) => {
-                const localRow = localData.find((r) => r.id === row.id);
-                if (!localRow) return true;
-
-                for (const key of Object.keys(row)) {
-                    if (key === 'position' || key === 'height') continue;
-                    if (localRow[key as keyof T] !== row[key as keyof T]) return true;
-                }
-                return false;
+        // detect differences
+        const mismatch =
+            newMerged.length !== localData.length ||
+            newMerged.some((row, i) => {
+                const lr = localData[i];
+                if (!lr || row.id !== lr.id) return true;
+                return Object.keys(row).some((k) => {
+                    if (k === 'position' || k === 'height') return false;
+                    return row[k] !== lr[k];
+                });
             });
 
-        if (contentMismatch) {
-            console.debug(
-                '[GlideEditableTable] External data change detected (excluding local row reorders). Syncing...',
-            );
-            setLocalData(mergedData);
+        if (mismatch) {
+            console.debug('applying merged array');
+            setLocalData(newMerged);
+        } else {
+            console.debug('no merge needed');
         }
-        // else {
-        //     console.debug('[GlideEditableTable] No external row data changes detected.');
-        // }
+        console.groupEnd();
     }, [data, localData]);
 
     // Watch for changes in columns from db
@@ -537,64 +538,58 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     const onCellEdited = useCallback(
         async (cell: Item, newValue: GridCell) => {
-            const [col, row] = cell;
+            // Ignore edits during paste
+            if (isPastingRef.current) {
+                console.debug('[onCellEdited] Ignoring during paste');
+                return;
+            }
+
+            const [colIndex, rowIndex] = cell;
             if (newValue.kind !== GridCellKind.Text) return;
 
-            const rowData = localData[row];
-            const accessor = localColumns[col].accessor;
-            const rowId = rowData.id;
+            const gridRow = sortedData[rowIndex];
+            if (!gridRow) {
+                console.warn('[onCellEdited] No row at index', { rowIndex });
+                return;
+            }
 
-            const newValueStr = newValue.data;
-            const originalValue = rowData?.[accessor];
+            const accessor = localColumns[colIndex].accessor;
+            const rowId = gridRow.id;
+            const nextVal = newValue.data;
+            const prevVal = (gridRow as any)?.[accessor];
 
-            if (originalValue?.toString() === newValueStr) return;
+            if ((prevVal ?? '').toString() === (nextVal ?? '')) return;
 
-            // console.debug('[onCellEdited] Detected change:', {
-            //     rowId,
-            //     accessor,
-            //     oldValue: originalValue,
-            //     newValue: newValueStr,
-            // });
-
-            // Optimistically update local data
-            setLocalData((prev) => {
-                const updated = [...prev];
-                updated[row] = {
-                    ...updated[row],
-                    [accessor]: newValueStr,
-                };
-                return updated;
+            console.debug('[onCellEdited]', {
+                rowIndex,
+                rowId,
+                accessor: String(accessor),
+                old: prevVal,
+                new: nextVal,
             });
 
-            // Update the editing buffer and log changes
+            setLocalData((prev) =>
+                prev.map((r) =>
+                    r.id === rowId ? ({ ...r, [accessor]: nextVal } as T) : r,
+                ),
+            );
+
+            // Buffer for debounced batch save
             setEditingData((prev) => {
-                const existing = prev[rowId] ?? {};
-                const updatedRow = {
-                    ...existing,
-                    [accessor]: newValueStr,
-                };
-                const updatedEditingData = {
-                    ...prev,
-                    [rowId]: updatedRow,
-                };
-
-                // console.debug('[onCellEdited] Updated editingData entry:', updatedRow);
-                // console.debug(
-                //     '[onCellEdited] Full editingData after change:',
-                //     updatedEditingData,
-                // );
-
-                return updatedEditingData;
+                const merged = {
+                    ...(prev[rowId] ?? {}),
+                    [accessor]: nextVal,
+                } as Partial<T>;
+                return { ...prev, [rowId]: merged };
             });
 
-            debouncedSave(); // Debounce save if set, else leave in buffer and handle on edit exit or manual save.
-
+            debouncedSave();
             lastEditedCellRef.current = cell;
         },
-        [localData, localColumns, debouncedSave],
+        [sortedData, localColumns, debouncedSave],
     );
 
-    // Add a new row.
+    // Add new row.
     const handleRowAppended = useCallback(() => {
         const maxPosition = Math.max(0, ...data.map((d) => d.position ?? 0));
         const newRow = {
@@ -609,8 +604,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             position: maxPosition + 1,
         } as T;
 
-        //console.debug('[handleRowAppended] New row created:', newRow);
-        setLocalData((prev) => [...prev, newRow]);
         onSave?.(newRow, true);
     }, [columns, data, onSave]);
 
@@ -636,7 +629,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         [debouncedSave],
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleRowResize = useCallback(
         (rowIndex: number, newSize: number) => {
             const rowId = sortedData[rowIndex]?.id;
@@ -728,7 +720,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
             const isMac =
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (navigator as any).userAgentData?.platform === 'macOS' ||
                 navigator.userAgent.toLowerCase().includes('mac');
             const isSaveKey =
@@ -768,12 +759,212 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         [isEditMode, sortedData],
     );
 
+    // enhanced selection tracking
+    useEffect(() => {
+        selectionRef.current = selection;
+    }, [selection]);
+
+    // enhanced paste handler with crash protection
+    const handlePaste = useCallback(
+        async (event: ClipboardEvent) => {
+            const op = ++pasteOperationIdRef.current;
+            console.debug(`📋 [handlePaste] op=${op} start`, { isEditMode });
+
+            if (!isEditMode) {
+                console.debug('[handlePaste] Not in edit mode');
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (isPastingRef.current) {
+                console.debug('[handlePaste] Already pasting; skipping nested paste');
+                return;
+            }
+
+            const text = event.clipboardData?.getData('text/plain') ?? '';
+            if (!text.trim()) {
+                console.debug('[handlePaste] Empty clipboard');
+                return;
+            }
+
+            isPastingRef.current = true;
+
+            try {
+                const rows = text
+                    .trim()
+                    .split(/\r?\n/)
+                    .map((r) => r.split('\t'));
+
+                // Start position from selection
+                const startCell = selectionRef.current?.current?.cell;
+                const startCol = startCell?.[0] ?? 0;
+                const startRow = startCell?.[1] ?? 0;
+                console.debug('[handlePaste] startCell', {
+                    startRow,
+                    startCol,
+                    pasteRows: rows.length,
+                    pasteCols: rows[0]?.length ?? 0,
+                });
+
+                // Clear selection so DataEditor doesn't try to keep an overlay
+                setSelection(undefined);
+                selectionRef.current = undefined;
+
+                // Build fast lookup for current localData
+                const localById = new Map(localData.map((r) => [r.id, r]));
+                const updatedById = new Map(
+                    localData.map((r) => [r.id, r] as [string, T]),
+                );
+                const newRowsToCreate: T[] = [];
+                const existingRowUpdates: Record<string, Partial<T>> = {};
+
+                // Helper for new row
+                const makeBlankRow = (): T =>
+                    ({
+                        id: crypto.randomUUID(),
+                        position:
+                            Math.max(0, ...localData.map((d) => d.position ?? 0)) + 1,
+                        ...Object.fromEntries(
+                            localColumnsRef.current.map((c) => [
+                                c.accessor as string,
+                                '',
+                            ]),
+                        ),
+                    }) as T;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const vals = rows[i];
+                    const targetIdx = startRow + i;
+
+                    let targetId: string;
+                    let baseRow: T;
+                    const existingInGrid = sortedData[targetIdx];
+
+                    if (existingInGrid) {
+                        targetId = existingInGrid.id;
+                        baseRow = { ...(localById.get(targetId) ?? existingInGrid) };
+                    } else {
+                        baseRow = makeBlankRow();
+                        targetId = baseRow.id;
+                        newRowsToCreate.push(baseRow);
+                    }
+
+                    const workingRow = { ...baseRow };
+
+                    for (let j = 0; j < vals.length; j++) {
+                        const colIdx = startCol + j;
+                        const col = localColumnsRef.current[colIdx];
+                        if (!col) {
+                            console.warn('[handlePaste] colIdx out of range', { colIdx });
+                            continue;
+                        }
+
+                        // Skip your not-yet-implemented Priority column
+                        if (String(col.accessor).toLowerCase().includes('priority')) {
+                            console.debug('[handlePaste] ⏭️ Skipping priority column', {
+                                colIdx,
+                                accessor: String(col.accessor),
+                            });
+                            continue;
+                        }
+
+                        const newVal = vals[j] ?? '';
+                        const oldVal = (workingRow as any)[col.accessor];
+
+                        if (oldVal !== newVal) {
+                            (workingRow as any)[col.accessor] = newVal;
+                            if (!existingInGrid) {
+                            } else {
+                                existingRowUpdates[targetId] ??= {};
+                                (existingRowUpdates[targetId] as any)[col.accessor] =
+                                    newVal;
+                            }
+
+                            console.debug('[handlePaste] set cell', {
+                                rowIndex: targetIdx,
+                                rowId: targetId,
+                                accessor: String(col.accessor),
+                                old: oldVal,
+                                new: newVal,
+                            });
+                        }
+                    }
+
+                    updatedById.set(targetId, workingRow);
+                }
+
+                const nextLocal = localData
+                    .map((r) => updatedById.get(r.id) ?? r)
+                    .concat(newRowsToCreate);
+                setLocalData(nextLocal);
+                console.debug('[handlePaste] localData updated', {
+                    total: nextLocal.length,
+                    changedExisting: Object.keys(existingRowUpdates).length,
+                    newRows: newRowsToCreate.length,
+                });
+
+                for (const [rowId, changes] of Object.entries(existingRowUpdates)) {
+                    const full = updatedById.get(rowId) as T;
+                    console.debug('[handlePaste] save existing', { rowId, changes });
+                    await onSave?.({ ...full, ...changes }, false, userId, userName);
+                    console.debug('[handlePaste] saved existing', { rowId });
+                }
+
+                for (const newRow of newRowsToCreate) {
+                    console.debug('[handlePaste] save new row', { id: newRow.id });
+                    await onSave?.(newRow, true, userId, userName);
+                    console.debug('[handlePaste] saved new row', { id: newRow.id });
+                }
+            } catch (err) {
+                console.error('[handlePaste] error', err);
+            } finally {
+                setTimeout(() => {
+                    isPastingRef.current = false;
+                    console.debug(`📋 [handlePaste] op=${op} complete`);
+                }, 200);
+            }
+        },
+        [isEditMode, localData, sortedData, onSave, userId, userName],
+    );
+
+    // paste event listener setup
+    useEffect(() => {
+        const tableElement = tableRef.current;
+        if (!tableElement) return;
+
+        console.debug('[useEffect] Attaching paste event listener to table element');
+
+        tableElement.addEventListener('paste', handlePaste, {
+            capture: true,
+            passive: false,
+        });
+
+        return () => {
+            console.debug('[useEffect] Removing paste event listener from table element');
+            tableElement.removeEventListener('paste', handlePaste, {
+                capture: true,
+            });
+        };
+    }, [handlePaste]);
+
+    // enhanced selection change handler
+    const handleSelectionChange = useCallback((newSelection: GridSelection) => {
+        console.debug('[handleSelectionChange] Selection updated:', {
+            hasSelection: !!newSelection?.current,
+            cell: newSelection?.current?.cell,
+            range: newSelection?.current?.range,
+        });
+        setSelection(newSelection);
+    }, []);
+
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
     }
 
     function insertColumnAt(colIndex: number) {
-        console.log('Function not implemented, but got index: ', colIndex);
+        console.log('Function not implemented, but got index: ');
     }
 
     // Note: if we want to clear the highlighting on the cells on blur, need to use girdSelection in DataEditor and track manually.
@@ -819,7 +1010,15 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                 tint: true,
                                 sticky: true,
                             }}
-                            onRowAppended={isEditMode ? handleRowAppended : undefined}
+                            // onRowAppended={isEditMode ? handleRowAppended : undefined}
+
+                            onRowAppended={
+                                isEditMode
+                                    ? (colIndex?: number) => {
+                                          handleRowAppended();
+                                      }
+                                    : undefined
+                            }
                             rowMarkers="both"
                             onRowMoved={isEditMode ? handleRowMoved : undefined}
                             theme={
@@ -827,6 +1026,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                     ? glideDarkTheme
                                     : glideLightTheme
                             }
+                            gridSelection={selection}
+                            onGridSelectionChange={handleSelectionChange}
                             //onRowResize={handleRowResize}
                             onHeaderMenuClick={
                                 isEditMode
@@ -839,6 +1040,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                     : undefined
                             }
                         />
+
                         <RequirementAnalysisSidebar
                             requirement={selectedRequirement}
                             open={isAiSidebarOpen}
@@ -846,7 +1048,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                 setIsAiSidebarOpen(open);
                                 if (!open) {
                                     setSelectedRequirementId(null);
-                                    // Refocus after delay to accomodate keyboard controls.
+                                    // Refocus after delay to accommodate keyboard controls.
                                     setTimeout(() => {
                                         gridRef.current?.focus();
                                     }, 50);
