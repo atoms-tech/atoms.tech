@@ -6,6 +6,10 @@ import { resend, resend_from_email, resend_receive_email } from '@/lib/services/
 
 export async function POST(request: NextRequest) {
     try {
+        if (request.headers.get('resend') !== process.env.RESEND_API_KEY) {
+            return NextResponse.json({ status: 401 });
+        }
+
         const { email, name } = await request.json();
         if (
             typeof email !== 'string' ||

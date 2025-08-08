@@ -124,7 +124,6 @@ function LoginForm() {
 
                     <div className="grid grid-cols-2 gap-3">
                         <Button
-                            disabled // Disable authentication through google for now
                             variant="outline"
                             onClick={() => {
                                 window.location.href = '/auth/google';
