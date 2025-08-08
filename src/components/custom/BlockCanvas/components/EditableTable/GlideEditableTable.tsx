@@ -420,56 +420,58 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     }, [columns, data]);
 
     // Sync db row changes with existing pending changes for local data.
-  useEffect(() => {
-      if (isPastingRef.current) return;
-      if (isSavingRef.current) return;
+    useEffect(() => {
+        if (isPastingRef.current) return;
+        if (isSavingRef.current) return;
 
-      const pendingEdits = editingDataRef.current;
+        const pendingEdits = editingDataRef.current;
 
-      // 1. Filter out deleted rows before processing
-      const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
+        // 1. Filter out deleted rows before processing
+        const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
 
-      // 2. Map localData by ID for quick lookups
-      const _localById = new Map(localData.map((r) => [r.id, r]));
+        // 2. Map localData by ID for quick lookups
+        const _localById = new Map(localData.map((r) => [r.id, r]));
 
-      // 3. Merge server rows with pending edits
-      const mergedIncoming = filteredData.map((incoming) => {
-          const rowId = incoming.id;
-          const pending = pendingEdits[rowId] ?? {};
-          return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
-      });
+        // 3. Merge server rows with pending edits
+        const mergedIncoming = filteredData.map((incoming) => {
+            const rowId = incoming.id;
+            const pending = pendingEdits[rowId] ?? {};
+            return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
+        });
 
-      // 4. Keep any local-only rows (e.g., newly added but not saved yet)
-      const extraLocal = localData.filter((r) => !filteredData.some((d) => d.id === r.id));
+        // 4. Keep any local-only rows (e.g., newly added but not saved yet)
+        const extraLocal = localData.filter(
+            (r) => !filteredData.some((d) => d.id === r.id),
+        );
 
-      const newMerged = [...mergedIncoming, ...extraLocal];
+        const newMerged = [...mergedIncoming, ...extraLocal];
 
-      // 5. Detect differences — IDs or content
-      const sameIdSet =
-          new Set(localData.map((r) => r.id)).size === new Set(newMerged.map((r) => r.id)).size &&
-          localData.every((r) => newMerged.some((nr) => nr.id === r.id));
+        // 5. Detect differences — IDs or content
+        const sameIdSet =
+            new Set(localData.map((r) => r.id)).size ===
+                new Set(newMerged.map((r) => r.id)).size &&
+            localData.every((r) => newMerged.some((nr) => nr.id === r.id));
 
-      const mismatch =
-          !sameIdSet ||
-          newMerged.length !== localData.length ||
-          newMerged.some((row) => {
-              const localRow = _localById.get(row.id);
-              if (!localRow) return true;
-              return Object.keys(row).some((k) => {
-                  if (k === 'position' || k === 'height') return false;
-                  return row[k] !== localRow[k];
-              });
-          });
+        const mismatch =
+            !sameIdSet ||
+            newMerged.length !== localData.length ||
+            newMerged.some((row) => {
+                const localRow = _localById.get(row.id);
+                if (!localRow) return true;
+                return Object.keys(row).some((k) => {
+                    if (k === 'position' || k === 'height') return false;
+                    return row[k] !== localRow[k];
+                });
+            });
 
-      if (mismatch) {
-          console.debug('applying merged array');
-          setLocalData(newMerged);
-      } else {
-          console.debug('no merge needed');
-      }
-      console.groupEnd();
-  }, [data, localData]);
-
+        if (mismatch) {
+            console.debug('applying merged array');
+            setLocalData(newMerged);
+        } else {
+            console.debug('no merge needed');
+        }
+        console.groupEnd();
+    }, [data, localData]);
 
     // Watch for changes in columns from db (this method is prob bad rn and needs testing w/ multi user.)
     useEffect(() => {
@@ -629,85 +631,85 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     );
 
     const onCellEdited = useCallback(
-    async (cell: Item, newValue: GridCell) => {
-        // Ignore edits during paste
-        if (isPastingRef.current) {
-            console.debug('[onCellEdited] Ignoring during paste');
-            return;
-        }
+        async (cell: Item, newValue: GridCell) => {
+            // Ignore edits during paste
+            if (isPastingRef.current) {
+                console.debug('[onCellEdited] Ignoring during paste');
+                return;
+            }
 
-        const [colIndex, rowIndex] = cell;
-        const column = localColumns[colIndex];
-        const rowData = localData[rowIndex];
+            const [colIndex, rowIndex] = cell;
+            const column = localColumns[colIndex];
+            const rowData = localData[rowIndex];
 
-        if (!rowData || !column) {
-            console.warn('[onCellEdited] Invalid row/column', { rowIndex, colIndex });
-            return;
-        }
+            if (!rowData || !column) {
+                console.warn('[onCellEdited] Invalid row/column', { rowIndex, colIndex });
+                return;
+            }
 
-        const accessor = column.accessor;
-        const rowId = rowData.id;
+            const accessor = column.accessor;
+            const rowId = rowData.id;
 
-        // Handle Text cells
-        if (newValue.kind === GridCellKind.Text) {
-            const newValueStr = newValue.data;
-            const originalValue = rowData?.[accessor];
-            if ((originalValue ?? '').toString() === (newValueStr ?? '')) return;
+            // Handle Text cells
+            if (newValue.kind === GridCellKind.Text) {
+                const newValueStr = newValue.data;
+                const originalValue = rowData?.[accessor];
+                if ((originalValue ?? '').toString() === (newValueStr ?? '')) return;
 
-            console.debug('[onCellEdited] Text cell update', {
-                rowIndex,
-                rowId,
-                accessor: String(accessor),
-                old: originalValue,
-                new: newValueStr,
-            });
+                console.debug('[onCellEdited] Text cell update', {
+                    rowIndex,
+                    rowId,
+                    accessor: String(accessor),
+                    old: originalValue,
+                    new: newValueStr,
+                });
 
-            // Optimistically update local data
-            setLocalData((prev) =>
-                prev.map((r) =>
-                    r.id === rowId ? ({ ...r, [accessor]: newValueStr } as T) : r,
-                ),
-            );
+                // Optimistically update local data
+                setLocalData((prev) =>
+                    prev.map((r) =>
+                        r.id === rowId ? ({ ...r, [accessor]: newValueStr } as T) : r,
+                    ),
+                );
 
-            // Update the editing buffer
-            setEditingData((prev) => ({
-                ...prev,
-                [rowId]: { ...(prev[rowId] ?? {}), [accessor]: newValueStr },
-            }));
+                // Update the editing buffer
+                setEditingData((prev) => ({
+                    ...prev,
+                    [rowId]: { ...(prev[rowId] ?? {}), [accessor]: newValueStr },
+                }));
 
-        // Handle Dropdown cells
-        } else if (newValue.kind === DropdownCell.kind) {
-            const dropdownCell = newValue as DropdownCellType;
-            const dropdownValue = dropdownCell.data.value ?? '';
-            const displayValue = dropdownValue.toString();
+                // Handle Dropdown cells
+            } else if (newValue.kind === DropdownCell.kind) {
+                const dropdownCell = newValue as DropdownCellType;
+                const dropdownValue = dropdownCell.data.value ?? '';
+                const displayValue = dropdownValue.toString();
 
-            console.debug('[onCellEdited] Dropdown cell update', {
-                rowIndex,
-                rowId,
-                accessor: String(accessor),
-                value: displayValue,
-            });
+                console.debug('[onCellEdited] Dropdown cell update', {
+                    rowIndex,
+                    rowId,
+                    accessor: String(accessor),
+                    value: displayValue,
+                });
 
-            // Optimistically update local data
-            setLocalData((prev) =>
-                prev.map((r) =>
-                    r.id === rowId ? ({ ...r, [accessor]: displayValue } as T) : r,
-                ),
-            );
+                // Optimistically update local data
+                setLocalData((prev) =>
+                    prev.map((r) =>
+                        r.id === rowId ? ({ ...r, [accessor]: displayValue } as T) : r,
+                    ),
+                );
 
-            // Update the editing buffer
-            setEditingData((prev) => ({
-                ...prev,
-                [rowId]: { ...(prev[rowId] ?? {}), [accessor]: displayValue },
-            }));
-        }
+                // Update the editing buffer
+                setEditingData((prev) => ({
+                    ...prev,
+                    [rowId]: { ...(prev[rowId] ?? {}), [accessor]: displayValue },
+                }));
+            }
 
-        // Debounce save if set, else leave in buffer
-        debouncedSave();
-        lastEditedCellRef.current = cell;
-    },
-    [localData, localColumns, debouncedSave],
-);
+            // Debounce save if set, else leave in buffer
+            debouncedSave();
+            lastEditedCellRef.current = cell;
+        },
+        [localData, localColumns, debouncedSave],
+    );
 
     // Add new row.
     const handleRowAppended = useCallback(() => {
@@ -1185,8 +1187,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                     ? glideDarkTheme
                                     : glideLightTheme
                             }
-                            gridSelection={selection}
-                            onGridSelectionChange={handleSelectionChange}
                             //onRowResize={handleRowResize}
                             onHeaderMenuClick={
                                 isEditMode
