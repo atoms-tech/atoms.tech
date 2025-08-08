@@ -414,7 +414,10 @@ export default function ProjectPage() {
                                     {/* Document paper effect shadow */}
                                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-transparent dark:from-gray-800/30 pointer-events-none"></div>
 
-                                    <div className="flex flex-col h-full p-3 relative z-10">
+                                    <div
+                                        className="flex flex-col h-full p-3 relative z-10 cursor-pointer"
+                                        onClick={() => handleDocumentClick(doc)}
+                                    >
                                         {/* Header with Title and Actions */}
                                         <div className="flex items-start justify-between mb-3">
                                             {/* Document Title - Top Left */}
@@ -445,6 +448,9 @@ export default function ProjectPage() {
                                                         <DropdownMenuContent
                                                             align="end"
                                                             className="w-44"
+                                                            onClick={(e) =>
+                                                                e.stopPropagation()
+                                                            }
                                                         >
                                                             {hasProjectPermission(
                                                                 userRole,
@@ -500,11 +506,8 @@ export default function ProjectPage() {
                                             )}
                                         </div>
 
-                                        {/* Document Info - Clickable Area */}
-                                        <div
-                                            className="flex-1 cursor-pointer flex flex-col"
-                                            onClick={() => handleDocumentClick(doc)}
-                                        >
+                                        {/* Document Info */}
+                                        <div className="flex-1 flex flex-col">
                                             {doc.description && (
                                                 <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
                                                     {doc.description}

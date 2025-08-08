@@ -19,7 +19,7 @@ export default function PolarionPage() {
             <GridBackground />
             <div className="relative z-10">
                 <Navbar />
-                <main className="space-y-64">
+                <main>
                     <PolarionHero />
                     <div className="section-divider">
                         <PolarionDemo />

@@ -22,7 +22,6 @@ const groundbreakingFeatures = [
         icon: ArrowRightLeft,
     },
 ];
-
 export function PolarionWhyGroundbreaking() {
     return (
         <section className="py-24 md:py-32 lg:py-40 relative bg-[#0f0f0f] text-white">
@@ -40,19 +39,14 @@ export function PolarionWhyGroundbreaking() {
                             key={index}
                             className="group relative border-t-2 border-white pt-8 hover:transform hover:scale-105 transition-all duration-300"
                         >
-                            {/* Icon */}
-                            <div className="mb-6">
-                                <feature.icon className="w-12 h-12 text-[#9B51E0] group-hover:text-white transition-colors duration-300" />
-                            </div>
-
-                            {/* Title with Bullet Point */}
+                            {/* Title with Icon */}
                             <h3 className="text-xl md:text-2xl lg:text-3xl font-black mb-4 text-white tracking-tight flex items-start">
-                                <span className="text-[#9B51E0] mr-3 text-2xl">•</span>
+                                <feature.icon className="w-6 h-6 md:w-7 md:h-7 lg:w-8 lg:h-8 text-[#9B51E0] group-hover:text-white transition-colors duration-300 mr-3 mt-1 flex-shrink-0" />
                                 <span>{feature.title}</span>
                             </h3>
 
                             {/* Description */}
-                            <p className="text-base md:text-lg text-[#B5B5B5] leading-relaxed ml-8">
+                            <p className="text-base md:text-lg text-[#B5B5B5] leading-relaxed ml-11 md:ml-12 lg:ml-14">
                                 {feature.description}
                             </p>
 

@@ -25,7 +25,7 @@ export function PolarionContact() {
                                     className="object-contain"
                                 />
                                 <span className="text-2xl md:text-3xl font-black text-black tracking-wide">
-                                    ATOMS.TECH
+                                    ATOMS
                                 </span>
                             </Link>
                         </div>
