@@ -35,6 +35,7 @@
         "@dnd-kit/utilities": "^3.2.2",
         "@excalidraw/excalidraw": "^0.18.0",
         "@glideapps/glide-data-grid": "^6.0.3",
+        "@glideapps/glide-data-grid-cells": "^6.0.3",
         "@hookform/resolvers": "^3.10.0",
         "@icons-pack/react-simple-icons": "^12.7.0",
         "@radix-ui/react-alert-dialog": "^1.1.11",

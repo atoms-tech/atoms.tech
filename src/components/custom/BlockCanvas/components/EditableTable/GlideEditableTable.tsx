@@ -1,8 +1,9 @@
 'use client';
 
 import '@/styles/globals.css';
+
 // We still need to validate role perms so readers cannot exit, ect.
-import '@/styles/globals.css';
+//import '@/styles/globals.css';
 
 import DataEditor, {
     CompactSelection,
@@ -14,7 +15,13 @@ import DataEditor, {
     //GridDragEventArgs,
     Item,
     Rectangle,
+    TextCell,
 } from '@glideapps/glide-data-grid';
+import {
+    DropdownCell,
+    DropdownCellType,
+    allCells,
+} from '@glideapps/glide-data-grid-cells';
 import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -554,15 +561,62 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const getCellContent = useCallback(
         ([col, row]: Item): GridCell => {
             const rowData = sortedData[row];
-            const accessor = localColumns[col].accessor;
+            const column = localColumns[col];
+            const accessor = column.accessor;
             const value = rowData?.[accessor];
 
-            return {
-                kind: GridCellKind.Text,
-                allowOverlay: isEditMode,
-                data: value?.toString() ?? '',
-                displayData: value?.toString() ?? '',
-            };
+            if (!column || !rowData) {
+                console.warn('[getCellContent] Missing column or rowData:', {
+                    col,
+                    row,
+                    column,
+                    rowData,
+                });
+                return {
+                    kind: GridCellKind.Text,
+                    allowOverlay: isEditMode,
+                    data: value?.toString() ?? '',
+                    displayData: value?.toString() ?? '',
+                };
+            }
+
+            switch (column.type) {
+                case 'select': {
+                    const stringValue = typeof value === 'string' ? value : '';
+                    if (!Array.isArray(column.options)) {
+                        console.warn(
+                            '[getCellContent] Select column missing valid options array:',
+                            {
+                                columnId: column.id,
+                                header: column.header,
+                                options: column.options,
+                            },
+                        );
+                    }
+
+                    const options = Array.isArray(column.options) ? column.options : [];
+
+                    return {
+                        kind: DropdownCell.kind,
+                        allowOverlay: isEditMode,
+                        copyData: stringValue,
+                        data: {
+                            kind: 'dropdown-cell',
+                            value: stringValue,
+                            allowedValues: options,
+                            displayData: value?.toString() ?? '',
+                        },
+                    };
+                }
+                case 'text':
+                default:
+                    return {
+                        kind: GridCellKind.Text,
+                        allowOverlay: isEditMode,
+                        data: value?.toString() ?? '',
+                        displayData: value?.toString() ?? '',
+                    } as TextCell;
+            }
         },
         [sortedData, localColumns, isEditMode],
     );
@@ -570,48 +624,83 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const onCellEdited = useCallback(
         async (cell: Item, newValue: GridCell) => {
             const [col, row] = cell;
-            if (newValue.kind !== GridCellKind.Text) return;
-
+            const column = localColumns[col];
             const rowData = localData[row];
-            const accessor = localColumns[col].accessor;
+            const accessor = column.accessor;
             const rowId = rowData.id;
 
-            const newValueStr = newValue.data;
-            const originalValue = rowData?.[accessor];
+            if (!rowData || !column) return;
 
-            if (originalValue?.toString() === newValueStr) return;
+            if (newValue.kind === GridCellKind.Text) {
+                const newValueStr = newValue.data;
+                const originalValue = rowData?.[accessor];
+                if (originalValue?.toString() === newValueStr) return;
 
-            // Optimistically update local data
-            setLocalData((prev) => {
-                const updated = [...prev];
-                updated[row] = {
-                    ...updated[row],
-                    [accessor]: newValueStr,
-                };
-                return updated;
-            });
+                // Optimistically update local data
+                setLocalData((prev) => {
+                    const updated = [...prev];
+                    updated[row] = {
+                        ...updated[row],
+                        [accessor]: newValueStr,
+                    };
+                    return updated;
+                });
 
-            // Update the editing buffer and log changes
-            setEditingData((prev) => {
-                const existing = prev[rowId] ?? {};
-                const updatedRow = {
-                    ...existing,
-                    [accessor]: newValueStr,
-                };
-                const updatedEditingData = {
-                    ...prev,
-                    [rowId]: updatedRow,
-                };
+                // Update the editing buffer and log changes
+                setEditingData((prev) => {
+                    const existing = prev[rowId] ?? {};
+                    const updatedRow = {
+                        ...existing,
+                        [accessor]: newValueStr,
+                    };
+                    const updatedEditingData = {
+                        ...prev,
+                        [rowId]: updatedRow,
+                    };
 
-                // console.debug('[onCellEdited] Updated editingData entry:', updatedRow);
-                // console.debug(
-                //     '[onCellEdited] Full editingData after change:',
-                //     updatedEditingData,
-                // );
+                    // console.debug('[onCellEdited] Updated editingData entry:', updatedRow);
+                    // console.debug(
+                    //     '[onCellEdited] Full editingData after change:',
+                    //     updatedEditingData,
+                    // );
 
-                return updatedEditingData;
-            });
+                    return updatedEditingData;
+                });
+            } else if (newValue.kind === DropdownCell.kind) {
+                console.log('[onCellEdited] Dropdown newValue:', newValue);
+                console.log('[onCellEdited] Dropdown data:', newValue.data);
+                const dropdownCell = newValue as DropdownCellType;
+                console.log('[onCellEdited] DropdownCellType:', dropdownCell);
 
+                const dropdownValue = dropdownCell.data.value ?? '';
+                const displayValue = dropdownValue.toString();
+
+                //const originalValue = rowData?.[accessor];
+                //if (originalValue === newValueStr) return;
+
+                // Update localData
+                setLocalData((prev) => {
+                    const updated = [...prev];
+                    updated[row] = {
+                        ...updated[row],
+                        [accessor]: displayValue,
+                    };
+                    return updated;
+                });
+
+                // Update editingData
+                setEditingData((prev) => {
+                    const existing = prev[rowId] ?? {};
+                    const updatedRow = {
+                        ...existing,
+                        [accessor]: displayValue,
+                    };
+                    return {
+                        ...prev,
+                        [rowId]: updatedRow,
+                    };
+                });
+            }
             debouncedSave(); // Debounce save if set, else leave in buffer and handle on edit exit or manual save.
 
             lastEditedCellRef.current = cell;
@@ -869,6 +958,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         <DataEditor
                             ref={gridRef}
                             columns={columnDefs}
+                            customRenderers={allCells}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             onCellActivated={isEditMode ? undefined : handleCellActivated}
