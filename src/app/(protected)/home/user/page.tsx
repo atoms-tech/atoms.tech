@@ -1,6 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Building, Folder, Pin, Plus, Users } from 'lucide-react'; // Import Pin icon
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -22,8 +21,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import LayoutView from '@/components/views/LayoutView';
-import { useOrgInvitation } from '@/hooks/queries/useOrganization';
-import { queryKeys } from '@/lib/constants/queryKeys';
+import {
+    useOrgInvitation,
+    useOrganizationsByMembership,
+} from '@/hooks/queries/useOrganization';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser'; // Import Supabase client
@@ -38,19 +39,7 @@ export default function UserDashboard() {
     const { setCurrentUserId } = useContextStore();
     const { setCurrentOrganization } = useOrganization();
     const { data: allInvitations } = useOrgInvitation(user?.email || '');
-    const queryClient = useQueryClient();
     const { setUserContext } = useAgentStore();
-
-    const refetchOrganizations = useCallback(() => {
-        queryClient.invalidateQueries({
-            queryKey: queryKeys.organizations.byMembership(user?.id || ''),
-        });
-    }, [queryClient, user?.id]);
-
-    // Re-fetch organizations on component mount
-    useEffect(() => {
-        refetchOrganizations();
-    }, [refetchOrganizations]);
 
     // Filter the invitations to only include pending ones
     const invitations = allInvitations?.filter(
@@ -68,35 +57,12 @@ export default function UserDashboard() {
     const [createPanelType, setCreatePanelType] = useState<
         'project' | 'requirement' | 'document' | 'organization'
     >('organization');
-    const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
     const [inviteCount, setInviteCount] = useState(0);
     const [pinnedOrgId, setPinnedOrgId] = useState<string | null>(null);
-    const [safeOrganizations, setSafeOrganizations] = useState<Organization[]>([]);
 
-    // Fetch organizations and update safeOrganizations
-    useEffect(() => {
-        const fetchOrganizations = () => {
-            const organizations =
-                (queryClient.getQueryData(
-                    queryKeys.organizations.byMembership(user?.id || ''),
-                ) as Organization[]) || [];
-            setSafeOrganizations(Array.isArray(organizations) ? organizations : []);
-        };
-
-        fetchOrganizations();
-
-        // Refetch organizations whenever the query is invalidated
-        const unsubscribe = queryClient.getQueryCache().subscribe(() => {
-            // Use setTimeout to defer the state update to avoid updating during render
-            setTimeout(() => {
-                fetchOrganizations();
-            }, 0);
-        });
-
-        return () => {
-            unsubscribe();
-        };
-    }, [queryClient, user?.id]);
+    // Fetch organizations
+    const { data: organizations, refetch: refetchOrganizations } =
+        useOrganizationsByMembership(user?.id || '');
 
     // Fetch the pinned organization ID on component mount
     useEffect(() => {
@@ -210,12 +176,13 @@ export default function UserDashboard() {
 
     // Ensure the pinned organization is displayed first
     const sortedOrganizations = useMemo(() => {
-        if (!pinnedOrgId) return safeOrganizations;
+        if (!organizations) return [];
+        if (!pinnedOrgId) return organizations;
         return [
-            ...safeOrganizations.filter((org) => org.id === pinnedOrgId),
-            ...safeOrganizations.filter((org) => org.id !== pinnedOrgId),
+            ...organizations.filter((org) => org.id === pinnedOrgId),
+            ...organizations.filter((org) => org.id !== pinnedOrgId),
         ];
-    }, [safeOrganizations, pinnedOrgId]);
+    }, [organizations, pinnedOrgId]);
 
     // Set greeting based on time of day
     useEffect(() => {
@@ -230,38 +197,11 @@ export default function UserDashboard() {
         setInviteCount(invitations?.length || 0);
     }, [invitations]);
 
-    // Handle organization selection and navigation
-    useEffect(() => {
-        if (selectedOrgId) {
-            const selectedOrg = sortedOrganizations.find(
-                (org) => org.id === selectedOrgId,
-            );
-            if (selectedOrg) {
-                setCurrentUserId(user?.id || '');
-                setCurrentOrganization(selectedOrg);
-                // Make sure we're using a valid UUID for the route
-                if (selectedOrgId && selectedOrgId !== 'user') {
-                    router.push(`/org/${selectedOrgId}`);
-                }
-            }
-            // Reset the selected org ID after navigation
-            setSelectedOrgId(null);
-        }
-    }, [
-        selectedOrgId,
-        sortedOrganizations,
-        setCurrentUserId,
-        setCurrentOrganization,
-        router,
-        user?.id,
-    ]);
-
-    const handleRowClick = useCallback((item: Organization) => {
-        // Ensure we're only setting a valid UUID as the selected org ID
-        if (item && item.id && item.id !== 'user') {
-            setSelectedOrgId(item.id);
-        }
-    }, []);
+    const handleOrganizationClick = (organization: Organization) => {
+        setCurrentUserId(user?.id || '');
+        setCurrentOrganization(organization);
+        router.push(`/org/${organization.id}`);
+    };
 
     const handleCreateOrganization = useCallback(() => {
         setCreatePanelType('organization');
@@ -412,7 +352,7 @@ export default function UserDashboard() {
                                 <motion.div key={org.id} variants={itemVariants}>
                                     <Card
                                         className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2`}
-                                        onClick={() => handleRowClick(org)}
+                                        onClick={() => handleOrganizationClick(org)}
                                     >
                                         <CardHeader className="pb-3">
                                             <div className="flex justify-between items-start">
