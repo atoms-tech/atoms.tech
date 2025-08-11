@@ -89,6 +89,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
+
+    const lastSelectedCellRef = useRef<Item | undefined>(undefined);
+
     const prevEditModeRef = useRef<boolean>(isEditMode);
     const isSavingRef = useRef(false);
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
@@ -151,7 +154,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             await new Promise((r) => setTimeout(r, 250));
             setEditingData({});
         } catch {
-            // see this testing
         } finally {
             isSavingRef.current = false;
         }
@@ -185,14 +187,14 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             }
         };
 
-        handleResize(); // Run immediately on mount
+        handleResize(); // run immediately on mount
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     const params = useParams();
     const orgId = params?.orgId || '';
-    const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+    const projectId = params?.projectId || '';
     const documentId = params?.documentId || '';
 
     if (!orgId) {
@@ -227,12 +229,11 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>({});
 
-    // Build column definitions using user-defined column sizes (if available)
     const columnDefs: GridColumn[] = useMemo(
         () =>
             localColumns.map((col, idx) => ({
                 title: col.title,
-                width: colSizes[col.accessor] || col.width || 120, // prioritize user's resized width
+                width: colSizes[col.accessor] || col.width || 120,
                 hasMenu: true,
                 menuIcon: 'dots',
                 trailingRowOptions:
@@ -271,8 +272,19 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     });
     const [rowDeleteConfirmOpen, setRowDeleteConfirmOpen] = useState(false);
     const [rowsToDelete, setRowsToDelete] = useState<T[]>([]);
+
+    // track grid selection changes and remember last selected cell
     const handleGridSelectionChange = useCallback((newSelection: GridSelection) => {
         setGridSelection(newSelection);
+
+        // store the current selected cell for paste operations
+        if (newSelection?.current?.cell) {
+            lastSelectedCellRef.current = newSelection.current.cell;
+            console.debug('[Selection] Updated last selected cell:', {
+                col: newSelection.current.cell[0],
+                row: newSelection.current.cell[1],
+            });
+        }
     }, []);
 
     const [columnMenu, setColumnMenu] = useState<
@@ -419,67 +431,15 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         }
     }, [columns, data]);
 
-    // Sync db row changes with existing pending changes for local data.
+    // watch for changes in columns from database and sync w local state
     useEffect(() => {
-        if (isPastingRef.current) return;
-        if (isSavingRef.current) return;
-
-        const pendingEdits = editingDataRef.current;
-
-        // 1. Filter out deleted rows before processing
-        const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
-
-        // 2. Map localData by ID for quick lookups
-        const _localById = new Map(localData.map((r) => [r.id, r]));
-
-        // 3. Merge server rows with pending edits
-        const mergedIncoming = filteredData.map((incoming) => {
-            const rowId = incoming.id;
-            const pending = pendingEdits[rowId] ?? {};
-            return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
-        });
-
-        // 4. Keep any local-only rows (e.g., newly added but not saved yet)
-        const extraLocal = localData.filter(
-            (r) => !filteredData.some((d) => d.id === r.id),
-        );
-
-        const newMerged = [...mergedIncoming, ...extraLocal];
-
-        // 5. Detect differences — IDs or content
-        const sameIdSet =
-            new Set(localData.map((r) => r.id)).size ===
-                new Set(newMerged.map((r) => r.id)).size &&
-            localData.every((r) => newMerged.some((nr) => nr.id === r.id));
-
-        const mismatch =
-            !sameIdSet ||
-            newMerged.length !== localData.length ||
-            newMerged.some((row) => {
-                const localRow = _localById.get(row.id);
-                if (!localRow) return true;
-                return Object.keys(row).some((k) => {
-                    if (k === 'position' || k === 'height') return false;
-                    return row[k] !== localRow[k];
-                });
-            });
-
-        if (mismatch) {
-            console.debug('applying merged array');
-            setLocalData(newMerged);
-        } else {
-            console.debug('no merge needed');
-        }
-        console.groupEnd();
-    }, [data, localData]);
-
-    // Watch for changes in columns from db (this method is prob bad rn and needs testing w/ multi user.)
-    useEffect(() => {
+        // normalize incoming columns to match local format
         const normalized = columns.map((col) => ({
             ...col,
-            title: col.header,
+            title: col.header, // map header to title for consistency
         }));
 
+        // sort by position to maintain order
         const sortedNormalized = [...normalized].sort(
             (a, b) => (a.position ?? 0) - (b.position ?? 0),
         );
@@ -491,7 +451,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             (a) => !localAccessors.has(a),
         );
 
-        // Filter out deleted columns from being re-added
         const filteredColumnsAdded = columnsAdded.filter(
             (accessor) =>
                 ![...deletedColumnIdsRef.current].some(
@@ -500,29 +459,149 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         deletedId,
                 ),
         );
+
+        // Find columns that were removed
         const columnsRemoved = [...localAccessors].filter(
             (a) => !normalizedAccessors.has(a),
         );
 
-        if (columnsAdded.length || columnsRemoved.length) {
-            //console.debug('[GlideEditableTable] Detected column count change. Updating localColumns...');
+        // Only update if there are actual changes
+        if (filteredColumnsAdded.length || columnsRemoved.length) {
+            console.debug('[GlideEditableTable] Column sync detected changes:', {
+                added: filteredColumnsAdded,
+                removed: columnsRemoved,
+                deletedColumnIds: [...deletedColumnIdsRef.current],
+            });
 
-            // Merge new columns at end, preserving existing column order and metadata
+            // Start with current local columns
             const merged = [...localColumns];
 
+            // Add new columns at the end
             for (const added of filteredColumnsAdded) {
                 const newCol = sortedNormalized.find((c) => c.accessor === added);
-                if (newCol) merged.push(newCol);
+                if (newCol) {
+                    console.debug(
+                        '[GlideEditableTable] Adding new column:',
+                        newCol.header,
+                    );
+                    merged.push(newCol);
+                }
             }
 
-            // Filter out removed columns
+            // Remove deleted columns
             const filtered = merged.filter((col) =>
                 normalizedAccessors.has(col.accessor),
             );
 
+            // Update local state with the synced columns
             setLocalColumns(filtered);
         }
-    }, [columns, localColumns]);
+    }, [columns]); // removed localColumns from deps to prevent infinite loop
+
+    // sync db row changes with existing pending changes for local data
+    useEffect(() => {
+        // skip sync during paste operations to prevent conflicts
+        if (isPastingRef.current) return;
+        if (isSavingRef.current) return;
+
+        const pendingEdits = editingDataRef.current;
+
+        // filter out locally-deleted rows from incoming data
+        const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
+
+        // create lookup maps for efficient comparison
+        const incomingById = new Map(filteredData.map((r) => [r.id, r]));
+        const localById = new Map(localData.map((r) => [r.id, r]));
+
+        // identify truly new local rows
+        const newLocalRows = localData.filter((localRow) => {
+            // row exists in incoming data with same id - not new
+            if (incomingById.has(localRow.id)) return false;
+
+            // check if this might be a recently saved row with a different id by comparing content
+            const possibleDuplicate = filteredData.find((incomingRow) => {
+                if (incomingRow.id === localRow.id) return false;
+
+                // compare all meaningful fields to detect content duplicates
+                // skip system fields like id and position
+                const fieldsToCompare = localColumns
+                    .filter(
+                        (col) =>
+                            col.accessor !== 'id' &&
+                            col.accessor !== 'position' &&
+                            col.accessor !== 'height',
+                    )
+                    .map((col) => col.accessor);
+
+                // if all content fields match, this is a duplicate
+                return fieldsToCompare.every((field) => {
+                    const localValue = (localRow[field] ?? '').toString().trim();
+                    const incomingValue = (incomingRow[field] ?? '').toString().trim();
+                    return localValue === incomingValue;
+                });
+            });
+
+            // found matching content in incoming data = duplicate row
+            if (possibleDuplicate) {
+                console.debug('[Data Sync] 🚫 Detected duplicate row, skipping:', {
+                    localId: localRow.id,
+                    matchingIncomingId: possibleDuplicate.id,
+                    contentMatch: true,
+                });
+                return false;
+            }
+
+            console.debug('[Data Sync] ✅ Keeping local-only row:', {
+                localId: localRow.id,
+                isNew: true,
+            });
+            return true;
+        });
+
+        // merge incoming data with pending local edits
+        const mergedIncoming = filteredData.map((incoming) => {
+            const rowId = incoming.id;
+            const pending = pendingEdits[rowId] ?? {};
+            // apply any pending edits on top of incoming data
+            return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
+        });
+
+        // combine merged incoming data w truly new local rows
+        const finalData = [...mergedIncoming, ...newLocalRows];
+
+        // determine if update is needed
+        const needsUpdate =
+            // different row count
+            finalData.length !== localData.length ||
+            // different row IDs
+            !finalData.every((row) => localById.has(row.id)) ||
+            // different content in any row
+            finalData.some((row) => {
+                const localRow = localById.get(row.id);
+                if (!localRow) return true;
+
+                // check all fields except system fields
+                return Object.keys(row).some((k) => {
+                    if (k === 'position' || k === 'height') return false;
+                    return row[k] !== localRow[k];
+                });
+            });
+
+        // apply updates only if needed
+        if (needsUpdate) {
+            console.debug('[Data Sync] Applying merged data:', {
+                incomingCount: filteredData.length,
+                localCount: localData.length,
+                newLocalCount: newLocalRows.length,
+                finalCount: finalData.length,
+                duplicatesRemoved:
+                    localData.length - newLocalRows.length - mergedIncoming.length,
+            });
+            setLocalData(finalData);
+        } else {
+            console.debug('[Data Sync] No changes needed - data already in sync');
+        }
+    }, [data, localData, localColumns]); // added localColumns to dependencies
 
     const handleColumnResize = useCallback(
         (col: GridColumn, newSize: number) => {
@@ -839,7 +918,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 : undefined,
     }));
 
-    // Called when edit mode is turned false. Curr salls HandleSaveAll ...
+    // Called when edit mode is turned false. Curr calls HandleSaveAll ...
     useEffect(() => {
         const wasEditMode = prevEditModeRef.current;
         prevEditModeRef.current = isEditMode;
@@ -859,6 +938,15 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 console.debug('[GlideEditableTable] No edits to save on exit.');
             }
 
+            // clear any selection highlighting when exiting edit mode
+            setGridSelection({
+                rows: CompactSelection.empty(),
+                columns: CompactSelection.empty(),
+            });
+            setSelection(undefined);
+            selectionRef.current = undefined;
+            console.debug('[GlideEditableTable] Cleared selection on edit mode exit');
+
             void saveTableMetadata();
         }
     }, [
@@ -870,6 +958,37 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         handleSaveAll,
         saveTableMetadata,
     ]);
+
+    // clear selection highlight when table loses focus
+    useEffect(() => {
+        const handleTableBlur = (e: FocusEvent) => {
+            // check if focus is moving outside the table container
+            const tableElement = tableRef.current;
+            if (!tableElement) return;
+
+            // use setTimeout to check focus after it has moved
+            setTimeout(() => {
+                // if new focused element is not within the table, clear selection
+                if (!tableElement.contains(document.activeElement)) {
+                    setGridSelection({
+                        rows: CompactSelection.empty(),
+                        columns: CompactSelection.empty(),
+                    });
+                    setSelection(undefined);
+                    selectionRef.current = undefined;
+                    console.debug('[GlideEditableTable] Cleared selection on table blur');
+                }
+            }, 0);
+        };
+
+        const tableElement = tableRef.current;
+        if (tableElement) {
+            tableElement.addEventListener('blur', handleTableBlur, true);
+            return () => {
+                tableElement.removeEventListener('blur', handleTableBlur, true);
+            };
+        }
+    }, []);
 
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     const handleKeyDown = useCallback(
@@ -900,12 +1019,17 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         };
     }, [handleKeyDown]);
 
-    //  Handel Open side panel for AI Analysis
+    // handle cell activation and track selected position
     const handleCellActivated = useCallback(
         (cell: Item) => {
-            //const [_, row] = cell;
-            //setActiveRowIndex(row);
+            // always track the activated cell for paste operations
+            lastSelectedCellRef.current = cell;
+            console.debug('[Cell Activated] Cell selected for potential paste:', {
+                col: cell[0],
+                row: cell[1],
+            });
 
+            // open AI sidebar in view mode
             if (!isEditMode) {
                 const row = sortedData[cell[1]];
                 if (row?.id) {
@@ -925,187 +1049,778 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     // enhanced paste handler with crash protection
     const handlePaste = useCallback(
         async (event: ClipboardEvent) => {
-            const op = ++pasteOperationIdRef.current;
-            console.debug(`📋 [handlePaste] op=${op} start`, { isEditMode });
+            const operationId = `paste_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            console.group(
+                `[handlePaste] Operation ${operationId} TRIGGERED - PASTE EVENT DETECTED!`,
+            );
 
+            let pasteStartCol = 0;
+            let pasteStartRow = 0;
+            let pasteEndCol = 0;
+            let pasteEndRow = 0;
+            let clipboardRowsForRestore: string[][] = [];
+
+            console.debug(`PASTE EVENT CAPTURED! Event details:`, {
+                eventType: event.type,
+                eventTarget: event.target,
+                clipboardDataExists: !!event.clipboardData,
+                clipboardDataTypes: event.clipboardData?.types,
+                isEditMode,
+                isPastingRefCurrent: isPastingRef.current,
+                localDataLength: localData.length,
+                sortedDataLength: sortedData.length,
+                tableRefExists: !!tableRef.current,
+                gridRefExists: !!gridRef.current,
+            });
+
+            // exit if not in edit mode
             if (!isEditMode) {
-                console.debug('[handlePaste] Not in edit mode');
+                console.debug(`[${operationId}] Not in edit mode, aborting paste`);
+                console.groupEnd();
                 return;
             }
 
             event.preventDefault();
             event.stopPropagation();
+            console.debug(`[${operationId}] Event prevented and stopped propagation`);
 
+            // prevent nested paste operations
             if (isPastingRef.current) {
-                console.debug('[handlePaste] Already pasting; skipping nested paste');
+                console.debug(
+                    `[${operationId}] Already pasting (isPastingRef.current = true), aborting paste`,
+                );
+                console.groupEnd();
                 return;
             }
 
+            // get clipboard text
             const text = event.clipboardData?.getData('text/plain') ?? '';
             if (!text.trim()) {
-                console.debug('[handlePaste] Empty clipboard');
+                console.debug(`[${operationId}] Empty clipboard, nothing to paste`);
+                console.groupEnd();
                 return;
             }
 
+            console.debug(`[${operationId}] Raw clipboard text:`, {
+                length: text.length,
+                preview: text.substring(0, 200) + (text.length > 200 ? '...' : ''),
+                lineCount: text.split(/\r?\n/).length,
+            });
+
+            // set pasting flag to prevent conflicts
             isPastingRef.current = true;
+            console.debug(`[${operationId}] Set isPastingRef.current = true`);
 
             try {
-                const rows = text
-                    .trim()
-                    .split(/\r?\n/)
-                    .map((r) => r.split('\t'));
-
-                // Start position from selection
-                const startCell = selectionRef.current?.current?.cell;
-                const startCol = startCell?.[0] ?? 0;
-                const startRow = startCell?.[1] ?? 0;
-                console.debug('[handlePaste] startCell', {
-                    startRow,
-                    startCol,
-                    pasteRows: rows.length,
-                    pasteCols: rows[0]?.length ?? 0,
+                // parse clipboard data into rows and cells
+                const rawRows = text.trim().split(/\r?\n/);
+                console.debug(`[${operationId}] Raw rows split:`, {
+                    totalRawRows: rawRows.length,
+                    rawRowsPreview: rawRows
+                        .slice(0, 3)
+                        .map((row, i) => `Row ${i}: "${row}"`),
                 });
 
-                // Clear selection so DataEditor doesn't try to keep an overlay
+                const clipboardRows = rawRows
+                    .map((row, index) => {
+                        const cells = row.split('\t');
+                        console.debug(`[${operationId}] Row ${index} parsed:`, {
+                            rawRow: row,
+                            cellCount: cells.length,
+                            cells: cells.map(
+                                (cell, cellIndex) => `Cell ${cellIndex}: "${cell}"`,
+                            ),
+                        });
+                        return cells;
+                    })
+                    .filter((row, index) => {
+                        const hasContent = row.some((cell) => cell.trim());
+                        console.debug(`[${operationId}] Row ${index} filter check:`, {
+                            hasContent,
+                            row: row.map((cell, cellIndex) => `[${cellIndex}]:"${cell}"`),
+                        });
+                        return hasContent;
+                    });
+
+                console.debug(`[${operationId}] Final parsed clipboard data:`, {
+                    totalValidRows: clipboardRows.length,
+                    maxColumns: Math.max(...clipboardRows.map((row) => row.length)),
+                    allRowsPreview: clipboardRows.map((row, i) => ({
+                        rowIndex: i,
+                        cellCount: row.length,
+                        cells: row.map(
+                            (cell, j) =>
+                                `[${j}]:"${cell.substring(0, 20)}${cell.length > 20 ? '...' : ''}"`,
+                        ),
+                    })),
+                });
+
+                // determine starting position from current or last selected cell
+                const currentSelection = selectionRef.current?.current?.cell;
+                const lastSelection = lastSelectedCellRef.current;
+                const gridSelectionCell = gridSelection?.current?.cell;
+
+                const startCell = currentSelection ||
+                    lastSelection ||
+                    gridSelectionCell || [0, 0];
+                const startCol = Math.max(0, startCell[0]);
+                const startRow = Math.max(0, startCell[1]);
+
+                // store coordinates for selection restoration
+                pasteStartCol = startCol;
+                pasteStartRow = startRow;
+                clipboardRowsForRestore = clipboardRows;
+                pasteEndCol =
+                    startCol + Math.max(...clipboardRows.map((r) => r.length)) - 1;
+                pasteEndRow = startRow + clipboardRows.length - 1;
+
+                console.debug(`[${operationId}] Paste position determined:`, {
+                    currentSelection,
+                    lastSelection,
+                    gridSelectionCell,
+                    finalStartCell: startCell,
+                    startCol,
+                    startRow,
+                });
+
+                console.debug(`[${operationId}] Paste target position:`, {
+                    selectionRefCurrent: selectionRef.current,
+                    startCellRaw: startCell,
+                    startCol,
+                    startRow,
+                    targetRange: {
+                        fromRow: startRow,
+                        toRow: startRow + clipboardRows.length - 1,
+                        fromCol: startCol,
+                        toCol:
+                            startCol +
+                            Math.max(...clipboardRows.map((row) => row.length)) -
+                            1,
+                    },
+                });
+
+                // store selection before clearing (to restore after paste)
+                const selectionBeforePaste = {
+                    cell: startCell,
+                    range: selectionRef.current?.current?.range,
+                };
+
+                // clear selection completely - no restoration
                 setSelection(undefined);
                 selectionRef.current = undefined;
+                setGridSelection({
+                    rows: CompactSelection.empty(),
+                    columns: CompactSelection.empty(),
+                });
+                console.debug(`[${operationId}] Cleared all selection state`);
 
-                // Build fast lookup for current localData
-                const localById = new Map(localData.map((r) => [r.id, r]));
-                const updatedById = new Map(
-                    localData.map((r) => [r.id, r] as [string, T]),
-                );
-                const newRowsToCreate: T[] = [];
-                const existingRowUpdates: Record<string, Partial<T>> = {};
+                const currentData = [...sortedData];
+                const currentColumns = [...localColumnsRef.current];
 
-                // Helper for new row
-                const makeBlankRow = (): T =>
-                    ({
-                        id: crypto.randomUUID(),
-                        position:
-                            Math.max(0, ...localData.map((d) => d.position ?? 0)) + 1,
-                        ...Object.fromEntries(
-                            localColumnsRef.current.map((c) => [
-                                c.accessor as string,
-                                '',
-                            ]),
-                        ),
-                    }) as T;
-
-                for (let i = 0; i < rows.length; i++) {
-                    const vals = rows[i];
-                    const targetIdx = startRow + i;
-
-                    let targetId: string;
-                    let baseRow: T;
-                    const existingInGrid = sortedData[targetIdx];
-
-                    if (existingInGrid) {
-                        targetId = existingInGrid.id;
-                        baseRow = { ...(localById.get(targetId) ?? existingInGrid) };
-                    } else {
-                        baseRow = makeBlankRow();
-                        targetId = baseRow.id;
-                        newRowsToCreate.push(baseRow);
-                    }
-
-                    const workingRow = { ...baseRow };
-
-                    for (let j = 0; j < vals.length; j++) {
-                        const colIdx = startCol + j;
-                        const col = localColumnsRef.current[colIdx];
-                        if (!col) {
-                            console.warn('[handlePaste] colIdx out of range', { colIdx });
-                            continue;
-                        }
-
-                        // Skip your not-yet-implemented Priority column
-                        if (String(col.accessor).toLowerCase().includes('priority')) {
-                            console.debug('[handlePaste] ⏭️ Skipping priority column', {
-                                colIdx,
-                                accessor: String(col.accessor),
-                            });
-                            continue;
-                        }
-
-                        const newVal = vals[j] ?? '';
-                        const oldVal = (workingRow as any)[col.accessor];
-
-                        if (oldVal !== newVal) {
-                            (workingRow as any)[col.accessor] = newVal;
-                            if (!existingInGrid) {
-                            } else {
-                                existingRowUpdates[targetId] ??= {};
-                                (existingRowUpdates[targetId] as any)[col.accessor] =
-                                    newVal;
-                            }
-
-                            console.debug('[handlePaste] set cell', {
-                                rowIndex: targetIdx,
-                                rowId: targetId,
-                                accessor: String(col.accessor),
-                                old: oldVal,
-                                new: newVal,
-                            });
-                        }
-                    }
-
-                    updatedById.set(targetId, workingRow);
-                }
-
-                const nextLocal = localData
-                    .map((r) => updatedById.get(r.id) ?? r)
-                    .concat(newRowsToCreate);
-                setLocalData(nextLocal);
-                console.debug('[handlePaste] localData updated', {
-                    total: nextLocal.length,
-                    changedExisting: Object.keys(existingRowUpdates).length,
-                    newRows: newRowsToCreate.length,
+                console.debug(`[${operationId}] 📸 Current state snapshot:`, {
+                    currentDataLength: currentData.length,
+                    currentDataIds: currentData.map((row) => ({
+                        id: row.id,
+                        position: row.position,
+                    })),
+                    localDataLength: localData.length,
+                    localDataIds: localData.map((row) => ({
+                        id: row.id,
+                        position: row.position,
+                    })),
+                    currentColumnsLength: currentColumns.length,
+                    currentColumnsInfo: currentColumns.map((col, i) => ({
+                        index: i,
+                        id: col.id,
+                        accessor: String(col.accessor),
+                        type: col.type,
+                        header: col.header,
+                    })),
                 });
 
-                for (const [rowId, changes] of Object.entries(existingRowUpdates)) {
-                    const full = updatedById.get(rowId) as T;
-                    console.debug('[handlePaste] save existing', { rowId, changes });
-                    await onSave?.({ ...full, ...changes }, false, userId, userName);
-                    console.debug('[handlePaste] saved existing', { rowId });
+                // track changes to apply
+                const updatedRows = new Map<string, T>();
+                const newRowsToCreate: T[] = [];
+                const editingUpdates: Record<string, Partial<T>> = {};
+
+                // calculate the maximum position for new rows from current data
+                const currentPositions = currentData.map((d) => d.position ?? 0);
+                let maxPosition =
+                    currentPositions.length > 0 ? Math.max(...currentPositions) : 0;
+
+                console.debug(`[${operationId}] Position calculation:`, {
+                    currentPositions,
+                    calculatedMaxPosition: maxPosition,
+                    willCreateNewRowsFrom: maxPosition + 1,
+                });
+
+                // process each clipboard row
+                for (
+                    let clipboardRowIndex = 0;
+                    clipboardRowIndex < clipboardRows.length;
+                    clipboardRowIndex++
+                ) {
+                    const clipboardCells = clipboardRows[clipboardRowIndex];
+                    const targetRowIndex = startRow + clipboardRowIndex;
+
+                    console.group(
+                        `[${operationId}] Processing clipboard row ${clipboardRowIndex}/${clipboardRows.length - 1}`,
+                    );
+                    console.debug(`Row processing details:`, {
+                        clipboardRowIndex,
+                        targetRowIndex,
+                        clipboardCells: clipboardCells.map(
+                            (cell, i) => `[${i}]:"${cell}"`,
+                        ),
+                        currentDataLength: currentData.length,
+                        isTargetRowBeyondExisting: targetRowIndex >= currentData.length,
+                    });
+
+                    // determine if we're updating existing row or creating new one
+                    const existingRow = currentData[targetRowIndex];
+                    let targetRow: T;
+                    let isNewRow = false;
+
+                    if (existingRow) {
+                        // update existing row
+                        targetRow = { ...existingRow };
+                        console.debug(`Updating existing row:`, {
+                            targetRowIndex,
+                            existingRowId: existingRow.id,
+                            existingRowPosition: existingRow.position,
+                            existingRowData: Object.entries(existingRow).reduce(
+                                (acc, [key, value]) => {
+                                    if (typeof value !== 'function') {
+                                        acc[key] = value;
+                                    }
+                                    return acc;
+                                },
+                                {} as any,
+                            ),
+                        });
+                    } else {
+                        // create new row
+                        isNewRow = true;
+                        maxPosition++;
+
+                        console.debug(`Creating new row:`, {
+                            targetRowIndex,
+                            newPosition: maxPosition,
+                            availableColumns: currentColumns.length,
+                        });
+
+                        // create base row w all column defaults
+                        const newRowData = currentColumns.reduce((acc, col, colIndex) => {
+                            if (col.accessor === 'id') {
+                                console.debug(`Skipping id column ${colIndex}`);
+                                return acc;
+                            }
+
+                            // set appropriate default values based on column type
+                            let defaultValue: any = '';
+                            switch (col.type) {
+                                case 'select':
+                                    defaultValue = '';
+                                    console.debug(
+                                        `Column ${colIndex} (${String(col.accessor)}) set to empty string for select type`,
+                                    );
+                                    break;
+                                case 'text':
+                                default:
+                                    defaultValue = '';
+                                    console.debug(
+                                        `Column ${colIndex} (${String(col.accessor)}) set to empty string for text type`,
+                                    );
+                                    break;
+                            }
+
+                            acc[col.accessor as keyof T] = defaultValue as any;
+                            return acc;
+                        }, {} as Partial<T>);
+
+                        const newRowId = crypto.randomUUID();
+                        targetRow = {
+                            ...newRowData,
+                            id: newRowId,
+                            position: maxPosition,
+                        } as T;
+
+                        console.debug(`New row created:`, {
+                            newRowId,
+                            position: maxPosition,
+                            targetRowData: Object.entries(targetRow).reduce(
+                                (acc, [key, value]) => {
+                                    if (typeof value !== 'function') {
+                                        acc[key] = value;
+                                    }
+                                    return acc;
+                                },
+                                {} as any,
+                            ),
+                        });
+                    }
+
+                    // track if row has any changes
+                    let rowHasChanges = false;
+
+                    // process each cell in the clipboard row
+                    for (
+                        let cellIndex = 0;
+                        cellIndex < clipboardCells.length;
+                        cellIndex++
+                    ) {
+                        const targetColIndex = startCol + cellIndex;
+                        const targetColumn = currentColumns[targetColIndex];
+                        const cellValue = clipboardCells[cellIndex] ?? '';
+
+                        console.group(
+                            `Processing cell [${clipboardRowIndex}][${cellIndex}]`,
+                        );
+                        console.debug(`Cell details:`, {
+                            cellIndex,
+                            targetColIndex,
+                            rawCellValue: `"${cellValue}"`,
+                            trimmedCellValue: `"${cellValue.trim()}"`,
+                            columnExists: !!targetColumn,
+                            columnInfo: targetColumn
+                                ? {
+                                      id: targetColumn.id,
+                                      accessor: String(targetColumn.accessor),
+                                      type: targetColumn.type,
+                                      header: targetColumn.header,
+                                      hasOptions: Array.isArray(targetColumn.options),
+                                      optionsCount: Array.isArray(targetColumn.options)
+                                          ? targetColumn.options.length
+                                          : 0,
+                                  }
+                                : 'NO_COLUMN',
+                        });
+
+                        // skip if column doesn't exist
+                        if (!targetColumn) {
+                            console.warn(
+                                `Target column ${targetColIndex} doesn't exist, skipping cell`,
+                            );
+                            console.groupEnd();
+                            continue;
+                        }
+
+                        // check if priority or status column that should be skipped
+                        const columnAccessorLower = String(
+                            targetColumn.accessor,
+                        ).toLowerCase();
+                        const columnHeaderLower = targetColumn.header.toLowerCase();
+                        const isPriorityColumn =
+                            columnAccessorLower.includes('priority') ||
+                            columnHeaderLower.includes('priority');
+                        const isStatusColumn =
+                            columnAccessorLower.includes('status') ||
+                            columnHeaderLower.includes('status');
+
+                        if (isPriorityColumn) {
+                            console.debug(
+                                `Skipping priority column "${targetColumn.header}" as requested`,
+                            );
+                            console.groupEnd();
+                            continue;
+                        }
+
+                        if (isStatusColumn) {
+                            console.debug(
+                                `Skipping status column "${targetColumn.header}" as requested`,
+                            );
+                            console.groupEnd();
+                            continue;
+                        }
+
+                        const newValue = cellValue.trim();
+                        const currentValue = (
+                            targetRow[targetColumn.accessor] ?? ''
+                        ).toString();
+
+                        console.debug(`Value comparison:`, {
+                            currentValue: `"${currentValue}"`,
+                            newValue: `"${newValue}"`,
+                            valuesAreEqual: currentValue === newValue,
+                            willSkipDueToSameValue: currentValue === newValue,
+                        });
+
+                        // Skip if value hasn't changed
+                        if (currentValue === newValue) {
+                            console.debug(`Values are identical, skipping cell update`);
+                            console.groupEnd();
+                            continue;
+                        }
+
+                        // Handle different column types
+                        let processedValue: any = newValue;
+
+                        switch (targetColumn.type) {
+                            case 'select':
+                                console.debug(`Processing select column:`, {
+                                    columnOptions: targetColumn.options,
+                                    isOptionsArray: Array.isArray(targetColumn.options),
+                                });
+
+                                // For select columns, validate against allowed options
+                                if (Array.isArray(targetColumn.options)) {
+                                    const validOptions = targetColumn.options.map(
+                                        (opt) => {
+                                            if (typeof opt === 'string') return opt;
+                                            if (
+                                                typeof opt === 'object' &&
+                                                opt !== null &&
+                                                'label' in opt
+                                            ) {
+                                                return (opt as { label: string }).label;
+                                            }
+                                            return String(opt);
+                                        },
+                                    );
+
+                                    console.debug(`Valid options for select:`, {
+                                        validOptions,
+                                        newValueInOptions:
+                                            validOptions.includes(newValue),
+                                        newValueEmpty: !newValue,
+                                    });
+
+                                    // Only use the value if it's in the allowed options, otherwise use empty string
+                                    if (newValue && validOptions.includes(newValue)) {
+                                        processedValue = newValue;
+                                        console.debug(
+                                            `Using valid option: "${processedValue}"`,
+                                        );
+                                    } else if (newValue) {
+                                        console.warn(
+                                            `Invalid option "${newValue}" for select column "${targetColumn.header}", using empty string`,
+                                        );
+                                        processedValue = '';
+                                    } else {
+                                        processedValue = '';
+                                        console.debug(
+                                            `Empty value for select column, using empty string`,
+                                        );
+                                    }
+                                } else {
+                                    console.warn(
+                                        `Select column "${targetColumn.header}" has no valid options, using empty string`,
+                                    );
+                                    processedValue = '';
+                                }
+                                break;
+
+                            case 'text':
+                            default:
+                                processedValue = newValue;
+                                console.debug(`Using text value: "${processedValue}"`);
+                                break;
+                        }
+
+                        // Update the target row
+                        (targetRow as any)[targetColumn.accessor] = processedValue;
+                        rowHasChanges = true;
+
+                        console.debug(`Cell updated successfully:`, {
+                            accessor: String(targetColumn.accessor),
+                            oldValue: `"${currentValue}"`,
+                            newValue: `"${processedValue}"`,
+                            columnType: targetColumn.type,
+                        });
+                        console.groupEnd();
+                    }
+
+                    console.debug(`Row processing summary:`, {
+                        clipboardRowIndex,
+                        isNewRow,
+                        rowHasChanges,
+                        targetRowId: targetRow.id,
+                        targetRowPosition: (targetRow as any).position,
+                    });
+
+                    // Only process rows that have changes
+                    if (rowHasChanges) {
+                        if (isNewRow) {
+                            newRowsToCreate.push(targetRow);
+                            console.debug(`Added new row to creation queue:`, {
+                                rowId: targetRow.id,
+                                position: (targetRow as any).position,
+                                queueLength: newRowsToCreate.length,
+                            });
+                        } else {
+                            updatedRows.set(targetRow.id, targetRow);
+
+                            // Track changes for editing buffer
+                            const changes: Partial<T> = {};
+                            for (
+                                let cellIndex = 0;
+                                cellIndex < clipboardCells.length;
+                                cellIndex++
+                            ) {
+                                const targetColIndex = startCol + cellIndex;
+                                const targetColumn = currentColumns[targetColIndex];
+                                if (
+                                    targetColumn &&
+                                    !String(targetColumn.accessor)
+                                        .toLowerCase()
+                                        .includes('priority') &&
+                                    !String(targetColumn.accessor)
+                                        .toLowerCase()
+                                        .includes('status')
+                                ) {
+                                    (changes as any)[targetColumn.accessor] = (
+                                        targetRow as any
+                                    )[targetColumn.accessor];
+                                }
+                            }
+                            editingUpdates[targetRow.id] = changes;
+
+                            console.debug(`Added existing row to update queue:`, {
+                                rowId: targetRow.id,
+                                changes: Object.entries(changes).reduce(
+                                    (acc, [key, value]) => {
+                                        acc[key] = value;
+                                        return acc;
+                                    },
+                                    {} as any,
+                                ),
+                                updateQueueSize: updatedRows.size,
+                            });
+                        }
+                    } else {
+                        console.debug(`Row has no changes, skipping`);
+                    }
+                    console.groupEnd();
                 }
 
-                for (const newRow of newRowsToCreate) {
-                    console.debug('[handlePaste] save new row', { id: newRow.id });
-                    await onSave?.(newRow, true, userId, userName);
-                    console.debug('[handlePaste] saved new row', { id: newRow.id });
+                console.debug(`[${operationId}] Final processing summary:`, {
+                    clipboardRowsProcessed: clipboardRows.length,
+                    existingRowsToUpdate: updatedRows.size,
+                    newRowsToCreate: newRowsToCreate.length,
+                    editingUpdatesCount: Object.keys(editingUpdates).length,
+                    finalMaxPosition: maxPosition,
+                    newRowDetails: newRowsToCreate.map((row) => ({
+                        id: row.id,
+                        position: (row as any).position,
+                    })),
+                    updatedRowDetails: Array.from(updatedRows.entries()).map(
+                        ([id, row]) => ({
+                            id,
+                            position: (row as any).position,
+                        }),
+                    ),
+                });
+
+                // Apply all changes to local state immediately for optimistic updates
+                console.debug(
+                    `[${operationId}] Applying optimistic updates to local state...`,
+                );
+
+                setLocalData((prevData) => {
+                    console.debug(`[${operationId}] Before local data update:`, {
+                        prevDataLength: prevData.length,
+                        prevDataIds: prevData.map((row) => ({
+                            id: row.id,
+                            position: row.position,
+                        })),
+                    });
+
+                    // Build new data array from sortedData as base + new rows
+                    const dataById = new Map(prevData.map((row) => [row.id, row]));
+
+                    // Apply updates to existing rows
+                    let existingUpdated = 0;
+                    updatedRows.forEach((updatedRow, rowId) => {
+                        dataById.set(rowId, updatedRow);
+                        existingUpdated++;
+                        console.debug(
+                            `[${operationId}] Updated existing row in map: ${rowId}`,
+                        );
+                    });
+
+                    // Add new rows
+                    let newAdded = 0;
+                    newRowsToCreate.forEach((newRow) => {
+                        if (dataById.has(newRow.id)) {
+                            console.error(
+                                `[${operationId}] DUPLICATE ROW ID DETECTED: ${newRow.id}`,
+                            );
+                        } else {
+                            dataById.set(newRow.id, newRow);
+                            newAdded++;
+                            console.debug(
+                                `[${operationId}] Added new row to map: ${newRow.id}`,
+                            );
+                        }
+                    });
+
+                    const finalArray = Array.from(dataById.values());
+
+                    console.debug(`[${operationId}] Local data update complete:`, {
+                        existingRowsUpdated: existingUpdated,
+                        newRowsAdded: newAdded,
+                        finalArrayLength: finalArray.length,
+                        finalArrayIds: finalArray.map((row) => ({
+                            id: row.id,
+                            position: row.position,
+                        })),
+                    });
+
+                    return finalArray;
+                });
+
+                // Update editing buffer for existing rows
+                if (Object.keys(editingUpdates).length > 0) {
+                    console.debug(`[${operationId}] Updating editing buffer:`, {
+                        editingUpdatesKeys: Object.keys(editingUpdates),
+                        editingUpdatesDetails: editingUpdates,
+                    });
+
+                    setEditingData((prev) => ({
+                        ...prev,
+                        ...editingUpdates,
+                    }));
                 }
-            } catch (err) {
-                console.error('[handlePaste] error', err);
+
+                // Save changes to database
+                console.debug(`[${operationId}] Starting database save operations...`);
+
+                // Save updated existing rows
+                let savedExistingCount = 0;
+                for (const [rowId, updatedRow] of updatedRows) {
+                    try {
+                        console.debug(`[${operationId}] Saving existing row ${rowId}...`);
+                        await onSave?.(updatedRow, false, userId, userName);
+                        savedExistingCount++;
+                        console.debug(
+                            `[${operationId}] Successfully saved existing row ${rowId}`,
+                        );
+                    } catch (error) {
+                        console.error(
+                            `[${operationId}] Failed to save existing row ${rowId}:`,
+                            error,
+                        );
+                    }
+                }
+
+                // Save new rows
+                let savedNewCount = 0;
+                for (const newRow of newRowsToCreate) {
+                    try {
+                        console.debug(`[${operationId}] Saving new row ${newRow.id}...`);
+                        await onSave?.(newRow, true, userId, userName);
+                        savedNewCount++;
+                        console.debug(
+                            `[${operationId}] Successfully saved new row ${newRow.id}`,
+                        );
+                    } catch (error) {
+                        console.error(
+                            `[${operationId}] Failed to save new row ${newRow.id}:`,
+                            error,
+                        );
+                    }
+                }
+
+                console.debug(`[${operationId}] Database save summary:`, {
+                    existingRowsSaved: savedExistingCount,
+                    newRowsSaved: savedNewCount,
+                    totalRowsSaved: savedExistingCount + savedNewCount,
+                });
+
+                // Trigger post-save callback and metadata save
+                console.debug(`[${operationId}] Calling post-save callbacks...`);
+                try {
+                    await onPostSave?.();
+                    console.debug(`[${operationId}] onPostSave completed`);
+                } catch (error) {
+                    console.error(`[${operationId}] onPostSave failed:`, error);
+                }
+
+                try {
+                    await saveTableMetadata();
+                    console.debug(`[${operationId}] saveTableMetadata completed`);
+                } catch (error) {
+                    console.error(`[${operationId}] saveTableMetadata failed:`, error);
+                }
+
+                console.debug(`[${operationId}] Paste operation completed successfully`);
+            } catch (error) {
+                console.error(`[${operationId}] Paste operation failed:`, error);
+                if (error instanceof Error) {
+                    console.error(`[${operationId}] Error stack:`, error.stack);
+                }
             } finally {
+                // reset pasting flag and restore selection after operations complete
                 setTimeout(() => {
                     isPastingRef.current = false;
-                    console.debug(`📋 [handlePaste] op=${op} complete`);
+                    setGridSelection({
+                        rows: CompactSelection.empty(),
+                        columns: CompactSelection.empty(),
+                    });
+                    setSelection(undefined);
+                    selectionRef.current = undefined;
+
+                    console.debug(`[${operationId}] Paste operation fully completed`);
+                    console.groupEnd();
                 }, 200);
             }
         },
-        [isEditMode, localData, sortedData, onSave, userId, userName],
+        [
+            isEditMode,
+            localData,
+            sortedData,
+            onSave,
+            userId,
+            userName,
+            onPostSave,
+            saveTableMetadata,
+        ],
     );
 
     // paste event listener setup
     useEffect(() => {
         const tableElement = tableRef.current;
-        if (!tableElement) return;
+        if (!tableElement) {
+            return;
+        }
 
-        console.debug('[useEffect] Attaching paste event listener to table element');
+        // main paste handler
+        const pasteHandler = (event: ClipboardEvent) => {
+            // only handle paste if we're in edit mode and the event target is within our table
+            if (isEditMode && tableElement.contains(event.target as Node)) {
+                return handlePaste(event);
+            }
+        };
 
-        tableElement.addEventListener('paste', handlePaste, {
+        // attach paste listener to the table element
+        tableElement.addEventListener('paste', pasteHandler, {
             capture: true,
             passive: false,
         });
 
+        // attach to window as a fallback
+        const windowPasteHandler = (event: ClipboardEvent) => {
+            if (isEditMode && tableElement.contains(event.target as Node)) {
+                return handlePaste(event);
+            }
+        };
+
+        window.addEventListener('paste', windowPasteHandler, {
+            capture: true,
+            passive: false,
+        });
+
+        // cleanup function
         return () => {
-            console.debug('[useEffect] Removing paste event listener from table element');
-            tableElement.removeEventListener('paste', handlePaste, {
+            tableElement.removeEventListener('paste', pasteHandler, {
+                capture: true,
+            });
+
+            window.removeEventListener('paste', windowPasteHandler, {
                 capture: true,
             });
         };
-    }, [handlePaste]);
+    }, [handlePaste, isEditMode]);
 
     // enhanced selection change handler
     const handleSelectionChange = useCallback((newSelection: GridSelection) => {
