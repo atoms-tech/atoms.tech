@@ -568,11 +568,21 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     c.title === col.title ? { ...c, width: newSize } : c,
                 );
 
-                debouncedSave(); // Call debounced save with newly updated columns.
+                debouncedSave(); // call debounced save w updated columns
                 return updated;
             });
+
+            // force grid to recalculate row heights after column resize
+            // ensures text wrapping adjusts properly to new column width
+            setTimeout(() => {
+                if (gridRef.current) {
+                    gridRef.current.updateCells(
+                        sortedData.map((_, rowIndex) => ({ cell: [0, rowIndex] })),
+                    );
+                }
+            }, 50);
         },
-        [debouncedSave, localColumns],
+        [debouncedSave, localColumns, sortedData],
     );
 
     const handleColumnMoved = useCallback(
@@ -614,6 +624,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     allowOverlay: isEditMode,
                     data: value?.toString() ?? '',
                     displayData: value?.toString() ?? '',
+                    allowWrapping: true, //  enable text wrapping for missing data fallback
                 };
             }
 
@@ -652,6 +663,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         allowOverlay: isEditMode,
                         data: value?.toString() ?? '',
                         displayData: value?.toString() ?? '',
+                        allowWrapping: true, //  enable text wrapping for all text cells
                     } as TextCell;
             }
         },
@@ -780,6 +792,45 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         [debouncedSave],
     );
 
+    // calculate min row height based on text content and column width
+    const calculateMinRowHeight = useCallback(
+        (rowData: T, columnWidths: Record<string, number>) => {
+            const baseHeight = 43; // default row height
+            const lineHeight = 16; // approximate height per line of text
+            const padding = 12; // cell padding
+            const maxLines = 3; // max lines to show when wrapping
+
+            let maxRequiredHeight = baseHeight;
+
+            // check each column to see if it needs more height for wrapped text
+            localColumns.forEach((column) => {
+                const value = rowData?.[column.accessor]?.toString() || '';
+                if (value.length === 0) return;
+
+                const columnWidth =
+                    columnWidths[column.accessor as string] || column.width || 120;
+                const availableTextWidth = columnWidth - padding;
+
+                // estimate characters per line based on average character width
+                const avgCharWidth = 8; // approximate character width in pixels
+                const charsPerLine = Math.floor(availableTextWidth / avgCharWidth);
+
+                if (charsPerLine > 0) {
+                    const estimatedLines = Math.ceil(value.length / charsPerLine);
+                    const cappedLines = Math.min(estimatedLines, maxLines);
+                    const requiredHeight = cappedLines * lineHeight + padding;
+
+                    if (requiredHeight > maxRequiredHeight) {
+                        maxRequiredHeight = requiredHeight;
+                    }
+                }
+            });
+
+            return maxRequiredHeight;
+        },
+        [localColumns],
+    );
+
     const handleRowResize = useCallback(
         (rowIndex: number, newSize: number) => {
             const rowId = sortedData[rowIndex]?.id;
@@ -789,7 +840,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 const updated = prev.map((row) =>
                     row.id === rowId ? { ...row, height: newSize } : row,
                 );
-                debouncedSave(); // Call debounced save with newly updated columns.
+                debouncedSave(); // call debounced save w newly updated columns
                 return updated;
             });
         },
@@ -1885,7 +1936,27 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             onCellActivated={isEditMode ? undefined : handleCellActivated}
                             rows={sortedData.length}
-                            rowHeight={(row) => sortedData[row]?.height ?? 43}
+                            rowHeight={(row) => {
+                                const rowData = sortedData[row];
+                                if (!rowData) return 43; // default height
+
+                                if (rowData.height && rowData.height > 43) {
+                                    return rowData.height;
+                                }
+
+                                const currentColumnWidths = localColumns.reduce(
+                                    (acc, col) => {
+                                        acc[col.accessor as string] =
+                                            colSizes[col.accessor] || col.width || 120;
+                                        return acc;
+                                    },
+                                    {} as Record<string, number>,
+                                );
+                                return calculateMinRowHeight(
+                                    rowData,
+                                    currentColumnWidths,
+                                );
+                            }}
                             onColumnResize={isEditMode ? handleColumnResize : undefined}
                             onColumnMoved={isEditMode ? handleColumnMoved : undefined}
                             gridSelection={gridSelection}
