@@ -92,6 +92,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     const lastSelectedCellRef = useRef<Item | undefined>(undefined);
 
+    const recentlyPastedRowsRef = useRef<Set<string>>(new Set());
+    const pasteOperationActiveRef = useRef<boolean>(false);
+
     const prevEditModeRef = useRef<boolean>(isEditMode);
     const isSavingRef = useRef(false);
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
@@ -498,110 +501,56 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         }
     }, [columns]); // removed localColumns from deps to prevent infinite loop
 
-    // sync db row changes with existing pending changes for local data
+    // sync incoming database data with local state
     useEffect(() => {
-        // skip sync during paste operations to prevent conflicts
-        if (isPastingRef.current) return;
-        if (isSavingRef.current) return;
+        // prevent sync during active operations
+        if (isPastingRef.current || pasteOperationActiveRef.current) {
+            console.debug('[Data Sync] Skipping - paste in progress');
+            return;
+        }
+        if (isSavingRef.current) {
+            console.debug('[Data Sync] Skipping - save in progress');
+            return;
+        }
 
-        const pendingEdits = editingDataRef.current;
-
-        // filter out locally-deleted rows from incoming data
-        const filteredData = data.filter((row) => !deletedRowIdsRef.current.has(row.id));
-
-        // create lookup maps for efficient comparison
-        const incomingById = new Map(filteredData.map((r) => [r.id, r]));
-        const localById = new Map(localData.map((r) => [r.id, r]));
-
-        // identify truly new local rows
-        const newLocalRows = localData.filter((localRow) => {
-            // row exists in incoming data with same id - not new
-            if (incomingById.has(localRow.id)) return false;
-
-            // check if this might be a recently saved row with a different id by comparing content
-            const possibleDuplicate = filteredData.find((incomingRow) => {
-                if (incomingRow.id === localRow.id) return false;
-
-                // compare all meaningful fields to detect content duplicates
-                // skip system fields like id and position
-                const fieldsToCompare = localColumns
-                    .filter(
-                        (col) =>
-                            col.accessor !== 'id' &&
-                            col.accessor !== 'position' &&
-                            col.accessor !== 'height',
-                    )
-                    .map((col) => col.accessor);
-
-                // if all content fields match, this is a duplicate
-                return fieldsToCompare.every((field) => {
-                    const localValue = (localRow[field] ?? '').toString().trim();
-                    const incomingValue = (incomingRow[field] ?? '').toString().trim();
-                    return localValue === incomingValue;
-                });
-            });
-
-            // found matching content in incoming data = duplicate row
-            if (possibleDuplicate) {
-                console.debug('[Data Sync] 🚫 Detected duplicate row, skipping:', {
-                    localId: localRow.id,
-                    matchingIncomingId: possibleDuplicate.id,
-                    contentMatch: true,
-                });
-                return false;
+        // add a delay to let operations complete
+        const syncTimer = setTimeout(() => {
+            // double-check paste isn't active after delay
+            if (isPastingRef.current || pasteOperationActiveRef.current) {
+                console.debug('[Data Sync] Skipping after delay - paste now active');
+                return;
             }
 
-            console.debug('[Data Sync] ✅ Keeping local-only row:', {
-                localId: localRow.id,
-                isNew: true,
-            });
-            return true;
-        });
-
-        // merge incoming data with pending local edits
-        const mergedIncoming = filteredData.map((incoming) => {
-            const rowId = incoming.id;
-            const pending = pendingEdits[rowId] ?? {};
-            // apply any pending edits on top of incoming data
-            return Object.keys(pending).length ? { ...incoming, ...pending } : incoming;
-        });
-
-        // combine merged incoming data w truly new local rows
-        const finalData = [...mergedIncoming, ...newLocalRows];
-
-        // determine if update is needed
-        const needsUpdate =
-            // different row count
-            finalData.length !== localData.length ||
-            // different row IDs
-            !finalData.every((row) => localById.has(row.id)) ||
-            // different content in any row
-            finalData.some((row) => {
-                const localRow = localById.get(row.id);
-                if (!localRow) return true;
-
-                // check all fields except system fields
-                return Object.keys(row).some((k) => {
-                    if (k === 'position' || k === 'height') return false;
-                    return row[k] !== localRow[k];
-                });
-            });
-
-        // apply updates only if needed
-        if (needsUpdate) {
-            console.debug('[Data Sync] Applying merged data:', {
-                incomingCount: filteredData.length,
+            console.debug('[Data Sync] Starting sync', {
+                incomingCount: data.length,
                 localCount: localData.length,
-                newLocalCount: newLocalRows.length,
-                finalCount: finalData.length,
-                duplicatesRemoved:
-                    localData.length - newLocalRows.length - mergedIncoming.length,
             });
-            setLocalData(finalData);
-        } else {
-            console.debug('[Data Sync] No changes needed - data already in sync');
-        }
-    }, [data, localData, localColumns]); // added localColumns to dependencies
+
+            if (data.length > 0) {
+                // check if need to update
+                const needsUpdate =
+                    data.length !== localData.length ||
+                    !data.every((row, index) => {
+                        const localRow = localData[index];
+                        return localRow && row.id === localRow.id;
+                    });
+
+                if (needsUpdate) {
+                    console.debug('[Data Sync] Using database as source of truth', {
+                        databaseCount: data.length,
+                        localCount: localData.length,
+                        difference: data.length - localData.length,
+                    });
+                    setLocalData([...data]);
+                } else {
+                    console.debug('[Data Sync] No changes needed - already in sync');
+                }
+            }
+        }, 200); // 200ms delay
+
+        // cleanup timer on unmount or dependency change
+        return () => clearTimeout(syncTimer);
+    }, [data]);
 
     const handleColumnResize = useCallback(
         (col: GridColumn, newSize: number) => {
@@ -1059,6 +1008,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             let pasteEndCol = 0;
             let pasteEndRow = 0;
             let clipboardRowsForRestore: string[][] = [];
+            // declare at function scope for access in finally block
+            let newRowsToCreate: T[] = [];
 
             console.debug(`PASTE EVENT CAPTURED! Event details:`, {
                 eventType: event.type,
@@ -1110,6 +1061,10 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             // set pasting flag to prevent conflicts
             isPastingRef.current = true;
             console.debug(`[${operationId}] Set isPastingRef.current = true`);
+
+            // set paste operation active flag
+            pasteOperationActiveRef.current = true;
+            console.debug(`[${operationId}] Paste operation active flag set`);
 
             try {
                 // parse clipboard data into rows and cells
@@ -1240,7 +1195,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
                 // track changes to apply
                 const updatedRows = new Map<string, T>();
-                const newRowsToCreate: T[] = [];
+                // use the newRowsToCreate declared at function scope - don't redeclare with const
+                newRowsToCreate = [];
                 const editingUpdates: Record<string, Partial<T>> = {};
 
                 // calculate the maximum position for new rows from current data
@@ -1619,46 +1575,42 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 setLocalData((prevData) => {
                     console.debug(`[${operationId}] Before local data update:`, {
                         prevDataLength: prevData.length,
-                        prevDataIds: prevData.map((row) => ({
-                            id: row.id,
-                            position: row.position,
-                        })),
                     });
 
-                    // Build new data array from sortedData as base + new rows
-                    const dataById = new Map(prevData.map((row) => [row.id, row]));
+                    // create a clean copy of current data
+                    const updatedData = [...prevData];
 
-                    // Apply updates to existing rows
-                    let existingUpdated = 0;
+                    // update existing rows in place
                     updatedRows.forEach((updatedRow, rowId) => {
-                        dataById.set(rowId, updatedRow);
-                        existingUpdated++;
-                        console.debug(
-                            `[${operationId}] Updated existing row in map: ${rowId}`,
-                        );
-                    });
-
-                    // Add new rows
-                    let newAdded = 0;
-                    newRowsToCreate.forEach((newRow) => {
-                        if (dataById.has(newRow.id)) {
-                            console.error(
-                                `[${operationId}] DUPLICATE ROW ID DETECTED: ${newRow.id}`,
-                            );
-                        } else {
-                            dataById.set(newRow.id, newRow);
-                            newAdded++;
+                        const index = updatedData.findIndex((row) => row.id === rowId);
+                        if (index !== -1) {
+                            updatedData[index] = updatedRow;
                             console.debug(
-                                `[${operationId}] Added new row to map: ${newRow.id}`,
+                                `[${operationId}] Updated row at index ${index}:`,
+                                rowId,
                             );
                         }
                     });
 
-                    const finalArray = Array.from(dataById.values());
+                    // append new rows at the end
+                    newRowsToCreate.forEach((newRow) => {
+                        // double-check this row doesn't already exist
+                        if (!updatedData.some((row) => row.id === newRow.id)) {
+                            updatedData.push(newRow);
+                            console.debug(`[${operationId}] Added new row:`, newRow.id);
+                        } else {
+                            console.warn(
+                                `[${operationId}] Skipping duplicate row:`,
+                                newRow.id,
+                            );
+                        }
+                    });
+
+                    const finalArray = updatedData;
 
                     console.debug(`[${operationId}] Local data update complete:`, {
-                        existingRowsUpdated: existingUpdated,
-                        newRowsAdded: newAdded,
+                        existingRowsUpdated: updatedRows.size,
+                        newRowsAdded: newRowsToCreate.length,
                         finalArrayLength: finalArray.length,
                         finalArrayIds: finalArray.map((row) => ({
                             id: row.id,
@@ -1685,39 +1637,73 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 // Save changes to database
                 console.debug(`[${operationId}] Starting database save operations...`);
 
-                // Save updated existing rows
+                const BATCH_SIZE = 10; // process saves in batches to prevent overwhelming the system
+
+                // save updated existing rows in batches
                 let savedExistingCount = 0;
-                for (const [rowId, updatedRow] of updatedRows) {
-                    try {
-                        console.debug(`[${operationId}] Saving existing row ${rowId}...`);
-                        await onSave?.(updatedRow, false, userId, userName);
-                        savedExistingCount++;
-                        console.debug(
-                            `[${operationId}] Successfully saved existing row ${rowId}`,
-                        );
-                    } catch (error) {
-                        console.error(
-                            `[${operationId}] Failed to save existing row ${rowId}:`,
-                            error,
-                        );
-                    }
+                const existingRowEntries = Array.from(updatedRows.entries());
+                for (let i = 0; i < existingRowEntries.length; i += BATCH_SIZE) {
+                    const batch = existingRowEntries.slice(i, i + BATCH_SIZE);
+                    const batchPromises = batch.map(async ([rowId, updatedRow]) => {
+                        try {
+                            console.debug(
+                                `[${operationId}] Saving existing row ${rowId}...`,
+                            );
+                            await onSave?.(updatedRow, false, userId, userName);
+                            savedExistingCount++;
+                            console.debug(
+                                `[${operationId}] Successfully saved existing row ${rowId}`,
+                            );
+                            return { success: true, rowId };
+                        } catch (error) {
+                            console.error(
+                                `[${operationId}] Failed to save existing row ${rowId}:`,
+                                error,
+                            );
+                            return { success: false, rowId, error };
+                        }
+                    });
+
+                    // wait for batch to complete before proceeding to next batch
+                    await Promise.all(batchPromises);
+                    console.debug(
+                        `[${operationId}] Completed batch ${Math.floor(i / BATCH_SIZE) + 1} of existing rows`,
+                    );
                 }
 
-                // Save new rows
+                // save new rows in batches
                 let savedNewCount = 0;
-                for (const newRow of newRowsToCreate) {
-                    try {
-                        console.debug(`[${operationId}] Saving new row ${newRow.id}...`);
-                        await onSave?.(newRow, true, userId, userName);
-                        savedNewCount++;
-                        console.debug(
-                            `[${operationId}] Successfully saved new row ${newRow.id}`,
-                        );
-                    } catch (error) {
-                        console.error(
-                            `[${operationId}] Failed to save new row ${newRow.id}:`,
-                            error,
-                        );
+                for (let i = 0; i < newRowsToCreate.length; i += BATCH_SIZE) {
+                    const batch = newRowsToCreate.slice(i, i + BATCH_SIZE);
+                    const batchPromises = batch.map(async (newRow) => {
+                        try {
+                            console.debug(
+                                `[${operationId}] Saving new row ${newRow.id}...`,
+                            );
+                            await onSave?.(newRow, true, userId, userName);
+                            savedNewCount++;
+                            console.debug(
+                                `[${operationId}] Successfully saved new row ${newRow.id}`,
+                            );
+                            return { success: true, rowId: newRow.id };
+                        } catch (error) {
+                            console.error(
+                                `[${operationId}] Failed to save new row ${newRow.id}:`,
+                                error,
+                            );
+                            return { success: false, rowId: newRow.id, error };
+                        }
+                    });
+
+                    // wait for batch to complete before proceeding to next batch
+                    await Promise.all(batchPromises);
+                    console.debug(
+                        `[${operationId}] Completed batch ${Math.floor(i / BATCH_SIZE) + 1} of new rows`,
+                    );
+
+                    // small delay between batches to prevent overwhelming the system
+                    if (i + BATCH_SIZE < newRowsToCreate.length) {
+                        await new Promise((resolve) => setTimeout(resolve, 50));
                     }
                 }
 
@@ -1727,15 +1713,18 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     totalRowsSaved: savedExistingCount + savedNewCount,
                 });
 
-                // Trigger post-save callback and metadata save
-                console.debug(`[${operationId}] Calling post-save callbacks...`);
-                try {
-                    await onPostSave?.();
-                    console.debug(`[${operationId}] onPostSave completed`);
-                } catch (error) {
-                    console.error(`[${operationId}] onPostSave failed:`, error);
-                }
+                // ensure all saves are fully processed before allowing sync
+                await new Promise((resolve) => setTimeout(resolve, 1000));
 
+                // force a refresh from the database
+                console.debug(`[${operationId}] Forcing data refresh...`);
+                await onPostSave?.();
+                await new Promise((resolve) => setTimeout(resolve, 500)); // additional wait after refresh
+
+                // mark paste operation as completing to prevent sync interference
+                isPastingRef.current = true;
+
+                // save table metadata
                 try {
                     await saveTableMetadata();
                     console.debug(`[${operationId}] saveTableMetadata completed`);
@@ -1750,9 +1739,28 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     console.error(`[${operationId}] Error stack:`, error.stack);
                 }
             } finally {
+                // track pasted rows for deduplication
+                newRowsToCreate.forEach((row) => {
+                    recentlyPastedRowsRef.current.add(row.id);
+                });
+
+                // clear pasted row tracking after sufficient time for db sync
+                setTimeout(() => {
+                    recentlyPastedRowsRef.current.clear();
+                    console.debug(
+                        `[${operationId}] Cleared recently pasted rows tracking`,
+                    );
+                }, 10000);
+
+                console.debug(`[${operationId}] Waiting for database acknowledgment...`);
+
                 // reset pasting flag and restore selection after operations complete
                 setTimeout(() => {
-                    isPastingRef.current = false;
+                    if (!event.defaultPrevented) {
+                        isPastingRef.current = false;
+                        pasteOperationActiveRef.current = false;
+                        console.debug(`[${operationId}] Paste flags cleared safely`);
+                    }
                     setGridSelection({
                         rows: CompactSelection.empty(),
                         columns: CompactSelection.empty(),
@@ -1762,7 +1770,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
                     console.debug(`[${operationId}] Paste operation fully completed`);
                     console.groupEnd();
-                }, 200);
+                }, 3000);
             }
         },
         [
@@ -1786,7 +1794,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
         // main paste handler
         const pasteHandler = (event: ClipboardEvent) => {
-            // only handle paste if we're in edit mode and the event target is within our table
+            // only handle paste if in edit mode and the event target is within our table
             if (isEditMode && tableElement.contains(event.target as Node)) {
                 return handlePaste(event);
             }
