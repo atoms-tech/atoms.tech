@@ -15,12 +15,15 @@ import DataEditor, {
     // CompactSelection,
     //GridDragEventArgs,
     Item,
+    NumberCell,
     Rectangle,
     TextCell,
 } from '@glideapps/glide-data-grid';
 import {
+    DatePickerCell,
     DropdownCell,
     DropdownCellType,
+    MultiSelectCell,
     allCells,
 } from '@glideapps/glide-data-grid-cells';
 import { useTheme } from 'next-themes';
@@ -89,6 +92,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
     const lastEditedCellRef = useRef<Item | undefined>(undefined);
+    const isEditingCellRef = useRef<boolean>(false);
 
     const lastSelectedCellRef = useRef<Item | undefined>(undefined);
 
@@ -447,37 +451,36 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             (a, b) => (a.position ?? 0) - (b.position ?? 0),
         );
 
-        const localAccessors = new Set(localColumns.map((c) => c.accessor));
         const normalizedAccessors = new Set(sortedNormalized.map((c) => c.accessor));
 
-        const columnsAdded = [...normalizedAccessors].filter(
-            (a) => !localAccessors.has(a),
-        );
+        setLocalColumns((prev) => {
+            const localAccessors = new Set(prev.map((c) => c.accessor));
 
-        const filteredColumnsAdded = columnsAdded.filter(
-            (accessor) =>
-                ![...deletedColumnIdsRef.current].some(
-                    (deletedId) =>
-                        sortedNormalized.find((col) => col.accessor === accessor)?.id ===
-                        deletedId,
-                ),
-        );
+            const columnsAdded = [...normalizedAccessors].filter(
+                (a) => !localAccessors.has(a),
+            );
 
-        // Find columns that were removed
-        const columnsRemoved = [...localAccessors].filter(
-            (a) => !normalizedAccessors.has(a),
-        );
+            const filteredColumnsAdded = columnsAdded.filter(
+                (accessor) =>
+                    ![...deletedColumnIdsRef.current].some(
+                        (deletedId) =>
+                            sortedNormalized.find((col) => col.accessor === accessor)
+                                ?.id === deletedId,
+                    ),
+            );
 
-        // Only update if there are actual changes
-        if (filteredColumnsAdded.length || columnsRemoved.length) {
-            console.debug('[GlideEditableTable] Column sync detected changes:', {
-                added: filteredColumnsAdded,
-                removed: columnsRemoved,
-                deletedColumnIds: [...deletedColumnIdsRef.current],
-            });
+            // Find columns that were removed
+            const columnsRemoved = [...localAccessors].filter(
+                (a) => !normalizedAccessors.has(a),
+            );
 
-            // Start with current local columns
-            const merged = [...localColumns];
+            // Only update if there are actual changes
+            if (filteredColumnsAdded.length === 0 && columnsRemoved.length === 0) {
+                return prev;
+            }
+
+            // Start with previous local columns
+            const merged = [...prev];
 
             // Add new columns at the end
             for (const added of filteredColumnsAdded) {
@@ -496,10 +499,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 normalizedAccessors.has(col.accessor),
             );
 
-            // Update local state with the synced columns
-            setLocalColumns(filtered);
-        }
-    }, [columns]); // removed localColumns from deps to prevent infinite loop
+            return filtered;
+        });
+    }, [columns]);
 
     // sync incoming database data with local state
     useEffect(() => {
@@ -521,31 +523,42 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 return;
             }
 
-            console.debug('[Data Sync] Starting sync', {
-                incomingCount: data.length,
-                localCount: localData.length,
-            });
+            setLocalData((prev) => {
+                console.debug('[Data Sync] Starting sync', {
+                    incomingCount: data.length,
+                    localCount: prev.length,
+                });
 
-            if (data.length > 0) {
-                // check if need to update
+                if (data.length === 0) {
+                    return prev;
+                }
+
                 const needsUpdate =
-                    data.length !== localData.length ||
+                    data.length !== prev.length ||
                     !data.every((row, index) => {
-                        const localRow = localData[index];
+                        const localRow = prev[index];
                         return localRow && row.id === localRow.id;
                     });
 
-                if (needsUpdate) {
-                    console.debug('[Data Sync] Using database as source of truth', {
-                        databaseCount: data.length,
-                        localCount: localData.length,
-                        difference: data.length - localData.length,
-                    });
-                    setLocalData([...data]);
-                } else {
-                    console.debug('[Data Sync] No changes needed - already in sync');
+                // Merge pending edits into incoming data to avoid overwriting user changes
+                const pendingEdits = editingDataRef.current || {};
+                const hasPendingEdits = Object.keys(pendingEdits).length > 0;
+                const merged = data.map((row) =>
+                    pendingEdits[row.id]
+                        ? ({ ...row, ...(pendingEdits[row.id] as Partial<T>) } as T)
+                        : row,
+                );
+
+                if (needsUpdate || hasPendingEdits) {
+                    console.debug(
+                        '[Data Sync] Applying merged data (server + pending edits)',
+                    );
+                    return merged;
                 }
-            }
+
+                console.debug('[Data Sync] No changes needed - already in sync');
+                return prev;
+            });
         }, 200); // 200ms delay
 
         // cleanup timer on unmount or dependency change
@@ -629,6 +642,27 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             }
 
             switch (column.type) {
+                case 'multi_select': {
+                    const values = Array.isArray(value)
+                        ? (value as string[])
+                        : value
+                          ? [String(value)]
+                          : [];
+                    const options = Array.isArray(column.options) ? column.options : [];
+
+                    return {
+                        kind: GridCellKind.Custom,
+                        allowOverlay: isEditMode,
+                        copyData: values.join(', '),
+                        data: {
+                            kind: 'multi-select-cell',
+                            values,
+                            options,
+                            allowCreation: false,
+                            allowDuplicates: false,
+                        },
+                    } as GridCell;
+                }
                 case 'select': {
                     const stringValue = typeof value === 'string' ? value : '';
                     if (!Array.isArray(column.options)) {
@@ -645,16 +679,50 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     const options = Array.isArray(column.options) ? column.options : [];
 
                     return {
-                        kind: DropdownCell.kind,
+                        kind: GridCellKind.Custom,
                         allowOverlay: isEditMode,
                         copyData: stringValue,
                         data: {
                             kind: 'dropdown-cell',
                             value: stringValue,
                             allowedValues: options,
-                            displayData: value?.toString() ?? '',
                         },
                     };
+                }
+                case 'number': {
+                    const num =
+                        typeof value === 'number'
+                            ? value
+                            : value != null && value !== ''
+                              ? Number(value)
+                              : null;
+                    const safe = Number.isFinite(num as number) ? (num as number) : null;
+                    return {
+                        kind: GridCellKind.Number,
+                        allowOverlay: isEditMode,
+                        data: safe,
+                        displayData: safe != null ? String(safe) : '',
+                    } as NumberCell;
+                }
+                case 'date': {
+                    const dateVal =
+                        value instanceof Date
+                            ? value
+                            : typeof value === 'string' && value
+                              ? new Date(value)
+                              : null;
+                    const displayDate = dateVal ? dateVal.toISOString() : '';
+                    return {
+                        kind: GridCellKind.Custom,
+                        allowOverlay: isEditMode,
+                        copyData: displayDate,
+                        data: {
+                            kind: 'date-picker-cell',
+                            date: dateVal,
+                            displayDate,
+                            format: 'date',
+                        },
+                    } as GridCell;
                 }
                 case 'text':
                 default:
@@ -716,59 +784,142 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     ...prev,
                     [rowId]: { ...(prev[rowId] ?? {}), [accessor]: newValueStr },
                 }));
-
-                // Handle Dropdown cells
-            } else if (newValue.kind === DropdownCell.kind) {
-                const dropdownCell = newValue as DropdownCellType;
-                const dropdownValue = dropdownCell.data.value ?? '';
-                const displayValue = dropdownValue.toString();
-
-                console.debug('[onCellEdited] Dropdown cell update', {
+            }
+            // Handle built-in Number cells
+            else if (newValue.kind === GridCellKind.Number) {
+                const numVal = (newValue as any).data as number | null;
+                console.debug('[onCellEdited] Number cell update', {
                     rowIndex,
                     rowId,
                     accessor: String(accessor),
-                    value: displayValue,
+                    value: numVal,
                 });
-
-                // Optimistically update local data
                 setLocalData((prev) =>
                     prev.map((r) =>
-                        r.id === rowId ? ({ ...r, [accessor]: displayValue } as T) : r,
+                        r.id === rowId ? ({ ...r, [accessor]: numVal } as T) : r,
                     ),
                 );
-
-                // Update the editing buffer
                 setEditingData((prev) => ({
                     ...prev,
-                    [rowId]: { ...(prev[rowId] ?? {}), [accessor]: displayValue },
+                    [rowId]: { ...(prev[rowId] ?? {}), [accessor]: numVal },
                 }));
+            }
+            // Handle Custom editors (dropdown-cell, multi-select-cell, date-picker-cell)
+            else if (newValue.kind === GridCellKind.Custom) {
+                const data = (newValue as any).data;
+                const kind = data?.kind as string | undefined;
+                if (kind === 'dropdown-cell') {
+                    const displayValue = (data?.value ?? '').toString();
+                    console.debug('[onCellEdited] Dropdown cell update', {
+                        rowIndex,
+                        rowId,
+                        accessor: String(accessor),
+                        value: displayValue,
+                    });
+                    setLocalData((prev) =>
+                        prev.map((r) =>
+                            r.id === rowId
+                                ? ({ ...r, [accessor]: displayValue } as T)
+                                : r,
+                        ),
+                    );
+                    setEditingData((prev) => ({
+                        ...prev,
+                        [rowId]: { ...(prev[rowId] ?? {}), [accessor]: displayValue },
+                    }));
+                } else if (kind === 'multi-select-cell') {
+                    const values: string[] = Array.isArray(data?.values)
+                        ? (data.values as string[])
+                        : [];
+                    console.debug('[onCellEdited] Multi-select cell update', {
+                        rowIndex,
+                        rowId,
+                        accessor: String(accessor),
+                        values,
+                    });
+                    setLocalData((prev) =>
+                        prev.map((r) =>
+                            r.id === rowId ? ({ ...r, [accessor]: values } as T) : r,
+                        ),
+                    );
+                    setEditingData((prev) => ({
+                        ...prev,
+                        [rowId]: { ...(prev[rowId] ?? {}), [accessor]: values },
+                    }));
+                } else if (kind === 'date-picker-cell') {
+                    const dateVal: Date | null = data?.date ?? null;
+                    const iso = dateVal ? dateVal.toISOString() : '';
+                    console.debug('[onCellEdited] Date picker update', {
+                        rowIndex,
+                        rowId,
+                        accessor: String(accessor),
+                        iso,
+                    });
+                    setLocalData((prev) =>
+                        prev.map((r) =>
+                            r.id === rowId ? ({ ...r, [accessor]: iso } as T) : r,
+                        ),
+                    );
+                    setEditingData((prev) => ({
+                        ...prev,
+                        [rowId]: { ...(prev[rowId] ?? {}), [accessor]: iso },
+                    }));
+                }
             }
 
             // Debounce save if set, else leave in buffer
             debouncedSave();
             lastEditedCellRef.current = cell;
+
+            // Re-highlight and focus last edited cell to preserve keyboard navigation
+            const zeroRect: Rectangle = { x: cell[0], y: cell[1], width: 1, height: 1 };
+            const selectionObj: GridSelection = {
+                rows: CompactSelection.empty(),
+                columns: CompactSelection.empty(),
+                current: { cell, range: zeroRect, rangeStack: [zeroRect] },
+            };
+            setGridSelection(selectionObj);
+            setSelection(selectionObj);
+            selectionRef.current = selectionObj;
+            // Editing finished; re-enable blur-based deselection and refocus grid
+            (isEditingCellRef as React.RefObject<boolean>).current = false;
+            try {
+                document.body.style.overflow = '';
+            } catch {}
+            gridRef.current?.focus();
         },
         [localData, localColumns, debouncedSave],
     );
 
-    // Add new row.
-    const handleRowAppended = useCallback(() => {
-        const maxPosition = Math.max(0, ...localData.map((d) => d.position ?? 0));
-        const newRow = {
-            ...columns.reduce(
-                (acc, col) => {
-                    if (col.accessor !== 'id') acc[col.accessor as string] = '';
-                    return acc;
-                },
-                {} as Record<string, unknown>,
-            ),
-            id: crypto.randomUUID(),
-            position: maxPosition + 1,
-        } as T;
+    // Add new row. Flush pending edits first to prevent data loss.
+    const handleRowAppended = useCallback(async () => {
+        try {
+            // 1) Flush any pending edits so they are persisted before we add a new row
+            saveTableMetadataRef.current?.(); // Do not await, add rows immediatly.
+            handleSaveAllRef.current?.();
 
-        onSave?.(newRow, true);
-        void saveTableMetadata();
-    }, [columns, localData, onSave, saveTableMetadata]);
+            // 2) Create the new row at the end (position = max + 1)
+            const maxPosition = Math.max(0, ...localData.map((d) => d.position ?? 0));
+            const newRow = {
+                ...columns.reduce(
+                    (acc, col) => {
+                        if (col.accessor !== 'id') acc[col.accessor as string] = '';
+                        return acc;
+                    },
+                    {} as Record<string, unknown>,
+                ),
+                id: crypto.randomUUID(),
+                position: maxPosition + 1,
+            } as T;
+
+            // 3) Persist the new row then refresh, then sync metadata
+            await onSave?.(newRow, true, userId, userName);
+            await onPostSave?.();
+            await saveTableMetadataRef.current?.();
+        } catch (e) {
+            console.error('[GlideEditableTable] Failed to append row:', e);
+        }
+    }, [columns, localData, onSave, onPostSave, userId, userName]);
 
     const handleRowMoved = useCallback(
         (from: number, to: number) => {
@@ -970,6 +1121,13 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             setTimeout(() => {
                 // if new focused element is not within the table, clear selection
                 if (!tableElement.contains(document.activeElement)) {
+                    // Skip clearing selection during popup cell edit
+                    if (
+                        isEditMode &&
+                        (isEditingCellRef as React.RefObject<boolean>).current
+                    ) {
+                        return;
+                    }
                     setGridSelection({
                         rows: CompactSelection.empty(),
                         columns: CompactSelection.empty(),
@@ -988,7 +1146,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 tableElement.removeEventListener('blur', handleTableBlur, true);
             };
         }
-    }, []);
+    }, [isEditMode]);
 
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     const handleKeyDown = useCallback(
@@ -1019,18 +1177,80 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         };
     }, [handleKeyDown]);
 
+    // Detect type-to-edit path to mark editing active before overlay opens
+    const handleGridKeyDown = useCallback(
+        (e: {
+            ctrlKey: boolean;
+            metaKey: boolean;
+            altKey: boolean;
+            key: string;
+            code?: string;
+            preventDefault?: () => void;
+            stopPropagation?: () => void;
+        }) => {
+            if (!isEditMode) return;
+
+            const hasSelection = Boolean(selectionRef.current?.current?.cell);
+            const isModifier = e.ctrlKey || e.metaKey || e.altKey;
+            const code = e.code || '';
+            const key = e.key;
+            const isNavKey =
+                code === 'ArrowUp' ||
+                code === 'ArrowDown' ||
+                code === 'ArrowLeft' ||
+                code === 'ArrowRight' ||
+                code === 'Tab' ||
+                code === 'Enter' ||
+                code === 'Escape';
+            const startsEdit = !isModifier && !isNavKey && key.length === 1;
+
+            // If starting an edit by typing/enter/space, mark editing active so blur won't clear
+            if (hasSelection && (startsEdit || code === 'Enter' || key === ' ')) {
+                (isEditingCellRef as React.RefObject<boolean>).current = true;
+            }
+            if (code === 'Escape') {
+                (isEditingCellRef as React.RefObject<boolean>).current = false;
+            }
+
+            // Hijack row delete: if Delete/Backspace pressed while rows are selected and not editing a cell
+            const selectedRowIndices = gridSelection.rows.toArray();
+            const hasRowSelection = selectedRowIndices.length > 0;
+            const isDeleteKey = key === 'Delete' || key === 'Backspace';
+            const isEditingOverlay = (isEditingCellRef as React.RefObject<boolean>)
+                .current;
+
+            if (hasRowSelection && isDeleteKey && !isEditingOverlay) {
+                // Prevent Glide from clearing cell contents
+                e.preventDefault?.();
+                e.stopPropagation?.();
+
+                const rowsToDeleteLocal = selectedRowIndices
+                    .map((i) => sortedData[i])
+                    .filter(Boolean);
+                if (rowsToDeleteLocal.length > 0) {
+                    setRowsToDelete(rowsToDeleteLocal);
+                    setRowDeleteConfirmOpen(true);
+                }
+            }
+        },
+        [isEditMode, gridSelection, sortedData],
+    );
+
     // handle cell activation and track selected position
     const handleCellActivated = useCallback(
         (cell: Item) => {
-            // always track the activated cell for paste operations
+            // track activated cell for navigation and paste
             lastSelectedCellRef.current = cell;
-            console.debug('[Cell Activated] Cell selected for potential paste:', {
+            console.debug('[Cell Activated] Cell selected for potential paste/edit:', {
                 col: cell[0],
                 row: cell[1],
             });
 
-            // open AI sidebar in view mode
-            if (!isEditMode) {
+            if (isEditMode) {
+                // entering popup edit mode: temporarily disable blur-based deselection
+                (isEditingCellRef as React.RefObject<boolean>).current = true;
+            } else {
+                // open AI sidebar in view mode
                 const row = sortedData[cell[1]];
                 if (row?.id) {
                     setSelectedRequirementId(row.id);
@@ -1164,7 +1384,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 // determine starting position from current or last selected cell
                 const currentSelection = selectionRef.current?.current?.cell;
                 const lastSelection = lastSelectedCellRef.current;
-                const gridSelectionCell = gridSelection?.current?.cell;
+                const gridSelectionCell = selectionRef.current?.current?.cell;
 
                 const startCell = currentSelection ||
                     lastSelection ||
@@ -1934,7 +2154,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             customRenderers={allCells}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
-                            onCellActivated={isEditMode ? undefined : handleCellActivated}
+                            onCellActivated={handleCellActivated}
+                            onKeyDown={handleGridKeyDown}
                             rows={sortedData.length}
                             rowHeight={(row) => {
                                 const rowData = sortedData[row];

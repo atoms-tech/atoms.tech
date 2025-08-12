@@ -30,9 +30,7 @@ export default function DocumentPage() {
     const organizationId = params?.orgId as string;
 
     //const [useTanStackTable, setUseTanStackTable] = useState(false);
-    const [tableType, setTableType] = useState<'default' | 'tanstack' | 'glide'>(
-        'default',
-    );
+    const [tableType, setTableType] = useState<'default' | 'tanstack' | 'glide'>('glide');
 
     // Global REQ-ID assignment trigger
     const [triggerAssignIds, setTriggerAssignIds] = useState(0);
@@ -371,9 +369,9 @@ export default function DocumentPage() {
                             <SelectValue placeholder="Select table type" />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectItem value="glide">Glide Table</SelectItem>
                             <SelectItem value="default">Default Table</SelectItem>
                             <SelectItem value="tanstack">TanStack Table</SelectItem>
-                            <SelectItem value="glide">Glide Table (Demo)</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
