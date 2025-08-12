@@ -2027,11 +2027,11 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
                 // reset pasting flag and restore selection after operations complete
                 setTimeout(() => {
-                    if (!event.defaultPrevented) {
-                        isPastingRef.current = false;
-                        pasteOperationActiveRef.current = false;
-                        console.debug(`[${operationId}] Paste flags cleared safely`);
-                    }
+                    // Always clear flags after paste completes to avoid soft-locking
+                    isPastingRef.current = false;
+                    pasteOperationActiveRef.current = false;
+                    console.debug(`[${operationId}] Paste flags cleared safely`);
+
                     setGridSelection({
                         rows: CompactSelection.empty(),
                         columns: CompactSelection.empty(),
