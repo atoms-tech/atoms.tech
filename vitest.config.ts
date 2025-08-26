@@ -14,6 +14,10 @@ export default defineConfig({
       provider: 'v8',
     },
   },
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'react',
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
