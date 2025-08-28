@@ -29,6 +29,7 @@ import {
 import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import FixedDropdownCell from './glideCells/dropdown-cell';
 import { glideDarkTheme } from './glideDarkTheme';
 import { glideLightTheme } from './glideLightTheme';
 
@@ -641,14 +642,39 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 };
             }
 
-            switch (column.type) {
+            // Determine effective column type, falling back to PropertyConfig if provided
+            const effectiveType =
+                (column as any)?.propertyConfig?.property_type || column.type;
+
+            // Utility to pull options from either column.options or propertyConfig.options.values
+            const columnOptions = (() => {
+                if (Array.isArray(column.options)) return column.options;
+                const pc: any = (column as any)?.propertyConfig;
+                if (pc?.options) {
+                    if (Array.isArray(pc.options)) return pc.options;
+                    if (Array.isArray(pc.options.values)) return pc.options.values;
+                }
+                return [] as string[];
+            })();
+
+            switch (effectiveType) {
                 case 'multi_select': {
                     const values = Array.isArray(value)
                         ? (value as string[])
                         : value
                           ? [String(value)]
                           : [];
-                    const options = Array.isArray(column.options) ? column.options : [];
+                    const options = columnOptions;
+
+                    // console.debug('[getCellContent] multi_select cell', {
+                    //     header: column.header,
+                    //     accessor: String(accessor),
+                    //     rowIndex: row,
+                    //     rowId: rowData?.id,
+                    //     rawValue: value,
+                    //     values,
+                    //     options,
+                    // });
 
                     return {
                         kind: GridCellKind.Custom,
@@ -676,7 +702,17 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         );
                     }
 
-                    const options = Array.isArray(column.options) ? column.options : [];
+                    const options = columnOptions;
+
+                    console.debug('[getCellContent] select cell', {
+                        header: column.header,
+                        accessor: String(accessor),
+                        rowIndex: row,
+                        rowId: rowData?.id,
+                        rawValue: value,
+                        value: stringValue,
+                        options,
+                    });
 
                     return {
                         kind: GridCellKind.Custom,
@@ -808,7 +844,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             else if (newValue.kind === GridCellKind.Custom) {
                 const data = (newValue as any).data;
                 const kind = data?.kind as string | undefined;
-                if (kind === 'dropdown-cell') {
+                if (kind === 'dropdown-cell' || kind === 'dropdown-cell-fixed') {
                     const displayValue = (data?.value ?? '').toString();
                     console.debug('[onCellEdited] Dropdown cell update', {
                         rowIndex,
@@ -2151,7 +2187,8 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         <DataEditor
                             ref={gridRef}
                             columns={columnDefs}
-                            customRenderers={allCells}
+                            // Ensure our fixed dropdown renderer overrides the default
+                            customRenderers={[FixedDropdownCell, ...allCells]}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             onCellActivated={handleCellActivated}

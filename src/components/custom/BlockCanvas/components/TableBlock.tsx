@@ -38,8 +38,9 @@ import { TableBlockLoadingState } from './TableBlockLoadingState';
 const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
     switch (type) {
         case PropertyType.select:
-        case PropertyType.multi_select:
             return 'select';
+        case PropertyType.multi_select:
+            return 'multi_select';
         case PropertyType.number:
             return 'number';
         case PropertyType.date:
@@ -327,7 +328,7 @@ export const TableBlock: React.FC<BlockProps> = ({
 
         const metadataColumns = tableContentMetadata?.columns ?? [];
 
-        return block.columns
+        const mapped = block.columns
             .filter((col) => col.property)
             .map((col, index) => {
                 const _property = col.property as Property;
@@ -336,7 +337,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                 // Look for matching column metadata by ID
                 const metadata = metadataColumns.find((meta) => meta.columnId === col.id);
 
-                return {
+                const columnDef = {
                     id: col.id,
                     header: propertyKey,
                     accessor: propertyKey as keyof DynamicRequirement,
@@ -347,8 +348,17 @@ export const TableBlock: React.FC<BlockProps> = ({
                     isSortable: true,
                     options: _property.options?.values,
                 };
+                console.debug('[TableBlock] column mapped', {
+                    id: col.id,
+                    header: propertyKey,
+                    property_type: _property.property_type,
+                    mappedType: columnDef.type,
+                    options: _property.options?.values,
+                });
+                return columnDef;
             })
             .sort((a, b) => a.position - b.position);
+        return mapped;
     }, [block.columns, tableContentMetadata?.columns]);
 
     // Memoize dynamicRequirements to avoid recreating every render unless localRequirements changes
