@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/oxlint.json",
-  "rules": {
-    // Keep initially minimal; we can align rules to match ESLint policies later
-  }
+  "rules": {}
 }
 
