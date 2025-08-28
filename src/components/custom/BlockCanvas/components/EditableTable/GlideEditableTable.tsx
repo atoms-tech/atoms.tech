@@ -236,6 +236,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     const [colSizes, setColSizes] = useState<Partial<Record<keyof T, number>>>({});
 
+
     const columnDefs: GridColumn[] = useMemo(
         () =>
             localColumns.map((col, idx) => ({
@@ -246,7 +247,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 trailingRowOptions:
                     idx === 0
                         ? {
-                              hint: 'Add row',
+                              hint: 'Add Row',
                               addIcon: 'plus',
                               targetColumn: 0,
                           }
@@ -254,6 +255,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             })),
         [localColumns, colSizes],
     );
+    
 
     // Sort localData by metadata position key.
     const sortedData = useMemo(() => {
@@ -2140,17 +2142,47 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 ref={tableRef}
                 tabIndex={-1}
                 style={{
-                    overflowX: 'hidden',
+                    overflowX: 'auto',
                     width: '100%',
                     display: 'flex',
                     flexDirection: 'column',
+                    minWidth: '100%',
                 }}
             >
                 <div style={{ width: '100%' }}>
-                    <div style={{ height: 500 }}>
+                    <div style={{ 
+                        // calculating dynamic height based on rows
+                        height: Math.min(
+                            89 + sortedData.slice(0, 11).reduce((total, _, index) =>{ // showing max 10 rows
+                                const rowData = sortedData[index];
+                                if (!rowData) return total + 43; // default height
+
+                                if (rowData.height && rowData.height > 43) {
+                                    return total + rowData.height;
+                                }
+
+                                const currentColumnWidths = localColumns.reduce(
+                                    (acc, col) => {
+                                        acc[col.accessor as string] =
+                                            colSizes[col.accessor] || col.width || 120;
+                                        return acc;
+                                    },
+                                    {} as Record<string, number>,
+                                );
+                                return total + calculateMinRowHeight(
+                                    rowData,
+                                    currentColumnWidths
+                                );
+                            }, 0),
+                            500 // max height before scrolling
+                        ),
+                        minHeight: 89,
+                    }}>
+
                         <DataEditor
                             ref={gridRef}
                             columns={columnDefs}
+                            width={tableRef.current?.offsetWidth || undefined}
                             customRenderers={allCells}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
