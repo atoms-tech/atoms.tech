@@ -132,10 +132,11 @@ const VerticalToolbar = () => {
                     state === 'expanded' ? 'left-[14.25rem]' : 'left-0',
                 )}
             >
-                <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
-                    <SidebarTrigger className="h-5 w-5" />
+                <div className="w-9 h-9 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+                    <SidebarTrigger className="h-full w-full" />
                 </div>
-                <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
+
+                <div className="w-9 h-9 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <ThemeToggle />
                 </div>
 
@@ -146,7 +147,7 @@ const VerticalToolbar = () => {
                             <TooltipTrigger asChild>
                                 <div
                                     className={cn(
-                                        'w-10 h-10 flex items-center justify-center backdrop-blur-sm rounded-md transition-colors cursor-pointer',
+                                        'w-9 h-9 flex items-center justify-center backdrop-blur-sm rounded-md transition-colors cursor-pointer',
                                         isEditMode
                                             ? 'bg-destructive/80 hover:bg-destructive/90 text-destructive-foreground'
                                             : 'bg-background/80 hover:bg-background/90',
@@ -166,7 +167,7 @@ const VerticalToolbar = () => {
                         </Tooltip>
                     </TooltipProvider>
                 )}
-                <div className="w-10 h-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
+                <div className="w-9 h-9 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-md hover:bg-background/90 transition-colors">
                     <LayoutViewToggle />
                 </div>
             </div>

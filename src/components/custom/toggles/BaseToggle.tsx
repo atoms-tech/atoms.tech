@@ -51,7 +51,11 @@ const BaseToggle = memo(
                 variant={variant}
                 size="icon"
                 onClick={onClick}
-                className={cn(sizeClasses[size], className)}
+                className={cn(
+                    sizeClasses[size],
+                    'flex items-center justify-center',
+                    className,
+                )}
                 aria-pressed={isActive}
             >
                 {displayIcon}

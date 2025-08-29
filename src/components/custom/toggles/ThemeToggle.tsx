@@ -30,9 +30,9 @@ export const ThemeToggle = memo(() => {
 
     // Custom icon with transitions
     const themeIcon = (
-        <div className="relative w-[1.2rem] h-[1.2rem]">
-            <Sun className="h-full w-full absolute rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="h-full w-full absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        <div className="relative w-[1.2rem] h-[1.2rem] flex items-center justify-center">
+            <Sun className="h-[1.2rem] w-[1.2rem] absolute inset-0 m-auto rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="h-[1.2rem] w-[1.2rem] absolute inset-0 m-auto rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
         </div>
     );
 
