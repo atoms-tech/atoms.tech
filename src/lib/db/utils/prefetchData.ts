@@ -45,30 +45,46 @@ export const prefetchOrgPageData = async (
     userId: string,
     queryClient?: QueryClient,
 ) => {
-    const client = queryClient || getQueryClient();
+    try {
+        const client = queryClient || getQueryClient();
 
-    // Check cache first - if data exists, don't refetch
-    const cachedOrg = client.getQueryData(queryKeys.organizations.detail(orgId));
+        // Check cache first - if data exists, don't refetch
+        const cachedOrg = client.getQueryData(queryKeys.organizations.detail(orgId));
 
-    if (!cachedOrg) {
-        // Fetch org data directly instead of getting all orgs again
-        const organization = await getOrganizationServer(orgId);
-        client.setQueryData(queryKeys.organizations.detail(orgId), organization);
+        if (!cachedOrg) {
+            // Fetch org data directly instead of getting all orgs again
+            const organization = await getOrganizationServer(orgId);
+            client.setQueryData(queryKeys.organizations.detail(orgId), organization);
+        }
+
+        // Parallel fetch all org page data
+        const [projects, documents] = await Promise.all([
+            getUserProjectsServer(userId, orgId).then((data) => {
+                client.setQueryData(queryKeys.projects.byOrg(orgId), data);
+                return data;
+            }),
+            getExternalDocumentsByOrgServer(orgId).then((data) => {
+                client.setQueryData(queryKeys.externalDocuments.byOrg(orgId), data);
+                return data;
+            }),
+        ]);
+
+        return { projects, documents };
+    } catch (error) {
+        // Enhanced error logging for debugging
+        console.error('Error in prefetchOrgPageData:', {
+            error,
+            orgId,
+            userId,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        // Re-throw the error with additional context
+        if (error instanceof Error) {
+            error.message = `Failed to prefetch organization data for org ${orgId}: ${error.message}`;
+        }
+        throw error;
     }
-
-    // Parallel fetch all org page data
-    const [projects, documents] = await Promise.all([
-        getUserProjectsServer(userId, orgId).then((data) => {
-            client.setQueryData(queryKeys.projects.byOrg(orgId), data);
-            return data;
-        }),
-        getExternalDocumentsByOrgServer(orgId).then((data) => {
-            client.setQueryData(queryKeys.externalDocuments.byOrg(orgId), data);
-            return data;
-        }),
-    ]);
-
-    return { projects, documents };
 };
 
 // Cache this function to prevent duplicate calls

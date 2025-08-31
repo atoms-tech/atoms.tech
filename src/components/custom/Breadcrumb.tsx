@@ -72,8 +72,9 @@ const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
         // Handles when the parent path cannot be routed to normally
         switch (pathSegments[pathSegments.length - 1]) {
             case 'org':
-                pathSegments = ['home', 'user'];
-                break;
+                // Navigate to main landing page instead of /home/user
+                router.push('/');
+                return;
             case 'project':
             case 'documents':
             case 'requirements':

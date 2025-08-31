@@ -12,15 +12,39 @@ export const getOrganizationIdBySlugServer = async (slug: string) => {
 };
 
 export const getOrganizationServer = async (orgId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('id', orgId)
-        .eq('is_deleted', false)
-        .single();
-    if (error) throw error;
-    return data;
+    try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from('organizations')
+            .select('*')
+            .eq('id', orgId)
+            .eq('is_deleted', false)
+            .single();
+
+        if (error) {
+            console.error('Database error in getOrganizationServer:', {
+                error,
+                orgId,
+                errorMessage: error.message,
+                errorCode: error.code,
+            });
+            throw error;
+        }
+
+        if (!data) {
+            const notFoundError = new Error(`Organization not found: ${orgId}`);
+            (notFoundError as Error & { status?: number }).status = 404;
+            throw notFoundError;
+        }
+
+        return data;
+    } catch (error) {
+        // Re-throw with additional context
+        if (error instanceof Error) {
+            error.message = `Failed to fetch organization ${orgId}: ${error.message}`;
+        }
+        throw error;
+    }
 };
 
 export const getUserOrganizationsServer = async (userId: string) => {

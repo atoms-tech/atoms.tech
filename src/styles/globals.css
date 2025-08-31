@@ -163,6 +163,32 @@
         text-wrap: balance;
     }
 
+    /* Error container styles */
+    .error-container {
+        @apply bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto mt-8;
+    }
+
+    .error-container h2 {
+        @apply text-red-800 font-semibold mb-3;
+    }
+
+    .error-container p {
+        @apply text-red-700;
+    }
+
+    /* Dark mode error container styles */
+    .dark .error-container {
+        @apply bg-red-950/50 border-red-800/50;
+    }
+
+    .dark .error-container h2 {
+        @apply text-red-400;
+    }
+
+    .dark .error-container p {
+        @apply text-red-300;
+    }
+
     .glow {
         text-shadow: 0 0 10px hsl(var(--primary));
     }
