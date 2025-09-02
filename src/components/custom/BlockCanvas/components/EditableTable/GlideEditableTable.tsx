@@ -30,6 +30,7 @@ import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import FixedDropdownCell from './glideCells/dropdown-cell';
+import FixedMultiSelectCell from './glideCells/multi-select-cell';
 import { glideDarkTheme } from './glideDarkTheme';
 import { glideLightTheme } from './glideLightTheme';
 
@@ -2224,7 +2225,11 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         <DataEditor
                             ref={gridRef}
                             columns={columnDefs}
-                            customRenderers={[FixedDropdownCell, ...allCells]}
+                            customRenderers={[
+                                FixedDropdownCell,
+                                FixedMultiSelectCell,
+                                ...allCells,
+                            ]}
                             width={tableRef.current?.offsetWidth || undefined}
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}

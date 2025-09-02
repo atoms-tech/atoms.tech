@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     GridCellKind,
+    getLuminance,
+    getMiddleCenterBias,
+    measureTextCached,
+    roundedRect,
     useTheme,
     type CustomCell,
     type CustomRenderer,
@@ -24,6 +28,11 @@ interface MultiSelectCellProps {
 }
 
 export type MultiSelectCell = CustomCell<MultiSelectCellProps>;
+
+// Match Glide's visual constants
+const BUBBLE_HEIGHT = 20;
+const BUBBLE_PADDING = 6;
+const BUBBLE_MARGIN = 4;
 
 const Wrap: React.FC<
     React.PropsWithChildren<{
@@ -81,7 +90,7 @@ const FixedMultiSelectEditor: React.FC<{
         newValue?: MultiSelectCell,
         movement?: readonly [-1 | 0 | 1, -1 | 0 | 1],
     ) => void;
-}> = ({ value: cell, initialValue, onChange, onFinishedEditing }) => {
+}> = ({ value: cell, initialValue, onChange, onFinishedEditing: _onFinishedEditing }) => {
     const data: any = (cell as any).data;
     const { options: optionsIn, values: valuesIn, allowCreation, allowDuplicates } = data;
     const theme = useTheme();
@@ -126,6 +135,71 @@ const FixedMultiSelectEditor: React.FC<{
                 backgroundColor: (theme as any).accentColor,
             },
         }),
+        input: (styles: any, { isDisabled }: any) => {
+            if (isDisabled) return { display: 'none' };
+            return {
+                ...styles,
+                fontSize: (theme as any).editorFontSize,
+                fontFamily: (theme as any).fontFamily,
+                color: (theme as any).textDark,
+            };
+        },
+        placeholder: (styles: any) => ({
+            ...styles,
+            fontSize: (theme as any).editorFontSize,
+            fontFamily: (theme as any).fontFamily,
+            color: (theme as any).textLight,
+        }),
+        noOptionsMessage: (styles: any) => ({
+            ...styles,
+            fontSize: (theme as any).editorFontSize,
+            fontFamily: (theme as any).fontFamily,
+            color: (theme as any).textLight,
+        }),
+        clearIndicator: (styles: any) => ({
+            ...styles,
+            color: (theme as any).textLight,
+            ':hover': { color: (theme as any).textDark, cursor: 'pointer' },
+        }),
+        multiValue: (styles: any, { data }: any) => ({
+            ...styles,
+            backgroundColor: data.color ?? (theme as any).bgBubble,
+            borderRadius: `${(theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2}px`,
+        }),
+        multiValueLabel: (styles: any, { data, isDisabled }: any) => ({
+            ...styles,
+            paddingRight: isDisabled ? BUBBLE_PADDING : 0,
+            paddingLeft: BUBBLE_PADDING,
+            paddingTop: 0,
+            paddingBottom: 0,
+            color: data.color
+                ? getLuminance(data.color) > 0.5
+                    ? 'black'
+                    : 'white'
+                : (theme as any).textBubble,
+            fontSize: (theme as any).editorFontSize,
+            fontFamily: (theme as any).fontFamily,
+            justifyContent: 'center',
+            alignItems: 'center',
+            display: 'flex',
+            height: BUBBLE_HEIGHT,
+        }),
+        multiValueRemove: (styles: any, { data, isDisabled, isFocused }: any) => {
+            if (isDisabled) return { display: 'none' };
+            return {
+                ...styles,
+                color: data.color
+                    ? getLuminance(data.color) > 0.5
+                        ? 'black'
+                        : 'white'
+                    : (theme as any).textBubble,
+                backgroundColor: undefined,
+                borderRadius: isFocused
+                    ? `${(theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2}px`
+                    : undefined,
+                ':hover': { cursor: 'pointer' },
+            };
+        },
     };
 
     const submitValues = React.useCallback(
@@ -148,16 +222,16 @@ const FixedMultiSelectEditor: React.FC<{
         switch (event.key) {
             case 'Enter':
             case 'Tab':
-                if (!inputValue) {
-                    onFinishedEditing(cell, [0, 1]);
-                    return;
-                }
-                if (allowDuplicates && allowCreation) {
+                // Let react-select handle selection. If creating, add without closing.
+                if (allowDuplicates && allowCreation && inputValue) {
                     setInputValue('');
                     submitValues([...(value ?? []), inputValue]);
-                    setMenuOpen(false);
+                    setMenuOpen(true);
                     event.preventDefault();
                 }
+                break;
+            default:
+                break;
         }
     };
 
@@ -195,11 +269,12 @@ const FixedMultiSelectEditor: React.FC<{
                 menuPosition="fixed"
                 menuShouldScrollIntoView={false}
                 closeMenuOnScroll={false}
+                closeMenuOnSelect={false}
+                blurInputOnSelect={false}
                 menuPortalTarget={portalElement}
                 autoFocus
                 openMenuOnFocus
                 openMenuOnClick
-                closeMenuOnSelect
                 backspaceRemovesValue
                 escapeClearsValue={false}
                 styles={colorStyles}
@@ -219,6 +294,8 @@ const FixedMultiSelectEditor: React.FC<{
                 onChange={async (e: any) => {
                     if (e === null) return;
                     submitValues(e.map((x: any) => x.value));
+                    setInputValue('');
+                    setMenuOpen(true);
                 }}
             />
         </Wrap>
@@ -228,10 +305,105 @@ const FixedMultiSelectEditor: React.FC<{
 const renderer: CustomRenderer<MultiSelectCell> = {
     kind: GridCellKind.Custom,
     isMatch: (c): c is MultiSelectCell => (c as any)?.data?.kind === 'multi-select-cell',
-    draw: (_args, _cell) => {
-        // Let the package renderer handle drawing; we only override the editor.
-        // Returning false lets default drawing occur, but for safety return true (no custom drawing).
+    draw: (args, cell) => {
+        const { ctx, theme, rect, highlighted } = args as any;
+        const { values, options: optionsIn } = (cell as any).data as any;
+        if (values === undefined || values === null) return true;
+
+        const options = prepareOptions(optionsIn ?? []);
+        const drawArea = {
+            x: rect.x + (theme as any).cellHorizontalPadding,
+            y: rect.y + (theme as any).cellVerticalPadding,
+            width: rect.width - 2 * (theme as any).cellHorizontalPadding,
+            height: rect.height - 2 * (theme as any).cellVerticalPadding,
+        };
+        const rows = Math.max(
+            1,
+            Math.floor(drawArea.height / (BUBBLE_HEIGHT + BUBBLE_PADDING)),
+        );
+
+        let x = drawArea.x;
+        let row = 1;
+        let y =
+            rows === 1
+                ? drawArea.y + (drawArea.height - BUBBLE_HEIGHT) / 2
+                : drawArea.y +
+                  (drawArea.height - rows * BUBBLE_HEIGHT - (rows - 1) * BUBBLE_PADDING) /
+                      2;
+
+        for (const value of values as string[]) {
+            const matchedOption = options.find((t) => t.value === value);
+            const color =
+                (matchedOption as any)?.color ??
+                (highlighted ? (theme as any).bgBubbleSelected : (theme as any).bgBubble);
+            const displayText = (matchedOption as any)?.label ?? value;
+            const metrics = measureTextCached(displayText, ctx as any);
+            const width = metrics.width + BUBBLE_PADDING * 2;
+            const textY = BUBBLE_HEIGHT / 2;
+
+            if (
+                x !== drawArea.x &&
+                x + width > drawArea.x + drawArea.width &&
+                row < rows
+            ) {
+                row++;
+                y += BUBBLE_HEIGHT + BUBBLE_PADDING;
+                x = drawArea.x;
+            }
+
+            (ctx as CanvasRenderingContext2D).fillStyle = color as string;
+            (ctx as CanvasRenderingContext2D).beginPath();
+            roundedRect(
+                ctx as any,
+                x,
+                y,
+                width,
+                BUBBLE_HEIGHT,
+                (theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2,
+            );
+            (ctx as CanvasRenderingContext2D).fill();
+
+            // text color: black/white based on bubble color luminance, else theme textBubble
+            (ctx as CanvasRenderingContext2D).fillStyle = (matchedOption as any)?.color
+                ? getLuminance(color as string) > 0.5
+                    ? '#000000'
+                    : '#ffffff'
+                : (theme as any).textBubble;
+            (ctx as CanvasRenderingContext2D).fillText(
+                displayText,
+                x + BUBBLE_PADDING,
+                y + textY + getMiddleCenterBias(ctx as any, theme as any),
+            );
+            x += width + BUBBLE_MARGIN;
+            if (
+                x > drawArea.x + drawArea.width + (theme as any).cellHorizontalPadding &&
+                row >= rows
+            ) {
+                break;
+            }
+        }
         return true;
+    },
+    measure: (ctx, cell, t) => {
+        const { values, options } = (cell as any).data as any;
+        if (!values) return (t as any).cellHorizontalPadding * 2;
+        const labels = resolveValues(
+            values,
+            prepareOptions(options ?? []),
+            ((cell as any).data as any).allowDuplicates,
+        ).map((x) => x.label ?? x.value);
+        return (
+            labels.reduce(
+                (acc: number, data: string) =>
+                    (ctx as any).measureText(data).width +
+                    acc +
+                    BUBBLE_PADDING * 2 +
+                    BUBBLE_MARGIN,
+                0,
+            ) +
+            2 * (t as any).cellHorizontalPadding -
+            4
+        );
     },
     provideEditor: () => ({
         editor: FixedMultiSelectEditor as any,
