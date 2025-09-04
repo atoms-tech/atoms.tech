@@ -8,10 +8,11 @@
 // - Keyboard navigation for cells
 // - Role-based permissions
 // - Sort, filter, and add/delete rows
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useCallback, useEffect, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
+import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -26,9 +27,11 @@ import {
     TableHeader,
     TableLoadingSkeleton,
 } from './components';
+import { RequirementAnalysisSidebar } from './components/RequirementAnalysisSidebar';
+import { TraceExpandMenu } from './components/TraceExpandMenu';
 import { useTableSort } from './hooks/useTableSort';
 import { TableState, tableReducer } from './reducers/tableReducer';
-import { CellValue, EditableTableProps } from './types';
+import { CellValue, EditableColumn, EditableTableProps } from './types';
 
 export function EditableTable<
     T extends Record<string, CellValue> & {
@@ -67,22 +70,37 @@ export function EditableTable<
         isAddingNew,
         sortKey,
         sortOrder,
-        hoveredCell: _hoveredCell,
         itemToDelete,
         deleteConfirmOpen,
         selectedCell,
     } = state;
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
-    const [isHoveringTable, setIsHoveringTable] = useState(false);
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+    // States for AI Analysis Sidebar
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
+        null,
+    );
+    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+
+    // States for Trace/Expand Menu
+    const [isTraceMenuOpen, setIsTraceMenuOpen] = useState(false);
+    const [traceMenuPosition, setTraceMenuPosition] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
+    const [selectedRowData, setSelectedRowData] = useState<T | null>(null);
+
+    // Track current mouse position for precise menu placement
+    const currentMousePosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
     // Use the extracted custom hooks
     const { sortedData, handleSort } = useTableSort(data, sortKey);
     const { user } = useUser();
     const userId = user?.id || ''; // Ensure userId is extracted correctly
     const params = useParams();
+    const router = useRouter();
     const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+    const orgId = params?.orgId || '';
+    const _documentId = params?.documentId || '';
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
@@ -293,6 +311,16 @@ export function EditableTable<
         };
     }, [handleKeyDown]);
 
+    // Track mouse position for precise menu placement
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            currentMousePosition.current = { x: e.clientX, y: e.clientY };
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
     // Handle cell change
     const handleCellChange = useCallback(
         async (rowId: string, columnId: string, newValue: CellValue) => {
@@ -491,12 +519,78 @@ export function EditableTable<
         }
     }, [itemToDelete, onDelete]);
 
-    const handleHoverCell = useCallback((row: number, col: number) => {
-        dispatch({
-            type: 'SET_HOVERED_CELL',
-            payload: { row, col },
-        });
-    }, []);
+    // Handle cell click for menu display - only when NOT in edit mode
+    const handleCellClick = useCallback(
+        (rowIndex: number, event: React.MouseEvent) => {
+            // Don't show menu if in edit mode - allow normal editing behavior
+            if (isEditMode) {
+                return;
+            }
+
+            const row = sortedData[rowIndex];
+            if (!row) {
+                console.warn('No row data found for index:', rowIndex);
+                return;
+            }
+
+            // Get cursor position from mouse event
+            const x = event.clientX + 10; // Offset to right of cursor
+            const y = event.clientY;
+
+            console.debug('Cell clicked - showing menu:', {
+                rowIndex,
+                rowId: row.id,
+                position: { x, y },
+            });
+
+            // Set the menu data and position
+            setSelectedRowData(row);
+            setTraceMenuPosition({ x, y });
+            setIsTraceMenuOpen(true);
+        },
+        [sortedData, isEditMode],
+    );
+
+    // Handle Expand action from menu (same as double-click)
+    const handleMenuExpand = useCallback(() => {
+        if (selectedRowData?.id) {
+            console.log(
+                'Opening sidebar from menu for requirement ID:',
+                selectedRowData.id,
+            );
+            setSelectedRequirementId(selectedRowData.id);
+            setIsAiSidebarOpen(true);
+        }
+    }, [selectedRowData]);
+
+    // Handle Trace action from menu
+    const handleMenuTrace = useCallback(() => {
+        if (selectedRowData?.id && orgId && projectId) {
+            const requirementSlug = selectedRowData.id;
+            const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${requirementSlug}/trace`;
+
+            console.log('Navigating to trace page:', {
+                requirementId: selectedRowData.id,
+                orgId,
+                projectId,
+                traceUrl,
+            });
+
+            router.push(traceUrl);
+        } else {
+            console.warn('Missing required parameters for trace navigation:', {
+                hasRowData: !!selectedRowData,
+                hasId: !!selectedRowData?.id,
+                orgId,
+                projectId,
+            });
+        }
+    }, [selectedRowData, orgId, projectId, router]);
+
+    // For AI Sidebar
+    const selectedRequirement = React.useMemo(() => {
+        return sortedData.find((r) => r.id === selectedRequirementId) || null;
+    }, [sortedData, selectedRequirementId]);
 
     // Render table with smaller components
     if (isLoading) {
@@ -552,7 +646,7 @@ export function EditableTable<
                                     editingData={editingData}
                                     onCellChange={typeSafeHandleCellChange}
                                     onDelete={handleDeleteClick}
-                                    onHoverCell={handleHoverCell}
+                                    onCellClick={handleCellClick}
                                     rowIndex={rowIndex}
                                     selectedCell={selectedCell}
                                     onCellSelect={(row, col) =>
@@ -594,6 +688,35 @@ export function EditableTable<
                     !open && dispatch({ type: 'CLOSE_DELETE_CONFIRM' })
                 }
                 onConfirm={handleDeleteConfirm}
+            />
+
+            {/* RequirementAnalysisSidebar for Expand functionality */}
+            <RequirementAnalysisSidebar
+                requirement={selectedRequirement}
+                open={isAiSidebarOpen}
+                onOpenChange={(open) => {
+                    setIsAiSidebarOpen(open);
+                    if (!open) {
+                        setSelectedRequirementId(null);
+                    }
+                }}
+                columns={columns as Array<EditableColumn<DynamicRequirement>>}
+            />
+
+            {/* TraceExpandMenu for cell click menu */}
+            <TraceExpandMenu
+                open={isTraceMenuOpen}
+                onOpenChange={(open) => {
+                    setIsTraceMenuOpen(open);
+                    if (!open) {
+                        setSelectedRowData(null);
+                        setTraceMenuPosition(null);
+                    }
+                }}
+                position={traceMenuPosition}
+                _rowData={selectedRowData}
+                onExpand={handleMenuExpand}
+                onTrace={handleMenuTrace}
             />
         </div>
     );

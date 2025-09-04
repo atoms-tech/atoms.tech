@@ -1,3 +1,5 @@
+'use client';
+
 import type {
     HTMLAttributes,
     RefObject,
@@ -72,7 +74,7 @@ const TableRow = ({
     <tr
         ref={ref}
         className={cn(
-            'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+            'relative border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
             className,
         )}
         {...props}

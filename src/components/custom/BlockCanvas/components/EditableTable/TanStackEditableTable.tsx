@@ -13,9 +13,9 @@ import {
     getSortedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     AddRowPlaceholder,
@@ -26,13 +26,16 @@ import {
     TableLoadingSkeleton,
     TanStackDataTableRow,
 } from '@/components/custom/BlockCanvas/components/EditableTable/components';
+import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
+import { TraceExpandMenu } from '@/components/custom/BlockCanvas/components/EditableTable/components/TraceExpandMenu';
+import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import { TanStackCellRenderer } from './TanStackCellRenderer';
-import { CellValue, EditableTableProps } from './types';
+import { CellValue, EditableColumn, EditableTableProps } from './types';
 
 // Add these types near the top of the file
 type OptimisticUpdate = {
@@ -70,7 +73,10 @@ export function TanStackEditableTable<
     const { user } = useUser();
     const userId = user?.id || '';
     const params = useParams();
+    const router = useRouter();
     const projectId = params?.projectId || '';
+    const orgId = params?.orgId || '';
+    const _documentId = params?.documentId || '';
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
@@ -81,6 +87,23 @@ export function TanStackEditableTable<
 
     // Track optimistic updates for potential rollback
     const [optimisticUpdates, setOptimisticUpdates] = useState<OptimisticUpdate[]>([]);
+
+    // States for AI Analysis Sidebar
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
+        null,
+    );
+    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+
+    // States for Trace/Expand Menu
+    const [isTraceMenuOpen, setIsTraceMenuOpen] = useState(false);
+    const [traceMenuPosition, setTraceMenuPosition] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
+    const [selectedRowData, setSelectedRowData] = useState<T | null>(null);
+
+    // Track current mouse position for precise menu placement
+    const currentMousePosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
     // Enhanced error handling for failed saves
     const handleSaveError = useCallback(
@@ -465,6 +488,16 @@ export function TanStackEditableTable<
         };
     }, [handleKeyDown]);
 
+    // Track mouse position for precise menu placement
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            currentMousePosition.current = { x: e.clientX, y: e.clientY };
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
     // Action handlers
     const handleAddNewRow = useCallback(async () => {
         const canAdd = await canPerformAction('addRow');
@@ -674,6 +707,89 @@ export function TanStackEditableTable<
         [sorting],
     );
 
+    // Handle cell click for menu display - only when NOT in edit mode
+    const handleCellClick = useCallback(
+        (rowIndex: number, event: React.MouseEvent) => {
+            // Don't show menu if in edit mode - allow normal editing behavior
+            if (isEditMode) {
+                return;
+            }
+
+            const row = table.getRowModel().rows[rowIndex]?.original;
+            if (!row) {
+                console.warn('No row data found for index:', rowIndex);
+                return;
+            }
+
+            // Get cursor position from mouse event
+            const x = event.clientX + 10; // Offset to right of cursor
+            const y = event.clientY;
+
+            console.debug('Cell clicked - showing menu:', {
+                rowIndex,
+                rowId: row.id,
+                position: { x, y },
+            });
+
+            // Set the menu data and position
+            setSelectedRowData(row);
+            setTraceMenuPosition({ x, y });
+            setIsTraceMenuOpen(true);
+        },
+        [table, isEditMode],
+    );
+
+    // Handle Expand action from menu (same as double-click)
+    const handleMenuExpand = useCallback(() => {
+        if (selectedRowData?.id) {
+            console.log(
+                'Opening sidebar from menu for requirement ID:',
+                selectedRowData.id,
+            );
+            setSelectedRequirementId(selectedRowData.id);
+            setIsAiSidebarOpen(true);
+        }
+    }, [selectedRowData]);
+
+    // Handle Trace action from menu
+    const handleMenuTrace = useCallback(() => {
+        if (selectedRowData?.id && orgId && projectId) {
+            const requirementSlug = selectedRowData.id;
+            const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${requirementSlug}/trace`;
+
+            console.log('Navigating to trace page:', {
+                requirementId: selectedRowData.id,
+                orgId,
+                projectId,
+                traceUrl,
+            });
+
+            router.push(traceUrl);
+        } else {
+            console.warn('Missing required parameters for trace navigation:', {
+                hasRowData: !!selectedRowData,
+                hasId: !!selectedRowData?.id,
+                orgId,
+                projectId,
+            });
+        }
+    }, [selectedRowData, orgId, projectId, router]);
+
+    // For AI Sidebar
+    const selectedRequirement = React.useMemo(() => {
+        return localData.find((r) => r.id === selectedRequirementId) || null;
+    }, [localData, selectedRequirementId]);
+
+    // Handle save for sidebar
+    const _handleSave = useCallback(
+        async (updatedData: T, isNewItem = false) => {
+            if (onSave) {
+                await onSave(updatedData, isNewItem);
+            }
+        },
+        [onSave],
+    );
+
     // Render table
     if (isLoading) {
         return <TableLoadingSkeleton columns={columns.length} />;
@@ -739,6 +855,7 @@ export function TanStackEditableTable<
                                             columnId,
                                         });
                                     }}
+                                    onCellClick={handleCellClick}
                                 />
                             ))}
 
@@ -770,6 +887,24 @@ export function TanStackEditableTable<
                 open={deleteConfirmOpen}
                 onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
                 onConfirm={handleDeleteConfirm}
+            />
+
+            {/* AI Analysis Sidebar */}
+            <RequirementAnalysisSidebar
+                requirement={selectedRequirement}
+                open={isAiSidebarOpen}
+                onOpenChange={setIsAiSidebarOpen}
+                columns={columns as Array<EditableColumn<DynamicRequirement>>}
+            />
+
+            {/* Trace Expand Menu */}
+            <TraceExpandMenu
+                open={isTraceMenuOpen}
+                onOpenChange={setIsTraceMenuOpen}
+                position={traceMenuPosition}
+                _rowData={selectedRowData}
+                onExpand={handleMenuExpand}
+                onTrace={handleMenuTrace}
             />
         </div>
     );

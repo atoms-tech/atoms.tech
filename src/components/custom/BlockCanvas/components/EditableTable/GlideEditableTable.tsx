@@ -6,6 +6,7 @@ import '@/styles/globals.css';
 // We still need to validate role perms so readers cannot exit, ect.
 
 import DataEditor, {
+    CellClickedEventArgs,
     CompactSelection,
     DataEditorRef,
     GridCell,
@@ -36,11 +37,12 @@ import { glideLightTheme } from './glideLightTheme';
 import '@glideapps/glide-data-grid/dist/index.css';
 
 import debounce from 'lodash/debounce';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useLayer } from 'react-laag';
 
 //import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
+import { TraceExpandMenu } from '@/components/custom/BlockCanvas/components/EditableTable/components/TraceExpandMenu';
 import {
     BlockTableMetadata,
     useBlockMetadataActions,
@@ -121,6 +123,83 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     );
     const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
 
+    // States for Trace/Expand Menu
+    const [isTraceMenuOpen, setIsTraceMenuOpen] = useState(false);
+    const [traceMenuPosition, setTraceMenuPosition] = useState<{
+        x: number;
+        y: number;
+    } | null>(null);
+    const [selectedRowData, setSelectedRowData] = useState<any>(null);
+
+    // Track current mouse position for precise menu positioning
+    const currentMousePosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // undo/redo history management
+    const [historyIndex, setHistoryIndex] = useState<number>(-1);
+    const historyRef = useRef<
+        Array<{
+            type:
+                | 'cell_edit'
+                | 'row_add'
+                | 'row_delete'
+                | 'column_move'
+                | 'column_resize'
+                | 'row_move';
+            timestamp: number;
+            data: {
+                // for cell edits
+                rowId?: string;
+                accessor?: keyof T;
+                oldValue?: any;
+                newValue?: any;
+                // for row operations
+                rows?: T[];
+                rowIndices?: number[];
+                // for column operations
+                columns?: typeof localColumns;
+                oldColumnState?: typeof localColumns;
+                newColumnState?: typeof localColumns;
+                // for position changes
+                from?: number;
+                to?: number;
+            };
+        }>
+    >([]);
+
+    // track if we're currently performing an undo/redo to prevent recording it
+    const isUndoingRef = useRef(false);
+
+    // helper to add action to history
+    const addToHistory = useCallback(
+        (action: (typeof historyRef.current)[0]) => {
+            // don't record history during undo/redo operations
+            if (isUndoingRef.current) return;
+
+            // trim history if we're not at the end (user made edits after undoing)
+            if (historyIndex < historyRef.current.length - 1) {
+                historyRef.current = historyRef.current.slice(0, historyIndex + 1);
+            }
+
+            // add new action
+            historyRef.current.push(action);
+
+            // limit history size to prevent memory issues (keep last 100 actions)
+            if (historyRef.current.length > 100) {
+                historyRef.current = historyRef.current.slice(-100);
+            }
+
+            // update index to point to latest action
+            setHistoryIndex(historyRef.current.length - 1);
+
+            console.debug(
+                '[History] Added action:',
+                action.type,
+                'New length:',
+                historyRef.current.length,
+            );
+        },
+        [historyIndex],
+    );
     // useEffect(() => {
     //     console.debug('[GlideEditableTable] Received tableMetadata:', tableMetadata);
     // }, [tableMetadata]);
@@ -201,6 +280,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     }, []);
 
     const params = useParams();
+    const router = useRouter();
     const orgId = params?.orgId || '';
     const projectId = params?.projectId || '';
     const documentId = params?.documentId || '';
@@ -267,6 +347,92 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     useEffect(() => {
         sortedDataRef.current = sortedData;
     }, [sortedData]);
+
+    // Track mouse position for precise menu placement
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            currentMousePosition.current = { x: e.clientX, y: e.clientY };
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        return () => document.removeEventListener('mousemove', handleMouseMove);
+    }, []);
+
+    // Handle expand row callback from hover wrapper (same as double-click functionality)
+    const handleExpandRow = useCallback(
+        (rowIndex: number) => {
+            console.log(
+                'handleExpandRow called with rowIndex:',
+                rowIndex,
+                'sortedData length:',
+                sortedData.length,
+            );
+
+            // Validate row index
+            if (rowIndex < 0 || rowIndex >= sortedData.length) {
+                console.error(
+                    'Invalid row index in handleExpandRow:',
+                    rowIndex,
+                    'Valid range: 0-',
+                    sortedData.length - 1,
+                );
+                return;
+            }
+
+            const row = sortedData[rowIndex];
+            console.log('Found row data:', row);
+
+            if (row?.id) {
+                console.log('Opening sidebar for requirement ID:', row.id);
+                setSelectedRequirementId(row.id);
+                setIsAiSidebarOpen(true);
+            } else {
+                console.warn(
+                    'No valid row data or ID found for rowIndex:',
+                    rowIndex,
+                    'Row data:',
+                    row,
+                );
+            }
+        },
+        [sortedData],
+    );
+
+    // Handle Expand action from menu (same as double-click)
+    const handleMenuExpand = useCallback(() => {
+        if (selectedRowData?.id) {
+            console.log(
+                'Opening sidebar from menu for requirement ID:',
+                selectedRowData.id,
+            );
+            setSelectedRequirementId(selectedRowData.id);
+            setIsAiSidebarOpen(true);
+        }
+    }, [selectedRowData]);
+
+    // Handle Trace action from menu
+    const handleMenuTrace = useCallback(() => {
+        if (selectedRowData?.id && orgId && projectId) {
+            const requirementSlug = selectedRowData.id;
+            const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${requirementSlug}/trace`;
+
+            console.log('Navigating to trace page:', {
+                requirementId: selectedRowData.id,
+                orgId,
+                projectId,
+                traceUrl,
+            });
+
+            router.push(traceUrl);
+        } else {
+            console.warn('Missing required parameters for trace navigation:', {
+                hasRowData: !!selectedRowData,
+                hasId: !!selectedRowData?.id,
+                orgId,
+                projectId,
+            });
+        }
+    }, [selectedRowData, orgId, projectId, router]);
 
     // For AI Sidebar
     const selectedRequirement = useMemo(() => {
@@ -1286,7 +1452,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 // entering popup edit mode: temporarily disable blur-based deselection
                 (isEditingCellRef as React.RefObject<boolean>).current = true;
             } else {
-                // open AI sidebar in view mode
+                // open AI sidebar in view mode (double-click behavior)
                 const row = sortedData[cell[1]];
                 if (row?.id) {
                     setSelectedRequirementId(row.id);
@@ -1295,6 +1461,113 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             }
         },
         [isEditMode, sortedData],
+    );
+
+    // Handle cell clicks with mouse coordinates - only when NOT in edit mode
+    const handleCellClicked = useCallback(
+        (cell: Item, event: CellClickedEventArgs) => {
+            console.debug('[Cell Clicked] Cell clicked with event:', {
+                col: cell[0],
+                row: cell[1],
+                event,
+            });
+
+            // Don't show menu if in edit mode - allow normal editing behavior
+            if (isEditMode) {
+                return;
+            }
+
+            const rowIndex = cell[1];
+            const row = sortedData[rowIndex];
+
+            if (!row) {
+                console.warn('No row data found for index:', rowIndex);
+                return;
+            }
+
+            // Get cursor position from the event - Enhanced cell positioning
+            let x = 0;
+            let y = 0;
+
+            const gridElement = gridRef.current;
+            const tableElement = tableRef.current;
+
+            if (tableElement) {
+                const tableRect = tableElement.getBoundingClientRect();
+
+                // Method 1: Try to calculate cell position based on column widths and row heights
+                try {
+                    // Estimate cell position based on grid layout
+                    const colIndex = cell[0];
+                    const rowIndex = cell[1];
+
+                    // Default cell dimensions (you may need to adjust these based on your table)
+                    const estimatedCellWidth = 150; // Adjust based on your column widths
+                    const estimatedCellHeight = 43; // Standard row height
+                    const headerHeight = 43; // Header row height
+
+                    // Calculate estimated position
+                    const estimatedX = colIndex * estimatedCellWidth;
+                    const estimatedY = headerHeight + rowIndex * estimatedCellHeight;
+
+                    x = tableRect.left + estimatedX + estimatedCellWidth + 10; // Position to right of cell
+                    y = tableRect.top + estimatedY + estimatedCellHeight / 2; // Center vertically in cell
+
+                    console.debug('Using calculated cell position:', {
+                        x,
+                        y,
+                        colIndex,
+                        rowIndex,
+                        estimatedX,
+                        estimatedY,
+                        estimatedCellWidth,
+                        estimatedCellHeight,
+                        tableRect,
+                    });
+                } catch (error) {
+                    console.warn('Error calculating cell position:', error);
+
+                    // Fallback to event coordinates
+                    if (
+                        'localEventX' in event &&
+                        'localEventY' in event &&
+                        event.localEventX &&
+                        event.localEventY
+                    ) {
+                        x = tableRect.left + event.localEventX + 20; // Offset to right
+                        y = tableRect.top + event.localEventY;
+                        console.debug('Using local event coordinates fallback:', {
+                            x,
+                            y,
+                            event,
+                        });
+                    } else {
+                        // Final fallback to mouse position
+                        x = currentMousePosition.current.x + 10;
+                        y = currentMousePosition.current.y;
+                        console.debug('Using mouse position fallback:', { x, y });
+                    }
+                }
+            } else {
+                // No table element, use mouse position
+                x = currentMousePosition.current.x + 10;
+                y = currentMousePosition.current.y;
+                console.debug('No table element, using mouse position:', { x, y });
+            }
+
+            console.debug('Final menu position calculated:', {
+                x,
+                y,
+                rowIndex,
+                cellCoords: cell,
+            });
+
+            // Set the menu data and position
+            setSelectedRowData(row);
+            setTraceMenuPosition({ x, y });
+            setIsTraceMenuOpen(true);
+        },
+        [sortedData, isEditMode],
     );
 
     // enhanced selection tracking
@@ -2229,6 +2502,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             getCellContent={getCellContent}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             onCellActivated={handleCellActivated}
+                            onCellClicked={handleCellClicked}
                             onKeyDown={handleGridKeyDown}
                             rows={sortedData.length}
                             rowHeight={(row) => {
@@ -2380,6 +2654,25 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                 }
                             }}
                             columns={localColumns as EditableColumn<DynamicRequirement>[]}
+                        />
+
+                        <TraceExpandMenu
+                            open={isTraceMenuOpen}
+                            onOpenChange={(open) => {
+                                setIsTraceMenuOpen(open);
+                                if (!open) {
+                                    setSelectedRowData(null);
+                                    setTraceMenuPosition(null);
+                                    // Refocus after delay to accommodate keyboard controls.
+                                    setTimeout(() => {
+                                        gridRef.current?.focus();
+                                    }, 50);
+                                }
+                            }}
+                            position={traceMenuPosition}
+                            rowData={selectedRowData}
+                            onExpand={handleMenuExpand}
+                            onTrace={handleMenuTrace}
                         />
 
                         {columnMenu &&

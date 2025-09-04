@@ -21,10 +21,10 @@ interface DataTableRowProps<T> {
     editingData: Record<string, T>;
     onCellChange: (itemId: string, accessor: keyof T, value: CellValue) => void;
     onDelete: (item: T) => void;
-    onHoverCell?: (row: number, col: number) => void;
     rowIndex: number;
     selectedCell?: { row: number; col: number } | null;
     onCellSelect?: (row: number, col: number) => void;
+    onCellClick?: (rowIndex: number, event: React.MouseEvent) => void;
 }
 
 export function DataTableRow<
@@ -39,20 +39,27 @@ export function DataTableRow<
     editingData,
     onCellChange,
     onDelete,
-    onHoverCell,
     rowIndex,
     selectedCell,
     onCellSelect,
+    onCellClick,
 }: DataTableRowProps<T>) {
     const [isOpen, setIsOpen] = React.useState(false);
+
     const router = useRouter();
     const params = useParams();
     const orgId = params.orgId as string;
     const projectId = params.projectId as string;
     const { currentDocument } = useDocumentStore();
 
-    const handleRowClick = () => {
+    const handleRowClick = (event: React.MouseEvent) => {
         if (!isEditing) {
+            // Call the parent's cell click handler for menu display
+            if (onCellClick) {
+                onCellClick(rowIndex, event);
+            }
+
+            // Original functionality - open sheet
             setIsOpen(true);
         }
     };
@@ -96,8 +103,6 @@ export function DataTableRow<
                 {columns.map((column, colIndex) => (
                     <TableCell
                         key={`${String(item.id)}-${String(column.accessor)}`}
-                        onMouseEnter={() => onHoverCell?.(rowIndex, colIndex)}
-                        onMouseLeave={() => onHoverCell?.(0, 0)}
                         className={cn(
                             'p-0 relative',
                             isEditing &&

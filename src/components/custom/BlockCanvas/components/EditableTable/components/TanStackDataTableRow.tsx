@@ -15,6 +15,7 @@ interface TanStackDataTableRowProps<
     onCellChange?: (itemId: string, accessor: keyof T, newValue: CellValue) => void;
     onCellBlur?: () => void;
     onCellSelect?: (rowIndex: number, columnId: string) => void;
+    onCellClick?: (rowIndex: number, event: React.MouseEvent) => void;
 }
 
 // Individual memo-wrapped cell component
@@ -25,6 +26,7 @@ function CellComponent<T extends Record<string, CellValue> & { id: string }>({
     onCellChange,
     onCellBlur,
     onCellSelect,
+    onCellClick,
     rowIndex,
 }: {
     cell: Cell<T, unknown>;
@@ -33,10 +35,21 @@ function CellComponent<T extends Record<string, CellValue> & { id: string }>({
     onCellChange?: (itemId: string, accessor: keyof T, newValue: CellValue) => void;
     onCellBlur?: () => void;
     onCellSelect?: (rowIndex: number, columnId: string) => void;
+    onCellClick?: (rowIndex: number, event: React.MouseEvent) => void;
     rowIndex: number;
 }) {
     // Extract value from cell
     const value = cell.getValue() as CellValue;
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (isEditMode) {
+            e.stopPropagation();
+            onCellSelect?.(rowIndex, cell.column.id);
+        } else {
+            // In non-edit mode, trigger cell click for menu
+            onCellClick?.(rowIndex, e);
+        }
+    };
 
     return (
         <td
@@ -47,14 +60,7 @@ function CellComponent<T extends Record<string, CellValue> & { id: string }>({
                     'before:absolute before:inset-0 before:border-2 before:border-blue-500 before:pointer-events-none',
             )}
         >
-            <div
-                className="relative w-full h-full min-h-[32px]"
-                onClick={(e) => {
-                    if (!isEditMode) return;
-                    e.stopPropagation();
-                    onCellSelect?.(rowIndex, cell.column.id);
-                }}
-            >
+            <div className="relative w-full h-full min-h-[32px]" onClick={handleClick}>
                 <TanStackCellRenderer
                     cell={cell}
                     isEditing={isEditMode}
@@ -86,6 +92,7 @@ function TanStackDataTableRowComponent<
     onCellChange,
     onCellBlur,
     onCellSelect,
+    onCellClick,
 }: TanStackDataTableRowProps<T>) {
     return (
         <tr
@@ -105,6 +112,7 @@ function TanStackDataTableRowComponent<
                     onCellChange={onCellChange}
                     onCellBlur={onCellBlur}
                     onCellSelect={onCellSelect}
+                    onCellClick={onCellClick}
                     rowIndex={row.index}
                 />
             ))}
