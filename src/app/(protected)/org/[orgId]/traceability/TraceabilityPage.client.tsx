@@ -493,7 +493,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                     className="text-xs"
                                                                                 >
                                                                                     📄{' '}
-                                                                                    {requirement.documents.name}
+                                                                                    {
+                                                                                        requirement
+                                                                                            .documents
+                                                                                            .name
+                                                                                    }
                                                                                 </Badge>
                                                                             )}
                                                                         </div>
@@ -565,7 +569,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                             className="text-xs"
                                                                         >
                                                                             📄{' '}
-                                                                            {requirement.documents.name}
+                                                                            {
+                                                                                requirement
+                                                                                    .documents
+                                                                                    .name
+                                                                            }
                                                                         </Badge>
                                                                     )}
                                                                 </div>
