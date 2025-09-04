@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import '@/styles/globals.css';
 
-// We still need to validate role perms so readers cannot exit, ect.
+// We still need to validate role perms so readers cannot edit, ect.
 
 import DataEditor, {
     CompactSelection,
@@ -46,12 +46,20 @@ import {
     BlockTableMetadata,
     useBlockMetadataActions,
 } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
+import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
-//import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
+import { PropertyType } from '@/components/custom/BlockCanvas/types';
 import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
-import { /*CellValue,*/ EditableColumn, GlideTableProps } from './types';
+import { AddColumnDialog } from './components/AddColumnDialog';
+import {
+    /*CellValue,*/
+    EditableColumn,
+    EditableColumnType,
+    GlideTableProps,
+    PropertyConfig,
+} from './types';
 
 // import { /*CellValue,*/ GlideTableProps } from './types';
 // import { ChartNoAxesColumnDecreasingIcon } from 'lucide-react';
@@ -285,6 +293,13 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         console.error('Project ID is missing from the URL.');
     }
 
+    // Column actions for creating columns
+    const { createPropertyAndColumn, createColumnFromProperty } = useColumnActions({
+        orgId: String(orgId),
+        projectId: String(projectId),
+        documentId: String(documentId),
+    });
+
     // Normalize columns to use `title` instead of `header` if needed
     const normalizedColumns = useMemo(() => {
         return columns.map((col) => ({
@@ -370,6 +385,10 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
           }
         | undefined
     >(undefined);
+
+    // Add Column dialog state
+    const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
+    const [pendingInsertIndex, setPendingInsertIndex] = useState<number | null>(null);
 
     const { renderLayer, layerProps } = useLayer({
         isOpen: columnMenu !== undefined,
@@ -1098,6 +1117,95 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             });
         },
         [debouncedSave, addToHistory],
+    );
+
+    // sort rows by a column and persist order to metadata
+    const handleSortByColumn = useCallback(
+        (colIndex: number, direction: 'asc' | 'desc') => {
+            const column = localColumnsRef.current?.[colIndex];
+            if (!column) return;
+
+            const accessor = column.accessor as keyof T;
+            const type = (column as any)?.type as string | undefined;
+
+            const getComparable = (row: T): number | string => {
+                const raw: any = row?.[accessor];
+                switch (type) {
+                    case 'number': {
+                        const n =
+                            typeof raw === 'number'
+                                ? raw
+                                : raw == null || raw === ''
+                                  ? Number.NaN
+                                  : Number(raw);
+                        return Number.isFinite(n) ? n : Number.NaN;
+                    }
+                    case 'date': {
+                        if (raw instanceof Date) return raw.getTime();
+                        if (typeof raw === 'string' && raw) {
+                            const t = Date.parse(raw);
+                            return Number.isNaN(t) ? 0 : t;
+                        }
+                        return 0;
+                    }
+                    case 'multi_select': {
+                        if (Array.isArray(raw)) return raw.join(',').toLowerCase();
+                        if (typeof raw === 'string') return raw.toLowerCase();
+                        return '';
+                    }
+                    case 'select':
+                    default: {
+                        return (raw ?? '').toString().toLowerCase();
+                    }
+                }
+            };
+
+            // work from the currently displayed order
+            const current = [...sortedDataRef.current];
+
+            const sortedRows = current
+                .slice()
+                .sort((a, b) => {
+                    const av = getComparable(a);
+                    const bv = getComparable(b);
+
+                    // handle NaN and empty values consistently (push to end for asc)
+                    const aIsEmpty =
+                        av === '' ||
+                        av === null ||
+                        av === undefined ||
+                        (typeof av === 'number' && Number.isNaN(av));
+                    const bIsEmpty =
+                        bv === '' ||
+                        bv === null ||
+                        bv === undefined ||
+                        (typeof bv === 'number' && Number.isNaN(bv));
+                    if (aIsEmpty && bIsEmpty) return 0;
+                    if (aIsEmpty) return direction === 'asc' ? 1 : -1;
+                    if (bIsEmpty) return direction === 'asc' ? -1 : 1;
+
+                    if (typeof av === 'number' && typeof bv === 'number') {
+                        return direction === 'asc' ? av - bv : bv - av;
+                    }
+
+                    const aStr = String(av);
+                    const bStr = String(bv);
+                    return direction === 'asc'
+                        ? aStr.localeCompare(bStr)
+                        : bStr.localeCompare(aStr);
+                })
+                .map((row, index) => ({ ...row, position: index })) as T[];
+
+            // update local state with new positions and persist metadata
+            sortedDataRef.current = sortedRows;
+            setLocalData(sortedRows);
+            try {
+                saveTableMetadataRef.current?.();
+            } catch (e) {
+                console.error('[GlideEditableTable] Failed to save sort metadata', e);
+            }
+        },
+        [],
     );
 
     // calculate min row height based on text content and column width
@@ -2534,8 +2642,26 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         return <TableLoadingSkeleton columns={columns.length} />;
     }
 
-    function insertColumnAt(colIndex: number) {
-        console.log('Function not implemented, but got index: ');
+    // Map PropertyType (db) to EditableColumnType (ui)
+    const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
+        switch (type) {
+            case PropertyType.select:
+                return 'select';
+            case PropertyType.multi_select:
+                return 'multi_select';
+            case PropertyType.number:
+                return 'number';
+            case PropertyType.date:
+                return 'date';
+            default:
+                return 'text';
+        }
+    };
+
+    async function insertColumnAt(colIndex: number) {
+        // open the full Add Column dialog used at block level, but insert at this index
+        setPendingInsertIndex(colIndex);
+        setAddColumnDialogOpen(true);
     }
 
     // Note: if we want to clear the highlighting on the cells on blur, need to use girdSelection in DataEditor and track manually.
@@ -2769,6 +2895,147 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             columns={localColumns as EditableColumn<DynamicRequirement>[]}
                         />
 
+                        {/* Add Column Dialog invoked from header menu (left/right) */}
+                        {isEditMode && (
+                            <AddColumnDialog
+                                isOpen={addColumnDialogOpen}
+                                onClose={() => {
+                                    setAddColumnDialogOpen(false);
+                                    setPendingInsertIndex(null);
+                                    // keep menu closed and refocus grid for keyboard flow
+                                    setTimeout(() => gridRef.current?.focus(), 50);
+                                }}
+                                onSave={async (
+                                    name,
+                                    type,
+                                    propertyConfig,
+                                    defaultValue,
+                                ) => {
+                                    if (pendingInsertIndex == null) return;
+                                    try {
+                                        if (!blockId || !userId) return;
+                                        const { property, column } =
+                                            await createPropertyAndColumn(
+                                                name,
+                                                type,
+                                                propertyConfig,
+                                                defaultValue,
+                                                blockId,
+                                                userId,
+                                            );
+
+                                        const newCol: any = {
+                                            id: column.id,
+                                            header: property.name,
+                                            title: property.name,
+                                            accessor: property.name as keyof T,
+                                            type,
+                                            width: column.width ?? 150,
+                                            position: pendingInsertIndex,
+                                            required: false,
+                                            isSortable: true,
+                                            ...(type === 'select' ||
+                                            type === 'multi_select'
+                                                ? {
+                                                      options:
+                                                          (property.options as any)
+                                                              ?.values || [],
+                                                  }
+                                                : {}),
+                                        } as EditableColumn<T> & { title: string };
+
+                                        setLocalColumns((prev) => {
+                                            const next = [...prev];
+                                            const clamped = Math.max(
+                                                0,
+                                                Math.min(pendingInsertIndex, next.length),
+                                            );
+                                            next.splice(clamped, 0, newCol);
+                                            const reindexed = next.map((c, i) => ({
+                                                ...c,
+                                                position: i,
+                                            }));
+                                            localColumnsRef.current =
+                                                reindexed as typeof localColumnsRef.current;
+                                            return reindexed as typeof prev;
+                                        });
+
+                                        await saveTableMetadataRef.current?.();
+                                        await onPostSave?.();
+                                    } finally {
+                                        setAddColumnDialogOpen(false);
+                                        setPendingInsertIndex(null);
+                                        setTimeout(() => gridRef.current?.focus(), 50);
+                                    }
+                                }}
+                                onSaveFromProperty={async (
+                                    propertyId: string,
+                                    defaultValue: string,
+                                ) => {
+                                    if (pendingInsertIndex == null) return;
+                                    try {
+                                        if (!blockId || !userId) return;
+                                        const { property, column } =
+                                            await createColumnFromProperty(
+                                                propertyId,
+                                                defaultValue,
+                                                blockId,
+                                                userId,
+                                            );
+
+                                        const mappedType = propertyTypeToColumnType(
+                                            property.property_type,
+                                        );
+                                        const newCol: any = {
+                                            id: column.id,
+                                            header: property.name,
+                                            title: property.name,
+                                            accessor: property.name as keyof T,
+                                            type: mappedType,
+                                            width: column.width ?? 150,
+                                            position: pendingInsertIndex,
+                                            required: false,
+                                            isSortable: true,
+                                            ...(mappedType === 'select' ||
+                                            mappedType === 'multi_select'
+                                                ? {
+                                                      options:
+                                                          (property.options as any)
+                                                              ?.values || [],
+                                                  }
+                                                : {}),
+                                        } as EditableColumn<T> & { title: string };
+
+                                        setLocalColumns((prev) => {
+                                            const next = [...prev];
+                                            const clamped = Math.max(
+                                                0,
+                                                Math.min(pendingInsertIndex, next.length),
+                                            );
+                                            next.splice(clamped, 0, newCol);
+                                            const reindexed = next.map((c, i) => ({
+                                                ...c,
+                                                position: i,
+                                            }));
+                                            localColumnsRef.current =
+                                                reindexed as typeof localColumnsRef.current;
+                                            return reindexed as typeof prev;
+                                        });
+
+                                        await saveTableMetadataRef.current?.();
+                                        await onPostSave?.();
+                                    } finally {
+                                        setAddColumnDialogOpen(false);
+                                        setPendingInsertIndex(null);
+                                        setTimeout(() => gridRef.current?.focus(), 50);
+                                    }
+                                }}
+                                orgId={String(orgId)}
+                                projectId={String(projectId)}
+                                documentId={String(documentId)}
+                            />
+                        )}
+
                         {columnMenu &&
                             renderLayer(
                                 <div
@@ -2796,6 +3063,88 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                         minWidth: 160,
                                     }}
                                 >
+                                    <div
+                                        onClick={() => {
+                                            handleSortByColumn(
+                                                columnMenu.colIndex,
+                                                'asc',
+                                            );
+                                            setColumnMenu(undefined);
+                                        }}
+                                        style={{
+                                            padding: '8px 12px',
+                                            cursor: 'pointer',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222',
+                                            transition: 'background 0.2s ease',
+                                        }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
+                                    >
+                                        Sort Ascending
+                                    </div>
+
+                                    <div
+                                        onClick={() => {
+                                            handleSortByColumn(
+                                                columnMenu.colIndex,
+                                                'desc',
+                                            );
+                                            setColumnMenu(undefined);
+                                        }}
+                                        style={{
+                                            padding: '8px 12px',
+                                            cursor: 'pointer',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222',
+                                            transition: 'background 0.2s ease',
+                                        }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
+                                    >
+                                        Sort Descending
+                                    </div>
+
                                     <div
                                         onClick={() => {
                                             insertColumnAt(columnMenu.colIndex);
