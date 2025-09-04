@@ -42,7 +42,10 @@ export function useRequirements(queryFilters?: GenericQueryFilters<'requirements
  * Hook to fetch requirements by project ID.
  * This will first get all document IDs for the project, then fetch all requirements for those documents.
  */
-export function useProjectRequirements(projectId: string) {
+export function useProjectRequirements(
+    projectId: string,
+    options?: { enabled?: boolean },
+) {
     return useQuery({
         queryKey: [...queryKeys.requirements.root, 'byProject', projectId],
         queryFn: async () => {
@@ -56,7 +59,8 @@ export function useProjectRequirements(projectId: string) {
                     *,
                     documents!inner (
                         id,
-                        project_id
+                        project_id,
+                        name
                     )
                 `,
                 )
@@ -67,7 +71,8 @@ export function useProjectRequirements(projectId: string) {
             if (error) throw error;
             return data as Requirement[];
         },
-        enabled: !!projectId,
+        enabled:
+            options?.enabled !== undefined ? options.enabled && !!projectId : !!projectId,
     });
 }
 

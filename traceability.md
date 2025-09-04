@@ -11,9 +11,10 @@ This document outlines the comprehensive implementation plan for the Requirement
 #### Key Tables for Traceability
 
 **`trace_links` Table** - Core relationship management
+
 ```sql
 - source_id (UUID) → requirements.id
-- target_id (UUID) → requirements.id  
+- target_id (UUID) → requirements.id
 - source_type (entity_type ENUM) → 'requirement'
 - target_type (entity_type ENUM) → 'requirement'
 - link_type (trace_link_type ENUM) → derived_from, satisfies, conflicts_with, depends_on, etc.
@@ -22,6 +23,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 ```
 
 **`requirements` Table** - Core entity
+
 ```sql
 - id (UUID, PK) → requirement identifier
 - document_id (UUID) → documents.id
@@ -32,6 +34,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 ```
 
 **`properties` Table** - Custom property definitions
+
 ```sql
 - id (UUID, PK) → property identifier
 - name (TEXT) → property name
@@ -41,6 +44,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 ```
 
 **`columns` Table** - Table column configuration
+
 ```sql
 - id (UUID, PK) → column identifier
 - block_id (UUID) → blocks.id
@@ -52,6 +56,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 ### Current Capabilities Analysis
 
 **✅ Strong Foundation Elements:**
+
 - Flexible bi-directional relationship system via `trace_links`
 - Hierarchical scoping (organization → project → document → block → requirement)
 - Version control across all entities
@@ -60,6 +65,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 - Multi-tenant architecture with proper isolation
 
 **❌ Missing Critical Components:**
+
 1. **Link Column Implementation**: No requirement-specific UI/logic for entity_reference properties
 2. **Validation System**: Missing cycle detection and relationship constraint validation
 3. **Table-based Interface**: No integrated UI for managing links within requirement tables
@@ -71,6 +77,7 @@ This document outlines the comprehensive implementation plan for the Requirement
 ### Phase 1: Database Schema Extensions
 
 #### 1.1 Property Type Extension
+
 ```sql
 -- Extend property_type to support requirement linking
 ALTER TYPE property_type ADD VALUE IF NOT EXISTS 'requirement_link';
@@ -93,11 +100,12 @@ ALTER TYPE property_type ADD VALUE IF NOT EXISTS 'requirement_link';
 ```
 
 #### 1.2 Database Indexes for Performance
+
 ```sql
 -- Composite indexes for traceability queries
 CREATE INDEX idx_trace_links_source_type ON trace_links(source_id, source_type);
 CREATE INDEX idx_trace_links_target_type ON trace_links(target_id, target_type);
-CREATE INDEX idx_trace_links_project_scope ON trace_links(source_id, target_id) 
+CREATE INDEX idx_trace_links_project_scope ON trace_links(source_id, target_id)
   WHERE source_type = 'requirement' AND target_type = 'requirement';
 
 -- JSONB indexes for property queries
@@ -105,6 +113,7 @@ CREATE INDEX idx_requirements_properties_gin ON requirements USING gin(propertie
 ```
 
 #### 1.3 Validation Functions
+
 ```sql
 -- Cycle detection function
 CREATE OR REPLACE FUNCTION detect_requirement_cycle(
@@ -118,14 +127,14 @@ BEGIN
   -- Recursive CTE to detect cycles in requirement relationships
   WITH RECURSIVE requirement_hierarchy AS (
     SELECT source_id, target_id, 1 as depth
-    FROM trace_links 
-    WHERE source_id = p_target_id 
-      AND source_type = 'requirement' 
+    FROM trace_links
+    WHERE source_id = p_target_id
+      AND source_type = 'requirement'
       AND target_type = 'requirement'
       AND link_type = 'parent_child'
-    
+
     UNION ALL
-    
+
     SELECT tl.source_id, tl.target_id, rh.depth + 1
     FROM trace_links tl
     INNER JOIN requirement_hierarchy rh ON tl.source_id = rh.target_id
@@ -135,10 +144,10 @@ BEGIN
       AND tl.link_type = 'parent_child'
   )
   SELECT EXISTS(
-    SELECT 1 FROM requirement_hierarchy 
+    SELECT 1 FROM requirement_hierarchy
     WHERE target_id = p_source_id
   ) INTO cycle_detected;
-  
+
   RETURN cycle_detected;
 END;
 $$ LANGUAGE plpgsql;
@@ -147,6 +156,7 @@ $$ LANGUAGE plpgsql;
 ### Phase 2: Core Component Implementation
 
 #### 2.1 Link Column Editor Component
+
 ```typescript
 interface RequirementLinkEditorProps {
   requirement: Requirement;
@@ -195,93 +205,92 @@ const RequirementLinkEditor: React.FC<RequirementLinkEditorProps> = ({
 ```
 
 #### 2.2 Traceability Service Layer
+
 ```typescript
 class TraceabilityService {
-  // Create parent-child link with validation
-  async createParentChildLink(
-    parentId: string,
-    childId: string,
-    options: {
-      validateCycles?: boolean;
-      description?: string;
-    } = {}
-  ): Promise<TraceLink> {
-    if (options.validateCycles && await this.detectCycle(parentId, childId)) {
-      throw new Error('Creating this link would create a circular dependency');
-    }
-
-    return this.supabase
-      .from('trace_links')
-      .insert({
-        source_id: parentId,
-        target_id: childId,
-        source_type: 'requirement',
-        target_type: 'requirement',
-        link_type: 'parent_child',
-        description: options.description
-      })
-      .single();
-  }
-
-  // Bulk operations for link column updates
-  async updateRequirementLinks(
-    requirementId: string,
-    propertyId: string,
-    targetIds: string[]
-  ): Promise<void> {
-    // Remove existing links for this property
-    await this.supabase
-      .from('trace_links')
-      .delete()
-      .eq('source_id', requirementId)
-      .eq('metadata->property_id', propertyId);
-
-    // Create new links
-    const newLinks = targetIds.map(targetId => ({
-      source_id: requirementId,
-      target_id: targetId,
-      source_type: 'requirement',
-      target_type: 'requirement',
-      link_type: 'parent_child',
-      metadata: { property_id: propertyId }
-    }));
-
-    if (newLinks.length > 0) {
-      await this.supabase
-        .from('trace_links')
-        .insert(newLinks);
-    }
-
-    // Update requirement properties JSONB
-    await this.supabase
-      .from('requirements')
-      .update({
-        properties: {
-          ...requirement.properties,
-          [propertyId]: targetIds
+    // Create parent-child link with validation
+    async createParentChildLink(
+        parentId: string,
+        childId: string,
+        options: {
+            validateCycles?: boolean;
+            description?: string;
+        } = {},
+    ): Promise<TraceLink> {
+        if (options.validateCycles && (await this.detectCycle(parentId, childId))) {
+            throw new Error('Creating this link would create a circular dependency');
         }
-      })
-      .eq('id', requirementId);
-  }
 
-  // Get requirement hierarchy
-  async getRequirementHierarchy(
-    requirementId: string,
-    direction: 'children' | 'parents' | 'both' = 'both'
-  ): Promise<RequirementNode[]> {
-    const query = this.supabase
-      .rpc('get_requirement_hierarchy', {
-        p_requirement_id: requirementId,
-        p_direction: direction,
-        p_max_depth: 10
-      });
+        return this.supabase
+            .from('trace_links')
+            .insert({
+                source_id: parentId,
+                target_id: childId,
+                source_type: 'requirement',
+                target_type: 'requirement',
+                link_type: 'parent_child',
+                description: options.description,
+            })
+            .single();
+    }
 
-    return query;
-  }
+    // Bulk operations for link column updates
+    async updateRequirementLinks(
+        requirementId: string,
+        propertyId: string,
+        targetIds: string[],
+    ): Promise<void> {
+        // Remove existing links for this property
+        await this.supabase
+            .from('trace_links')
+            .delete()
+            .eq('source_id', requirementId)
+            .eq('metadata->property_id', propertyId);
+
+        // Create new links
+        const newLinks = targetIds.map((targetId) => ({
+            source_id: requirementId,
+            target_id: targetId,
+            source_type: 'requirement',
+            target_type: 'requirement',
+            link_type: 'parent_child',
+            metadata: { property_id: propertyId },
+        }));
+
+        if (newLinks.length > 0) {
+            await this.supabase.from('trace_links').insert(newLinks);
+        }
+
+        // Update requirement properties JSONB
+        await this.supabase
+            .from('requirements')
+            .update({
+                properties: {
+                    ...requirement.properties,
+                    [propertyId]: targetIds,
+                },
+            })
+            .eq('id', requirementId);
+    }
+
+    // Get requirement hierarchy
+    async getRequirementHierarchy(
+        requirementId: string,
+        direction: 'children' | 'parents' | 'both' = 'both',
+    ): Promise<RequirementNode[]> {
+        const query = this.supabase.rpc('get_requirement_hierarchy', {
+            p_requirement_id: requirementId,
+            p_direction: direction,
+            p_max_depth: 10,
+        });
+
+        return query;
+    }
 }
 ```
 
 #### 2.3 Database Functions for Hierarchy Queries
+
 ```sql
 -- Get requirement hierarchy with depth and path
 CREATE OR REPLACE FUNCTION get_requirement_hierarchy(
@@ -301,7 +310,7 @@ BEGIN
     RETURN QUERY
     WITH RECURSIVE requirement_tree AS (
       -- Base case: direct children
-      SELECT 
+      SELECT
         r.id,
         r.name,
         r.external_id,
@@ -314,11 +323,11 @@ BEGIN
         AND tl.source_type = 'requirement'
         AND tl.target_type = 'requirement'
         AND tl.link_type = 'parent_child'
-      
+
       UNION ALL
-      
+
       -- Recursive case: children of children
-      SELECT 
+      SELECT
         r.id,
         r.name,
         r.external_id,
@@ -346,6 +355,7 @@ $$ LANGUAGE plpgsql;
 ### Phase 3: User Interface Implementation
 
 #### 3.1 Table Integration
+
 ```typescript
 const RequirementLinkCell: React.FC<{
   requirement: Requirement;
@@ -361,8 +371,8 @@ const RequirementLinkCell: React.FC<{
           {value?.length > 0 ? (
             <div className="linked-items">
               {value.map(reqId => (
-                <RequirementChip 
-                  key={reqId} 
+                <RequirementChip
+                  key={reqId}
                   requirementId={reqId}
                   onClick={() => navigateToRequirement(reqId)}
                 />
@@ -390,6 +400,7 @@ const RequirementLinkCell: React.FC<{
 ```
 
 #### 3.2 Traceability Visualization Page
+
 ```typescript
 const TraceabilityPage: React.FC = () => {
   const [selectedRequirement, setSelectedRequirement] = useState<string | null>(null);
@@ -397,8 +408,8 @@ const TraceabilityPage: React.FC = () => {
 
   const { data: hierarchy } = useQuery({
     queryKey: ['traceability', selectedRequirement],
-    queryFn: () => selectedRequirement ? 
-      traceabilityService.getRequirementHierarchy(selectedRequirement, 'both') : 
+    queryFn: () => selectedRequirement ?
+      traceabilityService.getRequirementHierarchy(selectedRequirement, 'both') :
       null,
     enabled: !!selectedRequirement
   });
@@ -445,146 +456,158 @@ const TraceabilityPage: React.FC = () => {
 ### Phase 4: Advanced Features
 
 #### 4.1 Cross-Project Linking (Future Enhancement)
+
 ```typescript
 interface CrossProjectLinkOptions {
-  sourceProjectId: string;
-  targetProjectId: string;
-  organizationId: string;
-  linkType: 'reference' | 'derived_from';
-  bidirectional?: boolean;
+    sourceProjectId: string;
+    targetProjectId: string;
+    organizationId: string;
+    linkType: 'reference' | 'derived_from';
+    bidirectional?: boolean;
 }
 
 class CrossProjectTraceabilityService extends TraceabilityService {
-  async createCrossProjectLink(
-    sourceReqId: string,
-    targetReqId: string,
-    options: CrossProjectLinkOptions
-  ): Promise<TraceLink> {
-    // Validate cross-project permissions
-    const hasPermission = await this.validateCrossProjectAccess(
-      options.sourceProjectId,
-      options.targetProjectId,
-      options.organizationId
-    );
+    async createCrossProjectLink(
+        sourceReqId: string,
+        targetReqId: string,
+        options: CrossProjectLinkOptions,
+    ): Promise<TraceLink> {
+        // Validate cross-project permissions
+        const hasPermission = await this.validateCrossProjectAccess(
+            options.sourceProjectId,
+            options.targetProjectId,
+            options.organizationId,
+        );
 
-    if (!hasPermission) {
-      throw new Error('Insufficient permissions for cross-project linking');
+        if (!hasPermission) {
+            throw new Error('Insufficient permissions for cross-project linking');
+        }
+
+        return this.createTraceLink(sourceReqId, targetReqId, {
+            linkType: options.linkType,
+            metadata: {
+                cross_project: true,
+                source_project_id: options.sourceProjectId,
+                target_project_id: options.targetProjectId,
+            },
+        });
     }
-
-    return this.createTraceLink(sourceReqId, targetReqId, {
-      linkType: options.linkType,
-      metadata: {
-        cross_project: true,
-        source_project_id: options.sourceProjectId,
-        target_project_id: options.targetProjectId
-      }
-    });
-  }
 }
 ```
 
 #### 4.2 Bulk Operations API
+
 ```typescript
 // API endpoint for bulk link operations
 async function bulkUpdateRequirementLinks(
-  projectId: string,
-  operations: Array<{
-    requirementId: string;
-    propertyId: string;
-    action: 'add' | 'remove' | 'replace';
-    targetIds: string[];
-  }>
+    projectId: string,
+    operations: Array<{
+        requirementId: string;
+        propertyId: string;
+        action: 'add' | 'remove' | 'replace';
+        targetIds: string[];
+    }>,
 ): Promise<void> {
-  const validatedOps = await Promise.all(
-    operations.map(async (op) => {
-      // Validate each operation
-      if (op.action === 'add') {
-        // Check for cycles
-        for (const targetId of op.targetIds) {
-          if (await detectCycle(op.requirementId, targetId)) {
-            throw new Error(`Cycle detected: ${op.requirementId} -> ${targetId}`);
-          }
-        }
-      }
-      return op;
-    })
-  );
+    const validatedOps = await Promise.all(
+        operations.map(async (op) => {
+            // Validate each operation
+            if (op.action === 'add') {
+                // Check for cycles
+                for (const targetId of op.targetIds) {
+                    if (await detectCycle(op.requirementId, targetId)) {
+                        throw new Error(
+                            `Cycle detected: ${op.requirementId} -> ${targetId}`,
+                        );
+                    }
+                }
+            }
+            return op;
+        }),
+    );
 
-  // Execute operations in transaction
-  await supabase.rpc('bulk_update_requirement_links', {
-    p_operations: validatedOps
-  });
+    // Execute operations in transaction
+    await supabase.rpc('bulk_update_requirement_links', {
+        p_operations: validatedOps,
+    });
 }
 ```
 
 ## Implementation Roadmap
 
 ### Phase 1: Foundation (Weeks 1-2)
+
 1. **Database Schema Updates**
-   - Add requirement_link property type
-   - Create performance indexes
-   - Implement validation functions
-   - Add cycle detection logic
+    - Add requirement_link property type
+    - Create performance indexes
+    - Implement validation functions
+    - Add cycle detection logic
 
 2. **Core Service Layer**
-   - Implement TraceabilityService
-   - Create API endpoints for link management
-   - Add validation middleware
+    - Implement TraceabilityService
+    - Create API endpoints for link management
+    - Add validation middleware
 
 ### Phase 2: UI Components (Weeks 3-4)
+
 1. **Link Column Editor**
-   - Requirement selection component
-   - Multi-select with search
-   - Validation feedback
+    - Requirement selection component
+    - Multi-select with search
+    - Validation feedback
 
 2. **Table Integration**
-   - Link cell renderer
-   - Inline editing capabilities
-   - Visual relationship indicators
+    - Link cell renderer
+    - Inline editing capabilities
+    - Visual relationship indicators
 
 ### Phase 3: Visualization (Weeks 5-6)
+
 1. **Traceability Page**
-   - Tree view implementation
-   - Matrix view for complex relationships
-   - Interactive navigation
+    - Tree view implementation
+    - Matrix view for complex relationships
+    - Interactive navigation
 
 2. **Performance Optimization**
-   - Lazy loading for large hierarchies
-   - Caching strategies
-   - Database query optimization
+    - Lazy loading for large hierarchies
+    - Caching strategies
+    - Database query optimization
 
 ### Phase 4: Advanced Features (Weeks 7-8)
+
 1. **Bulk Operations**
-   - Batch link creation/updates
-   - Import/export capabilities
-   - Validation across operations
+    - Batch link creation/updates
+    - Import/export capabilities
+    - Validation across operations
 
 2. **Cross-Project Linking**
-   - Organization-scoped relationships
-   - Permission validation
-   - UI for cross-project navigation
+    - Organization-scoped relationships
+    - Permission validation
+    - UI for cross-project navigation
 
 ## Database Tables to Utilize
 
 ### Primary Tables
+
 - **`trace_links`** - Store all requirement relationships
 - **`requirements`** - Core entities with JSONB properties for link data
 - **`properties`** - Define link column configurations
 - **`columns`** - Table column display settings
 
 ### Supporting Tables
+
 - **`projects`** - Project scoping for links
 - **`documents`** - Document scoping for links
 - **`blocks`** - Table/block context for columns
 - **`audit_logs`** - Track all relationship changes
 
 ### Performance Tables
+
 - **`document_summary`** - Cache relationship counts
 - Custom materialized views for complex hierarchy queries
 
 ## Missing Components Analysis
 
 ### Critical Gaps
+
 1. **Property Type**: Need 'requirement_link' property type
 2. **UI Components**: No table-integrated requirement selection
 3. **Validation Service**: Missing cycle detection and constraints
@@ -592,12 +615,14 @@ async function bulkUpdateRequirementLinks(
 5. **Performance**: No specialized indexes for traceability queries
 
 ### Moderate Gaps
+
 1. **Cross-Project**: No organization-scoped linking
 2. **Visualization**: No dedicated traceability views
 3. **Import/Export**: No bulk relationship data management
 4. **Notifications**: No alerts for relationship changes
 
 ### Nice-to-Have
+
 1. **Impact Analysis**: Track requirement change impacts
 2. **Compliance**: Traceability reporting for standards
 3. **Templates**: Pre-defined relationship patterns
@@ -606,23 +631,25 @@ async function bulkUpdateRequirementLinks(
 ## Performance Considerations
 
 ### Database Optimization
+
 ```sql
 -- Specialized indexes for common traceability queries
-CREATE INDEX idx_trace_links_requirement_hierarchy 
-ON trace_links(source_id, target_id, link_type) 
+CREATE INDEX idx_trace_links_requirement_hierarchy
+ON trace_links(source_id, target_id, link_type)
 WHERE source_type = 'requirement' AND target_type = 'requirement';
 
 -- Partial index for active requirements only
-CREATE INDEX idx_requirements_active_links 
-ON requirements(id) 
+CREATE INDEX idx_requirements_active_links
+ON requirements(id)
 WHERE deleted_at IS NULL;
 
 -- JSONB indexes for property-based queries
-CREATE INDEX idx_requirements_properties_links 
+CREATE INDEX idx_requirements_properties_links
 ON requirements USING gin((properties->'link_columns'));
 ```
 
 ### Caching Strategy
+
 - **Client-side**: Cache requirement lists per project/document
 - **Server-side**: Cache hierarchy calculations for frequently accessed requirements
 - **Database**: Materialized views for complex traceability reports
@@ -630,11 +657,13 @@ ON requirements USING gin((properties->'link_columns'));
 ## Security & Compliance
 
 ### Access Control
+
 - Enforce organization-level isolation
 - Project-level permissions for link creation
 - Document-level read permissions for requirement selection
 
 ### Audit Trail
+
 - Log all link creation/deletion in audit_logs
 - Track property changes in requirements table
 - Maintain version history for compliance
@@ -642,16 +671,19 @@ ON requirements USING gin((properties->'link_columns'));
 ## Testing Strategy
 
 ### Unit Tests
+
 - Link validation functions
 - Cycle detection algorithms
 - Property type handling
 
 ### Integration Tests
+
 - API endpoint functionality
 - Database transaction integrity
 - UI component behavior
 
 ### Performance Tests
+
 - Large hierarchy traversal
 - Bulk operation efficiency
 - Concurrent link updates
@@ -665,6 +697,7 @@ ON requirements USING gin((properties->'link_columns'));
 **Issue Addressed**: The trace page was previously limited to requirements within the same document, severely restricting cross-document traceability within projects.
 
 **Solution Implemented**:
+
 1. **Hook Migration**: Replaced `useDocumentRequirements(documentId)` with `useProjectRequirements(projectId)`
 2. **UI Enhancement**: Added document source indicators to show requirement origins
 3. **Database Query**: Leveraged existing `useProjectRequirements` hook with JOIN on documents table
@@ -678,21 +711,23 @@ ON requirements USING gin((properties->'link_columns'));
 const documentId = searchParams.get('documentId') || '';
 const { data: requirements } = useDocumentRequirements(documentId);
 
-// After: Project-scoped requirements  
+// After: Project-scoped requirements
 const projectId = params.projectId as string;
 const { data: requirements } = useProjectRequirements(projectId);
 ```
 
 **Import Updates**:
+
 ```typescript
 // Updated import
 import {
-    useProjectRequirements,  // Changed from useDocumentRequirements
+    useProjectRequirements, // Changed from useDocumentRequirements
     useRequirementsByIds,
 } from '@/hooks/queries/useRequirement';
 ```
 
 **UI Enhancement**:
+
 ```typescript
 // Added document source indication in requirement selection list
 {req.documents && (
@@ -705,10 +740,11 @@ import {
 #### Database Query Impact
 
 The `useProjectRequirements` hook executes:
+
 ```sql
 SELECT requirements.*, documents.id, documents.name
 FROM requirements
-INNER JOIN documents ON requirements.document_id = documents.id  
+INNER JOIN documents ON requirements.document_id = documents.id
 WHERE documents.project_id = $projectId
   AND requirements.is_deleted = false
 ORDER BY requirements.created_at DESC
@@ -724,16 +760,17 @@ ORDER BY requirements.created_at DESC
 
 #### User Experience Improvements
 
-| Aspect | Before | After |
-|--------|---------|--------|
-| **Available Requirements** | Same document only | Entire project |
-| **Visual Context** | No document indication | Document name badge |
-| **Workflow Efficiency** | Limited cross-document links | Full project connectivity |
-| **Search Scope** | Document-restricted | Project-wide search |
+| Aspect                     | Before                       | After                     |
+| -------------------------- | ---------------------------- | ------------------------- |
+| **Available Requirements** | Same document only           | Entire project            |
+| **Visual Context**         | No document indication       | Document name badge       |
+| **Workflow Efficiency**    | Limited cross-document links | Full project connectivity |
+| **Search Scope**           | Document-restricted          | Project-wide search       |
 
 ### Current Implementation Status
 
 #### ✅ Working Features
+
 - Project-wide requirement selection in trace pages
 - Cross-document relationship creation
 - Document source identification in UI
@@ -741,13 +778,15 @@ ORDER BY requirements.created_at DESC
 - ReactFlow visualization
 - Trace link CRUD operations
 
-#### 🔄 In Progress Features  
+#### 🔄 In Progress Features
+
 - Link column implementation (per original plan)
 - Table-integrated inline editing
 - Cycle detection validation
 - Performance optimization indexes
 
 #### 📋 Next Priority Items
+
 1. **Link Column Integration**: Implement requirement_link property type in table cells
 2. **Validation System**: Add cycle detection and constraint validation
 3. **Performance Optimization**: Add specialized indexes for traceability queries

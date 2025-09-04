@@ -1,6 +1,14 @@
 'use client';
 
-import { Hammer, Home, LayoutDashboard, LucideIcon, Sparkles, User } from 'lucide-react';
+import {
+    GitBranch,
+    Hammer,
+    Home,
+    LayoutDashboard,
+    LucideIcon,
+    Sparkles,
+    User,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -139,6 +147,39 @@ function AppSidebar() {
         }
     }, [user?.id, router]);
 
+    const navigateToTraceability = useCallback(async () => {
+        try {
+            // Fetch the user's profile to get pinned_organization_id
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('pinned_organization_id, personal_organization_id')
+                .eq('id', user?.id || '')
+                .single();
+
+            if (error) {
+                console.error('Error fetching user profile:', error);
+                return;
+            }
+
+            if (data) {
+                let targetOrgId = data.pinned_organization_id;
+
+                if (!targetOrgId && data.personal_organization_id) {
+                    targetOrgId = data.personal_organization_id;
+                }
+
+                if (targetOrgId) {
+                    console.log('Navigating to traceability page:', targetOrgId);
+                    router.push(`/org/${targetOrgId}/traceability`);
+                } else {
+                    console.log('No organization found for traceability');
+                }
+            }
+        } catch (err) {
+            console.error('Unexpected error:', err);
+        }
+    }, [user?.id, router]);
+
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 768) {
@@ -218,6 +259,23 @@ function AppSidebar() {
                                             <Sparkles className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                             <span className="text-xs font-medium">
                                                 Playground
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
+
+                            {primaryEnterpriseOrg && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToTraceability}
+                                        >
+                                            <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Traceability
                                             </span>
                                         </Button>
                                     </SidebarMenuButton>
