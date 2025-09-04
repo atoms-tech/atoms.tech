@@ -2670,7 +2670,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                                 }
                             }}
                             position={traceMenuPosition}
-                            rowData={selectedRowData}
+                            _rowData={selectedRowData}
                             onExpand={handleMenuExpand}
                             onTrace={handleMenuTrace}
                         />
