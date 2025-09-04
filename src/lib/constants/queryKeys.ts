@@ -42,6 +42,24 @@ export const queryKeys = {
             [...queryKeys.documents.detail(documentId), 'requirements'] as const,
         byBlock: (blockId: string) =>
             [...queryKeys.blocks.detail(blockId), 'requirements'] as const,
+        // Relationship query keys
+        relationships: () => [...queryKeys.requirements.root, 'relationships'] as const,
+        descendants: (requirementId: string, maxDepth?: number) =>
+            [
+                ...queryKeys.requirements.root,
+                'descendants',
+                requirementId,
+                maxDepth,
+            ] as const,
+        ancestors: (requirementId: string, maxDepth?: number) =>
+            [
+                ...queryKeys.requirements.root,
+                'ancestors',
+                requirementId,
+                maxDepth,
+            ] as const,
+        tree: (projectId?: string) =>
+            [...queryKeys.requirements.root, 'tree', projectId] as const,
     },
 
     // New properties query keys

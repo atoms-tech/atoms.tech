@@ -1174,6 +1174,65 @@ export type Database = {
                     },
                 ];
             };
+            requirements_closure: {
+                Row: {
+                    ancestor_id: string;
+                    descendant_id: string;
+                    depth: number;
+                    created_at: string;
+                    created_by: string;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    ancestor_id: string;
+                    descendant_id: string;
+                    depth: number;
+                    created_at?: string;
+                    created_by: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    ancestor_id?: string;
+                    descendant_id?: string;
+                    depth?: number;
+                    created_at?: string;
+                    created_by?: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'requirements_closure_ancestor_id_fkey';
+                        columns: ['ancestor_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_descendant_id_fkey';
+                        columns: ['descendant_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_created_by_fkey';
+                        columns: ['created_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_updated_by_fkey';
+                        columns: ['updated_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             stripe_customers: {
                 Row: {
                     cancel_at_period_end: boolean | null;
@@ -1887,6 +1946,69 @@ export type Database = {
             sync_billing_data: {
                 Args: { org_id: string };
                 Returns: Json;
+            };
+            create_requirement_relationship: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_descendant_id: string;
+                    p_created_by: string;
+                };
+                Returns: {
+                    success: boolean;
+                    error_code: string | null;
+                    message: string;
+                    relationships_created: number;
+                }[];
+            };
+            delete_requirement_relationship: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_descendant_id: string;
+                    p_updated_by: string;
+                };
+                Returns: {
+                    success: boolean;
+                    error_code: string | null;
+                    message: string;
+                    relationships_deleted: number;
+                }[];
+            };
+            get_requirement_descendants: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_max_depth?: number | null;
+                };
+                Returns: {
+                    requirement_id: string;
+                    title: string;
+                    depth: number;
+                    direct_parent: boolean;
+                }[];
+            };
+            get_requirement_ancestors: {
+                Args: {
+                    p_descendant_id: string;
+                    p_max_depth?: number | null;
+                };
+                Returns: {
+                    requirement_id: string;
+                    title: string;
+                    depth: number;
+                    direct_parent: boolean;
+                }[];
+            };
+            get_requirement_tree: {
+                Args: {
+                    p_project_id?: string | null;
+                };
+                Returns: {
+                    requirement_id: string;
+                    title: string;
+                    parent_id: string | null;
+                    depth: number;
+                    path: string;
+                    has_children: boolean;
+                }[];
             };
         };
         Enums: {

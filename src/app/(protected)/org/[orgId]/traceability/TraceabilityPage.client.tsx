@@ -1,7 +1,6 @@
 'use client';
 
 import {
-    AlertCircle,
     ArrowRight,
     GitBranch,
     Network,
@@ -33,6 +32,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOrganizationProjects } from '@/hooks/queries/useProject';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
+import {
+    useCreateRelationship,
+    useRequirementTree,
+} from '@/hooks/queries/useRequirementRelationships';
 import { Requirement } from '@/types';
 
 interface TraceabilityPageClientProps {
@@ -54,8 +57,18 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
 
+    // Mutation for creating relationships
+    const createRelationshipMutation = useCreateRelationship();
+
     // Fetch organization projects
     const { data: projects, isLoading: projectsLoading } = useOrganizationProjects(orgId);
+
+    // Fetch requirement tree for hierarchy visualization
+    const {
+        data: requirementTree,
+        isLoading: treeLoading,
+        refetch: refetchTree,
+    } = useRequirementTree(selectedProject);
 
     // Fetch requirements for selected project
     const { data: requirements, isLoading: requirementsLoading } = useProjectRequirements(
@@ -97,20 +110,51 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedChildren([]);
     }, []);
 
-    const createParentChildRelationship = useCallback(() => {
+    const createParentChildRelationship = useCallback(async () => {
         if (!selectedParent || selectedChildren.length === 0) return;
 
-        // TODO: API call to create parent-child relationships
-        console.log('Creating relationships:', {
-            parent: selectedParent,
-            children: selectedChildren,
-        });
+        try {
+            // Create relationships for each selected child
+            const promises = selectedChildren.map((childId) =>
+                createRelationshipMutation.mutateAsync({
+                    ancestorId: selectedParent,
+                    descendantId: childId,
+                }),
+            );
 
-        // For now, just show success message
-        alert(
-            `Created relationships: ${selectedParent} → ${selectedChildren.join(', ')}`,
-        );
-    }, [selectedParent, selectedChildren]);
+            const results = await Promise.all(promises);
+
+            // Check for any failures
+            const failedResults = results.filter((result) => !result.success);
+
+            if (failedResults.length > 0) {
+                // Show error for failed relationships
+                const errorMessages = failedResults
+                    .map((result) => result.message || result.error)
+                    .join('\n');
+                alert(`Some relationships failed to create:\n${errorMessages}`);
+            } else {
+                // All successful
+                const totalCreated = results.reduce(
+                    (sum, result) => sum + (result.relationshipsCreated || 0),
+                    0,
+                );
+                alert(`Successfully created ${totalCreated} relationship records!`);
+
+                // Clear selections after successful creation
+                setSelectedParent('');
+                setSelectedChildren([]);
+
+                // Refresh tree to show new hierarchy
+                refetchTree();
+            }
+        } catch (error) {
+            console.error('Failed to create relationships:', error);
+            alert(
+                `Failed to create relationships: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            );
+        }
+    }, [selectedParent, selectedChildren, createRelationshipMutation, refetchTree]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
@@ -152,7 +196,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                 className="flex items-center gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200"
                             >
                                 <Network className="h-4 w-4" />
-                                Matrix
+                                Tree View
                             </TabsTrigger>
                             <TabsTrigger
                                 value="manage"
@@ -404,13 +448,15 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                             }
                                                             disabled={
                                                                 selectedChildren.length ===
-                                                                0
+                                                                    0 ||
+                                                                createRelationshipMutation.isPending
                                                             }
                                                             className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-medium px-6 py-2 rounded-xl shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                         >
                                                             <Plus className="h-4 w-4 mr-2" />
-                                                            Create Relationships (
-                                                            {selectedChildren.length})
+                                                            {createRelationshipMutation.isPending
+                                                                ? 'Creating...'
+                                                                : `Create Relationships (${selectedChildren.length})`}
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -601,24 +647,160 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             </TabsContent>
 
                             <TabsContent value="matrix" className="space-y-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Traceability Matrix</CardTitle>
-                                        <CardDescription>
-                                            Matrix view of requirement relationships
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                                            <p>Matrix view coming soon</p>
-                                            <p className="text-sm">
-                                                This will show a matrix of requirement
-                                                relationships
+                                <div className="bg-slate-800/40 backdrop-blur-sm border border-gray-700 rounded-2xl p-8 shadow-2xl">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
+                                            <Network className="h-6 w-6 text-white" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white">
+                                                Requirements Hierarchy Tree
+                                            </h2>
+                                            <p className="text-gray-400 mt-1">
+                                                Interactive tree view showing all
+                                                requirement relationships
                                             </p>
                                         </div>
-                                    </CardContent>
-                                </Card>
+                                    </div>
+
+                                    {treeLoading ? (
+                                        <div className="flex items-center justify-center py-12">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                                            <span className="ml-3 text-gray-300">
+                                                Loading hierarchy...
+                                            </span>
+                                        </div>
+                                    ) : requirementTree && requirementTree.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {requirementTree.map((node) => (
+                                                <div
+                                                    key={node.requirementId}
+                                                    className="flex items-center gap-3 p-4 bg-slate-700/30 rounded-xl border border-gray-600 hover:border-gray-500 transition-all"
+                                                    style={{
+                                                        marginLeft: `${node.depth * 24}px`,
+                                                    }}
+                                                >
+                                                    {/* Depth Indicator */}
+                                                    <div className="flex items-center gap-2">
+                                                        {node.depth > 0 && (
+                                                            <div className="flex items-center">
+                                                                {Array.from({
+                                                                    length: node.depth,
+                                                                }).map((_, i) => (
+                                                                    <div
+                                                                        key={i}
+                                                                        className="w-4 h-0.5 bg-gray-500 mr-1"
+                                                                    />
+                                                                ))}
+                                                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Node Icon */}
+                                                        <div
+                                                            className={`p-1.5 rounded-lg ${
+                                                                node.depth === 0
+                                                                    ? 'bg-emerald-500/20 text-emerald-300'
+                                                                    : node.hasChildren
+                                                                      ? 'bg-blue-500/20 text-blue-300'
+                                                                      : 'bg-gray-500/20 text-gray-400'
+                                                            }`}
+                                                        >
+                                                            {node.depth === 0 ? (
+                                                                <Target className="h-3 w-3" />
+                                                            ) : node.hasChildren ? (
+                                                                <GitBranch className="h-3 w-3" />
+                                                            ) : (
+                                                                <div className="h-3 w-3 rounded-full bg-current opacity-60" />
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Requirement Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`text-xs font-mono ${
+                                                                    node.depth === 0
+                                                                        ? 'border-emerald-400 text-emerald-300 bg-emerald-500/10'
+                                                                        : 'border-gray-400 text-gray-300'
+                                                                }`}
+                                                            >
+                                                                {requirements?.find(
+                                                                    (r) =>
+                                                                        r.id ===
+                                                                        node.requirementId,
+                                                                )?.external_id ||
+                                                                    node.requirementId.slice(
+                                                                        0,
+                                                                        8,
+                                                                    )}
+                                                            </Badge>
+                                                            <h3 className="font-medium text-sm text-white truncate">
+                                                                {node.title}
+                                                            </h3>
+
+                                                            {/* Depth Badge */}
+                                                            <Badge
+                                                                variant="secondary"
+                                                                className="text-xs bg-slate-600/50 text-gray-300"
+                                                            >
+                                                                L{node.depth}
+                                                            </Badge>
+
+                                                            {/* Children Count */}
+                                                            {node.hasChildren && (
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="text-xs bg-blue-500/20 border-blue-400 text-blue-300"
+                                                                >
+                                                                    +children
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Path Display */}
+                                                        {node.path && node.depth > 0 && (
+                                                            <p className="text-xs text-gray-400 truncate">
+                                                                Path: {node.path}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Quick Actions */}
+                                                    <div className="flex items-center gap-2">
+                                                        {node.hasChildren && (
+                                                            <div className="px-2 py-1 bg-blue-500/10 rounded-md">
+                                                                <span className="text-xs text-blue-300">
+                                                                    Parent
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {node.parentId && (
+                                                            <div className="px-2 py-1 bg-purple-500/10 rounded-md">
+                                                                <span className="text-xs text-purple-300">
+                                                                    Child
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12 text-gray-400">
+                                            <Network className="h-16 w-16 mx-auto mb-4 text-gray-500" />
+                                            <p className="text-lg font-medium">
+                                                No hierarchy found
+                                            </p>
+                                            <p className="text-sm">
+                                                Create some relationships to see the tree
+                                                structure
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="manage" className="space-y-6">
