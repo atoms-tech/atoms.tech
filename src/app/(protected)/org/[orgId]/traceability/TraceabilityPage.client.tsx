@@ -160,7 +160,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
     // Handle deleting a relationship
     const handleDeleteRelationship = useCallback(
-        async (node: { requirement_id: string; title: string; parent_id: string | null }) => {
+        async (node: {
+            requirement_id: string;
+            title: string;
+            parent_id: string | null;
+        }) => {
             if (!node.parent_id || !node.requirement_id) {
                 alert('Cannot delete: Invalid relationship data');
                 return;
