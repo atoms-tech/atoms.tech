@@ -24,12 +24,12 @@ interface RequirementNode {
 }
 
 interface RequirementTreeNode {
-    requirementId: string;
+    requirement_id: string;
     title: string;
-    parentId: string | null;
+    parent_id: string | null;
     depth: number;
     path: string;
-    hasChildren: boolean;
+    has_children: boolean;
 }
 
 // API functions
@@ -150,11 +150,16 @@ export function useCreateRelationship() {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
+            // Invalidate all tree queries (regardless of projectId)
             queryClient.invalidateQueries({
-                queryKey: queryKeys.requirements.tree(),
+                queryKey: ['requirements', 'tree'],
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.relationships(),
+            });
+            // Force refetch all requirements-related queries
+            queryClient.invalidateQueries({
+                queryKey: ['requirements'],
             });
         },
         onError: (error) => {
@@ -176,11 +181,16 @@ export function useDeleteRelationship() {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
+            // Invalidate all tree queries (regardless of projectId)
             queryClient.invalidateQueries({
-                queryKey: queryKeys.requirements.tree(),
+                queryKey: ['requirements', 'tree'],
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.relationships(),
+            });
+            // Force refetch all requirements-related queries
+            queryClient.invalidateQueries({
+                queryKey: ['requirements'],
             });
         },
         onError: (error) => {

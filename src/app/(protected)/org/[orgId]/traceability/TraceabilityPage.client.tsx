@@ -34,6 +34,7 @@ import { useOrganizationProjects } from '@/hooks/queries/useProject';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
 import {
     useCreateRelationship,
+    useDeleteRelationship,
     useRequirementTree,
 } from '@/hooks/queries/useRequirementRelationships';
 import { Requirement } from '@/types';
@@ -57,8 +58,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
 
-    // Mutation for creating relationships
+    // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
+    const deleteRelationshipMutation = useDeleteRelationship();
 
     // Fetch organization projects
     const { data: projects, isLoading: projectsLoading } = useOrganizationProjects(orgId);
@@ -155,6 +157,40 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             );
         }
     }, [selectedParent, selectedChildren, createRelationshipMutation, refetchTree]);
+
+    // Handle deleting a relationship
+    const handleDeleteRelationship = useCallback(
+        async (node: { requirement_id: string; title: string; parent_id: string | null }) => {
+            if (!node.parent_id || !node.requirement_id) {
+                alert('Cannot delete: Invalid relationship data');
+                return;
+            }
+
+            const confirmDelete = confirm(
+                `Are you sure you want to remove the relationship between "${node.title}" and its parent? This will break the hierarchy connection.`,
+            );
+
+            if (!confirmDelete) return;
+
+            try {
+                await deleteRelationshipMutation.mutateAsync({
+                    ancestorId: node.parent_id,
+                    descendantId: node.requirement_id,
+                });
+
+                alert('Relationship deleted successfully!');
+
+                // Refresh tree to show updated hierarchy
+                refetchTree();
+            } catch (error) {
+                console.error('Failed to delete relationship:', error);
+                alert(
+                    `Failed to delete relationship: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                );
+            }
+        },
+        [deleteRelationshipMutation, refetchTree],
+    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black">
@@ -672,121 +708,216 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                         </div>
                                     ) : requirementTree && requirementTree.length > 0 ? (
                                         <div className="space-y-2">
-                                            {requirementTree.map((node) => (
-                                                <div
-                                                    key={node.requirementId}
-                                                    className="flex items-center gap-3 p-4 bg-slate-700/30 rounded-xl border border-gray-600 hover:border-gray-500 transition-all"
-                                                    style={{
-                                                        marginLeft: `${node.depth * 24}px`,
-                                                    }}
-                                                >
-                                                    {/* Depth Indicator */}
-                                                    <div className="flex items-center gap-2">
-                                                        {node.depth > 0 && (
-                                                            <div className="flex items-center">
-                                                                {Array.from({
-                                                                    length: node.depth,
-                                                                }).map((_, i) => (
-                                                                    <div
-                                                                        key={i}
-                                                                        className="w-4 h-0.5 bg-gray-500 mr-1"
-                                                                    />
-                                                                ))}
-                                                                <ArrowRight className="h-4 w-4 text-gray-400" />
-                                                            </div>
-                                                        )}
-
-                                                        {/* Node Icon */}
-                                                        <div
-                                                            className={`p-1.5 rounded-lg ${
-                                                                node.depth === 0
-                                                                    ? 'bg-emerald-500/20 text-emerald-300'
-                                                                    : node.hasChildren
-                                                                      ? 'bg-blue-500/20 text-blue-300'
-                                                                      : 'bg-gray-500/20 text-gray-400'
-                                                            }`}
-                                                        >
-                                                            {node.depth === 0 ? (
-                                                                <Target className="h-3 w-3" />
-                                                            ) : node.hasChildren ? (
-                                                                <GitBranch className="h-3 w-3" />
-                                                            ) : (
-                                                                <div className="h-3 w-3 rounded-full bg-current opacity-60" />
+                                            {requirementTree
+                                                .filter((node) => {
+                                                    // Show ALL nodes that are part of any hierarchy:
+                                                    // 1. Nodes with children (parent nodes) - ALWAYS show these
+                                                    // 2. Child nodes (depth > 0) - show these too
+                                                    // 3. Debug: log what we're filtering
+                                                    console.log('Raw node data:', node);
+                                                    console.log('Node filter:', {
+                                                        id: node.requirement_id?.slice(
+                                                            0,
+                                                            8,
+                                                        ),
+                                                        title: node.title,
+                                                        depth: node.depth,
+                                                        hasChildren: node.has_children,
+                                                        parentId: node.parent_id?.slice(
+                                                            0,
+                                                            8,
+                                                        ),
+                                                        willShow:
+                                                            node.has_children ||
+                                                            node.depth > 0,
+                                                    });
+                                                    // Show only nodes that are part of actual hierarchies from requirements_closure:
+                                                    // - Nodes with children (has_children = true)
+                                                    // - Child nodes (depth > 0)
+                                                    return (
+                                                        node.has_children ||
+                                                        node.depth > 0
+                                                    );
+                                                })
+                                                .sort((a, b) => {
+                                                    // Custom sort to maintain hierarchical parent-child order
+                                                    // Use path for hierarchical sorting, which contains the full ancestry
+                                                    return (a.path || '').localeCompare(
+                                                        b.path || '',
+                                                    );
+                                                })
+                                                .map((node, index) => (
+                                                    <div
+                                                        key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
+                                                        className="flex items-center gap-3 p-4 bg-slate-700/30 rounded-xl border border-gray-600 hover:border-gray-500 transition-all"
+                                                        style={{
+                                                            marginLeft: `${node.depth * 24}px`,
+                                                        }}
+                                                    >
+                                                        {/* Depth Indicator */}
+                                                        <div className="flex items-center gap-2">
+                                                            {node.depth > 0 && (
+                                                                <div className="flex items-center">
+                                                                    {/* Visual connection lines */}
+                                                                    {Array.from({
+                                                                        length: node.depth,
+                                                                    }).map((_, i) => (
+                                                                        <div
+                                                                            key={i}
+                                                                            className="w-6 h-0.5 bg-gradient-to-r from-blue-500 to-blue-300 mr-1"
+                                                                        />
+                                                                    ))}
+                                                                    <ArrowRight className="h-4 w-4 text-blue-400" />
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Requirement Info */}
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={`text-xs font-mono ${
+                                                            {/* Parent indicator */}
+                                                            {node.depth === 0 &&
+                                                                node.has_children && (
+                                                                    <div className="flex items-center">
+                                                                        <div className="w-2 h-2 bg-emerald-500 rounded-full mr-2" />
+                                                                        <span className="text-xs text-emerald-300 font-semibold">
+                                                                            ROOT
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+
+                                                            {/* Node Icon */}
+                                                            <div
+                                                                className={`p-1.5 rounded-lg ${
                                                                     node.depth === 0
-                                                                        ? 'border-emerald-400 text-emerald-300 bg-emerald-500/10'
-                                                                        : 'border-gray-400 text-gray-300'
+                                                                        ? 'bg-emerald-500/20 text-emerald-300'
+                                                                        : node.has_children
+                                                                          ? 'bg-blue-500/20 text-blue-300'
+                                                                          : 'bg-gray-500/20 text-gray-400'
                                                                 }`}
                                                             >
-                                                                {requirements?.find(
-                                                                    (r) =>
-                                                                        r.id ===
-                                                                        node.requirementId,
-                                                                )?.external_id ||
-                                                                    node.requirementId.slice(
-                                                                        0,
-                                                                        8,
-                                                                    )}
-                                                            </Badge>
-                                                            <h3 className="font-medium text-sm text-white truncate">
-                                                                {node.title}
-                                                            </h3>
-
-                                                            {/* Depth Badge */}
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="text-xs bg-slate-600/50 text-gray-300"
-                                                            >
-                                                                L{node.depth}
-                                                            </Badge>
-
-                                                            {/* Children Count */}
-                                                            {node.hasChildren && (
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="text-xs bg-blue-500/20 border-blue-400 text-blue-300"
-                                                                >
-                                                                    +children
-                                                                </Badge>
-                                                            )}
+                                                                {node.depth === 0 ? (
+                                                                    <Target className="h-3 w-3" />
+                                                                ) : node.has_children ? (
+                                                                    <GitBranch className="h-3 w-3" />
+                                                                ) : (
+                                                                    <div className="h-3 w-3 rounded-full bg-current opacity-60" />
+                                                                )}
+                                                            </div>
                                                         </div>
 
-                                                        {/* Path Display */}
-                                                        {node.path && node.depth > 0 && (
-                                                            <p className="text-xs text-gray-400 truncate">
-                                                                Path: {node.path}
-                                                            </p>
-                                                        )}
-                                                    </div>
+                                                        {/* Requirement Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className={`text-sm font-mono px-3 py-1.5 font-bold ${
+                                                                        node.depth === 0
+                                                                            ? 'border-emerald-400 text-emerald-100 bg-emerald-500/30'
+                                                                            : 'border-blue-400 text-blue-100 bg-blue-500/30'
+                                                                    }`}
+                                                                >
+                                                                    {(() => {
+                                                                        const req =
+                                                                            requirements?.find(
+                                                                                (r) =>
+                                                                                    r.id ===
+                                                                                    node.requirement_id,
+                                                                            );
+                                                                        // Try multiple sources for the ID
+                                                                        const extId =
+                                                                            req?.external_id;
+                                                                        const nodeTitle =
+                                                                            node.title; // jun>shiv 같은 path가 아닌 실제 ID가 들어있을 수도
+                                                                        const fallback =
+                                                                            node.requirement_id?.slice(
+                                                                                0,
+                                                                                8,
+                                                                            );
+                                                                        return (
+                                                                            extId ||
+                                                                            nodeTitle ||
+                                                                            fallback ||
+                                                                            'NO-ID'
+                                                                        );
+                                                                    })()}
+                                                                </Badge>
 
-                                                    {/* Quick Actions */}
-                                                    <div className="flex items-center gap-2">
-                                                        {node.hasChildren && (
-                                                            <div className="px-2 py-1 bg-blue-500/10 rounded-md">
-                                                                <span className="text-xs text-blue-300">
-                                                                    Parent
-                                                                </span>
+                                                                {/* Depth Badge */}
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className={`text-xs px-2 py-1 font-medium ${
+                                                                        node.depth === 0
+                                                                            ? 'bg-emerald-500/30 text-emerald-100'
+                                                                            : node.depth ===
+                                                                                1
+                                                                              ? 'bg-blue-500/30 text-blue-100'
+                                                                              : 'bg-purple-500/30 text-purple-100'
+                                                                    }`}
+                                                                >
+                                                                    {node.depth === 0
+                                                                        ? 'PARENT'
+                                                                        : `CHILD-L${node.depth}`}
+                                                                </Badge>
                                                             </div>
-                                                        )}
-                                                        {node.parentId && (
-                                                            <div className="px-2 py-1 bg-purple-500/10 rounded-md">
-                                                                <span className="text-xs text-purple-300">
-                                                                    Child
-                                                                </span>
+
+                                                            {(() => {
+                                                                const requirement =
+                                                                    requirements?.find(
+                                                                        (r) =>
+                                                                            r.id ===
+                                                                            node.requirement_id,
+                                                                    );
+                                                                const requirementId =
+                                                                    requirement?.external_id ||
+                                                                    node.requirement_id?.slice(
+                                                                        0,
+                                                                        8,
+                                                                    );
+                                                                const description =
+                                                                    requirement?.description;
+
+                                                                return (
+                                                                    <div>
+                                                                        <h3 className="font-semibold text-lg text-white leading-relaxed mb-1">
+                                                                            {
+                                                                                requirementId
+                                                                            }
+                                                                        </h3>
+                                                                        {description && (
+                                                                            <p className="text-sm text-gray-300 mb-1">
+                                                                                {
+                                                                                    description
+                                                                                }
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })()}
+
+                                                            {/* Path Display */}
+                                                            {node.path &&
+                                                                node.depth > 0 && (
+                                                                    <p className="text-xs text-gray-400 truncate">
+                                                                        Path: {node.path}
+                                                                    </p>
+                                                                )}
+                                                        </div>
+
+                                                        {/* Delete Button - Only show for child nodes (depth > 0) */}
+                                                        {node.depth > 0 && (
+                                                            <div className="ml-4 flex-shrink-0">
+                                                                <button
+                                                                    onClick={() =>
+                                                                        handleDeleteRelationship(
+                                                                            node,
+                                                                        )
+                                                                    }
+                                                                    className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all border border-red-500/20 hover:border-red-500/40"
+                                                                    title="Remove this relationship"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
-                                                </div>
-                                            ))}
+                                                ))}
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 text-gray-400">
