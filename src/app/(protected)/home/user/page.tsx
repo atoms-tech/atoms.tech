@@ -343,13 +343,17 @@ export default function UserDashboard() {
                 ) : (
                     <motion.div
                         variants={containerVariants}
-                        initial="hidden"
+                        initial={false}
                         animate="show"
                         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     >
                         {filteredOrganizations.length > 0 ? (
                             filteredOrganizations.map((org: Organization) => (
-                                <motion.div key={org.id} variants={itemVariants}>
+                                <motion.div
+                                    key={org.id}
+                                    variants={itemVariants}
+                                    initial={false}
+                                >
                                     <Card
                                         className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2`}
                                         onClick={() => handleOrganizationClick(org)}

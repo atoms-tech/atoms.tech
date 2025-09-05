@@ -2590,10 +2590,37 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             return;
         }
 
+        // helper to decide if we should intercept paste
+        const shouldHandlePaste = (event: ClipboardEvent) => {
+            if (!isEditMode) return false;
+
+            const target = event.target as HTMLElement | null;
+            const isWithinTable = !!target && tableElement.contains(target);
+
+            // Do not intercept when typing into a text field/contentEditable
+            const isTypingIntoTextField =
+                !!target &&
+                (target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    (target as HTMLElement).isContentEditable === true);
+
+            // If a popup cell editor is active, let it handle the paste
+            const isOverlayEditing =
+                (isEditingCellRef as React.RefObject<boolean>).current === true;
+
+            // Consider grid "active" if we have a selection or last selected cell
+            const hasGridContext =
+                !!selectionRef.current?.current?.cell || !!lastSelectedCellRef.current;
+
+            return (
+                isWithinTable ||
+                (hasGridContext && !isTypingIntoTextField && !isOverlayEditing)
+            );
+        };
+
         // main paste handler
         const pasteHandler = (event: ClipboardEvent) => {
-            // only handle paste if in edit mode and the event target is within our table
-            if (isEditMode && tableElement.contains(event.target as Node)) {
+            if (shouldHandlePaste(event)) {
                 return handlePaste(event);
             }
         };
@@ -2606,7 +2633,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
         // attach to window as a fallback
         const windowPasteHandler = (event: ClipboardEvent) => {
-            if (isEditMode && tableElement.contains(event.target as Node)) {
+            if (shouldHandlePaste(event)) {
                 return handlePaste(event);
             }
         };

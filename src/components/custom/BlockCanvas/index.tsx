@@ -20,6 +20,7 @@ import { Table, Type } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { AddTableDialog } from '@/components/custom/BlockCanvas/components/AddTableDialog';
 import { SortableBlock } from '@/components/custom/BlockCanvas/components/SortableBlock';
 import { TableBlockLoadingState } from '@/components/custom/BlockCanvas/components/TableBlockLoadingState';
 import { useBlockActions } from '@/components/custom/BlockCanvas/hooks/useBlockActions';
@@ -207,11 +208,37 @@ export function BlockCanvas({
 
     const canPerformAction = useCallback(
         (action: string) => {
+            // Graceful fallback: if role hasn't been determined but user is authenticated,
+            // allow core authoring actions so users aren't blocked by role fetch issues.
+            if (!userRole && userProfile?.id) {
+                if (action === 'addBlock' || action === 'editBlock') return true;
+            }
+
             return rolePermissions[
                 (userRole || 'viewer') as keyof typeof rolePermissions
             ].includes(action);
         },
-        [userRole, rolePermissions],
+        [userRole, rolePermissions, userProfile?.id],
+    );
+
+    // Table creation dialog state and handler must be declared before any early returns
+    const [isAddTableOpen, setIsAddTableOpen] = useState(false);
+
+    // Currently doesnt pass info, is getting hyjacked somewhere... Needs invesigation/rework.
+    const createTableWithLayout = useCallback(
+        async (layout: 'blank' | 'requirements_default', name: string) => {
+            const content: Json = {
+                requirements: [],
+                tableLayout: layout,
+            } as unknown as Json;
+            // Pass the name along with content by immediately updating the created block's name
+            // The create API uses a default name; we'll override post-create via handleUpdateBlock
+            const created = await handleAddBlock(BlockType.table, content);
+            if (created?.id && name) {
+                await handleUpdateBlock(created.id, { name });
+            }
+        },
+        [handleAddBlock, handleUpdateBlock],
     );
 
     const renderBlock = useCallback(
@@ -309,6 +336,8 @@ export function BlockCanvas({
         );
     }
 
+    // removed duplicate dialog state and handler
+
     return (
         <div className="relative min-h-[500px] space-y-4 pl-4">
             <DndContext
@@ -344,16 +373,19 @@ export function BlockCanvas({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() =>
-                            handleAddBlock(BlockType.table, {
-                                requirements: [],
-                            })
-                        }
+                        onClick={() => setIsAddTableOpen(true)}
                     >
                         <Table className="h-4 w-4" />
                     </Button>
                 </div>
             )}
+            <AddTableDialog
+                isOpen={isAddTableOpen}
+                onClose={() => setIsAddTableOpen(false)}
+                onCreate={async (layout, name) => {
+                    await createTableWithLayout(layout, name);
+                }}
+            />
         </div>
     );
 }

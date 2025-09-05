@@ -10,9 +10,18 @@ export function useIsMobile() {
         const onChange = () => {
             setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
         };
+
+        // Update on initial mount
+        onChange();
+
+        // Listen to both media query changes and window resize for robustness
         mql.addEventListener('change', onChange);
-        setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-        return () => mql.removeEventListener('change', onChange);
+        window.addEventListener('resize', onChange);
+
+        return () => {
+            mql.removeEventListener('change', onChange);
+            window.removeEventListener('resize', onChange);
+        };
     }, []);
 
     return !!isMobile;
