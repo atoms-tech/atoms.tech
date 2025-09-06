@@ -1,8 +1,8 @@
 // import { supabase } from '@/lib/supabase/supabaseClient'
 import { useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useOrganization(orgId: string) {

@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RequirementTest, TestReq } from '@/components/custom/RequirementsTesting/types';
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Database } from '@/types/base/database.types';
 
 interface TestFilters {
@@ -103,9 +103,8 @@ export function useRequirementTestCases(requirementId: string) {
             if (!requirementId) return [];
 
             const api = atomsApiClient();
-            const relationData = await api.testing.listRelationsByRequirement(
-                requirementId,
-            );
+            const relationData =
+                await api.testing.listRelationsByRequirement(requirementId);
             if (!relationData.length) return [];
             const testIds = relationData.map((r: any) => r.test_id);
             const rows = await api.testing.getTestsByIds(testIds);

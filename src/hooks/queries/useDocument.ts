@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
-import type { QueryFilters as GenericQueryFilters } from '@/types/base/filters.types';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Block, Document } from '@/types/base/documents.types';
+import type { QueryFilters as GenericQueryFilters } from '@/types/base/filters.types';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useProjectDocuments(projectId: string) {

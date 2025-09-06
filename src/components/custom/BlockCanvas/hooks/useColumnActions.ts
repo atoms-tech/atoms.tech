@@ -6,8 +6,8 @@ import {
     PropertyConfig,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Column, Property, PropertyType } from '@/components/custom/BlockCanvas/types';
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Json } from '@/types/base/database.types';
 
 const columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
@@ -52,28 +52,30 @@ export const useColumnActions = ({
             try {
                 // Step 1: Create the property
                 const api = atomsApiClient();
-                const property = (await api.properties.createMany([
-                    {
-                        name,
-                        property_type: columnTypeToPropertyType(type),
-                        org_id: orgId,
-                        project_id: propertyConfig.scope.includes('project')
-                            ? projectId
-                            : null,
-                        document_id: propertyConfig.scope.includes('document')
-                            ? documentId
-                            : null,
-                        is_base: propertyConfig.is_base ?? false,
-                        options: propertyConfig.options
-                            ? { values: propertyConfig.options }
-                            : null,
-                        scope: propertyConfig.scope.join(','),
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        created_by: userId,
-                        updated_by: userId,
-                    } as any,
-                ]))?.[0] as Property;
+                const property = (
+                    await api.properties.createMany([
+                        {
+                            name,
+                            property_type: columnTypeToPropertyType(type),
+                            org_id: orgId,
+                            project_id: propertyConfig.scope.includes('project')
+                                ? projectId
+                                : null,
+                            document_id: propertyConfig.scope.includes('document')
+                                ? documentId
+                                : null,
+                            is_base: propertyConfig.is_base ?? false,
+                            options: propertyConfig.options
+                                ? { values: propertyConfig.options }
+                                : null,
+                            scope: propertyConfig.scope.join(','),
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                            created_by: userId,
+                            updated_by: userId,
+                        } as any,
+                    ])
+                )?.[0] as Property;
 
                 // Step 2: Create the column
                 const column = (await api.documents.createColumn({
@@ -172,9 +174,8 @@ export const useColumnActions = ({
                 await api.documents.deleteColumn(columnId);
 
                 // Step 2: Remove the column from each requirement's properties
-                const requirements = await atomsApiClient().requirements.listByBlock(
-                    blockId,
-                );
+                const requirements =
+                    await atomsApiClient().requirements.listByBlock(blockId);
 
                 const updatePromises = requirements.map((req) => {
                     const originalProps = req.properties;

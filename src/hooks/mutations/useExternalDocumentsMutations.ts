@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { ExternalDocument } from '@/types';
 
 export function useUploadExternalDocument() {

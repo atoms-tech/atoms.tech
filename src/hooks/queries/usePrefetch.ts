@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Organization } from '@/types/base/organizations.types';
 import { Profile } from '@/types/base/profiles.types';
 

@@ -1,43 +1,17 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 
 export const getProjectDocumentsServer = async (projectId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_deleted', false);
-
-    if (error) throw error;
-    return data;
+    const api = await atomsApiServer();
+    return await api.documents.listByProject(projectId);
 };
 
 export const getDocumentBlocksAndRequirementsServer = async (documentId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('blocks')
-        .select(
-            `
-            *,
-            requirements:requirements(*)
-        `,
-        )
-        .eq('document_id', documentId)
-        .eq('requirements.document_id', documentId)
-        .eq('is_deleted', false);
-
-    if (error) throw error;
-    return data;
+    const api = await atomsApiServer();
+    return await api.documents.blocksAndRequirements(documentId);
 };
 
 export const getDocumentDataServer = async (documentId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('id', documentId)
-        .eq('is_deleted', false);
-
-    if (error) throw error;
-    return data;
+    const api = await atomsApiServer();
+    const doc = await api.documents.getById(documentId);
+    return doc ? [doc] : [];
 };

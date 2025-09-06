@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import type { QueryFilters as GenericQueryFilters } from '@/types/base/filters.types';
 import { QueryFilters } from '@/types/base/filters.types';
 import { Requirement } from '@/types/base/requirements.types';
@@ -25,7 +25,9 @@ export function useRequirements(queryFilters?: GenericQueryFilters) {
         queryKey: queryKeys.requirements.list((queryFilters as QueryFilters) || {}),
         queryFn: async () => {
             const api = atomsApiClient();
-            return await api.requirements.listWithFilters(queryFilters as Record<string, unknown>);
+            return await api.requirements.listWithFilters(
+                queryFilters as Record<string, unknown>,
+            );
         },
     });
 }
@@ -42,7 +44,7 @@ export function useProjectRequirements(projectId: string) {
 
             // Get all requirements that belong to documents in this project
             const api = atomsApiClient();
-            return await api.requirements.listByProject(projectId) as Requirement[];
+            return (await api.requirements.listByProject(projectId)) as Requirement[];
         },
         enabled: !!projectId,
     });
@@ -58,7 +60,7 @@ export function useRequirementsByIds(requirementIds: string[]) {
             if (!requirementIds.length) return [];
 
             const api = atomsApiClient();
-            return await api.requirements.listByIds(requirementIds) as Requirement[];
+            return (await api.requirements.listByIds(requirementIds)) as Requirement[];
         },
         enabled: requirementIds.length > 0,
     });

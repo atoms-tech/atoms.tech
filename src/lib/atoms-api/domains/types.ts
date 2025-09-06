@@ -4,6 +4,5 @@ export type Profile = Tables<'profiles'>;
 export type Organization = Tables<'organizations'>;
 export type Project = Tables<'projects'>;
 export type ProjectMember = Tables<'project_members'> & {
-  profiles?: Tables<'profiles'> | null;
+    profiles?: Tables<'profiles'> | null;
 };
-

@@ -13,10 +13,10 @@ import {
 } from '@/hooks/mutations/useOrgMemberMutation';
 // Import useCreateOrgMember and useSetOrgMemberCount
 import { useOrgInvitation } from '@/hooks/queries/useOrganization';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { InvitationStatus } from '@/types/base/enums.types';
 import { Invitation } from '@/types/base/invitations.types';
 
@@ -48,7 +48,13 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             const list = await api.organizations.listWithFilters({});
             return (list as any[])
                 .filter((o) => organizationIds.includes(o.id))
-                .reduce((acc: Record<string, string>, org: any) => { acc[org.id] = org.name; return acc; }, {} as Record<string, string>);
+                .reduce(
+                    (acc: Record<string, string>, org: any) => {
+                        acc[org.id] = org.name;
+                        return acc;
+                    },
+                    {} as Record<string, string>,
+                );
         },
         enabled: organizationIds.length > 0,
     });
@@ -75,7 +81,11 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
 
             // Update the invitation status to accepted
             const api = atomsApiClient();
-            await api.orgInvitations.updateStatus(invitation.id, InvitationStatus.accepted, user.id);
+            await api.orgInvitations.updateStatus(
+                invitation.id,
+                InvitationStatus.accepted,
+                user.id,
+            );
 
             // Update the member count for the organization
             await setOrgMemberCount(invitation.organization_id);
@@ -125,7 +135,11 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
 
         try {
             const api = atomsApiClient();
-            await api.orgInvitations.updateStatus(invitation.id, InvitationStatus.rejected, user.id);
+            await api.orgInvitations.updateStatus(
+                invitation.id,
+                InvitationStatus.rejected,
+                user.id,
+            );
 
             toast({
                 title: 'Success',

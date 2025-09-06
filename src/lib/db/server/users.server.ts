@@ -1,20 +1,11 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 
 export const getUserProfileServer = async (userId: string) => {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-    if (error) throw error;
-    return data;
+    const api = await atomsApiServer();
+    return await api.auth.getProfile(userId);
 };
 
 export const getAuthUserServer = async () => {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return data;
+    const api = await atomsApiServer();
+    return await api.auth.getAuthUser();
 };

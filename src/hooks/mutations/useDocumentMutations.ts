@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Property } from '@/components/custom/BlockCanvas/types';
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { TablesInsert } from '@/types/base/database.types';
 import { Document } from '@/types/base/documents.types';
 
@@ -299,7 +299,9 @@ export function useCreateDocumentProperties() {
                 updated_at: timestamp,
             }));
 
-            const createdProperties = await api.properties.createMany(documentProperties as any);
+            const createdProperties = await api.properties.createMany(
+                documentProperties as any,
+            );
             return createdProperties as Property[];
         },
         onSuccess: (data) => {

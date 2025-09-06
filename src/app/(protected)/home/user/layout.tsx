@@ -2,8 +2,8 @@
 
 import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiServer } from '@/lib/atoms-api/server';
+import { queryKeys } from '@/lib/constants/queryKeys';
 
 export default async function UserDashboardLayout({
     children,

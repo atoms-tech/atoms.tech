@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { Property } from '@/components/custom/BlockCanvas/types';
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 
 /**
  * Hook to fetch and cache properties for an organization

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { atomsApiServer } from '@/lib/atoms-api/server';
 import type { TablesInsert } from '@/types/base/database.types';
 

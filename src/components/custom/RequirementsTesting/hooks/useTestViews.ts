@@ -121,7 +121,10 @@ export function useTestMatrixViews(projectId: string) {
             // If setting as default, unset any existing defaults
             const api = atomsApiClient();
             if (updatedView.isDefault) {
-                await api.testMatrixViews.unsetDefaults(updatedView.projectId, updatedView.id as string);
+                await api.testMatrixViews.unsetDefaults(
+                    updatedView.projectId,
+                    updatedView.id as string,
+                );
             }
             const data = await api.testMatrixViews.update(updatedView.id as string, {
                 name: updatedView.name,
@@ -202,9 +205,8 @@ export function useTestMatrixViews(projectId: string) {
                     // No rows found
                     // If no default view, return the first active view or null
                     try {
-                        const firstView = await api.testMatrixViews.getFirstActive(
-                            projectId,
-                        );
+                        const firstView =
+                            await api.testMatrixViews.getFirstActive(projectId);
                         if (!firstView) return null;
                         return {
                             id: firstView.id,

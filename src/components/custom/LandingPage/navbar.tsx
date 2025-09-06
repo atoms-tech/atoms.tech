@@ -86,12 +86,16 @@ export function Navbar() {
 
         try {
             const api = atomsApiClient();
-            const prof = userProfile?.id ? await api.auth.getProfile(userProfile.id) : null;
+            const prof = userProfile?.id
+                ? await api.auth.getProfile(userProfile.id)
+                : null;
             if (prof) {
                 let targetOrgId = (prof as any).pinned_organization_id as string | null;
                 const personal = (prof as any).personal_organization_id as string | null;
                 if (!targetOrgId && personal) {
-                    await api.auth.updateProfile(userProfile?.id || '', { pinned_organization_id: personal } as any);
+                    await api.auth.updateProfile(userProfile?.id || '', {
+                        pinned_organization_id: personal,
+                    } as any);
                     targetOrgId = personal;
                 }
                 if (targetOrgId) {

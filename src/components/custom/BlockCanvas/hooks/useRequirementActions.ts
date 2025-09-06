@@ -89,7 +89,9 @@ export const useRequirementActions = ({
 
         // Fetch block columns to get position information
         const api = atomsApiClient();
-        const blockColumns = (await api.documents.listColumnsByBlockIds([blockId])) as any[];
+        const blockColumns = (await api.documents.listColumnsByBlockIds([
+            blockId,
+        ])) as any[];
 
         const propertiesObj: Record<string, unknown> = {};
         const naturalFields: Record<string, string> = {};
@@ -345,7 +347,9 @@ export const useRequirementActions = ({
                         const doc = await api.documents.getById(documentId);
                         let organizationId: string | undefined;
                         if (doc?.project_id) {
-                            const project = await api.projects.getById(doc.project_id as any);
+                            const project = await api.projects.getById(
+                                doc.project_id as any,
+                            );
                             organizationId = (project as any)?.organization_id;
                         }
                         if (organizationId) {

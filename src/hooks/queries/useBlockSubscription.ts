@@ -27,40 +27,38 @@ export function useBlockSubscription(documentId: string) {
                 const api = atomsApiClient();
                 const subscription = api.realtime.subscribeBlocks(documentId, {
                     onInsert: (newBlock) => {
-                            setLocalBlocks((prev) => {
-                                const exists = prev.some((b) => b.id === newBlock.id);
-                                return exists
-                                    ? prev
-                                    : [...prev, newBlock].sort(
-                                          (a, b) => a.position - b.position,
-                                      );
-                            });
-                            addBlock(newBlock);
+                        setLocalBlocks((prev) => {
+                            const exists = prev.some((b) => b.id === newBlock.id);
+                            return exists
+                                ? prev
+                                : [...prev, newBlock].sort(
+                                      (a, b) => a.position - b.position,
+                                  );
+                        });
+                        addBlock(newBlock);
                     },
                     onUpdate: (updatedBlock) => {
-                            // Handle soft deletes
-                            if (updatedBlock.is_deleted) {
-                                setLocalBlocks((prev) =>
-                                    prev.filter((b) => b.id !== updatedBlock.id),
-                                );
-                                deleteBlock(updatedBlock.id);
-                                return;
-                            }
-                            // Update local state
+                        // Handle soft deletes
+                        if (updatedBlock.is_deleted) {
                             setLocalBlocks((prev) =>
-                                prev
-                                    .map((b) =>
-                                        b.id === updatedBlock.id ? updatedBlock : b,
-                                    )
-                                    .sort((a, b) => a.position - b.position),
+                                prev.filter((b) => b.id !== updatedBlock.id),
                             );
-                            updateBlock(updatedBlock.id, updatedBlock.content);
+                            deleteBlock(updatedBlock.id);
+                            return;
+                        }
+                        // Update local state
+                        setLocalBlocks((prev) =>
+                            prev
+                                .map((b) => (b.id === updatedBlock.id ? updatedBlock : b))
+                                .sort((a, b) => a.position - b.position),
+                        );
+                        updateBlock(updatedBlock.id, updatedBlock.content);
                     },
                     onDelete: (deletedBlockId) => {
-                            setLocalBlocks((prev) =>
-                                prev.filter((b) => b.id !== deletedBlockId),
-                            );
-                            deleteBlock(deletedBlockId);
+                        setLocalBlocks((prev) =>
+                            prev.filter((b) => b.id !== deletedBlockId),
+                        );
+                        deleteBlock(deletedBlockId);
                     },
                 });
                 channel = subscription.channel;

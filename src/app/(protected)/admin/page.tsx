@@ -59,21 +59,21 @@ export default function AdminPage() {
         try {
             const api = atomsApiClient();
             await api.auth.setApproval(unapprovedUser.id, true);
-        setUsers((prev) =>
-            prev.map((user) =>
-                user.id === unapprovedUser.id ? { ...user, is_approved: true } : user,
-            ),
-        );
-        await fetch('/api/email/notify-approval', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email: unapprovedUser.email,
-                name: unapprovedUser.full_name || 'User',
-            }),
-        });
+            setUsers((prev) =>
+                prev.map((user) =>
+                    user.id === unapprovedUser.id ? { ...user, is_approved: true } : user,
+                ),
+            );
+            await fetch('/api/email/notify-approval', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: unapprovedUser.email,
+                    name: unapprovedUser.full_name || 'User',
+                }),
+            });
         } catch (error) {
             console.error('Failed to approve user:', error);
         }
@@ -83,11 +83,11 @@ export default function AdminPage() {
         try {
             const api = atomsApiClient();
             await api.auth.setApproval(approvedUser.id, false);
-        setUsers((prev) =>
-            prev.map((user) =>
-                user.id === approvedUser.id ? { ...user, is_approved: false } : user,
-            ),
-        );
+            setUsers((prev) =>
+                prev.map((user) =>
+                    user.id === approvedUser.id ? { ...user, is_approved: false } : user,
+                ),
+            );
         } catch (error) {
             console.error('Failed to unapprove user:', error);
         }

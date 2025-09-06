@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 
 export type OrganizationMemberInput = Pick<

@@ -2,8 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import { Property, PropertyType } from '@/components/custom/BlockCanvas/types';
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Database } from '@/types/base/database.types';
 
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];

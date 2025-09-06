@@ -20,8 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateBaseOrgProperties } from '@/hooks/mutations/useDocumentMutations';
-import { useUser } from '@/lib/providers/user.provider';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { useUser } from '@/lib/providers/user.provider';
 import {
     BillingPlan,
     OrganizationType,
@@ -100,7 +100,9 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
 
             while (!isUnique) {
                 const api = atomsApiClient();
-                const existing = await api.organizations.listWithFilters({ slug: uniqueSlug });
+                const existing = await api.organizations.listWithFilters({
+                    slug: uniqueSlug,
+                });
                 if (!existing || existing.length === 0) {
                     isUnique = true;
                 } else {

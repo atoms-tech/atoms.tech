@@ -16,7 +16,9 @@ export async function generateNextRequirementId(organizationId: string): Promise
 
         // Get the highest existing requirement ID for this organization
         // We need to join with documents and projects to get organization-scoped requirements
-        const requirements = await api.requirements.listWithFilters({ organization_id: organizationId });
+        const requirements = await api.requirements.listWithFilters({
+            organization_id: organizationId,
+        });
 
         // Find the highest number for this organization's requirements
         let maxNumber = 0;
@@ -56,7 +58,9 @@ export async function generateDocumentScopedRequirementId(
     try {
         // Get the highest existing requirement ID for this document
         const api = atomsApiClient();
-        const requirements = await api.requirements.listWithFilters({ document_id: documentId });
+        const requirements = await api.requirements.listWithFilters({
+            document_id: documentId,
+        });
 
         // Find the highest number for this document's requirements
         let maxNumber = 0;
@@ -96,7 +100,9 @@ export async function generateProjectScopedRequirementId(
     try {
         // Get all requirements for this project through documents
         const api = atomsApiClient();
-        const requirements = await api.requirements.listWithFilters({ project_id: projectId });
+        const requirements = await api.requirements.listWithFilters({
+            project_id: projectId,
+        });
 
         // Find the highest number for this project's requirements
         let maxNumber = 0;
@@ -143,7 +149,9 @@ export async function generateBatchRequirementIds(
         const orgPrefix = org?.name?.substring(0, 3).toUpperCase() || 'ORG';
 
         // Get the highest existing requirement ID for this organization
-        const requirements = await api.requirements.listWithFilters({ organization_id: organizationId });
+        const requirements = await api.requirements.listWithFilters({
+            organization_id: organizationId,
+        });
 
         // Find the highest number for this organization's requirements
         let maxNumber = 0;

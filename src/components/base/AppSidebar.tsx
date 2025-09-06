@@ -41,9 +41,9 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useSignOut } from '@/hooks/useSignOut';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { OrganizationType } from '@/types';
 
 interface MenuItem {
@@ -122,7 +122,9 @@ function AppSidebar() {
             const prof = user?.id ? await api.auth.getProfile(user.id) : null;
             if (prof) {
                 let targetOrgId = (prof as any).pinned_organization_id as string | null;
-                const personalOrgId = (prof as any).personal_organization_id as string | null;
+                const personalOrgId = (prof as any).personal_organization_id as
+                    | string
+                    | null;
                 if (!targetOrgId && personalOrgId && user?.id) {
                     await api.auth.updateProfile(user.id, {
                         pinned_organization_id: personalOrgId,

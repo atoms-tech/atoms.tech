@@ -9,9 +9,9 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 
 import SettingsSection from './SettingsSection';
 

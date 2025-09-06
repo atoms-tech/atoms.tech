@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import { Requirement } from '@/types';
 import { RequirementSchema } from '@/types/validation/requirements.validation';
 
@@ -78,7 +78,6 @@ export function useSyncRequirementData() {
             userId,
         }: {
             requirementId: string;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: Record<string, any>;
             userId: string;
         }) => {

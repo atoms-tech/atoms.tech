@@ -22,12 +22,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { OrgMemberAutocomplete } from '@/components/ui/orgMemberAutocomplete';
 import { toast } from '@/components/ui/use-toast';
+import { atomsApiClient } from '@/lib/atoms-api';
 import {
     PROJECT_ROLE_ARRAY,
     ProjectRole,
     hasProjectPermission,
 } from '@/lib/auth/permissions';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
 
 interface ProjectMembersProps {
@@ -79,7 +79,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
     const filteredMembers = sortedMembers.filter((member: any) => {
         const matchesSearch =
-            member.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            member.profiles?.full_name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
             member.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length > 0
@@ -161,7 +163,9 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
             // Ensure not already a project member
             const projMembers = await api.projects.listMembers(projectId);
-            if (projMembers.some((m: any) => (m.user_id || m.id) === (profile as any).id)) {
+            if (
+                projMembers.some((m: any) => (m.user_id || m.id) === (profile as any).id)
+            ) {
                 setErrorMessage('User is already a part of this project.');
                 return;
             }
@@ -320,7 +324,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     </div>
                                     <div>
                                         <div className="font-medium">
-                                            {(member as any).profiles?.full_name || 'User'}
+                                            {(member as any).profiles?.full_name ||
+                                                'User'}
                                             {member.id === user?.id && ' (you)'}
                                         </div>
                                         <div className="text-sm text-muted-foreground">

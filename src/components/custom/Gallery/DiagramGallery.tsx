@@ -76,13 +76,15 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
             const api = atomsApiClient();
             const list = await api.diagrams.listByProject(projectId);
-            const mappedData: DiagramItem[] = (list as any[]).map((item: DiagramDatabaseRow) => ({
-                id: item.id,
-                name: item.name || 'Untitled Diagram',
-                thumbnail_url: item.thumbnail_url,
-                updated_at: item.updated_at || new Date().toISOString(),
-                created_by: item.created_by,
-            }));
+            const mappedData: DiagramItem[] = (list as any[]).map(
+                (item: DiagramDatabaseRow) => ({
+                    id: item.id,
+                    name: item.name || 'Untitled Diagram',
+                    thumbnail_url: item.thumbnail_url,
+                    updated_at: item.updated_at || new Date().toISOString(),
+                    created_by: item.created_by,
+                }),
+            );
 
             setDiagrams(mappedData);
         } catch (err) {

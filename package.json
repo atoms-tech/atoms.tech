@@ -15,7 +15,11 @@
         "prepare": "husky",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
+        "check:centralized": "node scripts/check-centralized-usage.mjs",
         "type-check": "tsc --noEmit",
+        "type-check:tsc": "tsc --pretty false --noEmit",
+        "type-check:next": "NEXT_TELEMETRY_DISABLED=1 next build --no-lint",
+        "type-check:full": "npm run type-check:tsc && npm run type-check:next",
         "email:dev": "email dev --dir ./src/emails --port 3001"
     },
     "type": "module",
@@ -136,5 +140,5 @@
         "tailwindcss": "^3.4.17",
         "typescript": "^5.8.3"
     },
-    "packageManager": "yarn@4.5.1+sha512.341db9396b6e289fecc30cd7ab3af65060e05ebff4b3b47547b278b9e67b08f485ecd8c79006b405446262142c7a38154445ef7f17c1d5d1de7d90bf9ce7054d"
+    "packageManager": "bun@latest"
 }

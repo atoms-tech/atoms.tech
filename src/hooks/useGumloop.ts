@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import { atomsApiClient } from '@/lib/atoms-api';
-import type { PipelineRunStatusResponse, StartPipelineParams, StartPipelineResponse } from '@/lib/services/gumloop';
+import type {
+    PipelineRunStatusResponse,
+    StartPipelineParams,
+    StartPipelineResponse,
+} from '@/lib/services/gumloop';
 
 interface GumloopOptions {
     skipCache?: boolean;
@@ -51,7 +55,7 @@ export function useGumloop(options: GumloopOptions = {}) {
     const usePipelineRun = (runId: string, _organizationId: string) => {
         return useQuery<PipelineRunStatusResponse, Error>({
             queryKey: ['pipelineRun', runId],
-            queryFn: () => getPipelineRun(runId, organizationId),
+            queryFn: () => getPipelineRun(runId, _organizationId),
             enabled: !!runId && !options.skipCache,
             refetchInterval: (query) => {
                 const state = query.state.data?.state;

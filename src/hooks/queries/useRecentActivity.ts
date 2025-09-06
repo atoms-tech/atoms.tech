@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 
 // Database response types
 interface DocumentResponse extends Record<string, unknown> {
@@ -240,7 +240,9 @@ export function useRecentRequirements() {
             const api = atomsApiClient();
             const data = await api.recent.requirementsByOrgIds(orgIds);
             return (data || [])
-                .filter((req: any) => isRequirementResponse(req as Record<string, unknown>))
+                .filter((req: any) =>
+                    isRequirementResponse(req as Record<string, unknown>),
+                )
                 .map(
                     (req: any): RecentItem => ({
                         id: safeGetString(req as Record<string, unknown>, 'id'),

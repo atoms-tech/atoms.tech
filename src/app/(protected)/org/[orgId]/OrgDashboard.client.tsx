@@ -43,9 +43,9 @@ import {
     useDuplicateProject,
 } from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { ExternalDocument } from '@/types/base/documents.types';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
@@ -108,7 +108,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         queryFn: async () => {
             if (!selectedProjectId) return [];
             const api = atomsApiClient();
-            const data = await api.documents.listWithFilters({ project_id: selectedProjectId });
+            const data = await api.documents.listWithFilters({
+                project_id: selectedProjectId,
+            });
             return data.map((d: any) => ({ id: d.id, name: d.name }));
         },
         enabled: !!selectedProjectId,

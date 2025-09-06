@@ -37,10 +37,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { Document } from '@/types/base/documents.types';
 
 import ProjectMembers from './ProjectMembers';
@@ -103,7 +103,9 @@ export default function ProjectPage() {
             const api = atomsApiClient();
             try {
                 const members = await api.projects.listMembers(projectId);
-                const me = members.find((m: any) => m.user_id === user.id || m.id === user.id);
+                const me = members.find(
+                    (m: any) => m.user_id === user.id || m.id === user.id,
+                );
                 setUserRole((me as any)?.role || null);
             } catch (e) {
                 console.error('Error fetching user role:', e);
@@ -139,7 +141,9 @@ export default function ProjectPage() {
 
             // Soft-delete requirements and document via centralized domains
             const reqs = await api.requirements.listByDocument(documentToDelete.id);
-            await Promise.all(reqs.map((r: any) => api.requirements.softDelete(r.id, user?.id || '')));
+            await Promise.all(
+                reqs.map((r: any) => api.requirements.softDelete(r.id, user?.id || '')),
+            );
             await api.documents.softDelete(documentToDelete.id, user?.id || '');
 
             // Refresh documents list

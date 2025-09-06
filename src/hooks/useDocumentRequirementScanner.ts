@@ -145,7 +145,9 @@ export function useDocumentRequirementScanner({
             // First, get all blocks in the document
             const api = atomsApiClient();
             const blocks = await api.documents.listBlocks(documentId);
-            const tableBlocks = blocks.filter((b: any) => b.type === 'table' && !b.is_deleted);
+            const tableBlocks = blocks.filter(
+                (b: any) => b.type === 'table' && !b.is_deleted,
+            );
 
             if (!tableBlocks || tableBlocks.length === 0) {
                 console.log('No table blocks found in document');
@@ -258,21 +260,28 @@ export function useDocumentRequirementScanner({
 
                 // Use Promise.all for parallel updates (faster than sequential)
                 const api = atomsApiClient();
-                const updatePromises = selectedRequirementIds.map(async (requirementId, i) => {
-                    const newExternalId = newExternalIds[i];
-                    try {
-                        await api.requirements.update(requirementId, { external_id: newExternalId } as any);
-                        return { requirementId, newExternalId, success: true };
-                    } catch (e: any) {
-                        console.error(`❌ Failed to update requirement ${requirementId}:`, e);
-                        return {
-                            requirementId,
-                            newExternalId,
-                            success: false,
-                            error: e?.message || 'update failed',
-                        };
-                    }
-                });
+                const updatePromises = selectedRequirementIds.map(
+                    async (requirementId, i) => {
+                        const newExternalId = newExternalIds[i];
+                        try {
+                            await api.requirements.update(requirementId, {
+                                external_id: newExternalId,
+                            } as any);
+                            return { requirementId, newExternalId, success: true };
+                        } catch (e: any) {
+                            console.error(
+                                `❌ Failed to update requirement ${requirementId}:`,
+                                e,
+                            );
+                            return {
+                                requirementId,
+                                newExternalId,
+                                success: false,
+                                error: e?.message || 'update failed',
+                            };
+                        }
+                    },
+                );
 
                 const results = await Promise.all(updatePromises);
 

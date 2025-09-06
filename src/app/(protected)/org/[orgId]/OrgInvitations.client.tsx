@@ -73,18 +73,22 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
             // Check if the email exists in the profiles table
             const profile = await api.auth.getByEmail(inviteEmail.trim());
             if (!profile) {
-                    setErrorMessage(
-                        'This email does not belong to any user. Please ask the user to sign up first.',
-                    );
-                    setUserExists(false); // User does not exist
-                    return;
+                setErrorMessage(
+                    'This email does not belong to any user. Please ask the user to sign up first.',
+                );
+                setUserExists(false); // User does not exist
+                return;
             }
 
             setUserExists(true); // User exists
 
             // Check for duplicate invitations
             const invitesInOrg = await api.orgInvitations.listByOrganization(orgId);
-            const duplicateInvitations = invitesInOrg.filter((inv: any) => inv.email === inviteEmail.trim() && inv.status === InvitationStatus.pending);
+            const duplicateInvitations = invitesInOrg.filter(
+                (inv: any) =>
+                    inv.email === inviteEmail.trim() &&
+                    inv.status === InvitationStatus.pending,
+            );
 
             if (duplicateInvitations && duplicateInvitations.length > 0) {
                 setErrorMessage(
@@ -130,7 +134,11 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
 
         try {
             const api = atomsApiClient();
-            await api.orgInvitations.updateStatus(invitationId, InvitationStatus.revoked, user.id);
+            await api.orgInvitations.updateStatus(
+                invitationId,
+                InvitationStatus.revoked,
+                user.id,
+            );
 
             setErrorMessage(null); // Clear error message on success
             refetch(); // Refresh the list of outgoing invitations

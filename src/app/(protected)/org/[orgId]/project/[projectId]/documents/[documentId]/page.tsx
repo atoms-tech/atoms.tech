@@ -192,8 +192,15 @@ export default function DocumentPage() {
             // Get all requirements in this document and filter ones with external_ids
             const api = atomsApiClient();
             const requirements = (await api.requirements.listByDocument(documentId))
-                .filter((r: any) => r.external_id && r.external_id !== '' && !r.is_deleted)
-                .map((r: any) => ({ id: r.id, name: r.name, external_id: r.external_id, block_id: r.block_id }));
+                .filter(
+                    (r: any) => r.external_id && r.external_id !== '' && !r.is_deleted,
+                )
+                .map((r: any) => ({
+                    id: r.id,
+                    name: r.name,
+                    external_id: r.external_id,
+                    block_id: r.block_id,
+                }));
 
             // Find duplicates
             const idCounts = new Map<
@@ -252,8 +259,13 @@ export default function DocumentPage() {
             // Find requirements with invalid names or missing data
             const api = atomsApiClient();
             const allReqs = await api.requirements.listByDocument(documentId);
-            const invalidRequirements = allReqs.filter((req: any) =>
-                !req.name || req.name === '' || req.name === 'undefined' || req.external_id === 'undefined');
+            const invalidRequirements = allReqs.filter(
+                (req: any) =>
+                    !req.name ||
+                    req.name === '' ||
+                    req.name === 'undefined' ||
+                    req.external_id === 'undefined',
+            );
 
             if (!invalidRequirements || invalidRequirements.length === 0) {
                 toast.dismiss('cleanup');

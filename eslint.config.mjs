@@ -27,11 +27,11 @@ const eslintConfig = [
                     paths: [
                         {
                             name: '@/lib/supabase/supabaseBrowser',
-                            message: 'Use atomsApiClient from \'@/lib/atoms-api\' instead.'
+                            message: "Use atomsApiClient from '@/lib/atoms-api' instead.",
                         },
                         {
                             name: '@/lib/supabase/supabaseServer',
-                            message: 'Use atomsApiServer from \'@/lib/atoms-api\' instead.'
+                            message: "Use atomsApiServer from '@/lib/atoms-api' instead.",
                         },
                     ],
                     patterns: [

@@ -163,55 +163,58 @@ export const useDocumentRealtime = ({
             // Subscribe to requirements changes
             reqSub = api.realtime.subscribeRequirements(documentId, {
                 onUpdate: (updated) => {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
-                            return prevBlocks.map((block) => {
-                                if (block.id === updated.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: block.requirements.map((req) =>
-                                            req.id === updated.id
-                                                ? (updated as Requirement)
-                                                : req,
-                                        ),
-                                    };
-                                }
-                                return block;
-                            });
+                        return prevBlocks.map((block) => {
+                            if (block.id === updated.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: block.requirements.map((req) =>
+                                        req.id === updated.id
+                                            ? (updated as Requirement)
+                                            : req,
+                                    ),
+                                };
+                            }
+                            return block;
                         });
-            },
-            onInsert: (inserted) => {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    });
+                },
+                onInsert: (inserted) => {
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
-                            return prevBlocks.map((block) => {
-                                if (block.id === inserted.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: [...block.requirements, inserted as Requirement],
-                                    };
-                                }
-                                return block;
-                            });
+                        return prevBlocks.map((block) => {
+                            if (block.id === inserted.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: [
+                                        ...block.requirements,
+                                        inserted as Requirement,
+                                    ],
+                                };
+                            }
+                            return block;
                         });
-            },
-            onDelete: (oldItem) => {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    });
+                },
+                onDelete: (oldItem) => {
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
-                            return prevBlocks.map((block) => {
-                                if (block.id === oldItem.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: block.requirements.filter(
-                                            (req) => req.id !== oldItem.id,
-                                        ),
-                                    };
-                                }
-                                return block;
-                            });
+                        return prevBlocks.map((block) => {
+                            if (block.id === oldItem.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: block.requirements.filter(
+                                        (req) => req.id !== oldItem.id,
+                                    ),
+                                };
+                            }
+                            return block;
                         });
+                    });
                 },
             });
             await reqSub.subscribe();

@@ -32,9 +32,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
-import { useOrganization } from '@/lib/providers/organization.provider';
 // Unused but might be needed in the future
 import { atomsApiClient } from '@/lib/atoms-api';
+import { useOrganization } from '@/lib/providers/organization.provider';
 import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
@@ -81,8 +81,12 @@ export function BlockCanvas({
             if (!projectId || !userProfile?.id) return;
             try {
                 const api = atomsApiClient();
-                const members = await api.projects.listMembers(Array.isArray(projectId) ? projectId[0] : projectId);
-                const me = members.find((m: any) => m.user_id === userProfile.id || m.id === userProfile.id);
+                const members = await api.projects.listMembers(
+                    Array.isArray(projectId) ? projectId[0] : projectId,
+                );
+                const me = members.find(
+                    (m: any) => m.user_id === userProfile.id || m.id === userProfile.id,
+                );
                 setUserRole((me as any)?.role || null);
             } catch (e) {
                 console.error('Error fetching user role:', e);

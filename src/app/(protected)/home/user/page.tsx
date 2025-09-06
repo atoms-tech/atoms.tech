@@ -25,9 +25,9 @@ import {
     useOrgInvitation,
     useOrganizationsByMembership,
 } from '@/hooks/queries/useOrganization';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 // No direct Supabase import; using atoms-api
 import { useContextStore } from '@/store/context.store';
 import { InvitationStatus, OrganizationType } from '@/types/base/enums.types';
@@ -83,7 +83,9 @@ export default function UserDashboard() {
                             username: profile?.full_name || user?.email?.split('@')[0],
                         });
                     } else if (personal) {
-                        await api.auth.updateProfile(user?.id || '', { pinned_organization_id: personal } as any);
+                        await api.auth.updateProfile(user?.id || '', {
+                            pinned_organization_id: personal,
+                        } as any);
                         setPinnedOrgId(personal);
                         setUserContext({
                             userId: user?.id || undefined,
@@ -119,7 +121,9 @@ export default function UserDashboard() {
                 // Unpin: If the already pinned organization is clicked again, update to null
                 const newPinnedOrgId = pinnedOrgId === orgId ? null : orgId;
 
-                await api.auth.updateProfile(profileByEmail.id, { pinned_organization_id: newPinnedOrgId } as any);
+                await api.auth.updateProfile(profileByEmail.id, {
+                    pinned_organization_id: newPinnedOrgId,
+                } as any);
                 setPinnedOrgId(newPinnedOrgId);
                 setUserContext({
                     userId: user?.id || undefined,

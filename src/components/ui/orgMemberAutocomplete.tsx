@@ -34,7 +34,7 @@ export function OrgMemberAutocomplete({
             const profiles = await Promise.all(
                 memberIds.map(async (id) => api.auth.getProfile(id)),
             );
-            const clean = (profiles.filter(Boolean) as Profile[]);
+            const clean = profiles.filter(Boolean) as Profile[];
             setOrgMembers(clean);
         };
 

@@ -6,9 +6,9 @@ import { useParams } from 'next/navigation';
 import React, { memo } from 'react';
 
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 
 function useUserRole(userId: string) {
     const params = useParams();

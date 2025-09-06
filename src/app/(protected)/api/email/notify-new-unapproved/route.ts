@@ -2,7 +2,11 @@ import { render } from '@react-email/render';
 import { NextRequest, NextResponse } from 'next/server';
 
 import NewUnapprovedEmail from '@/emails/NewUnapprovedEmail';
-import { getResend, resend_from_email, resend_receive_email } from '@/lib/services/resend';
+import {
+    getResend,
+    resend_from_email,
+    resend_receive_email,
+} from '@/lib/services/resend';
 
 export async function POST(request: NextRequest) {
     try {

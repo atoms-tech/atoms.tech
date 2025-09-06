@@ -13,8 +13,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useUser } from '@/lib/providers/user.provider';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { useUser } from '@/lib/providers/user.provider';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
 
@@ -68,7 +68,9 @@ const VerticalToolbar = () => {
             try {
                 const api = atomsApiClient();
                 const members = await api.projects.listMembers(projectId);
-                const me = members.find((m: any) => m.user_id === user.id || m.id === user.id);
+                const me = members.find(
+                    (m: any) => m.user_id === user.id || m.id === user.id,
+                );
                 setUserRole((me as any)?.role || null);
             } catch (e) {
                 console.error('Error fetching user role:', e);

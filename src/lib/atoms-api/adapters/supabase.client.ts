@@ -5,6 +5,5 @@ import type { Database } from '@/types/base/database.types';
 export type SupabaseBrowserClient = ReturnType<typeof getClient>;
 
 export function getClient() {
-  return browserClient as unknown as import('@supabase/supabase-js').SupabaseClient<Database>;
+    return browserClient as unknown as import('@supabase/supabase-js').SupabaseClient<Database>;
 }
-

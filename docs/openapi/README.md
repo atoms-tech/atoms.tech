@@ -20,17 +20,17 @@ Generate Server Controller Stubs (NSwag)
 
 The examples below generate ASP.NET Core controller stubs per spec file. Run each to create controllers you can fill in.
 
-1) Install NSwag CLI
+1. Install NSwag CLI
 
 - dotnet tool install --global NSwag.ConsoleCore
 
-2) Use the template nswag.server.json (update input & output as needed)
+2. Use the template nswag.server.json (update input & output as needed)
 
 - See docs/openapi/nswag.server.json
 - Example (auth):
   nswag run /variables:Input=docs/openapi/auth.yaml;Output=../server/App.Api/Generated/Auth
 
-3) Repeat for each YAML (organizations, projects, etc.)
+3. Repeat for each YAML (organizations, projects, etc.)
 
 Generate Typed C# Clients (optional)
 
@@ -70,4 +70,3 @@ Realtime & Background
 Tip for Incremental Delivery
 
 - Stand up core domains first (auth, orgs, projects, documents/blocks/columns, requirements), point the frontend atoms-api adapters to the new endpoints, then continue with properties/testing/trace/workflows.
-

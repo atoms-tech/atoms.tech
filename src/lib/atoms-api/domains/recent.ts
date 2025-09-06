@@ -4,11 +4,12 @@ import type { SupabaseServerClient } from '@/lib/atoms-api/adapters/supabase.ser
 type SupabaseAny = SupabaseBrowserClient | SupabaseServerClient;
 
 export function createRecentDomain(supabase: SupabaseAny) {
-  return {
-    async documentsByOrgIds(orgIds: string[]) {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
+    return {
+        async documentsByOrgIds(orgIds: string[]) {
+            const { data, error } = await supabase
+                .from('documents')
+                .select(
+                    `
           id,
           name,
           description,
@@ -23,18 +24,20 @@ export function createRecentDomain(supabase: SupabaseAny) {
                   name
               )
           )
-        `)
-        .in('projects.organization_id', orgIds)
-        .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data ?? [];
-    },
-    async projectsByOrgIds(orgIds: string[]) {
-      const { data, error } = await supabase
-        .from('projects')
-        .select(`
+        `,
+                )
+                .in('projects.organization_id', orgIds)
+                .eq('is_deleted', false)
+                .order('updated_at', { ascending: false })
+                .limit(20);
+            if (error) throw error;
+            return data ?? [];
+        },
+        async projectsByOrgIds(orgIds: string[]) {
+            const { data, error } = await supabase
+                .from('projects')
+                .select(
+                    `
           id,
           name,
           description,
@@ -44,18 +47,20 @@ export function createRecentDomain(supabase: SupabaseAny) {
               id,
               name
           )
-        `)
-        .in('organization_id', orgIds)
-        .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
-        .limit(10);
-      if (error) throw error;
-      return data ?? [];
-    },
-    async requirementsByOrgIds(orgIds: string[]) {
-      const { data, error } = await supabase
-        .from('requirements')
-        .select(`
+        `,
+                )
+                .in('organization_id', orgIds)
+                .eq('is_deleted', false)
+                .order('updated_at', { ascending: false })
+                .limit(10);
+            if (error) throw error;
+            return data ?? [];
+        },
+        async requirementsByOrgIds(orgIds: string[]) {
+            const { data, error } = await supabase
+                .from('requirements')
+                .select(
+                    `
           id,
           name,
           description,
@@ -76,15 +81,16 @@ export function createRecentDomain(supabase: SupabaseAny) {
                   )
               )
           )
-        `)
-        .in('documents.projects.organization_id', orgIds)
-        .eq('is_deleted', false)
-        .order('updated_at', { ascending: false })
-        .limit(15);
-      if (error) throw error;
-      return data ?? [];
-    },
-  };
+        `,
+                )
+                .in('documents.projects.organization_id', orgIds)
+                .eq('is_deleted', false)
+                .order('updated_at', { ascending: false })
+                .limit(15);
+            if (error) throw error;
+            return data ?? [];
+        },
+    };
 }
 
 export type RecentDomain = ReturnType<typeof createRecentDomain>;

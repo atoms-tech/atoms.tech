@@ -68,7 +68,10 @@ export function useAuth() {
                     setTimeout(() => reject(new Error('Session check timeout')), 3000),
                 );
 
-                const resultUser = await Promise.race([api.auth.getUser(), timeoutPromise]);
+                const resultUser = await Promise.race([
+                    api.auth.getUser(),
+                    timeoutPromise,
+                ]);
                 const sessionUser = resultUser as { id?: string } | null;
 
                 setIsAuthenticated(!!sessionUser);

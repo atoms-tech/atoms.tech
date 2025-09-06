@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { Project } from '@/types/base/projects.types';
 
 export type CreateProjectInput = Omit<

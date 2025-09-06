@@ -2,9 +2,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { cache } from 'react';
 
+import { atomsApiServer } from '@/lib/atoms-api/server';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { atomsApiServer } from '@/lib/atoms-api/server';
 
 // Cache this function to prevent multiple executions in the same request
 export const prefetchUserDashboard = cache(async (queryClient?: QueryClient) => {

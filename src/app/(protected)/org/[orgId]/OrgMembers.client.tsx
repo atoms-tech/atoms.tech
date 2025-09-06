@@ -22,12 +22,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
+import { atomsApiClient } from '@/lib/atoms-api';
 import {
     ORGANIZATION_ROLE_ARRAY,
     OrganizationRole,
     hasOrganizationPermission,
 } from '@/lib/auth/permissions';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
 
 interface OrgMembersProps {
@@ -132,7 +132,11 @@ export default function OrgMembers({ className }: OrgMembersProps) {
 
         try {
             const api = atomsApiClient();
-            await api.organizations.setMemberRole(params.orgId as string, memberId, selectedRole);
+            await api.organizations.setMemberRole(
+                params.orgId as string,
+                memberId,
+                selectedRole,
+            );
 
             toast({
                 title: 'Success',
@@ -161,10 +165,12 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     });
 
     // Filter and search functionality
-    const filteredMembers = sortedMembers.filter((member) => {
+    const filteredMembers = sortedMembers.filter((member: any) => {
         const matchesSearch =
-            member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
+            member.profiles?.full_name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+            member.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length === 0 ||
             roleFilters.includes(member.role as OrganizationRole);
@@ -251,11 +257,12 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                     </div>
                                     <div>
                                         <div className="font-medium text-gray-900 dark:text-gray-100">
-                                            {member.full_name || 'User'}
+                                            {(member as any).profiles?.full_name ||
+                                                'User'}
                                             {member.id === user?.id && ' (you)'}
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                            {member.email}
+                                            {(member as any).profiles?.email}
                                         </div>
                                     </div>
                                 </div>

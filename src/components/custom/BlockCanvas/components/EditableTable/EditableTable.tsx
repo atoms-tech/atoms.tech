@@ -13,10 +13,10 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
 // No direct data access here; logic delegated to hooks and props
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
-import { atomsApiClient } from '@/lib/atoms-api';
 
 import {
     AddRowPlaceholder,
@@ -172,9 +172,16 @@ export function EditableTable<
             const getUserRole = async (): Promise<keyof typeof rolePermissions> => {
                 try {
                     const api = atomsApiClient();
-                    const members = await api.projects.listMembers(Array.isArray(projectId) ? (projectId as any)[0] : (projectId as any));
-                    const me = members.find((m: any) => m.user_id === userId || m.id === userId);
-                    return ((me as any)?.role || 'viewer') as keyof typeof rolePermissions;
+                    const members = await api.projects.listMembers(
+                        Array.isArray(projectId)
+                            ? (projectId as any)[0]
+                            : (projectId as any),
+                    );
+                    const me = members.find(
+                        (m: any) => m.user_id === userId || m.id === userId,
+                    );
+                    return ((me as any)?.role ||
+                        'viewer') as keyof typeof rolePermissions;
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';

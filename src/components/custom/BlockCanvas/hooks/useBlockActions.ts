@@ -11,9 +11,9 @@ import {
     useDeleteBlock,
     useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { BLOCK_TEXT_DEFAULT_HEIGHT } from '@/lib/constants/blocks';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { atomsApiClient } from '@/lib/atoms-api';
 import { useDocumentStore } from '@/store/document.store';
 import { Json } from '@/types/base/database.types';
 

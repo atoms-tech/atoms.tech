@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { queryKeys } from '@/lib/constants/queryKeys';
 import { atomsApiClient } from '@/lib/atoms-api';
+import { queryKeys } from '@/lib/constants/queryKeys';
 import type { EEntityType } from '@/types';
 import { QueryFilters } from '@/types/base/filters.types';
 
@@ -14,7 +14,7 @@ export function useTraceLinks(
         queryKey: queryKeys.traceLinks.bySource(sourceId, sourceType),
         queryFn: async () => {
             const api = atomsApiClient();
-            return api.traceLinks.listBySource(sourceId, sourceType as unknown as string);
+            return api.traceLinks.listBySource(sourceId, sourceType);
         },
         enabled: !!sourceId && !!sourceType,
     });
@@ -29,7 +29,7 @@ export function useReverseTraceLinks(
         queryKey: queryKeys.traceLinks.byTarget(targetId, targetType),
         queryFn: async () => {
             const api = atomsApiClient();
-            return api.traceLinks.listByTarget(targetId, targetType as unknown as string);
+            return api.traceLinks.listByTarget(targetId, targetType);
         },
         enabled: !!targetId && !!targetType,
     });
@@ -44,7 +44,7 @@ export function useAssignments(
         queryKey: queryKeys.assignments.byEntity(entityId, entityType),
         queryFn: async () => {
             const api = atomsApiClient();
-            return api.assignments.listByEntity(entityId, entityType as unknown as string);
+            return api.assignments.listByEntity(entityId, entityType);
         },
         enabled: !!entityId && !!entityType,
     });

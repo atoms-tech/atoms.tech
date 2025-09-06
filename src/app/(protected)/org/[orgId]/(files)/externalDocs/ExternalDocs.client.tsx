@@ -20,10 +20,10 @@ import {
     useUploadExternalDocument,
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { atomsApiClient } from '@/lib/atoms-api';
 
 interface ExternalDocsPageProps {
     onTotalUsageUpdate?: (totalUsage: number) => void;
