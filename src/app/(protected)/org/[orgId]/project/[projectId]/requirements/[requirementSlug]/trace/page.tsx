@@ -84,8 +84,8 @@ export default function TracePage() {
 
     // Extract requirement IDs from trace links
     const linkedRequirementIds = useMemo(() => {
-        const sourceIds = incomingLinks?.map((link) => link.source_id) || [];
-        const targetIds = outgoingLinks?.map((link) => link.target_id) || [];
+        const sourceIds = incomingLinks?.map((link: any) => link.source_id) || [];
+        const targetIds = outgoingLinks?.map((link: any) => link.target_id) || [];
         return [...sourceIds, ...targetIds];
     }, [incomingLinks, outgoingLinks]);
 
@@ -103,10 +103,10 @@ export default function TracePage() {
 
             // Check if this requirement is already linked (either as source or target)
             const isSourceInOutgoing = outgoingLinks?.some(
-                (link) => link.target_id === req.id,
+                (link: any) => link.target_id === req.id,
             );
             const isTargetInIncoming = incomingLinks?.some(
-                (link) => link.source_id === req.id,
+                (link: any) => link.source_id === req.id,
             );
 
             // Filter by search query if present
@@ -497,7 +497,7 @@ export default function TracePage() {
                                         </TableHeader>
                                         <TableBody>
                                             {incomingLinks &&
-                                                incomingLinks.map((link) => {
+                                                incomingLinks.map((link: any) => {
                                                     const requirement =
                                                         linkedRequirements?.find(
                                                             (req) =>
@@ -539,7 +539,7 @@ export default function TracePage() {
                                                     );
                                                 })}
                                             {outgoingLinks &&
-                                                outgoingLinks.map((link) => {
+                                                outgoingLinks.map((link: any) => {
                                                     const requirement =
                                                         linkedRequirements?.find(
                                                             (req) =>

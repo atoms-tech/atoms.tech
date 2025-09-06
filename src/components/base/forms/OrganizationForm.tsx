@@ -20,8 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateBaseOrgProperties } from '@/hooks/mutations/useDocumentMutations';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import {
     BillingPlan,
     OrganizationType,
@@ -99,17 +99,11 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
             let attempt = 0;
 
             while (!isUnique) {
-                const { data: existingOrg, error: slugError } = await supabase
-                    .from('organizations')
-                    .select('id')
-                    .eq('slug', uniqueSlug)
-                    .single();
-
-                if (slugError && slugError.code !== 'PGRST116') {
-                    throw slugError;
-                }
-
-                if (!existingOrg) {
+                const api = atomsApiClient();
+                const existing = await api.organizations.listWithFilters({
+                    slug: uniqueSlug,
+                });
+                if (!existing || existing.length === 0) {
                     isUnique = true;
                 } else {
                     attempt++;
@@ -129,47 +123,33 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
             }
 
             // Create the organization
-            const { data: orgData, error: orgError } = await supabase
-                .from('organizations')
-                .insert({
-                    name: values.name,
-                    slug: uniqueSlug,
-                    description: values.description || null,
-                    created_by: user.id,
-                    updated_by: user.id,
-                    type: OrganizationType.enterprise,
-                    billing_plan: BillingPlan.free, // Default to free plan
-                    billing_cycle: PricingPlanInterval.month,
-                    max_members: 5, // Default values
-                    max_monthly_requests: 1000, // Default values
-                })
-                .select('id')
-                .single();
-
-            if (orgError || !orgData) {
-                //throw new Error(orgError?.message || 'Insert returned no data');
-                throw new Error(
-                    `Failed to create org, Supabase insert error: '${orgError?.message || 'Insert returned no data'}`,
-                );
-            }
+            const api = atomsApiClient();
+            const orgCreated = await api.organizations.create({
+                name: values.name,
+                slug: uniqueSlug,
+                description: values.description || null,
+                created_by: user.id,
+                updated_by: user.id,
+                type: OrganizationType.enterprise,
+                billing_plan: BillingPlan.free,
+                billing_cycle: PricingPlanInterval.month,
+                max_members: 5,
+                max_monthly_requests: 1000,
+            } as any);
 
             // Create base organization properties
             await createBaseOrgProperties.mutateAsync({
-                orgId: orgData.id,
+                orgId: orgCreated.id,
                 userId: user.id,
             });
 
             // Add the creator as an owner of the organization
-            const { error: memberError } = await supabase
-                .from('organization_members')
-                .insert({
-                    organization_id: orgData.id,
-                    user_id: user.id,
-                    role: 'owner',
-                    status: 'active',
-                });
-
-            if (memberError) throw memberError;
+            await api.organizations.addMember({
+                organization_id: orgCreated.id,
+                user_id: user.id,
+                role: 'owner',
+                status: 'active',
+            } as any);
 
             toast({
                 title: 'Success',
@@ -182,7 +162,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
             }
 
             // Navigate to the new organization
-            router.push(`/org/${orgData.id}`);
+            router.push(`/org/${orgCreated.id}`);
         } catch (error) {
             console.error('Error creating organization:', error, {
                 name: values.name,

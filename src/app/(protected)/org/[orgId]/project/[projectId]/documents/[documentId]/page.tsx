@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import LayoutView from '@/components/views/LayoutView';
 import { useDocumentRequirementScanner } from '@/hooks/useDocumentRequirementScanner';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 export default function DocumentPage() {
     const params = useParams();
@@ -189,17 +189,18 @@ export default function DocumentPage() {
                 id: 'duplicates',
             });
 
-            // Get all requirements with external_ids
-            const { data: requirements, error } = await supabase
-                .from('requirements')
-                .select('id, name, external_id, block_id')
-                .not('external_id', 'is', null)
-                .not('external_id', 'eq', '')
-                .eq('is_deleted', false);
-
-            if (error) {
-                throw error;
-            }
+            // Get all requirements in this document and filter ones with external_ids
+            const api = atomsApiClient();
+            const requirements = (await api.requirements.listByDocument(documentId))
+                .filter(
+                    (r: any) => r.external_id && r.external_id !== '' && !r.is_deleted,
+                )
+                .map((r: any) => ({
+                    id: r.id,
+                    name: r.name,
+                    external_id: r.external_id,
+                    block_id: r.block_id,
+                }));
 
             // Find duplicates
             const idCounts = new Map<
@@ -256,15 +257,15 @@ export default function DocumentPage() {
             });
 
             // Find requirements with invalid names or missing data
-            const { data: invalidRequirements, error: fetchError } = await supabase
-                .from('requirements')
-                .select('id, name, external_id, block_id')
-                .or('name.is.null,name.eq.,name.eq.undefined,external_id.eq.undefined')
-                .eq('is_deleted', false);
-
-            if (fetchError) {
-                throw fetchError;
-            }
+            const api = atomsApiClient();
+            const allReqs = await api.requirements.listByDocument(documentId);
+            const invalidRequirements = allReqs.filter(
+                (req: any) =>
+                    !req.name ||
+                    req.name === '' ||
+                    req.name === 'undefined' ||
+                    req.external_id === 'undefined',
+            );
 
             if (!invalidRequirements || invalidRequirements.length === 0) {
                 toast.dismiss('cleanup');
@@ -285,17 +286,11 @@ export default function DocumentPage() {
             );
 
             // Soft delete invalid requirements
-            const { error: deleteError } = await supabase
-                .from('requirements')
-                .update({ is_deleted: true })
-                .in(
-                    'id',
-                    invalidRequirements.map((req) => req.id),
-                );
-
-            if (deleteError) {
-                throw deleteError;
-            }
+            await Promise.all(
+                invalidRequirements.map((req: any) =>
+                    api.requirements.update(req.id, { is_deleted: true } as any),
+                ),
+            );
 
             toast.dismiss('cleanup');
             toast.success(

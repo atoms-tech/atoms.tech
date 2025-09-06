@@ -2,31 +2,22 @@
 import { QueryClient } from '@tanstack/react-query';
 import { cache } from 'react';
 
+import { atomsApiServer } from '@/lib/atoms-api/server';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import {
-    getAuthUserServer,
-    getExternalDocumentsByOrgServer,
-    getOrganizationServer,
-    getProjectByIdServer,
-    getProjectDocumentsServer,
-    getUserOrganizationsServer,
-    getUserProfileServer,
-    getUserProjectsServer,
-} from '@/lib/db/server';
 
 // Cache this function to prevent multiple executions in the same request
 export const prefetchUserDashboard = cache(async (queryClient?: QueryClient) => {
     const client = queryClient || getQueryClient();
 
     // Fetch user data in parallel
-    const userResult = await getAuthUserServer();
-    const user = userResult.user;
+    const api = await atomsApiServer();
+    const user = await api.auth.getUser();
 
     // Now fetch profile and organizations with the user ID
     const [profile, organizations] = await Promise.all([
-        getUserProfileServer(user.id),
-        getUserOrganizationsServer(user.id),
+        api.auth.getProfile(user?.id || ''),
+        api.organizations.listForUser(user?.id || ''),
     ]);
 
     // Cache all fetched data
@@ -51,20 +42,21 @@ export const prefetchOrgPageData = async (
     const cachedOrg = client.getQueryData(queryKeys.organizations.detail(orgId));
 
     if (!cachedOrg) {
-        // Fetch org data directly instead of getting all orgs again
-        const organization = await getOrganizationServer(orgId);
+        const api = await atomsApiServer();
+        const organization = await api.organizations.getById(orgId);
         client.setQueryData(queryKeys.organizations.detail(orgId), organization);
     }
 
     // Parallel fetch all org page data
+    const api = await atomsApiServer();
     const [projects, documents] = await Promise.all([
-        getUserProjectsServer(userId, orgId).then((data) => {
+        api.projects.listForUser(userId, orgId).then((data) => {
             client.setQueryData(queryKeys.projects.byOrg(orgId), data);
             return data;
         }),
-        getExternalDocumentsByOrgServer(orgId).then((data) => {
+        api.externalDocuments.listByOrg(orgId).then((data) => {
             client.setQueryData(queryKeys.externalDocuments.byOrg(orgId), data);
-            return data;
+            return data as unknown[];
         }),
     ]);
 
@@ -82,14 +74,13 @@ export const fetchProjectData = cache(
 
         // If not in cache, fetch everything in parallel
         if (!project || !documents) {
+            const api = await atomsApiServer();
             [project, documents] = await Promise.all([
-                getProjectByIdServer(projectId).then((data) => {
-                    // Update cache
+                api.projects.getById(projectId).then((data) => {
                     client.setQueryData(queryKeys.projects.detail(projectId), data);
                     return data;
                 }),
-                getProjectDocumentsServer(projectId).then((data) => {
-                    // The data is already typed as Document[] from the database
+                api.documents.listByProject(projectId).then((data) => {
                     client.setQueryData(queryKeys.documents.byProject(projectId), data);
                     return data;
                 }),

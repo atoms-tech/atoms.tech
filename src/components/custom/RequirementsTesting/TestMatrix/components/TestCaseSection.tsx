@@ -230,9 +230,10 @@ const TestCaseRow = memo(function TestCaseRow({
 
 export const TestCaseSection = memo(TestCaseSectionComponent);
 
-// Add this CSS animation to your global CSS file or as a style tag in your component
-const styleTag = document.createElement('style');
-styleTag.innerHTML = `
+// Add this CSS animation safely on the client only
+if (typeof document !== 'undefined') {
+    const styleTag = document.createElement('style');
+    styleTag.innerHTML = `
 @keyframes marquee {
   0% {
     transform: translateX(0);
@@ -248,6 +249,5 @@ styleTag.innerHTML = `
   animation-iteration-count: infinite;
 }
 `;
-if (typeof document !== 'undefined') {
     document.head.appendChild(styleTag);
 }

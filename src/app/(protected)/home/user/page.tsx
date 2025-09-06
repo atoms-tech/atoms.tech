@@ -25,9 +25,10 @@ import {
     useOrgInvitation,
     useOrganizationsByMembership,
 } from '@/hooks/queries/useOrganization';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser'; // Import Supabase client
+// No direct Supabase import; using atoms-api
 import { useContextStore } from '@/store/context.store';
 import { InvitationStatus, OrganizationType } from '@/types/base/enums.types';
 import { Organization } from '@/types/base/organizations.types';
@@ -68,62 +69,34 @@ export default function UserDashboard() {
     useEffect(() => {
         const fetchPinnedOrg = async () => {
             try {
-                // Fetch the user's profile to get pinned_organization_id and personal_organization_id
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('pinned_organization_id, personal_organization_id')
-                    .eq('id', user?.id || '')
-                    .single();
-
-                if (error) {
-                    console.error('Error fetching user profile:', error);
-                    return;
-                }
-
-                if (data) {
-                    if (data.pinned_organization_id) {
-                        // If a pinned organization exists, set it
-                        setPinnedOrgId(data.pinned_organization_id);
-
-                        // Update Agent Store context
+                const api = atomsApiClient();
+                const prof = user?.id ? await api.auth.getProfile(user.id) : null;
+                if (prof) {
+                    const pinned = (prof as any).pinned_organization_id;
+                    const personal = (prof as any).personal_organization_id;
+                    if (pinned) {
+                        setPinnedOrgId(pinned);
                         setUserContext({
                             userId: user?.id || undefined,
-                            orgId: data.pinned_organization_id || undefined,
-                            pinnedOrganizationId:
-                                data.pinned_organization_id || undefined,
+                            orgId: pinned || undefined,
+                            pinnedOrganizationId: pinned || undefined,
                             username: profile?.full_name || user?.email?.split('@')[0],
                         });
-                    } else if (data.personal_organization_id) {
-                        // If no pinned organization, set it to personal_organization_id by default
-                        const { error: updateError } = await supabase
-                            .from('profiles')
-                            .update({
-                                pinned_organization_id: data.personal_organization_id,
-                            })
-                            .eq('id', user?.id || '');
-
-                        if (!updateError) {
-                            setPinnedOrgId(data.personal_organization_id);
-
-                            // Update Agent Store context
-                            setUserContext({
-                                userId: user?.id || undefined,
-                                orgId: data.personal_organization_id || undefined,
-                                pinnedOrganizationId:
-                                    data.personal_organization_id || undefined,
-                                username:
-                                    profile?.full_name || user?.email?.split('@')[0],
-                            });
-                        } else {
-                            console.error(
-                                'Error updating pinned organization:',
-                                updateError,
-                            );
-                        }
+                    } else if (personal) {
+                        await api.auth.updateProfile(user?.id || '', {
+                            pinned_organization_id: personal,
+                        } as any);
+                        setPinnedOrgId(personal);
+                        setUserContext({
+                            userId: user?.id || undefined,
+                            orgId: personal || undefined,
+                            pinnedOrganizationId: personal || undefined,
+                            username: profile?.full_name || user?.email?.split('@')[0],
+                        });
                     }
                 }
-            } catch (err) {
-                console.error('Unexpected error:', err);
+            } catch (error) {
+                console.error('Error fetching pinned organization:', error);
             }
         };
 
@@ -135,38 +108,29 @@ export default function UserDashboard() {
         async (orgId: string) => {
             try {
                 // Fetch the current user's profile to get their ID
-                const { data: profileData, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('id, pinned_organization_id')
-                    .eq('email', user?.email || '')
-                    .single();
+                const api = atomsApiClient();
+                const profileByEmail = user?.email
+                    ? await api.auth.getByEmail(user.email)
+                    : null;
 
-                if (profileError || !profileData?.id) {
-                    console.error('Error fetching user profile:', profileError);
+                if (!profileByEmail?.id) {
+                    console.error('Error fetching user profile');
                     return;
                 }
 
                 // Unpin: If the already pinned organization is clicked again, update to null
                 const newPinnedOrgId = pinnedOrgId === orgId ? null : orgId;
 
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({ pinned_organization_id: newPinnedOrgId })
-                    .eq('id', profileData.id);
-
-                if (!updateError) {
-                    setPinnedOrgId(newPinnedOrgId);
-
-                    // Update Agent Store context
-                    setUserContext({
-                        userId: user?.id || undefined,
-                        orgId: newPinnedOrgId || undefined, // Current organization ID
-                        pinnedOrganizationId: newPinnedOrgId || undefined,
-                        username: profile?.full_name || user?.email?.split('@')[0],
-                    });
-                } else {
-                    console.error('Error updating pinned organization:', updateError);
-                }
+                await api.auth.updateProfile(profileByEmail.id, {
+                    pinned_organization_id: newPinnedOrgId,
+                } as any);
+                setPinnedOrgId(newPinnedOrgId);
+                setUserContext({
+                    userId: user?.id || undefined,
+                    orgId: newPinnedOrgId || undefined,
+                    pinnedOrganizationId: newPinnedOrgId || undefined,
+                    username: profile?.full_name || user?.email?.split('@')[0],
+                });
             } catch (err) {
                 console.error('Unexpected error:', err);
             }

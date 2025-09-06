@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
@@ -15,8 +15,8 @@ export async function GET(request: Request) {
     }
 
     try {
-        const supabase = await createClient();
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const api = await atomsApiServer();
+        const { data, error } = await api.auth.exchangeCodeForSession(code);
 
         if (error || !data.user) {
             console.error('Auth error:', error);

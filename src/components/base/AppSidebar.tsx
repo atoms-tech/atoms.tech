@@ -41,9 +41,9 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useSignOut } from '@/hooks/useSignOut';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { OrganizationType } from '@/types';
 
 interface MenuItem {
@@ -118,38 +118,19 @@ function AppSidebar() {
 
     const navigateToPinnedOrganization = useCallback(async () => {
         try {
-            // Fetch the user's profile to get pinned_organization_id and personal_organization_id
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('pinned_organization_id, personal_organization_id')
-                .eq('id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                return;
-            }
-
-            if (data) {
-                let targetOrgId = data.pinned_organization_id;
-
-                if (!targetOrgId && data.personal_organization_id) {
-                    // If no pinned organization, set it to personal_organization_id by default
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({
-                            pinned_organization_id: data.personal_organization_id,
-                        })
-                        .eq('id', user?.id || '');
-
-                    if (!updateError) {
-                        targetOrgId = data.personal_organization_id;
-                    } else {
-                        console.error('Error updating pinned organization:', updateError);
-                        return;
-                    }
+            const api = atomsApiClient();
+            const prof = user?.id ? await api.auth.getProfile(user.id) : null;
+            if (prof) {
+                let targetOrgId = (prof as any).pinned_organization_id as string | null;
+                const personalOrgId = (prof as any).personal_organization_id as
+                    | string
+                    | null;
+                if (!targetOrgId && personalOrgId && user?.id) {
+                    await api.auth.updateProfile(user.id, {
+                        pinned_organization_id: personalOrgId,
+                    } as any);
+                    targetOrgId = personalOrgId;
                 }
-
                 if (targetOrgId) {
                     console.log('Navigating to pinned organization:', targetOrgId);
                     router.push(`/org/${targetOrgId}`);

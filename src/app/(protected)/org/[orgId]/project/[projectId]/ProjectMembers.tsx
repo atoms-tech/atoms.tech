@@ -22,14 +22,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { OrgMemberAutocomplete } from '@/components/ui/orgMemberAutocomplete';
 import { toast } from '@/components/ui/use-toast';
+import { atomsApiClient } from '@/lib/atoms-api';
 import {
     PROJECT_ROLE_ARRAY,
     ProjectRole,
     hasProjectPermission,
 } from '@/lib/auth/permissions';
-import { getProjectMembers } from '@/lib/db/client/projects.client';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface ProjectMembersProps {
     projectId: string;
@@ -63,7 +62,10 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         refetch,
     } = useQuery({
         queryKey: ['project-members', projectId],
-        queryFn: () => getProjectMembers(projectId),
+        queryFn: async () => {
+            const api = atomsApiClient();
+            return api.projects.listMembers(projectId);
+        },
     });
 
     const userRole = (members.find((member) => member.id === user?.id)?.role ||
@@ -75,10 +77,12 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         return 0;
     });
 
-    const filteredMembers = sortedMembers.filter((member) => {
+    const filteredMembers = sortedMembers.filter((member: any) => {
         const matchesSearch =
-            member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            member.email?.toLowerCase().includes(searchQuery.toLowerCase());
+            member.profiles?.full_name
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+            member.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesRoles =
             roleFilters.length > 0
                 ? roleFilters.includes(member.role as ProjectRole)
@@ -98,16 +102,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
 
         try {
-            const { error } = await supabase
-                .from('project_members')
-                .delete()
-                .eq('project_id', projectId)
-                .eq('user_id', memberId);
-
-            if (error) {
-                console.error('Error removing member:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.projects.removeMember(projectId, memberId);
 
             setErrorMessage(null); // Clear error message on success
             refetch();
@@ -129,17 +125,8 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
 
         try {
-            const { error } = await supabase
-                .from('project_members')
-                .update({ role: selectedRole })
-                .eq('project_id', projectId)
-                .eq('user_id', memberId);
-
-            if (error) {
-                console.error('Error updating project member role:', error);
-                throw error;
-            }
-
+            const api = atomsApiClient();
+            await api.projects.setMemberRole(projectId, memberId, selectedRole);
             setErrorMessage(null); // Clear error message on success
             refetch();
         } catch (error) {
@@ -164,82 +151,39 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
         }
 
         try {
-            // Check if the email exists in the profiles table
-            const { data: member, error: profileError } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('email', memberEmail.trim())
-                .single();
-
-            if (profileError) {
-                if (profileError.code === 'PGRST116') {
-                    setErrorMessage(
-                        'This email does not belong to any user. Please ask the user to sign up first.',
-                    );
-                    return;
-                }
-                console.error('Error checking email in profiles:', profileError);
-                throw profileError;
+            const api = atomsApiClient();
+            // Check if user exists by email
+            const profile = await api.auth.getByEmail(memberEmail.trim());
+            if (!profile) {
+                setErrorMessage(
+                    'This email does not belong to any user. Please ask the user to sign up first.',
+                );
+                return;
             }
 
-            const {
-                data: existingMember,
-                error: checkError,
-                status,
-            } = await supabase
-                .from('project_members')
-                .select('id')
-                .eq('user_id', member?.id || '')
-                .eq('project_id', projectId)
-                .single();
-
-            if (checkError && status !== 406) {
-                console.error('Error checking project membership:', checkError);
-                throw checkError;
-            }
-
-            if (existingMember) {
+            // Ensure not already a project member
+            const projMembers = await api.projects.listMembers(projectId);
+            if (
+                projMembers.some((m: any) => (m.user_id || m.id) === (profile as any).id)
+            ) {
                 setErrorMessage('User is already a part of this project.');
                 return;
             }
 
-            const {
-                data: existingOrgMember,
-                error: checkOrgError,
-                status: orgStatus,
-            } = await supabase
-                .from('organization_members')
-                .select('id')
-                .eq('user_id', member?.id || '')
-                .eq('organization_id', params?.orgId || '')
-                .single();
-
-            if (checkOrgError && orgStatus !== 406) {
-                console.error('Error checking organization membership:', checkError);
-                throw checkError;
-            }
-
-            if (!existingOrgMember) {
+            // Ensure user is a member of the organization
+            const orgMembers = await api.organizations.listMembers(params?.orgId || '');
+            if (!orgMembers.some((m: any) => m.user_id === (profile as any).id)) {
                 setErrorMessage('User is not a part of this organization.');
                 return;
             }
 
-            const { error } = await supabase
-                .from('project_members')
-                .insert({
-                    user_id: member?.id || '',
-                    project_id: projectId,
-                    role: selectedRole,
-                    org_id: params?.orgId || '',
-                    status: 'active',
-                })
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Failed to assign user to project', error);
-                throw error;
-            }
+            // Add user to project
+            await api.projects.addMember(
+                projectId,
+                (profile as any).id,
+                selectedRole,
+                params?.orgId || '',
+            );
 
             toast({
                 title: 'Success',
@@ -380,11 +324,12 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     </div>
                                     <div>
                                         <div className="font-medium">
-                                            {member.full_name || 'User'}
+                                            {(member as any).profiles?.full_name ||
+                                                'User'}
                                             {member.id === user?.id && ' (you)'}
                                         </div>
                                         <div className="text-sm text-muted-foreground">
-                                            {member.email}
+                                            {(member as any).profiles?.email}
                                         </div>
                                     </div>
                                 </div>

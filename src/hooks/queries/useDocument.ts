@@ -1,20 +1,17 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { getDocumentBlocksAndRequirements, getProjectDocuments } from '@/lib/db/client';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import {
-    QueryFilters as GenericQueryFilters,
-    buildQuery,
-} from '@/lib/utils/queryFactory';
 import { Block, Document } from '@/types/base/documents.types';
+import type { QueryFilters as GenericQueryFilters } from '@/types/base/filters.types';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useProjectDocuments(projectId: string) {
     return useQuery({
         queryKey: queryKeys.documents.byProject(projectId),
         queryFn: async () => {
-            const data = await getProjectDocuments(projectId);
+            const api = atomsApiClient();
+            const data = await api.documents.listByProject(projectId);
             if (!data) throw new Error('No documents found');
             return data;
         },
@@ -26,26 +23,20 @@ export function useDocument(documentId: string) {
     return useQuery({
         queryKey: queryKeys.documents.detail(documentId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('documents')
-                .select('*')
-                .eq('id', documentId)
-                .eq('is_deleted', false)
-                .single();
-
-            if (error) throw error;
-            return data as Document;
+            const api = atomsApiClient();
+            const doc = await api.documents.getById(documentId);
+            return doc as Document;
         },
         enabled: !!documentId,
     });
 }
 
-export function useDocuments(queryFilters?: GenericQueryFilters<'documents'>) {
+export function useDocuments(queryFilters?: GenericQueryFilters) {
     return useQuery({
         queryKey: queryKeys.documents.list((queryFilters as QueryFilters) || {}),
         queryFn: async () => {
-            const { data } = await buildQuery('documents', queryFilters);
-            return data;
+            const api = atomsApiClient();
+            return api.documents.listWithFilters(queryFilters as Record<string, unknown>);
         },
     });
 }
@@ -53,13 +44,8 @@ export function useDocuments(queryFilters?: GenericQueryFilters<'documents'>) {
 export function useUpdateDocument(documentId: string) {
     return useMutation({
         mutationFn: async (document: Document) => {
-            const { data, error } = await supabase
-                .from('documents')
-                .update(document)
-                .eq('id', documentId)
-                .single();
-            if (error) throw error;
-            return data;
+            const api = atomsApiClient();
+            return api.documents.update(documentId, document);
         },
     });
 }
@@ -67,7 +53,10 @@ export function useUpdateDocument(documentId: string) {
 export function useDocumentBlocksAndRequirements(documentId: string) {
     return useQuery({
         queryKey: queryKeys.blocks.byDocument(documentId),
-        queryFn: () => getDocumentBlocksAndRequirements(documentId),
+        queryFn: async () => {
+            const api = atomsApiClient();
+            return api.documents.blocksAndRequirements(documentId);
+        },
     });
 }
 
@@ -75,14 +64,9 @@ export function useBlock(blockId: string) {
     return useQuery({
         queryKey: queryKeys.blocks.detail(blockId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('blocks')
-                .select('*')
-                .eq('id', blockId)
-                .single();
-
-            if (error) throw error;
-            return data as Block;
+            const api = atomsApiClient();
+            const block = await api.documents.getBlockById(blockId);
+            return block as Block;
         },
         enabled: !!blockId,
     });

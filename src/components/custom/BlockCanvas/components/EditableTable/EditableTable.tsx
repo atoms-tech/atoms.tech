@@ -13,8 +13,9 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+// No direct data access here; logic delegated to hooks and props
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
@@ -170,22 +171,17 @@ export function EditableTable<
         async (action: string) => {
             const getUserRole = async (): Promise<keyof typeof rolePermissions> => {
                 try {
-                    const { data, error } = await supabase
-                        .from('project_members')
-                        .select('role')
-                        .eq('user_id', userId) // Use userId from useUser
-                        .eq(
-                            'project_id',
-                            Array.isArray(projectId) ? projectId[0] : projectId,
-                        ) // Ensure projectId is a string
-                        .single();
-
-                    if (error) {
-                        console.error('Error fetching user role:', error);
-                        return 'viewer'; // Default to 'viewer' if there's an error
-                    }
-
-                    return data?.role || 'viewer'; // Default to 'viewer' if role is undefined
+                    const api = atomsApiClient();
+                    const members = await api.projects.listMembers(
+                        Array.isArray(projectId)
+                            ? (projectId as any)[0]
+                            : (projectId as any),
+                    );
+                    const me = members.find(
+                        (m: any) => m.user_id === userId || m.id === userId,
+                    );
+                    return ((me as any)?.role ||
+                        'viewer') as keyof typeof rolePermissions;
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';
@@ -598,3 +594,4 @@ export function EditableTable<
         </div>
     );
 }
+// No direct Supabase import; using atoms-api for role checks

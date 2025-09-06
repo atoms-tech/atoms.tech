@@ -32,9 +32,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
-import { useOrganization } from '@/lib/providers/organization.provider';
 // Unused but might be needed in the future
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
+import { useOrganization } from '@/lib/providers/organization.provider';
 import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
@@ -77,22 +77,20 @@ export function BlockCanvas({
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const projectId = params?.projectId || ''; // Extract project_id from the URL
+            const projectId = (params?.projectId || '') as string;
             if (!projectId || !userProfile?.id) return;
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
-                .eq('user_id', userProfile.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
+            try {
+                const api = atomsApiClient();
+                const members = await api.projects.listMembers(
+                    Array.isArray(projectId) ? projectId[0] : projectId,
+                );
+                const me = members.find(
+                    (m: any) => m.user_id === userProfile.id || m.id === userProfile.id,
+                );
+                setUserRole((me as any)?.role || null);
+            } catch (e) {
+                console.error('Error fetching user role:', e);
             }
-
-            setUserRole(data?.role || null);
         };
 
         fetchUserRole();

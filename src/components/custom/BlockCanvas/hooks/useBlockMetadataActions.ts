@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Json } from '@/types/base/database.types';
 
 export interface ColumnMetadata {
@@ -39,22 +39,19 @@ export const useBlockMetadataActions = () => {
                 //console.debug('[updateBlockMetadata] Updating metadata for blockId:', blockId);
 
                 // Fetch existing content to preserve other fields
-                const { data: blockData, error: fetchError } = await supabase
-                    .from('blocks')
-                    .select('content')
-                    .eq('id', blockId)
-                    .single();
+                const api = atomsApiClient();
+                const block = await api.documents.getBlockById(blockId);
 
-                if (fetchError) {
+                if (!block) {
                     console.error(
                         '[updateBlockMetadata] Failed to fetch block content:',
-                        fetchError,
+                        'not found',
                     );
-                    throw fetchError;
+                    throw new Error('Block not found');
                 }
 
                 // Casting to unknown puts validation on us. Fallbacks included below.
-                const currentContentRaw = blockData?.content ?? {};
+                const currentContentRaw = (block as any)?.content ?? {};
 
                 function isBlockTableMetadata(
                     obj: unknown,
@@ -82,18 +79,9 @@ export const useBlockMetadataActions = () => {
 
                 //console.debug('[updateBlockMetadata] Content to be sent:', JSON.stringify(updatedContent, null, 2));
 
-                const { error: updateError } = await supabase
-                    .from('blocks')
-                    .update({ content: updatedContent as unknown as Json })
-                    .eq('id', blockId);
-
-                if (updateError) {
-                    console.error(
-                        '[updateBlockMetadata] Failed to update content: ',
-                        updateError,
-                    );
-                    throw updateError;
-                }
+                await api.documents.updateBlock(blockId, {
+                    content: updatedContent as unknown as Json,
+                } as any);
 
                 console.debug(
                     '[updateBlockMetadata] Successfully updated block metadata for block: ',

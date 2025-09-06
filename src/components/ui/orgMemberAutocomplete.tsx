@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { cn } from '@/lib/utils';
 import { Profile } from '@/types/base/profiles.types';
 
@@ -25,30 +25,17 @@ export function OrgMemberAutocomplete({
 
     useEffect(() => {
         const fetchMembers = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('user_id')
-                .eq('organization_id', orgId || '');
-
-            if (!data || error) {
-                console.error(error);
+            const api = atomsApiClient();
+            const memberIds = await api.organizations.listIdsByMembership(orgId);
+            if (!memberIds?.length) {
+                setOrgMembers([]);
                 return;
             }
-            const orgMembersIds = data.map((member) => member.user_id);
-            console.log('orgMembersIds', orgMembersIds);
-
-            const { data: orgMembers, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', orgMembersIds);
-
-            if (!orgMembers || profileError) {
-                console.error(error);
-                return;
-            }
-
-            setOrgMembers(orgMembers);
-            console.log('orgMembers', orgMembers);
+            const profiles = await Promise.all(
+                memberIds.map(async (id) => api.auth.getProfile(id)),
+            );
+            const clean = profiles.filter(Boolean) as Profile[];
+            setOrgMembers(clean);
         };
 
         fetchMembers();

@@ -7,7 +7,7 @@ import {
     useCreateRequirement,
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Json } from '@/types/base/database.types';
 import {
@@ -62,18 +62,8 @@ export const useRequirementActions = ({
                 blockId,
                 documentId,
             });
-            const { data: requirements, error } = await supabase
-                .from('requirements')
-                .select('*')
-                .eq('block_id', blockId)
-                .eq('document_id', documentId)
-                .eq('is_deleted', false)
-                .order('position', { ascending: true });
-
-            if (error) {
-                console.error('❌ STEP 6b: Database fetch failed:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            const requirements = await api.requirements.listByBlock(blockId);
             if (!requirements) {
                 console.log('⚠️ STEP 6b: No requirements returned from database');
                 return;
@@ -98,11 +88,10 @@ export const useRequirementActions = ({
         if (!properties) return { propertiesObj: {}, naturalFields: {} };
 
         // Fetch block columns to get position information
-        const { data: blockColumns } = await supabase
-            .from('columns')
-            .select('*')
-            .eq('block_id', blockId)
-            .order('position');
+        const api = atomsApiClient();
+        const blockColumns = (await api.documents.listColumnsByBlockIds([
+            blockId,
+        ])) as any[];
 
         const propertiesObj: Record<string, unknown> = {};
         const naturalFields: Record<string, string> = {};
@@ -237,19 +226,11 @@ export const useRequirementActions = ({
 
     const getLastPosition = async (): Promise<number> => {
         try {
-            const { data: requirements, error } = await supabase
-                .from('requirements')
-                .select('position')
-                .eq('block_id', blockId)
-                .eq('document_id', documentId)
-                .eq('is_deleted', false)
-                .order('position', { ascending: false })
-                .limit(1);
-
-            if (error) throw error;
-            if (!requirements || requirements.length === 0) return 0;
-
-            return (requirements[0].position || 0) + 1;
+            const api = atomsApiClient();
+            const list = await api.requirements.listByBlock(blockId);
+            if (!list || list.length === 0) return 0;
+            const max = list.reduce((m, r) => Math.max(m, r.position || 0), 0);
+            return max + 1;
         } catch (error) {
             console.error('Error getting last position:', error);
             return 0;
@@ -362,28 +343,17 @@ export const useRequirementActions = ({
                     externalId === 'GENERATING...'
                 ) {
                     try {
-                        // Get organization ID from document
-                        const { data: document, error: docError } = await supabase
-                            .from('documents')
-                            .select(
-                                `
-                                project_id,
-                                projects!inner(organization_id)
-                            `,
-                            )
-                            .eq('id', documentId)
-                            .single();
-
-                        if (!docError && document) {
-                            const organizationId = (
-                                document as {
-                                    projects?: { organization_id?: string };
-                                }
-                            )?.projects?.organization_id;
-                            if (organizationId) {
-                                externalId =
-                                    await generateNextRequirementId(organizationId);
-                            }
+                        const api = atomsApiClient();
+                        const doc = await api.documents.getById(documentId);
+                        let organizationId: string | undefined;
+                        if (doc?.project_id) {
+                            const project = await api.projects.getById(
+                                doc.project_id as any,
+                            );
+                            organizationId = (project as any)?.organization_id;
+                        }
+                        if (organizationId) {
+                            externalId = await generateNextRequirementId(organizationId);
                         }
                     } catch (error) {
                         console.error('Error generating requirement ID:', error);
@@ -418,21 +388,10 @@ export const useRequirementActions = ({
                     '🎯 STEP 5d: Inserting new requirement into database:',
                     newRequirementData,
                 );
-                const { data, error } = await supabase
-                    .from('requirements')
-                    .insert(newRequirementData)
-                    .select()
-                    .single();
-
-                if (error) {
-                    console.error('❌ STEP 5d: Database insertion failed:', error);
-                    throw error;
-                }
-                if (!data) {
-                    console.error('❌ STEP 5d: No data returned from insert');
-                    throw new Error('No data returned from insert');
-                }
-                savedRequirement = data;
+                const api = atomsApiClient();
+                savedRequirement = await api.requirements.create({
+                    ...(newRequirementData as any),
+                });
                 console.log(
                     '✅ STEP 5d: Database insertion successful:',
                     savedRequirement,
@@ -460,16 +419,11 @@ export const useRequirementActions = ({
                     updateData.position = dynamicReq.position as number;
                 }
 
-                const { data, error } = await supabase
-                    .from('requirements')
-                    .update(updateData)
-                    .eq('id', dynamicReq.id)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (!data) throw new Error('No data returned from update');
-                savedRequirement = data;
+                const api = atomsApiClient();
+                savedRequirement = await api.requirements.update(
+                    dynamicReq.id as string,
+                    updateData as any,
+                );
 
                 // Update local state with the updated requirement immediately without refetching
                 setLocalRequirements((prev) =>
@@ -493,15 +447,8 @@ export const useRequirementActions = ({
         try {
             deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
 
-            const { error } = await supabase
-                .from('requirements')
-                .delete()
-                .eq('id', dynamicReq.id);
-
-            if (error) {
-                deletedRowIdsRef.current.delete(dynamicReq.id);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.requirements.softDelete(dynamicReq.id as string, _userId);
 
             // Update local state by removing the deleted requirement immediately without refetching
             setLocalRequirements((prev) =>
@@ -521,3 +468,4 @@ export const useRequirementActions = ({
         refreshRequirements, // still available for manual refresh but not called automatically
     };
 };
+// No direct Supabase import; using atoms-api domains

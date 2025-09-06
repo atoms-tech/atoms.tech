@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
 
 export type CreateProjectInput = Omit<
@@ -26,33 +26,19 @@ export function useCreateProject() {
         mutationFn: async (input: CreateProjectInput) => {
             // Start a Supabase transaction
             console.log('Creating project', input);
-            const { data: project, error: projectError } = await supabase
-                .from('projects')
-                .insert({
-                    name: input.name,
-                    slug: input.slug,
-                    description: input.description,
-                    organization_id: input.organization_id,
-                    visibility: input.visibility,
-                    status: input.status,
-                    metadata: input.metadata,
-                    created_by: input.owned_by,
-                    updated_by: input.owned_by,
-                    owned_by: input.owned_by,
-                })
-                .select()
-                .single();
-
-            if (projectError) {
-                throw new Error(
-                    `Failed to create project, Supabase insert error: '${projectError.message || 'Unknown error'}`,
-                );
-            }
-            if (!project) {
-                throw new Error('Failed to create project, insert returned no data.');
-            }
-
-            return project;
+            const api = atomsApiClient();
+            return api.projects.create({
+                name: input.name,
+                slug: input.slug,
+                description: input.description,
+                organization_id: input.organization_id,
+                visibility: input.visibility,
+                status: input.status,
+                metadata: input.metadata,
+                created_by: input.owned_by,
+                updated_by: input.owned_by,
+                owned_by: input.owned_by,
+            } as any) as unknown as Project;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries
@@ -89,24 +75,8 @@ export function useCreateProjectMember() {
             role: ProjectRole;
             orgId: string; // Add orgId to the parameters
         }) => {
-            const { data, error } = await supabase
-                .from('project_members')
-                .insert({
-                    user_id: userId,
-                    project_id: projectId,
-                    role,
-                    org_id: orgId, // Include org_id in the insert
-                    status: 'active',
-                })
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Failed to assign user to project', error);
-                throw error;
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.projects.addMember(projectId, userId, role, orgId);
         },
         onSuccess: (_, { projectId }) => {
             // Invalidate relevant queries
@@ -138,29 +108,15 @@ export function useUpdateProject(projectId: string) {
 
     return useMutation({
         mutationFn: async (input: UpdateProjectInput) => {
-            const { data: project, error: projectError } = await supabase
-                .from('projects')
-                .update({
-                    name: input.name,
-                    description: input.description,
-                    visibility: input.visibility,
-                    status: input.status,
-                    metadata: input.metadata,
-                    updated_by: input.updated_by,
-                })
-                .eq('id', projectId)
-                .select()
-                .single();
-
-            if (projectError) {
-                console.error('Failed to update project', projectError);
-                throw projectError;
-            }
-            if (!project) {
-                throw new Error('Failed to update project');
-            }
-
-            return project;
+            const api = atomsApiClient();
+            return api.projects.update(projectId, {
+                name: input.name,
+                description: input.description,
+                visibility: input.visibility,
+                status: input.status,
+                metadata: input.metadata,
+                updated_by: input.updated_by,
+            } as any) as unknown as Project;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries
@@ -191,16 +147,8 @@ export function useDuplicateProject() {
             newName?: string;
         }) => {
             // First, get the original project
-            const { data: originalProject, error: fetchError } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('id', projectId)
-                .single();
-
-            if (fetchError) {
-                console.error('Failed to fetch original project', fetchError);
-                throw fetchError;
-            }
+            const api = atomsApiClient();
+            const originalProject = await api.projects.getById(projectId);
             if (!originalProject) {
                 throw new Error('Original project not found');
             }
@@ -219,33 +167,15 @@ export function useDuplicateProject() {
                 owned_by: userId,
             };
 
-            const { data: newProject, error: createError } = await supabase
-                .from('projects')
-                .insert(duplicatedProject)
-                .select()
-                .single();
-
-            if (createError) {
-                console.error('Failed to create duplicated project', createError);
-                throw createError;
-            }
-            if (!newProject) {
-                throw new Error('Failed to create duplicated project');
-            }
+            const newProject = await api.projects.create(duplicatedProject as any);
 
             // Add the user as owner of the new project
-            const { error: memberError } = await supabase.from('project_members').insert({
-                user_id: userId,
-                project_id: newProject.id,
-                role: 'owner',
-                org_id: originalProject.organization_id,
-                status: 'active',
-            });
-
-            if (memberError) {
-                console.error('Failed to add user as project member', memberError);
-                // Don't throw here as the project was created successfully
-            }
+            await api.projects.addMember(
+                (newProject as any).id,
+                userId,
+                'owner',
+                (originalProject as any).organization_id,
+            );
 
             return newProject;
         },
@@ -275,26 +205,8 @@ export function useDeleteProject() {
             projectId: string;
             userId: string;
         }) => {
-            const { data: project, error: projectError } = await supabase
-                .from('projects')
-                .update({
-                    is_deleted: true,
-                    deleted_at: new Date().toISOString(),
-                    deleted_by: userId,
-                })
-                .eq('id', projectId)
-                .select()
-                .single();
-
-            if (projectError) {
-                console.error('Failed to delete project', projectError);
-                throw projectError;
-            }
-            if (!project) {
-                throw new Error('Failed to delete project');
-            }
-
-            return project;
+            const api = atomsApiClient();
+            return api.projects.softDelete(projectId, userId) as unknown as Project;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries

@@ -1,11 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import {
-    QueryFilters as GenericQueryFilters,
-    buildQuery,
-} from '@/lib/utils/queryFactory';
+import type { QueryFilters as GenericQueryFilters } from '@/types/base/filters.types';
 import { QueryFilters } from '@/types/base/filters.types';
 import { Requirement } from '@/types/base/requirements.types';
 
@@ -15,25 +12,22 @@ export function useRequirement(requirementId: string) {
         queryFn: async () => {
             if (!requirementId) return null;
 
-            const { data, error } = await supabase
-                .from('requirements')
-                .select('*')
-                .eq('id', requirementId)
-                .single();
-
-            if (error) throw error;
-            return data as Requirement;
+            const api = atomsApiClient();
+            const req = await api.requirements.getById(requirementId);
+            return req as Requirement;
         },
         enabled: !!requirementId,
     });
 }
 
-export function useRequirements(queryFilters?: GenericQueryFilters<'requirements'>) {
+export function useRequirements(queryFilters?: GenericQueryFilters) {
     return useQuery({
         queryKey: queryKeys.requirements.list((queryFilters as QueryFilters) || {}),
         queryFn: async () => {
-            const { data } = await buildQuery('requirements', queryFilters);
-            return data;
+            const api = atomsApiClient();
+            return await api.requirements.listWithFilters(
+                queryFilters as Record<string, unknown>,
+            );
         },
     });
 }
@@ -49,23 +43,8 @@ export function useProjectRequirements(projectId: string) {
             if (!projectId) return [];
 
             // Get all requirements that belong to documents in this project
-            const { data, error } = await supabase
-                .from('requirements')
-                .select(
-                    `
-                    *,
-                    documents!inner (
-                        id,
-                        project_id
-                    )
-                `,
-                )
-                .eq('documents.project_id', projectId)
-                .eq('is_deleted', false)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            return data as Requirement[];
+            const api = atomsApiClient();
+            return (await api.requirements.listByProject(projectId)) as Requirement[];
         },
         enabled: !!projectId,
     });
@@ -80,13 +59,8 @@ export function useRequirementsByIds(requirementIds: string[]) {
         queryFn: async () => {
             if (!requirementIds.length) return [];
 
-            const { data, error } = await supabase
-                .from('requirements')
-                .select('*')
-                .in('id', requirementIds);
-
-            if (error) throw error;
-            return data as Requirement[];
+            const api = atomsApiClient();
+            return (await api.requirements.listByIds(requirementIds)) as Requirement[];
         },
         enabled: requirementIds.length > 0,
     });
@@ -94,18 +68,13 @@ export function useRequirementsByIds(requirementIds: string[]) {
 
 export function useDocumentRequirements(
     documentId: string,
-    _queryFilters?: Omit<GenericQueryFilters<'requirements'>, 'filters'>,
+    _queryFilters?: Omit<GenericQueryFilters, 'filters'>,
 ) {
     return useQuery({
         queryKey: queryKeys.requirements.byDocument(documentId),
         queryFn: async () => {
-            const { data } = await supabase
-                .from('requirements')
-                .select('*')
-                .eq('document_id', documentId)
-                .eq('is_deleted', false)
-                .order('created_at', { ascending: false });
-            return data;
+            const api = atomsApiClient();
+            return await api.requirements.listByDocument(documentId);
         },
         enabled: !!documentId,
     });
@@ -113,17 +82,13 @@ export function useDocumentRequirements(
 
 export function useBlockRequirements(
     blockId: string,
-    queryFilters?: Omit<GenericQueryFilters<'requirements'>, 'filters'>,
+    _queryFilters?: Omit<GenericQueryFilters, 'filters'>,
 ) {
     return useQuery({
         queryKey: queryKeys.requirements.byBlock(blockId),
         queryFn: async () => {
-            const { data } = await buildQuery('requirements', {
-                ...queryFilters,
-                filters: [{ field: 'block_id', operator: 'eq', value: blockId }],
-                sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
-            });
-            return data;
+            const api = atomsApiClient();
+            return api.requirements.listByBlock(blockId);
         },
         enabled: !!blockId,
     });

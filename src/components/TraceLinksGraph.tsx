@@ -71,8 +71,8 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
 
     // Extract requirement IDs from trace links
     const linkedRequirementIds = useMemo(() => {
-        const sourceIds = incomingLinks?.map((link) => link.source_id) || [];
-        const targetIds = outgoingLinks?.map((link) => link.target_id) || [];
+        const sourceIds = incomingLinks?.map((link: any) => link.source_id) || [];
+        const targetIds = outgoingLinks?.map((link: any) => link.target_id) || [];
         return [...sourceIds, ...targetIds];
     }, [incomingLinks, outgoingLinks]);
 
@@ -166,7 +166,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
         if (linkedRequirements) {
             // Process incoming links (parents)
             if (incomingLinks && incomingLinks.length > 0) {
-                incomingLinks.forEach((link) => {
+                incomingLinks.forEach((link: any) => {
                     const requirement = linkedRequirements.find(
                         (req) => req.id === link.source_id,
                     );
@@ -185,7 +185,7 @@ const TraceLinksGraph = ({ requirementId }: TraceLinksGraphProps) => {
 
             // Process outgoing links (children)
             if (outgoingLinks && outgoingLinks.length > 0) {
-                outgoingLinks.forEach((link) => {
+                outgoingLinks.forEach((link: any) => {
                     const requirement = linkedRequirements.find(
                         (req) => req.id === link.target_id,
                     );

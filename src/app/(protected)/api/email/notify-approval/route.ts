@@ -2,7 +2,7 @@ import { render } from '@react-email/render';
 import { NextRequest, NextResponse } from 'next/server';
 
 import ApprovedUserEmail from '@/emails/ApprovedUserEmail';
-import { resend, resend_from_email } from '@/lib/services/resend';
+import { getResend, resend_from_email } from '@/lib/services/resend';
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
 
         const html = await render(ApprovedUserEmail({ name }));
 
+        const resend = getResend();
         const { data, error } = await resend.emails.send({
             from: `Atoms Tech <${resend_from_email}>`,
             to: email,

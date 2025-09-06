@@ -1,26 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
+import type { TablesInsert } from '@/types/base/database.types';
 
 export async function POST(request: NextRequest) {
     console.log('request');
-
-    const supabase = await createClient();
 
     const { diagramData, diagramId } = await request.json();
 
     // console.log("diagramData", diagramData, diagramId);
 
-    const { data, error } = await supabase.from('excalidraw_diagrams').upsert({
+    const api = await atomsApiServer();
+    // Use diagrams domain upsert
+    const payload: TablesInsert<'excalidraw_diagrams'> = {
         id: diagramId,
         diagram_data: diagramData,
         updated_at: new Date().toISOString(),
-    });
-
-    if (error) {
-        console.log('error', error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ data }, { status: 200 });
+    };
+    const result = await api.diagrams.upsert(payload);
+    return NextResponse.json({ data: result }, { status: 200 });
 }

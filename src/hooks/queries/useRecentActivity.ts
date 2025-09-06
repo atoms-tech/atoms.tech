@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 // Database response types
 interface DocumentResponse extends Record<string, unknown> {
@@ -125,37 +125,12 @@ export function useRecentDocuments() {
             if (!user?.id || orgIds.length === 0) return [];
 
             // Get recent documents from projects in user's organizations
-            const { data, error } = await supabase
-                .from('documents')
-                .select(
-                    `
-                    id,
-                    name,
-                    description,
-                    updated_at,
-                    project_id,
-                    projects!inner (
-                        id,
-                        name,
-                        organization_id,
-                        organizations!inner (
-                            id,
-                            name
-                        )
-                    )
-                `,
-                )
-                .in('projects.organization_id', orgIds)
-                .eq('is_deleted', false)
-                .order('updated_at', { ascending: false })
-                .limit(20);
-
-            if (error) throw error;
-
+            const api = atomsApiClient();
+            const data = await api.recent.documentsByOrgIds(orgIds);
             return (data || [])
-                .filter((doc) => isDocumentResponse(doc as Record<string, unknown>))
+                .filter((doc: any) => isDocumentResponse(doc as Record<string, unknown>))
                 .map(
-                    (doc): RecentItem => ({
+                    (doc: any): RecentItem => ({
                         id: safeGetString(doc as Record<string, unknown>, 'id'),
                         title:
                             safeGetString(doc as Record<string, unknown>, 'name') ||
@@ -208,34 +183,14 @@ export function useRecentProjects() {
         queryFn: async () => {
             if (!user?.id || orgIds.length === 0) return [];
 
-            const { data, error } = await supabase
-                .from('projects')
-                .select(
-                    `
-                    id,
-                    name,
-                    description,
-                    updated_at,
-                    organization_id,
-                    organizations!inner (
-                        id,
-                        name
-                    )
-                `,
-                )
-                .in('organization_id', orgIds)
-                .eq('is_deleted', false)
-                .order('updated_at', { ascending: false })
-                .limit(10);
-
-            if (error) throw error;
-
+            const api = atomsApiClient();
+            const data = await api.recent.projectsByOrgIds(orgIds);
             return (data || [])
-                .filter((project) =>
+                .filter((project: any) =>
                     isProjectResponse(project as Record<string, unknown>),
                 )
                 .map(
-                    (project): RecentItem => ({
+                    (project: any): RecentItem => ({
                         id: safeGetString(project as Record<string, unknown>, 'id'),
                         title:
                             safeGetString(project as Record<string, unknown>, 'name') ||
@@ -282,43 +237,14 @@ export function useRecentRequirements() {
         queryFn: async () => {
             if (!user?.id || orgIds.length === 0) return [];
 
-            const { data, error } = await supabase
-                .from('requirements')
-                .select(
-                    `
-                    id,
-                    name,
-                    description,
-                    external_id,
-                    updated_at,
-                    document_id,
-                    documents!inner (
-                        id,
-                        name,
-                        project_id,
-                        projects!inner (
-                            id,
-                            name,
-                            organization_id,
-                            organizations!inner (
-                                id,
-                                name
-                            )
-                        )
-                    )
-                `,
-                )
-                .in('documents.projects.organization_id', orgIds)
-                .eq('is_deleted', false)
-                .order('updated_at', { ascending: false })
-                .limit(15);
-
-            if (error) throw error;
-
+            const api = atomsApiClient();
+            const data = await api.recent.requirementsByOrgIds(orgIds);
             return (data || [])
-                .filter((req) => isRequirementResponse(req as Record<string, unknown>))
+                .filter((req: any) =>
+                    isRequirementResponse(req as Record<string, unknown>),
+                )
                 .map(
-                    (req): RecentItem => ({
+                    (req: any): RecentItem => ({
                         id: safeGetString(req as Record<string, unknown>, 'id'),
                         title:
                             safeGetString(req as Record<string, unknown>, 'name') ||

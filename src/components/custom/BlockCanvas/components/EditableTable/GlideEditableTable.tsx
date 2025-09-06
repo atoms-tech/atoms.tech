@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import '@/styles/globals.css';
 
 // We still need to validate role perms so readers cannot edit, ect.
@@ -19,13 +18,7 @@ import DataEditor, {
     Rectangle,
     TextCell,
 } from '@glideapps/glide-data-grid';
-import {
-    DatePickerCell,
-    DropdownCell,
-    DropdownCellType,
-    MultiSelectCell,
-    allCells,
-} from '@glideapps/glide-data-grid-cells';
+import { allCells } from '@glideapps/glide-data-grid-cells';
 import { useTheme } from 'next-themes';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -58,7 +51,6 @@ import {
     EditableColumn,
     EditableColumnType,
     GlideTableProps,
-    PropertyConfig,
 } from './types';
 
 // import { /*CellValue,*/ GlideTableProps } from './types';
@@ -97,7 +89,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const [selection, setSelection] = useState<GridSelection | undefined>(undefined);
     const selectionRef = useRef<GridSelection | undefined>(undefined);
     const isPastingRef = useRef(false);
-    const pasteOperationIdRef = useRef(0);
+    // const pasteOperationIdRef = useRef(0);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const gridRef = useRef<DataEditorRef | null>(null);
@@ -1041,11 +1033,13 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             } catch {}
             gridRef.current?.focus();
         },
-        [localData, localColumns, debouncedSave],
+        [localColumns, debouncedSave, addToHistory, sortedData],
     );
 
     // Add new row. Flush pending edits first to prevent data loss.
-    const handleRowAppended = useCallback(async () => {
+    const handleRowAppended = useCallback(async (): Promise<
+        'top' | 'bottom' | number | undefined
+    > => {
         try {
             // 1) Flush any pending edits so they are persisted before we add a new row
             saveTableMetadataRef.current?.(); // Do not await, add rows immediately.
@@ -1083,7 +1077,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         } catch (e) {
             console.error('[GlideEditableTable] Failed to append row:', e);
         }
-    }, [columns, localData, onSave, onPostSave, userId, userName]);
+        // Append at the bottom by default
+        return 'bottom';
+    }, [columns, localData, onSave, onPostSave, userId, userName, addToHistory]);
 
     const handleRowMoved = useCallback(
         (from: number, to: number) => {
@@ -1247,7 +1243,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         [localColumns],
     );
 
-    const handleRowResize = useCallback(
+    const _handleRowResize = useCallback(
         (rowIndex: number, newSize: number) => {
             const rowId = sortedData[rowIndex]?.id;
             if (!rowId) return;
@@ -1400,7 +1396,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
     // clear selection highlight when table loses focus
     useEffect(() => {
-        const handleTableBlur = (e: FocusEvent) => {
+        const handleTableBlur = (_e: FocusEvent) => {
             // check if focus is moving outside the table container
             const tableElement = tableRef.current;
             if (!tableElement) return;
@@ -1551,7 +1547,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         setTimeout(() => {
             isUndoingRef.current = false;
         }, 100);
-    }, [historyIndex, debouncedSave, sortedData, addToHistory]);
+    }, [historyIndex, debouncedSave]);
 
     const performRedo = useCallback(() => {
         if (historyIndex >= historyRef.current.length - 1) {
@@ -1643,7 +1639,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         setTimeout(() => {
             isUndoingRef.current = false;
         }, 100);
-    }, [historyIndex, debouncedSave, addToHistory, sortedData]);
+    }, [historyIndex, debouncedSave]);
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     // now also handles undo/redo
     const handleKeyDown = useCallback(
@@ -1801,11 +1797,11 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 `[handlePaste] Operation ${operationId} TRIGGERED - PASTE EVENT DETECTED!`,
             );
 
-            let pasteStartCol = 0;
-            let pasteStartRow = 0;
-            let pasteEndCol = 0;
-            let pasteEndRow = 0;
-            let clipboardRowsForRestore: string[][] = [];
+            let _pasteStartCol = 0;
+            let _pasteStartRow = 0;
+            let _pasteEndCol = 0;
+            let _pasteEndRow = 0;
+            let _clipboardRowsForRestore: string[][] = [];
             // declare at function scope for access in finally block
             let newRowsToCreate: T[] = [];
 
@@ -1920,12 +1916,12 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 const startRow = Math.max(0, startCell[1]);
 
                 // store coordinates for selection restoration
-                pasteStartCol = startCol;
-                pasteStartRow = startRow;
-                clipboardRowsForRestore = clipboardRows;
-                pasteEndCol =
+                _pasteStartCol = startCol;
+                _pasteStartRow = startRow;
+                _clipboardRowsForRestore = clipboardRows;
+                _pasteEndCol =
                     startCol + Math.max(...clipboardRows.map((r) => r.length)) - 1;
-                pasteEndRow = startRow + clipboardRows.length - 1;
+                _pasteEndRow = startRow + clipboardRows.length - 1;
 
                 console.debug(`[${operationId}] Paste position determined:`, {
                     currentSelection,
@@ -1953,7 +1949,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 });
 
                 // store selection before clearing (to restore after paste)
-                const selectionBeforePaste = {
+                const _selectionBeforePaste = {
                     cell: startCell,
                     range: selectionRef.current?.current?.range,
                 };
@@ -2656,7 +2652,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     }, [handlePaste, isEditMode]);
 
     // enhanced selection change handler
-    const handleSelectionChange = useCallback((newSelection: GridSelection) => {
+    const _handleSelectionChange = useCallback((newSelection: GridSelection) => {
         console.debug('[handleSelectionChange] Selection updated:', {
             hasSelection: !!newSelection?.current,
             cell: newSelection?.current?.cell,
@@ -2803,11 +2799,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             // onRowAppended={isEditMode ? handleRowAppended : undefined}
 
                             onRowAppended={
-                                isEditMode
-                                    ? (colIndex?: number) => {
-                                          handleRowAppended();
-                                      }
-                                    : undefined
+                                isEditMode ? () => handleRowAppended() : undefined
                             }
                             rowMarkers="both"
                             onRowMoved={isEditMode ? handleRowMoved : undefined}

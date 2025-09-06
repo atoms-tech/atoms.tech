@@ -1,0 +1,39 @@
+name: SDK Generate
+
+on:
+    push:
+        paths:
+            - 'atoms-backend/central/openapi/**'
+            - 'atoms-backend/central/clients/**'
+    workflow_dispatch: {}
+
+jobs:
+    generate:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+            - name: Generate TS
+              run: |
+                  npx -y openapi-typescript atoms-backend/central/openapi/openapi.yaml -o atoms-backend/central/clients/typescript/generated.ts
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.12'
+            - name: Generate Python
+              run: |
+                  python -m venv venv
+                  . venv/bin/activate
+                  pip install --upgrade pip
+                  pip install openapi-python-client
+                  openapi-python-client generate --path atoms-backend/central/openapi/openapi.yaml --config atoms-backend/central/clients/python/.openapi-python-client.yaml --output-path atoms-backend/central/clients/python --overwrite
+            - name: Upload Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: gateway-sdks
+                  path: |
+                      atoms-backend/central/clients/typescript/generated.ts
+                      atoms-backend/central/clients/python/

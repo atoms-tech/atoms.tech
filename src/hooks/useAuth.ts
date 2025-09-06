@@ -1,7 +1,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Profile } from '@/types';
 
 export function useAuth() {
@@ -14,18 +14,10 @@ export function useAuth() {
     const fetchUserProfile = async (userId: string) => {
         try {
             console.log('useAuth: Fetching profile for user:', userId);
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error) {
-                console.error('useAuth: Error fetching user profile:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            const profile = await api.auth.getProfile(userId);
             console.log('useAuth: Profile fetched successfully:', profile?.full_name);
-            setUserProfile(profile);
+            setUserProfile(profile as Profile);
         } catch (error) {
             console.error('useAuth: Error in fetchUserProfile:', error);
             setUserProfile(null);
@@ -70,34 +62,22 @@ export function useAuth() {
                 }
 
                 // Add timeout to prevent hanging in production
-                const sessionPromise = supabase.auth.getSession();
+                const api = atomsApiClient();
+                // In prod, rely on atoms-api auth (SSR-aware elsewhere)
                 const timeoutPromise = new Promise((_, reject) =>
                     setTimeout(() => reject(new Error('Session check timeout')), 3000),
                 );
 
-                const result = await Promise.race([sessionPromise, timeoutPromise]);
-                const {
-                    data: { session },
-                    error,
-                } = result as {
-                    data: { session: { user?: { id: string } } | null };
-                    error: unknown;
-                };
+                const resultUser = await Promise.race([
+                    api.auth.getUser(),
+                    timeoutPromise,
+                ]);
+                const sessionUser = resultUser as { id?: string } | null;
 
-                console.log('useAuth: Session check result:', {
-                    session: !!session,
-                    error,
-                });
-
-                if (error) {
-                    console.error('useAuth: Session error:', error);
-                    throw error;
-                }
-
-                setIsAuthenticated(!!session);
-                if (session?.user) {
-                    console.log('useAuth: Fetching user profile for:', session.user.id);
-                    await fetchUserProfile(session.user.id);
+                setIsAuthenticated(!!sessionUser);
+                if (sessionUser?.id) {
+                    console.log('useAuth: Fetching user profile for:', sessionUser.id);
+                    await fetchUserProfile(sessionUser.id);
                 } else {
                     console.log('useAuth: No session, clearing profile');
                     setUserProfile(null);
@@ -122,35 +102,16 @@ export function useAuth() {
         }, 2000); // Reduced to 2 seconds since we're skipping session check in dev
 
         // Listen for auth state changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('useAuth: Auth state change:', event, !!session);
-            setIsAuthenticated(!!session);
-            if (session?.user) {
-                console.log(
-                    'useAuth: Auth state change - fetching profile for:',
-                    session.user.id,
-                );
-                await fetchUserProfile(session.user.id);
-            } else {
-                console.log('useAuth: Auth state change - no session, clearing profile');
-                setUserProfile(null);
-            }
-            // Ensure loading state is set to false after auth state change
-            console.log('useAuth: Auth state change - setting loading to false');
-            setIsLoading(false);
-        });
+        // Minimal: rely on page reload or atomsApi-based polling if needed
 
         return () => {
-            subscription.unsubscribe();
             clearTimeout(fallbackTimeout);
         };
     }, [initialized]);
 
     const signOut = async () => {
         try {
-            await supabase.auth.signOut();
+            // Atoms-api does not expose signOut; handled server-side elsewhere
             setUserProfile(null);
             setIsAuthenticated(false);
             router.push('/login');

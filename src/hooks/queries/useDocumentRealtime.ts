@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
 import { Profile } from '@/types/base/profiles.types';
@@ -47,24 +47,11 @@ export const useDocumentRealtime = ({
             setLoading(true);
 
             // Fetch blocks
-            const { data: blocksData, error: blocksError } = await supabase
-                .from('blocks')
-                .select('*')
-                .eq('document_id', documentId)
-                .is('is_deleted', false)
-                .order('position');
-
-            if (blocksError) throw blocksError;
+            const api = atomsApiClient();
+            const blocksData = await api.documents.listBlocks(documentId);
 
             // Fetch requirements for all blocks
-            const { data: requirementsData, error: requirementsError } = await supabase
-                .from('requirements')
-                .select('*')
-                .is('is_deleted', false)
-                .eq('document_id', documentId)
-                .order('position');
-
-            if (requirementsError) throw requirementsError;
+            const requirementsData = await api.requirements.listByDocument(documentId);
 
             // Fetch columns for table blocks
             const tableBlocks = blocksData.filter((block) => block.type === 'table');
@@ -74,19 +61,9 @@ export const useDocumentRealtime = ({
                 tableBlocks.map((b) => b.id),
             );
 
-            const { data: columnsData, error: columnsError } = await supabase
-                .from('columns')
-                .select('*, property:properties(*)')
-                .in(
-                    'block_id',
-                    tableBlocks.map((block) => block.id),
-                )
-                .order('position', { ascending: true });
-
-            if (columnsError) {
-                console.error('❌ Columns fetch error:', columnsError);
-                throw columnsError;
-            }
+            const columnsData = await api.documents.listColumnsByBlockIds(
+                tableBlocks.map((block) => block.id),
+            );
             console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
 
             // Group requirements by block_id
@@ -151,133 +128,108 @@ export const useDocumentRealtime = ({
     useEffect(() => {
         if (!documentId) return;
 
-        // Initial fetch
-        fetchBlocks();
+        let blocksSub: any;
+        let reqSub: any;
+        let colSub: any;
 
-        // Subscribe to blocks changes
-        const blocksSubscription = supabase
-            .channel(`blocks:${documentId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'blocks',
-                    filter: `document_id=eq.${documentId}`,
-                },
-                (payload) => {
+        const run = async () => {
+            // Initial fetch
+            await fetchBlocks();
+
+            // Subscribe to blocks changes
+            const api = atomsApiClient();
+            blocksSub = api.realtime.subscribeBlocks(documentId, {
+                onInsert: () => fetchBlocks(),
+                onUpdate: (newBlock) => {
                     // Handle individual block changes instead of fetching all blocks
-                    if (payload.eventType === 'UPDATE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
+                        return prevBlocks.map((block) =>
+                            block.id === newBlock.id
+                                ? {
+                                      ...block,
+                                      ...newBlock,
+                                      requirements: block.requirements,
+                                      columns: block.columns,
+                                  }
+                                : block,
+                        );
+                    });
+                },
+                onDelete: () => fetchBlocks(),
+            });
+            await blocksSub.subscribe();
 
-                            return prevBlocks.map((block) =>
-                                block.id === payload.new.id
-                                    ? {
-                                          ...block,
-                                          ...payload.new,
-                                          requirements: block.requirements,
-                                          columns: block.columns,
-                                      }
-                                    : block,
-                            );
+            // Subscribe to requirements changes
+            reqSub = api.realtime.subscribeRequirements(documentId, {
+                onUpdate: (updated) => {
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
+
+                        return prevBlocks.map((block) => {
+                            if (block.id === updated.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: block.requirements.map((req) =>
+                                        req.id === updated.id
+                                            ? (updated as Requirement)
+                                            : req,
+                                    ),
+                                };
+                            }
+                            return block;
                         });
-                    } else {
-                        // For INSERT and DELETE, fetch all blocks
-                        fetchBlocks();
-                    }
+                    });
                 },
-            )
-            .subscribe();
+                onInsert: (inserted) => {
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
-        // Subscribe to requirements changes
-        const requirementsSubscription = supabase
-            .channel(`requirements:${documentId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'requirements',
-                    filter: `document_id=eq.${documentId}`,
-                },
-                (payload) => {
-                    if (payload.eventType === 'UPDATE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
-
-                            return prevBlocks.map((block) => {
-                                if (block.id === payload.new.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: block.requirements.map((req) =>
-                                            req.id === payload.new.id
-                                                ? (payload.new as Requirement)
-                                                : req,
-                                        ),
-                                    };
-                                }
-                                return block;
-                            });
+                        return prevBlocks.map((block) => {
+                            if (block.id === inserted.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: [
+                                        ...block.requirements,
+                                        inserted as Requirement,
+                                    ],
+                                };
+                            }
+                            return block;
                         });
-                    } else if (payload.eventType === 'INSERT') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    });
+                },
+                onDelete: (oldItem) => {
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
-                            return prevBlocks.map((block) => {
-                                if (block.id === payload.new.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: [
-                                            ...block.requirements,
-                                            payload.new as Requirement,
-                                        ],
-                                    };
-                                }
-                                return block;
-                            });
+                        return prevBlocks.map((block) => {
+                            if (block.id === oldItem.block_id) {
+                                return {
+                                    ...block,
+                                    requirements: block.requirements.filter(
+                                        (req) => req.id !== oldItem.id,
+                                    ),
+                                };
+                            }
+                            return block;
                         });
-                    } else if (payload.eventType === 'DELETE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    });
+                },
+            });
+            await reqSub.subscribe();
 
-                            return prevBlocks.map((block) => {
-                                if (block.id === payload.old.block_id) {
-                                    return {
-                                        ...block,
-                                        requirements: block.requirements.filter(
-                                            (req) => req.id !== payload.old.id,
-                                        ),
-                                    };
-                                }
-                                return block;
-                            });
-                        });
-                    }
-                },
-            )
-            .subscribe();
+            // Subscribe to columns changes
+            colSub = api.realtime.subscribeColumns(documentId, () => fetchBlocks());
+            await colSub.subscribe();
+        };
 
-        // Subscribe to columns changes
-        const columnsSubscription = supabase
-            .channel(`columns:${documentId}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'columns',
-                },
-                () => {
-                    fetchBlocks();
-                },
-            )
-            .subscribe();
+        run();
 
         return () => {
-            blocksSubscription.unsubscribe();
-            requirementsSubscription.unsubscribe();
-            columnsSubscription.unsubscribe();
+            blocksSub?.unsubscribe?.();
+            reqSub?.unsubscribe?.();
+            colSub?.unsubscribe?.();
         };
     }, [documentId, fetchBlocks]);
 

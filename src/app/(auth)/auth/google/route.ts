@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 
 export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
-    const supabase = await createClient();
+    const api = await atomsApiServer();
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await api.auth.signInWithOAuth({
         provider: 'google',
         options: {
             redirectTo: `${requestUrl.origin}/auth/callback`,

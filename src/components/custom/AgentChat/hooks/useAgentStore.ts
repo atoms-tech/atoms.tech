@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 interface Message {
     id: string;
@@ -234,17 +234,13 @@ export const useAgentStore = create<AgentStore>()(
                     throw new Error('User context is required');
                 }
 
-                try {
+                {
                     // Fetch organization name
                     let orgName: string | undefined;
                     try {
-                        const { data: orgData } = await supabase
-                            .from('organizations')
-                            .select('name')
-                            .eq('id', currentOrgId)
-                            .eq('is_deleted', false)
-                            .single();
-                        orgName = orgData?.name;
+                        const api = atomsApiClient();
+                        const org = await api.organizations.getById(currentOrgId);
+                        orgName = (org as any)?.name;
                     } catch (orgError) {
                         console.warn('Failed to fetch organization name:', orgError);
                     }
@@ -306,8 +302,6 @@ export const useAgentStore = create<AgentStore>()(
                     }
 
                     return await response.json();
-                } catch (error) {
-                    throw error;
                 }
             },
 
@@ -415,9 +409,7 @@ export const useAgentStore = create<AgentStore>()(
                                         [key: string]: unknown;
                                     }) => ({
                                         ...msg,
-                                        timestamp: new Date(
-                                            msg.timestamp || msg.timestamp,
-                                        ),
+                                        timestamp: new Date(msg.timestamp),
                                     }),
                                 );
 

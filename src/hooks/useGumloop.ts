@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
-import {
+import { atomsApiClient } from '@/lib/atoms-api';
+import type {
     PipelineRunStatusResponse,
     StartPipelineParams,
     StartPipelineResponse,
@@ -17,25 +18,8 @@ export function useGumloop(options: GumloopOptions = {}) {
 
     const uploadFilesMutation = useMutation({
         mutationFn: async (files: File[]): Promise<string[]> => {
-            const formData = new FormData();
-            files.forEach((file) => {
-                formData.append('files', file);
-            });
-
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                    `Upload failed: ${errorData.error || response.statusText}`,
-                );
-            }
-
-            const result = await response.json();
-            return result.files;
+            const api = atomsApiClient();
+            return api.pipelines.uploadFiles(files);
         },
         onError: (error: Error) => {
             console.error('File upload error:', error);
@@ -47,28 +31,8 @@ export function useGumloop(options: GumloopOptions = {}) {
         mutationFn: async (
             startPipelineParams: StartPipelineParams,
         ): Promise<StartPipelineResponse> => {
-            console.log('Starting pipeline:', startPipelineParams);
-            const response = await fetch('/api/ai', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: 'startPipeline',
-                    ...startPipelineParams,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                    `Pipeline start failed: ${errorData.error || response.statusText}`,
-                );
-            }
-
-            const result = await response.json();
-            console.log('Pipeline started successfully:', result);
-            return result;
+            const api = atomsApiClient();
+            return api.pipelines.start(startPipelineParams);
         },
         onError: (error: Error) => {
             console.error('Pipeline start error:', error);
@@ -79,35 +43,19 @@ export function useGumloop(options: GumloopOptions = {}) {
     const getPipelineRun = useCallback(
         async (
             runId: string,
-            organizationId: string,
+            _organizationId: string,
         ): Promise<PipelineRunStatusResponse> => {
             console.log('Fetching pipeline run status for runId:', runId);
-            const url = new URL('/api/ai', window.location.href);
-            url.searchParams.set('runId', runId);
-            url.searchParams.set('organizationId', organizationId);
-            const response = await fetch(url.href, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(
-                    `Failed to get pipeline status: ${errorData.error || response.statusText}`,
-                );
-            }
-
-            return response.json();
+            const api = atomsApiClient();
+            return api.pipelines.status(runId);
         },
         [],
     );
 
-    const usePipelineRun = (runId: string, organizationId: string) => {
+    const usePipelineRun = (runId: string, _organizationId: string) => {
         return useQuery<PipelineRunStatusResponse, Error>({
             queryKey: ['pipelineRun', runId],
-            queryFn: () => getPipelineRun(runId, organizationId),
+            queryFn: () => getPipelineRun(runId, _organizationId),
             enabled: !!runId && !options.skipCache,
             refetchInterval: (query) => {
                 const state = query.state.data?.state;

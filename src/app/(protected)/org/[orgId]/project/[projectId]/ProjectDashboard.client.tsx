@@ -37,10 +37,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 
 import ProjectMembers from './ProjectMembers';
@@ -98,22 +98,18 @@ export default function ProjectPage() {
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const projectId = params?.projectId || ''; // Extract project_id from the URL
+            const projectId = params?.projectId || '';
             if (!projectId || !user?.id) return;
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
+            const api = atomsApiClient();
+            try {
+                const members = await api.projects.listMembers(projectId);
+                const me = members.find(
+                    (m: any) => m.user_id === user.id || m.id === user.id,
+                );
+                setUserRole((me as any)?.role || null);
+            } catch (e) {
+                console.error('Error fetching user role:', e);
             }
-
-            setUserRole(data?.role || null);
         };
 
         fetchUserRole();
@@ -140,29 +136,15 @@ export default function ProjectPage() {
         if (!documentToDelete) return;
 
         try {
+            const api = atomsApiClient();
             setIsDeleting(true);
 
-            // Delete requirements associated with the document
-            const { error: requirementsError } = await supabase
-                .from('requirements')
-                .delete()
-                .eq('document_id', documentToDelete.id);
-
-            if (requirementsError) {
-                console.error('Error deleting requirements:', requirementsError);
-                throw requirementsError;
-            }
-
-            // Delete the document
-            const { error: documentError } = await supabase
-                .from('documents')
-                .delete()
-                .eq('id', documentToDelete.id);
-
-            if (documentError) {
-                console.error('Error deleting document:', documentError);
-                throw documentError;
-            }
+            // Soft-delete requirements and document via centralized domains
+            const reqs = await api.requirements.listByDocument(documentToDelete.id);
+            await Promise.all(
+                reqs.map((r: any) => api.requirements.softDelete(r.id, user?.id || '')),
+            );
+            await api.documents.softDelete(documentToDelete.id, user?.id || '');
 
             // Refresh documents list
             await refetch(); // Refetch documents to reflect changes

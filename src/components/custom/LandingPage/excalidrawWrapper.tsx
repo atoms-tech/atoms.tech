@@ -11,7 +11,7 @@ import type {
 import { Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 import '@excalidraw/excalidraw/index.css';
 
@@ -196,29 +196,8 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             setAuthError(null);
 
             try {
-                // Fetch existing diagram data with authorization check
-                const { data, error } = await supabase
-                    .from('excalidraw_diagrams')
-                    .select('diagram_data, project_id, name')
-                    .eq('id', id)
-                    .single();
-
-                if (error) {
-                    console.error('Error loading diagram:', error);
-                    if (error.message.includes('multiple (or no) rows returned')) {
-                        console.log(
-                            'No diagram found with ID:',
-                            id,
-                            '- treating as new diagram',
-                        );
-                        return false;
-                    }
-
-                    //handle it as a real error
-                    setAuthError('Error loading diagram: ' + error.message);
-                    return false;
-                }
-
+                const api = atomsApiClient();
+                const data = await api.diagrams.getById(id);
                 if (data && data.diagram_data) {
                     // Verify diagram belongs to current project
                     if (data.project_id !== projectId) {
@@ -299,17 +278,8 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         if (!diagramId) return;
 
         try {
-            const { data, error } = await supabase
-                .from('excalidraw_diagrams')
-                .select('name')
-                .eq('id', diagramId)
-                .single();
-
-            if (error) {
-                console.error('Error refreshing diagram name:', error);
-                return;
-            }
-
+            const api = atomsApiClient();
+            const data = await api.diagrams.getById(diagramId);
             if (data && data.name !== diagramName) {
                 console.log('Updating diagram name from database:', data.name);
                 setDiagramName(data.name || 'Untitled Diagram');
@@ -677,14 +647,8 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     thumbnail_url: thumbnailUrl,
                 };
 
-                const { error } = await supabase
-                    .from('excalidraw_diagrams')
-                    .upsert(diagramRecord);
-
-                if (error) {
-                    console.error('Error saving diagram:', error);
-                    return;
-                }
+                const api = atomsApiClient();
+                await api.diagrams.upsert(diagramRecord as any);
 
                 // If this was a "Save As" operation, update the current diagram ID
                 if (customDiagramId) {
@@ -1147,3 +1111,4 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
 };
 
 export default ExcalidrawWrapper;
+// No direct Supabase import; using atoms-api client for raw calls where needed

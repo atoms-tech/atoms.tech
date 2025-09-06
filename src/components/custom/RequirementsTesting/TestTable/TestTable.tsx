@@ -10,8 +10,8 @@ import { TestReq } from '@/components/custom/RequirementsTesting/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 
 import { DataTable, columns } from './TanstackTestTable';
@@ -142,15 +142,8 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
             id: string;
             updates: Partial<TestReq>;
         }) => {
-            const { data, error } = await supabase
-                .from('test_req')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as TestReq;
+            const api = atomsApiClient();
+            return (await api.testing.updateTest(id, updates)) as TestReq;
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.testReq.root });
@@ -163,15 +156,8 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
 
     const deleteTestReq = useMutation({
         mutationFn: async (id: string) => {
-            const { data, error } = await supabase
-                .from('test_req')
-                .update({ is_active: false })
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as TestReq;
+            const api = atomsApiClient();
+            return (await api.testing.softDeleteTest(id)) as TestReq;
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: queryKeys.testReq.root });

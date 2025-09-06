@@ -9,9 +9,9 @@ import LayoutManager from '@/components/base/LayoutManager';
 import { Button } from '@/components/ui/button';
 import { LiveRegionProvider } from '@/components/ui/live-region';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 import { getQueryClient } from '@/lib/constants/queryClient';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { getUserProjectsServer } from '@/lib/db/server';
 import { prefetchUserDashboard } from '@/lib/db/utils/prefetchData';
 import { AccessibilityProvider } from '@/lib/providers/accessibility.provider';
 import { OrganizationProvider } from '@/lib/providers/organization.provider';
@@ -48,7 +48,10 @@ export default async function ProtectedLayout({
             if (preferredOrg) {
                 await queryClient.prefetchQuery({
                     queryKey: queryKeys.projects.byOrg(preferredOrgId),
-                    queryFn: () => getUserProjectsServer(user.id, preferredOrgId),
+                    queryFn: async () => {
+                        const api = await atomsApiServer();
+                        return api.projects.listForUser(user.id, preferredOrgId);
+                    },
                     staleTime: 1000 * 60 * 5, // 5 minutes
                 });
             }

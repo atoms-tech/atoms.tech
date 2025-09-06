@@ -58,7 +58,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const [startWidth, setStartWidth] = useState(0);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognitionRef = useRef<any>(null);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -253,9 +252,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     useEffect(() => {
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
             const SpeechRecognition =
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (window as any).SpeechRecognition ||
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (window as any).webkitSpeechRecognition;
             recognitionRef.current = new SpeechRecognition();
             recognitionRef.current.continuous = true;
@@ -263,7 +260,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             recognitionRef.current.lang = 'en-US'; // Set to English
 
             recognitionRef.current.onstart = () => setIsListening(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             recognitionRef.current.onresult = (event: any) => {
                 const lastResultIndex = event.results.length - 1;
                 const transcript = event.results[lastResultIndex][0].transcript;
@@ -301,7 +297,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         let attempt = 0;
         while (attempt < maxRetries) {
             try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const n8nResponse = await sendToN8n(data as any);
                 // If response contains error code 500, throw to trigger retry
                 if (
@@ -989,8 +984,9 @@ ${'='.repeat(50)}
                     <div className="flex gap-2 items-stretch">
                         <div className="flex-1 relative">
                             <Textarea
-                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                {...({ ref: textareaRef } as any)}
+                                ref={
+                                    textareaRef as unknown as React.RefObject<HTMLTextAreaElement>
+                                }
                                 value={message}
                                 onChange={(e) =>
                                     setMessage((e.target as HTMLTextAreaElement).value)
