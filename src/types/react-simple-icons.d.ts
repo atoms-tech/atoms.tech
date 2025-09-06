@@ -11,4 +11,3 @@ declare module '@icons-pack/react-simple-icons' {
     const icons: Record<string, ComponentType<SVGProps<SVGSVGElement>>>;
     export default icons;
 }
-
