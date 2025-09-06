@@ -13,7 +13,7 @@ import {
 } from '@/hooks/mutations/useBlockMutations';
 import { BLOCK_TEXT_DEFAULT_HEIGHT } from '@/lib/constants/blocks';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useDocumentStore } from '@/store/document.store';
 import { Json } from '@/types/base/database.types';
 
@@ -124,19 +124,8 @@ export const useBlockActions = ({
 
         try {
             // Fetch base properties for the organization
-            const { data: baseProperties, error: basePropertiesError } = await supabase
-                .from('properties')
-                .select('*')
-                .eq('org_id', orgId)
-                .eq('is_base', true)
-                .is('document_id', null)
-                .is('project_id', null)
-                .eq('scope', 'org');
-
-            if (basePropertiesError) {
-                console.error('Error fetching base properties:', basePropertiesError);
-                throw basePropertiesError;
-            }
+            const api = atomsApiClient();
+            const baseProperties = await api.properties.listOrgBase(orgId);
 
             // Create columns for each base property
             const columnPromises = baseProperties.map(async (baseProp) => {
@@ -162,25 +151,15 @@ export const useBlockActions = ({
                         position = 5; // Any other properties will be placed after the default ones
                 }
 
-                const { data: column, error: columnError } = await supabase
-                    .from('columns')
-                    .insert({
-                        block_id: blockId,
-                        property_id: baseProp.id,
-                        position: position,
-                        width: 200, // Default width
-                        is_hidden: false,
-                        is_pinned: false,
-                    })
-                    .select()
-                    .single();
-
-                if (columnError) {
-                    console.error('Error creating column:', columnError);
-                    throw columnError;
-                }
-
-                return column;
+                const col = await api.documents.createColumn({
+                    block_id: blockId,
+                    property_id: baseProp.id,
+                    position: position,
+                    width: 200,
+                    is_hidden: false,
+                    is_pinned: false,
+                } as any);
+                return col;
             });
 
             try {
@@ -190,17 +169,7 @@ export const useBlockActions = ({
             } catch (error) {
                 console.error('Error creating columns:', error);
                 // Delete the block since column creation failed
-                const { error: deleteError } = await supabase
-                    .from('blocks')
-                    .delete()
-                    .eq('id', blockId);
-
-                if (deleteError) {
-                    console.error(
-                        'Error deleting block after column creation failure:',
-                        deleteError,
-                    );
-                }
+                await api.documents.softDeleteBlock(blockId, userProfile.id);
                 throw error;
             }
         } catch (error) {

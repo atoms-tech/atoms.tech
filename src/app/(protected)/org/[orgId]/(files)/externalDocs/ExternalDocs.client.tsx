@@ -23,7 +23,7 @@ import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments'
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 interface ExternalDocsPageProps {
     onTotalUsageUpdate?: (totalUsage: number) => void;
@@ -58,19 +58,11 @@ export default function ExternalDocsPage({
     // Fetch user role
     useEffect(() => {
         const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', currentOrgId || '')
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
+            if (!currentOrgId) return;
+            const api = atomsApiClient();
+            const members = await api.organizations.listMembers(currentOrgId);
+            const me = members.find((m: any) => m.user_id === user?.id);
+            setUserRole((me as any)?.role || null);
         };
 
         if (currentOrgId) {
@@ -188,17 +180,12 @@ export default function ExternalDocsPage({
             return;
         }
 
-        const filePath = `${currentOrgId}/${documentId}`;
+        const _filePath = `${currentOrgId}/${documentId}`;
 
-        const { data: publicUrl } = supabase.storage
-            .from('external_documents')
-            .getPublicUrl(filePath);
-
-        if (publicUrl) {
-            window.open(publicUrl.publicUrl, '_blank');
-        } else {
-            alert('Failed to get file URL. Please try again.');
-        }
+        const api = atomsApiClient();
+        const publicUrl = api.externalDocuments.getPublicUrl(currentOrgId, documentId);
+        if (publicUrl) window.open(publicUrl, '_blank');
+        else alert('Failed to open file.');
     };
 
     return (

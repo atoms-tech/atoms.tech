@@ -14,7 +14,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
 
@@ -63,24 +63,17 @@ const VerticalToolbar = () => {
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const projectId = pathname?.split('/')[4] || ''; // Extract project_id from the URL
+            const projectId = pathname?.split('/')[4] || '';
             if (!projectId || !user?.id) return;
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
+            try {
+                const api = atomsApiClient();
+                const members = await api.projects.listMembers(projectId);
+                const me = members.find((m: any) => m.user_id === user.id || m.id === user.id);
+                setUserRole((me as any)?.role || null);
+            } catch (e) {
+                console.error('Error fetching user role:', e);
             }
-
-            setUserRole(data?.role || null);
         };
-
         fetchUserRole();
     }, [pathname, user?.id]);
 

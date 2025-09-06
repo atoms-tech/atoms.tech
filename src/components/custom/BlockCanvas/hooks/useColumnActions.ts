@@ -7,7 +7,7 @@ import {
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Column, Property, PropertyType } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Json } from '@/types/base/database.types';
 
 const columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
@@ -51,9 +51,9 @@ export const useColumnActions = ({
         ) => {
             try {
                 // Step 1: Create the property
-                const { data: propertyData, error: propertyError } = await supabase
-                    .from('properties')
-                    .insert({
+                const api = atomsApiClient();
+                const property = (await api.properties.createMany([
+                    {
                         name,
                         property_type: columnTypeToPropertyType(type),
                         org_id: orgId,
@@ -63,7 +63,7 @@ export const useColumnActions = ({
                         document_id: propertyConfig.scope.includes('document')
                             ? documentId
                             : null,
-                        is_base: propertyConfig.is_base,
+                        is_base: propertyConfig.is_base ?? false,
                         options: propertyConfig.options
                             ? { values: propertyConfig.options }
                             : null,
@@ -72,40 +72,23 @@ export const useColumnActions = ({
                         updated_at: new Date().toISOString(),
                         created_by: userId,
                         updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (propertyError) {
-                    throw propertyError;
-                }
-
-                const property = propertyData as Property;
+                    } as any,
+                ]))?.[0] as Property;
 
                 // Step 2: Create the column
-                const { data: columnData, error: columnError } = await supabase
-                    .from('columns')
-                    .insert({
-                        block_id: blockId,
-                        property_id: property.id,
-                        position: 0, // This will be updated in a subsequent query
-                        width: null,
-                        is_hidden: false,
-                        is_pinned: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        default_value: defaultValue,
-                        created_by: userId,
-                        updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (columnError) {
-                    throw columnError;
-                }
-
-                const column = columnData as Column;
+                const column = (await api.documents.createColumn({
+                    block_id: blockId,
+                    property_id: property.id,
+                    position: 0,
+                    width: null,
+                    is_hidden: false,
+                    is_pinned: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    default_value: defaultValue,
+                    created_by: userId,
+                    updated_by: userId,
+                } as any)) as unknown as Column;
 
                 // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
@@ -137,43 +120,25 @@ export const useColumnActions = ({
             userId: string,
         ) => {
             try {
+                const api = atomsApiClient();
                 // Step 1: Get the property details
-                const { data: propertyData, error: propertyError } = await supabase
-                    .from('properties')
-                    .select('*')
-                    .eq('id', propertyId)
-                    .single();
+                const property = (await api.properties.getById(propertyId)) as Property;
+                if (!property) throw new Error('Property not found');
 
-                if (propertyError) {
-                    throw propertyError;
-                }
-
-                const property = propertyData as Property;
-
-                // Step 2: Create the column
-                const { data: columnData, error: columnError } = await supabase
-                    .from('columns')
-                    .insert({
-                        block_id: blockId,
-                        property_id: property.id,
-                        position: 0, // This will be updated in a subsequent query
-                        width: null,
-                        is_hidden: false,
-                        is_pinned: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        default_value: defaultValue,
-                        created_by: userId,
-                        updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (columnError) {
-                    throw columnError;
-                }
-
-                const column = columnData as Column;
+                // Step 2: Create the column via domain
+                const column = (await api.documents.createColumn({
+                    block_id: blockId,
+                    property_id: property.id,
+                    position: 0,
+                    width: null,
+                    is_hidden: false,
+                    is_pinned: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    default_value: defaultValue,
+                    created_by: userId,
+                    updated_by: userId,
+                } as any)) as unknown as Column;
 
                 // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
@@ -203,27 +168,13 @@ export const useColumnActions = ({
                 console.log('[ColumnActions] Deleting column:', columnId);
 
                 // Step 1: Delete the column itself
-                const { error: columnError } = await supabase
-                    .from('columns')
-                    .delete()
-                    .eq('id', columnId);
-
-                if (columnError) {
-                    console.error(
-                        '[ColumnActions] Failed to delete column record:',
-                        columnError,
-                    );
-                    throw columnError;
-                }
+                const api = atomsApiClient();
+                await api.documents.deleteColumn(columnId);
 
                 // Step 2: Remove the column from each requirement's properties
-                const { data: requirements, error: requirementsError } = await supabase
-                    .from('requirements')
-                    .select('*')
-                    .eq('block_id', blockId)
-                    .eq('is_deleted', false);
-
-                if (requirementsError) throw requirementsError;
+                const requirements = await atomsApiClient().requirements.listByBlock(
+                    blockId,
+                );
 
                 const updatePromises = requirements.map((req) => {
                     const originalProps = req.properties;
@@ -253,10 +204,9 @@ export const useColumnActions = ({
                     }
                     delete currentProps[columnId]; // Clean up legacy bug. Should be remedied when editing a req but meh.
 
-                    return supabase
-                        .from('requirements')
-                        .update({ properties: currentProps as Json })
-                        .eq('id', req.id);
+                    return atomsApiClient().requirements.update(req.id, {
+                        properties: currentProps as Json,
+                    } as any);
                 });
 
                 await Promise.all(updatePromises);

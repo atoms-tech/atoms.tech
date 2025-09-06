@@ -8,7 +8,7 @@ import {
     TestMatrixViewConfiguration,
     TestMatrixViewState,
 } from '@/components/custom/RequirementsTesting/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 // We'll need to add these queryKeys
 const QUERY_KEYS = {
@@ -36,7 +36,7 @@ interface SuccessResponse<T> {
     status: number;
 }
 
-const mapSupabaseError = (error: PostgrestError): ErrorResponse => ({
+const _mapSupabaseError = (error: PostgrestError): ErrorResponse => ({
     message: error.message,
     status: error.code === 'PGRST116' ? 404 : 500,
     details: error,
@@ -53,16 +53,9 @@ export function useTestMatrixViews(projectId: string) {
     } = useQuery({
         queryKey: QUERY_KEYS.testMatrixViews.list(projectId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('test_matrix_views')
-                .select('*')
-                .eq('project_id', projectId)
-                .eq('is_active', true)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            return data.map((view) => ({
+            const api = atomsApiClient();
+            const rows = await api.testMatrixViews.listByProject(projectId);
+            return rows.map((view: any) => ({
                 id: view.id,
                 name: view.name,
                 projectId: view.project_id,
@@ -84,28 +77,19 @@ export function useTestMatrixViews(projectId: string) {
     >({
         mutationFn: async (newView: Omit<TestMatrixViewState, 'id'>) => {
             // If setting as default, unset any existing defaults
+            const api = atomsApiClient();
             if (newView.isDefault) {
-                await supabase
-                    .from('test_matrix_views')
-                    .update({ is_default: false })
-                    .eq('project_id', newView.projectId)
-                    .eq('is_default', true);
+                await api.testMatrixViews.unsetDefaults(newView.projectId);
             }
-
-            const { data, error } = await supabase
-                .from('test_matrix_views')
-                .insert({
-                    name: newView.name,
-                    project_id: newView.projectId,
-                    configuration: newView.configuration as unknown as Json,
-                    created_by: (await supabase.auth.getUser()).data.user?.id || '',
-                    updated_by: (await supabase.auth.getUser()).data.user?.id || '',
-                    is_default: newView.isDefault || false,
-                })
-                .select()
-                .single();
-
-            if (error) throw error;
+            const currentUser = await api.auth.getUser();
+            const data = await api.testMatrixViews.insert({
+                name: newView.name,
+                project_id: newView.projectId,
+                configuration: newView.configuration as unknown as Json,
+                created_by: currentUser?.id || '',
+                updated_by: currentUser?.id || '',
+                is_default: newView.isDefault || false,
+            });
 
             return {
                 id: data.id,
@@ -135,29 +119,16 @@ export function useTestMatrixViews(projectId: string) {
             if (!updatedView.id) throw new Error('View ID is required for updates');
 
             // If setting as default, unset any existing defaults
+            const api = atomsApiClient();
             if (updatedView.isDefault) {
-                await supabase
-                    .from('test_matrix_views')
-                    .update({ is_default: false })
-                    .eq('project_id', updatedView.projectId)
-                    .eq('is_default', true)
-                    .neq('id', updatedView.id);
+                await api.testMatrixViews.unsetDefaults(updatedView.projectId, updatedView.id as string);
             }
-
-            const { data, error } = await supabase
-                .from('test_matrix_views')
-                .update({
-                    name: updatedView.name,
-                    configuration: updatedView.configuration as unknown as Json,
-                    updated_at: new Date().toISOString(),
-                    is_default: updatedView.isDefault || false,
-                })
-                .eq('id', updatedView.id)
-                .select()
-                .single();
-
-            if (error) throw error;
-
+            const data = await api.testMatrixViews.update(updatedView.id as string, {
+                name: updatedView.name,
+                configuration: updatedView.configuration as unknown as Json,
+                updated_at: new Date().toISOString(),
+                is_default: updatedView.isDefault || false,
+            });
             return {
                 id: data.id,
                 name: data.name,
@@ -182,14 +153,8 @@ export function useTestMatrixViews(projectId: string) {
     // Delete a view (soft delete by setting is_active to false)
     const deleteView = useMutation<void, ErrorResponse, { id: string }>({
         mutationFn: async ({ id }) => {
-            const { error } = await supabase
-                .from('test_matrix_views')
-                .update({ is_active: false })
-                .eq('id', id);
-
-            if (error) {
-                throw mapSupabaseError(error);
-            }
+            const api = atomsApiClient();
+            await api.testMatrixViews.softDelete(id);
         },
         onSuccess: (_, variables) => {
             queryClient.setQueryData(
@@ -202,14 +167,8 @@ export function useTestMatrixViews(projectId: string) {
 
     // Get a view by ID
     const getViewById = async (viewId: string) => {
-        const { data, error } = await supabase
-            .from('test_matrix_views')
-            .select('*')
-            .eq('id', viewId)
-            .eq('is_active', true)
-            .single();
-
-        if (error) throw error;
+        const api = atomsApiClient();
+        const data = await api.testMatrixViews.getById(viewId);
 
         return {
             id: data.id,
@@ -225,55 +184,44 @@ export function useTestMatrixViews(projectId: string) {
     // Get the default view
     const getDefaultView = async () => {
         try {
-            const { data, error } = await supabase
-                .from('test_matrix_views')
-                .select('*')
-                .eq('project_id', projectId)
-                .eq('is_default', true)
-                .eq('is_active', true)
-                .single();
-
-            if (error) {
+            const api = atomsApiClient();
+            try {
+                const data = await api.testMatrixViews.getDefault(projectId);
+                return {
+                    id: data.id,
+                    name: data.name,
+                    projectId: data.project_id,
+                    configuration:
+                        data.configuration as unknown as TestMatrixViewConfiguration,
+                    isDefault: data.is_default,
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at,
+                } as TestMatrixViewState;
+            } catch (error: any) {
                 if (error.code === 'PGRST116') {
                     // No rows found
                     // If no default view, return the first active view or null
-                    const { data: firstView, error: firstViewError } = await supabase
-                        .from('test_matrix_views')
-                        .select('*')
-                        .eq('project_id', projectId)
-                        .eq('is_active', true)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-
-                    if (firstViewError || !firstView) {
+                    try {
+                        const firstView = await api.testMatrixViews.getFirstActive(
+                            projectId,
+                        );
+                        if (!firstView) return null;
+                        return {
+                            id: firstView.id,
+                            name: firstView.name,
+                            projectId: firstView.project_id,
+                            configuration:
+                                firstView.configuration as unknown as TestMatrixViewConfiguration,
+                            isDefault: firstView.is_default,
+                            createdAt: firstView.created_at,
+                            updatedAt: firstView.updated_at,
+                        } as TestMatrixViewState;
+                    } catch {
                         return null;
                     }
-
-                    return {
-                        id: firstView.id,
-                        name: firstView.name,
-                        projectId: firstView.project_id,
-                        configuration:
-                            firstView.configuration as unknown as TestMatrixViewConfiguration,
-                        isDefault: firstView.is_default,
-                        createdAt: firstView.created_at,
-                        updatedAt: firstView.updated_at,
-                    } as TestMatrixViewState;
                 }
                 throw error;
             }
-
-            return {
-                id: data.id,
-                name: data.name,
-                projectId: data.project_id,
-                configuration:
-                    data.configuration as unknown as TestMatrixViewConfiguration,
-                isDefault: data.is_default,
-                createdAt: data.created_at,
-                updatedAt: data.updated_at,
-            } as TestMatrixViewState;
         } catch (error) {
             // If there's any other error, return null instead of throwing
             console.error('Error fetching default view:', error);

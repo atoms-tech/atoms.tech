@@ -27,9 +27,8 @@ import {
     OrganizationRole,
     hasOrganizationPermission,
 } from '@/lib/auth/permissions';
-import { getOrganizationMembers } from '@/lib/db/client';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface OrgMembersProps {
     className?: string;
@@ -51,26 +50,20 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         refetch,
     } = useQuery({
         queryKey: ['organization-members', params?.orgId || ''],
-        queryFn: () =>
-            params ? getOrganizationMembers(params.orgId) : Promise.resolve([]),
+        queryFn: async () => {
+            if (!params?.orgId) return [];
+            const api = atomsApiClient();
+            return api.organizations.listMembers(params.orgId);
+        },
         enabled: params?.orgId ? true : false,
     });
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', params?.orgId || '')
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
+            const api = atomsApiClient();
+            const list = await api.organizations.listMembers(params?.orgId || '');
+            const me = list.find((m: any) => m.user_id === user?.id);
+            setUserRole((me as any)?.role || null);
         };
 
         fetchUserRole();
@@ -96,16 +89,8 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
-            const { error } = await supabase
-                .from('organization_members')
-                .delete()
-                .eq('organization_id', params?.orgId || '')
-                .eq('user_id', memberId);
-
-            if (error) {
-                console.error('Error removing member:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.organizations.removeMember(params?.orgId || '', memberId);
 
             await setOrgMemberCount(params?.orgId || '');
 
@@ -146,16 +131,8 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
-            const { error } = await supabase
-                .from('organization_members')
-                .update({ role: selectedRole })
-                .eq('organization_id', params.orgId)
-                .eq('user_id', memberId);
-
-            if (error) {
-                console.error('Error updating organization member role:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.organizations.setMemberRole(params.orgId as string, memberId, selectedRole);
 
             toast({
                 title: 'Success',

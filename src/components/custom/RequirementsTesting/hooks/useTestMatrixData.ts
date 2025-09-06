@@ -5,7 +5,7 @@ import { useTestMatrix } from '@/components/custom/RequirementsTesting/TestMatri
 import { ExecutionStatus } from '@/components/custom/RequirementsTesting/types';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 import { useCreateRequirementTest } from './useTestReq';
 
@@ -155,19 +155,11 @@ export function useTestMatrixData() {
             testId: string;
             status: ExecutionStatus;
         }) => {
-            const { data, error } = await supabase
-                .from('requirement_tests')
-                .update({
-                    execution_status: status,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('requirement_id', requirementId)
-                .eq('test_id', testId)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
+            const api = atomsApiClient();
+            return api.testing.updateRelation(requirementId, testId, {
+                execution_status: status,
+                updated_at: new Date().toISOString(),
+            });
         },
         onSuccess: (data) => {
             // Invalidate all relevant queries to trigger UI updates
@@ -223,13 +215,8 @@ export function useTestMatrixData() {
             requirementId: string;
             testId: string;
         }) => {
-            const { error } = await supabase
-                .from('requirement_tests')
-                .delete()
-                .eq('requirement_id', requirementId)
-                .eq('test_id', testId);
-
-            if (error) throw error;
+            const api = atomsApiClient();
+            await api.testing.deleteRelation(requirementId, testId);
         },
         onSuccess: (_, variables) => {
             // Invalidate all relevant queries

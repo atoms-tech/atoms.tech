@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 
 import { Property, PropertyType } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
@@ -49,21 +49,9 @@ export const useProperties = (documentId: string) => {
     const fetchProperties = useCallback(async () => {
         setIsLoading(true);
         try {
-            const query = supabase
-                .from('properties')
-                .select('*')
-                .eq('document_id', documentId)
-                .eq('is_deleted', false);
-
-            const { data, error } = await query;
-
-            if (error) {
-                console.error('Error fetching properties:', error);
-                throw error;
-            }
-
-            // Update local state with the fetched properties
-            const fetchedProperties = data as ExtendedProperty[];
+            const api = atomsApiClient();
+            const data = await api.properties.listByDocument(documentId);
+            const fetchedProperties = data as unknown as ExtendedProperty[];
             setProperties(fetchedProperties);
 
             // Invalidate related queries to ensure other components get the updated data
@@ -104,14 +92,9 @@ export const useProperties = (documentId: string) => {
                     : null,
             };
 
-            const { data, error } = await supabase
-                .from('properties')
-                .insert(insertData)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data;
+            const api = atomsApiClient();
+            const created = await api.properties.createMany([insertData as any]);
+            return created?.[0];
         } catch (error) {
             console.error('Error creating property:', error);
             throw error;
@@ -130,19 +113,11 @@ export const useProperties = (documentId: string) => {
                         : undefined,
                 };
 
-                const { data, error } = await supabase
-                    .from('properties')
-                    .update(updateData)
-                    .eq('id', propertyId)
-                    .select();
-
-                if (error) {
-                    console.error('Error updating property:', error);
-                    throw error;
-                }
-
-                // Update local state and invalidate queries
-                const updatedProperty = data[0] as ExtendedProperty;
+                const api = atomsApiClient();
+                const updatedProperty = (await api.properties.update(
+                    propertyId,
+                    updateData as any,
+                )) as unknown as ExtendedProperty;
                 setProperties((prev) =>
                     prev.map((p) => (p.id === propertyId ? updatedProperty : p)),
                 );
@@ -165,21 +140,8 @@ export const useProperties = (documentId: string) => {
     const deleteProperty = useCallback(
         async (propertyId: string, userId: string) => {
             try {
-                const updateData: PropertyUpdate = {
-                    is_deleted: true,
-                    deleted_by: userId,
-                    deleted_at: new Date().toISOString(),
-                };
-
-                const { error } = await supabase
-                    .from('properties')
-                    .update(updateData)
-                    .eq('id', propertyId);
-
-                if (error) {
-                    console.error('Error deleting property:', error);
-                    throw error;
-                }
+                const api = atomsApiClient();
+                await api.properties.softDelete(propertyId, userId);
 
                 // Update local state and invalidate queries
                 setProperties((prev) => prev.filter((p) => p.id !== propertyId));
@@ -245,13 +207,8 @@ export const useProperties = (documentId: string) => {
                     },
                 ];
 
-                const { data, error } = await supabase
-                    .from('properties')
-                    .insert(defaultProperties)
-                    .select();
-
-                if (error) throw error;
-                return data;
+                const api = atomsApiClient();
+                return api.properties.createMany(defaultProperties as any);
             } catch (error) {
                 console.error('Error creating default properties:', error);
                 throw error;
@@ -265,17 +222,13 @@ export const useProperties = (documentId: string) => {
         async (reorderedProperties: ExtendedProperty[], userId: string) => {
             try {
                 // Update all positions in parallel for better performance
-                await Promise.all(
-                    reorderedProperties.map((property, index) =>
-                        supabase
-                            .from('properties')
-                            .update({
-                                position: (index + 1) * 10, // Use 10, 20, 30... for positions to allow inserting in between
-                                updated_by: userId,
-                                updated_at: new Date().toISOString(),
-                            } as PropertyUpdate)
-                            .eq('id', property.id),
-                    ),
+                const api = atomsApiClient();
+                await api.properties.updatePositions(
+                    reorderedProperties.map((property, index) => ({
+                        id: property.id,
+                        position: (index + 1) * 10,
+                        updated_by: userId,
+                    })),
                 );
 
                 // Update local state with new positions

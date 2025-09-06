@@ -9,9 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useCreateOrgInvitation } from '@/hooks/mutations/useOrgInvitationMutations';
 import { useOrgInvitationsByOrgId } from '@/hooks/queries/useOrganization';
-import { getOrganizationMembers } from '@/lib/db/client';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { InvitationStatus } from '@/types/base/enums.types';
 
 interface OrgInvitationsProps {
@@ -60,9 +59,10 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
 
         try {
             // Check if the user is already a member of the organization
-            const members = await getOrganizationMembers(orgId);
+            const api = atomsApiClient();
+            const members = await api.organizations.listMembers(orgId);
             const isAlreadyMember = members.some(
-                (member) => member.email === inviteEmail.trim(),
+                (member) => member.profiles?.email === inviteEmail.trim(),
             );
 
             if (isAlreadyMember) {
@@ -71,41 +71,20 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
             }
 
             // Check if the email exists in the profiles table
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('email', inviteEmail.trim())
-                .single();
-
-            if (profileError) {
-                if (profileError.code === 'PGRST116') {
+            const profile = await api.auth.getByEmail(inviteEmail.trim());
+            if (!profile) {
                     setErrorMessage(
                         'This email does not belong to any user. Please ask the user to sign up first.',
                     );
                     setUserExists(false); // User does not exist
                     return;
-                }
-                console.error('Error checking email in profiles:', profileError);
-                throw profileError;
             }
 
             setUserExists(true); // User exists
 
             // Check for duplicate invitations
-            const { data: duplicateInvitations, error: duplicateError } = await supabase
-                .from('organization_invitations')
-                .select('*')
-                .eq('email', inviteEmail.trim())
-                .eq('organization_id', orgId)
-                .eq('status', InvitationStatus.pending);
-
-            if (duplicateError) {
-                console.error(
-                    'Error checking for duplicate invitations:',
-                    duplicateError,
-                );
-                throw duplicateError;
-            }
+            const invitesInOrg = await api.orgInvitations.listByOrganization(orgId);
+            const duplicateInvitations = invitesInOrg.filter((inv: any) => inv.email === inviteEmail.trim() && inv.status === InvitationStatus.pending);
 
             if (duplicateInvitations && duplicateInvitations.length > 0) {
                 setErrorMessage(
@@ -150,18 +129,8 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
         }
 
         try {
-            const { error } = await supabase
-                .from('organization_invitations')
-                .update({
-                    status: InvitationStatus.revoked,
-                    updated_by: user.id,
-                })
-                .eq('id', invitationId);
-
-            if (error) {
-                console.error('Error revoking invitation:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.orgInvitations.updateStatus(invitationId, InvitationStatus.revoked, user.id);
 
             setErrorMessage(null); // Clear error message on success
             refetch(); // Refresh the list of outgoing invitations

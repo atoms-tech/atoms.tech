@@ -14,7 +14,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 // Define the interface for the diagram item based on the actual database schema
 interface DiagramItem {
@@ -74,20 +74,9 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         try {
             if (!projectId) return;
 
-            const { data, error } = await supabase
-                .from('excalidraw_diagrams')
-                .select('id, name, thumbnail_url, updated_at, created_by')
-                .eq('project_id', projectId)
-                .order('updated_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching diagrams:', error);
-                setError('Failed to load diagrams. Please try again.');
-                return;
-            }
-
-            // Map data to DiagramItem interface with optional fields
-            const mappedData: DiagramItem[] = data.map((item: DiagramDatabaseRow) => ({
+            const api = atomsApiClient();
+            const list = await api.diagrams.listByProject(projectId);
+            const mappedData: DiagramItem[] = (list as any[]).map((item: DiagramDatabaseRow) => ({
                 id: item.id,
                 name: item.name || 'Untitled Diagram',
                 thumbnail_url: item.thumbnail_url,
@@ -125,16 +114,8 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         if (!newName.trim()) return;
 
         try {
-            const { error } = await supabase
-                .from('excalidraw_diagrams')
-                .update({ name: newName.trim() })
-                .eq('id', diagramId);
-
-            if (error) {
-                console.error('Error renaming diagram:', error);
-                setError('Failed to rename diagram');
-                return;
-            }
+            const api = atomsApiClient();
+            await api.diagrams.updateName(diagramId, newName.trim());
 
             // Update local state
             setDiagrams((prev) =>
@@ -151,16 +132,8 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
     const handleDeleteDiagram = async (diagramId: string) => {
         try {
-            const { error } = await supabase
-                .from('excalidraw_diagrams')
-                .delete()
-                .eq('id', diagramId);
-
-            if (error) {
-                console.error('Error deleting diagram:', error);
-                setError('Failed to delete diagram');
-                return;
-            }
+            const api = atomsApiClient();
+            await api.diagrams.delete(diagramId);
 
             // Remove from local state
             setDiagrams((prev) => prev.filter((d) => d.id !== diagramId));
@@ -429,3 +402,4 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 };
 
 export default DiagramGallery;
+// No direct Supabase import; using atoms-api client

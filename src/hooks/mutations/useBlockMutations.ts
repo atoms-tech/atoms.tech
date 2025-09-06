@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
 
@@ -31,29 +31,15 @@ export function useCreateBlock() {
         mutationFn: async (input: CreateBlockInput) => {
             console.log('Creating block', input);
 
-            const { data: block, error: blockError } = await supabase
-                .from('blocks')
-                .insert({
-                    content: input.content,
-                    document_id: input.document_id,
-                    position: input.position,
-                    type: input.type,
-                    created_by: input.created_by,
-                    updated_by: input.updated_by,
-                })
-                .select()
-                .single();
-
-            if (blockError) {
-                console.error('Failed to create block', blockError);
-                throw blockError;
-            }
-
-            if (!block) {
-                throw new Error('Failed to create block');
-            }
-
-            return block;
+            const api = atomsApiClient();
+            return api.documents.createBlock({
+                content: input.content,
+                document_id: input.document_id,
+                position: input.position,
+                type: input.type,
+                created_by: input.created_by,
+                updated_by: input.updated_by,
+            } as any);
         },
     });
 }
@@ -66,27 +52,11 @@ export function useUpdateBlock() {
             // Separate content from other fields
             const { id, content, ...otherFields } = input;
 
-            const { data: block, error: blockError } = await supabase
-                .from('blocks')
-                .update({
-                    ...otherFields,
-                    content: content || null, // Ensure content is properly handled as JSON
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (blockError) {
-                console.error('Failed to update block', blockError);
-                throw blockError;
-            }
-
-            if (!block) {
-                throw new Error('Failed to update block');
-            }
-
-            return block;
+            const api = atomsApiClient();
+            return api.documents.updateBlock(id, {
+                ...otherFields,
+                content: content || null,
+            } as any);
         },
     });
 }
@@ -96,27 +66,8 @@ export function useDeleteBlock() {
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting block', id);
 
-            const { data: block, error: blockError } = await supabase
-                .from('blocks')
-                .update({
-                    is_deleted: true,
-                    deleted_at: new Date().toISOString(),
-                    deleted_by: deletedBy,
-                })
-                .eq('id', id)
-                .select('*')
-                .single();
-
-            if (blockError) {
-                console.error('Failed to delete block', blockError);
-                throw blockError;
-            }
-
-            if (!block) {
-                throw new Error('Failed to delete block');
-            }
-
-            return block;
+            const api = atomsApiClient();
+            return api.documents.softDeleteBlock(id, deletedBy);
         },
     });
 }

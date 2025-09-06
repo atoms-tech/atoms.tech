@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 import SettingsSection from './SettingsSection';
 
@@ -47,22 +47,20 @@ export default function AccountPage() {
         }
 
         setLoading(true);
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
+        try {
+            const api = atomsApiClient();
+            await api.auth.updateProfile(user?.id || '', {
                 full_name: newName,
-                pinned_organization_id: profile?.pinned_organization_id || null,
-            })
-            .eq('id', user?.id || '');
-
-        if (updateError) {
-            setError('Failed to update name. Please try again.');
-        } else {
+                pinned_organization_id: (profile as any)?.pinned_organization_id || null,
+            } as any);
             setError('');
             setEditingName(false);
             await refreshUser();
+        } catch {
+            setError('Failed to update name. Please try again.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const toggleTheme = () => {

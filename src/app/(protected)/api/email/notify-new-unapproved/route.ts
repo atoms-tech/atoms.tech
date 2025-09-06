@@ -2,7 +2,7 @@ import { render } from '@react-email/render';
 import { NextRequest, NextResponse } from 'next/server';
 
 import NewUnapprovedEmail from '@/emails/NewUnapprovedEmail';
-import { resend, resend_from_email, resend_receive_email } from '@/lib/services/resend';
+import { getResend, resend_from_email, resend_receive_email } from '@/lib/services/resend';
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
 
         const html = await render(NewUnapprovedEmail({ name, email }));
 
+        const resend = getResend();
         const { data, error } = await resend.emails.send({
             from: `Atoms Tech <${resend_from_email}>`,
             to: resend_receive_email,

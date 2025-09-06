@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGumloop } from '@/hooks/useGumloop';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 const ExcalidrawWithClientOnly = dynamic(
     async () =>
@@ -324,15 +324,8 @@ export default function Draw() {
         if (!selectedDiagramId || !newDiagramName.trim()) return;
 
         try {
-            const { error } = await supabase
-                .from('excalidraw_diagrams')
-                .update({ name: newDiagramName.trim() })
-                .eq('id', selectedDiagramId);
-
-            if (error) {
-                console.error('Error renaming diagram:', error);
-                return;
-            }
+            const api = atomsApiClient();
+            await api.diagrams.updateName(selectedDiagramId, newDiagramName.trim());
 
             // Update local state
             setCurrentDiagramName(newDiagramName.trim());

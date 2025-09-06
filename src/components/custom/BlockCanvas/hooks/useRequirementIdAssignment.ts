@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { generateBatchRequirementIds } from '@/lib/utils/requirementIdGenerator';
 import { Requirement } from '@/types/base/requirements.types';
 
@@ -128,27 +128,9 @@ export function useRequirementIdAssignment(documentId: string) {
             setIsAssigning(true);
             try {
                 // Get organization ID from document
-                const { data: document, error: docError } = await supabase
-                    .from('documents')
-                    .select(
-                        `
-                        project_id,
-                        projects!inner(organization_id)
-                    `,
-                    )
-                    .eq('id', documentId)
-                    .single();
-
-                if (docError || !document) {
-                    console.error('Error fetching document:', docError);
-                    throw new Error('Failed to fetch document information');
-                }
-
-                const organizationId = (
-                    document as {
-                        projects?: { organization_id?: string };
-                    }
-                )?.projects?.organization_id;
+                const api = atomsApiClient();
+                const doc = await api.documents.getById(documentId);
+                const organizationId = (doc as any)?.organization_id;
 
                 if (!organizationId) {
                     throw new Error('Organization ID not found');
@@ -201,13 +183,10 @@ export function useRequirementIdAssignment(documentId: string) {
 
                 // Batch update all requirements
                 const updatePromises = updates.map(({ id, external_id }) =>
-                    supabase
-                        .from('requirements')
-                        .update({
-                            external_id,
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq('id', id),
+                    atomsApiClient().requirements.update(id, {
+                        external_id,
+                        updated_at: new Date().toISOString(),
+                    } as any),
                 );
 
                 const results = await Promise.allSettled(updatePromises);

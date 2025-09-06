@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import {
-    // PipelineRunState,
-    StartPipelineParams,
-    gumloopService,
-} from '@/lib/services/gumloop';
+import { atomsApiServer } from '@/lib/atoms-api/server';
+import type { StartPipelineParams } from '@/lib/services/gumloop';
 
 // import { createClient } from '@/lib/supabase/supabaseServer';
 
@@ -13,7 +10,8 @@ export async function POST(request: NextRequest) {
         // Parse and validate request body
         const body = (await request.json()) as StartPipelineParams;
 
-        const pipelineResponse = await gumloopService.startPipeline(body);
+        const api = await atomsApiServer();
+        const pipelineResponse = await api.pipelines.start(body);
 
         return NextResponse.json(pipelineResponse);
     } catch (error) {
@@ -37,7 +35,8 @@ export async function GET(request: NextRequest) {
 
         // const organizationId = request.nextUrl.searchParams.get('organizationId');
 
-        const status = await gumloopService.getPipelineRun({ runId });
+        const api = await atomsApiServer();
+        const status = await api.pipelines.status(runId);
 
         // if (status.state == PipelineRunState.DONE) {
         //     console.log(

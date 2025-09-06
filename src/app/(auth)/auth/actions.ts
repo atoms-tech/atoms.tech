@@ -4,13 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { getUserOrganizationsServer } from '@/lib/db/server';
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 import { COOKIE_NAME } from '@/lib/utils/cookieUtils';
 import { OrganizationType } from '@/types';
 
 export async function login(formData: FormData) {
-    const supabase = await createClient();
+    const api = await atomsApiServer();
     const cookieStore = await cookies();
 
     const data = {
@@ -19,7 +18,7 @@ export async function login(formData: FormData) {
     };
 
     try {
-        const { error, data: authData } = await supabase.auth.signInWithPassword(data);
+        const { error, data: authData } = await api.auth.signInWithPassword(data);
 
         if (error || !authData.user) {
             return {
@@ -28,7 +27,7 @@ export async function login(formData: FormData) {
             };
         }
 
-        const organizations = await getUserOrganizationsServer(authData.user.id);
+        const organizations = await api.organizations.listForUser(authData.user.id);
 
         let redirectUrl = '/home'; // Default fallback - route to /home by default
 
@@ -74,7 +73,7 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
-    const supabase = await createClient();
+    const api = await atomsApiServer();
 
     const data = {
         email: formData.get('email') as string,
@@ -85,9 +84,9 @@ export async function signup(formData: FormData) {
 
     try {
         //Clear the session if it exists
-        await supabase.auth.signOut();
+        await api.auth.signOut();
 
-        const { data: authData, error } = await supabase.auth.signUp({
+        const { data: authData, error } = await api.auth.signUp({
             ...data,
             options: {
                 data: {
@@ -111,15 +110,6 @@ export async function signup(formData: FormData) {
             };
         }
 
-        // Prefetch user data to make subsequent page loads faster
-        if (authData.user) {
-            await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authData.user.id)
-                .single();
-        }
-
         revalidatePath('/', 'layout');
         redirect('/home');
     } catch (error) {
@@ -132,10 +122,10 @@ export async function signup(formData: FormData) {
 }
 
 export async function signOut() {
-    const supabase = await createClient();
+    const api = await atomsApiServer();
 
     try {
-        const { error } = await supabase.auth.signOut();
+        const { error } = await api.auth.signOut();
 
         if (error) {
             throw error;

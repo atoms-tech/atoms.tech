@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { generateBatchRequirementIds } from '@/lib/utils/requirementIdGenerator';
 
 interface RequirementWithoutId {
@@ -48,21 +48,21 @@ export function useDocumentRequirementScanner({
                 );
 
                 try {
-                    const { error } = await supabase
-                        .from('requirements')
-                        .update({ is_deleted: true })
-                        .in(
-                            'id',
-                            corruptedRequirements
-                                .map((req) => req.id)
-                                .filter((id): id is string => typeof id === 'string'),
-                        );
-
-                    if (!error) {
-                        console.log(
-                            `✅ Auto-cleaned ${corruptedRequirements.length} corrupted requirements`,
-                        );
-                    }
+                    const api = atomsApiClient();
+                    const ids = corruptedRequirements
+                        .map((req) => req.id)
+                        .filter((id): id is string => typeof id === 'string');
+                    await Promise.all(
+                        ids.map((id) =>
+                            api.requirements.update(id, {
+                                is_deleted: true,
+                                deleted_at: new Date().toISOString(),
+                            } as any),
+                        ),
+                    );
+                    console.log(
+                        `✅ Auto-cleaned ${corruptedRequirements.length} corrupted requirements`,
+                    );
                 } catch (error) {
                     console.error(
                         '❌ Failed to auto-cleanup corrupted requirements:',
@@ -143,57 +143,23 @@ export function useDocumentRequirementScanner({
             console.log('🔍 Scanning document for requirements without proper IDs...');
 
             // First, get all blocks in the document
-            const { data: blocks, error: blocksError } = await supabase
-                .from('blocks')
-                .select('id, name, type')
-                .eq('document_id', documentId)
-                .eq('type', 'table')
-                .eq('is_deleted', false);
+            const api = atomsApiClient();
+            const blocks = await api.documents.listBlocks(documentId);
+            const tableBlocks = blocks.filter((b: any) => b.type === 'table' && !b.is_deleted);
 
-            if (blocksError) {
-                console.error('Error fetching blocks:', blocksError);
-                throw new Error('Failed to fetch document blocks');
-            }
-
-            if (!blocks || blocks.length === 0) {
+            if (!tableBlocks || tableBlocks.length === 0) {
                 console.log('No table blocks found in document');
                 return [];
             }
 
-            console.log(`Found ${blocks.length} table blocks in document`);
+            console.log(`Found ${tableBlocks.length} table blocks in document`);
 
             // Get all requirements from all table blocks
-            const { data: requirements, error: requirementsError } = await supabase
-                .from('requirements')
-                .select(
-                    `
-                    id,
-                    name,
-                    description,
-                    external_id,
-                    created_at,
-                    created_by,
-                    status,
-                    priority,
-                    block_id,
-                    blocks!inner(name)
-                `,
-                )
-                .in(
-                    'block_id',
-                    blocks.map((block) => block.id),
-                )
-                .eq('is_deleted', false)
-                .not('id', 'is', null)
-                .not('name', 'is', null)
-                .not('name', 'eq', 'undefined');
+            const requirements = (await api.requirements.listByBlockIds(
+                tableBlocks.map((b: any) => b.id),
+            )) as any[];
 
-            if (requirementsError) {
-                console.error('Error fetching requirements:', requirementsError);
-                throw new Error('Failed to fetch requirements');
-            }
-
-            if (!requirements || requirements.length === 0) {
+            if (!requirements || (requirements as any[]).length === 0) {
                 console.log('No requirements found in document');
                 return [];
             }
@@ -291,31 +257,22 @@ export function useDocumentRequirementScanner({
                 );
 
                 // Use Promise.all for parallel updates (faster than sequential)
-                const updatePromises = selectedRequirementIds.map(
-                    async (requirementId, i) => {
-                        const newExternalId = newExternalIds[i];
-
-                        const { error } = await supabase
-                            .from('requirements')
-                            .update({ external_id: newExternalId })
-                            .eq('id', requirementId);
-
-                        if (error) {
-                            console.error(
-                                `❌ Failed to update requirement ${requirementId}:`,
-                                error,
-                            );
-                            return {
-                                requirementId,
-                                newExternalId,
-                                success: false,
-                                error: error.message,
-                            };
-                        }
-
+                const api = atomsApiClient();
+                const updatePromises = selectedRequirementIds.map(async (requirementId, i) => {
+                    const newExternalId = newExternalIds[i];
+                    try {
+                        await api.requirements.update(requirementId, { external_id: newExternalId } as any);
                         return { requirementId, newExternalId, success: true };
-                    },
-                );
+                    } catch (e: any) {
+                        console.error(`❌ Failed to update requirement ${requirementId}:`, e);
+                        return {
+                            requirementId,
+                            newExternalId,
+                            success: false,
+                            error: e?.message || 'update failed',
+                        };
+                    }
+                });
 
                 const results = await Promise.all(updatePromises);
 

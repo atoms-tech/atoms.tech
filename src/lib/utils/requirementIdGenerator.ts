@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 /**
  * Generates the next unique requirement ID for an organization
@@ -8,43 +8,15 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 export async function generateNextRequirementId(organizationId: string): Promise<string> {
     try {
         // Get the organization to determine the prefix
-        const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('name')
-            .eq('id', organizationId)
-            .single();
-
-        if (orgError) {
-            console.error('Error fetching organization:', orgError);
-            throw new Error('Failed to fetch organization');
-        }
+        const api = atomsApiClient();
+        const org = await api.organizations.getById(organizationId as string);
 
         // Create a short prefix from organization name (first 3 chars, uppercase)
         const orgPrefix = org?.name?.substring(0, 3).toUpperCase() || 'ORG';
 
         // Get the highest existing requirement ID for this organization
         // We need to join with documents and projects to get organization-scoped requirements
-        const { data: requirements, error: reqError } = await supabase
-            .from('requirements')
-            .select(
-                `
-                external_id,
-                documents!inner(
-                    project_id,
-                    projects!inner(
-                        organization_id
-                    )
-                )
-            `,
-            )
-            .eq('documents.projects.organization_id', organizationId)
-            .not('external_id', 'is', null)
-            .order('created_at', { ascending: false });
-
-        if (reqError) {
-            console.error('Error fetching requirements:', reqError);
-            throw new Error('Failed to fetch existing requirements');
-        }
+        const requirements = await api.requirements.listWithFilters({ organization_id: organizationId });
 
         // Find the highest number for this organization's requirements
         let maxNumber = 0;
@@ -83,17 +55,8 @@ export async function generateDocumentScopedRequirementId(
 ): Promise<string> {
     try {
         // Get the highest existing requirement ID for this document
-        const { data: requirements, error: reqError } = await supabase
-            .from('requirements')
-            .select('external_id')
-            .eq('document_id', documentId)
-            .not('external_id', 'is', null)
-            .order('created_at', { ascending: false });
-
-        if (reqError) {
-            console.error('Error fetching requirements:', reqError);
-            throw new Error('Failed to fetch existing requirements');
-        }
+        const api = atomsApiClient();
+        const requirements = await api.requirements.listWithFilters({ document_id: documentId });
 
         // Find the highest number for this document's requirements
         let maxNumber = 0;
@@ -132,22 +95,8 @@ export async function generateProjectScopedRequirementId(
 ): Promise<string> {
     try {
         // Get all requirements for this project through documents
-        const { data: requirements, error: reqError } = await supabase
-            .from('requirements')
-            .select(
-                `
-                external_id,
-                documents!inner(project_id)
-            `,
-            )
-            .eq('documents.project_id', projectId)
-            .not('external_id', 'is', null)
-            .order('created_at', { ascending: false });
-
-        if (reqError) {
-            console.error('Error fetching requirements:', reqError);
-            throw new Error('Failed to fetch existing requirements');
-        }
+        const api = atomsApiClient();
+        const requirements = await api.requirements.listWithFilters({ project_id: projectId });
 
         // Find the highest number for this project's requirements
         let maxNumber = 0;
@@ -187,42 +136,14 @@ export async function generateBatchRequirementIds(
 ): Promise<string[]> {
     try {
         // Get the organization to determine the prefix
-        const { data: org, error: orgError } = await supabase
-            .from('organizations')
-            .select('name')
-            .eq('id', organizationId)
-            .single();
-
-        if (orgError) {
-            console.error('Error fetching organization:', orgError);
-            throw new Error('Failed to fetch organization');
-        }
+        const api = atomsApiClient();
+        const org = await api.organizations.getById(organizationId as string);
 
         // Create a short prefix from organization name (first 3 chars, uppercase)
         const orgPrefix = org?.name?.substring(0, 3).toUpperCase() || 'ORG';
 
         // Get the highest existing requirement ID for this organization
-        const { data: requirements, error: reqError } = await supabase
-            .from('requirements')
-            .select(
-                `
-                external_id,
-                documents!inner(
-                    project_id,
-                    projects!inner(
-                        organization_id
-                    )
-                )
-            `,
-            )
-            .eq('documents.projects.organization_id', organizationId)
-            .not('external_id', 'is', null)
-            .order('created_at', { ascending: false });
-
-        if (reqError) {
-            console.error('Error fetching requirements:', reqError);
-            throw new Error('Failed to fetch existing requirements');
-        }
+        const requirements = await api.requirements.listWithFilters({ organization_id: organizationId });
 
         // Find the highest number for this organization's requirements
         let maxNumber = 0;

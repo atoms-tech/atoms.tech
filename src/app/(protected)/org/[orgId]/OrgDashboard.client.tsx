@@ -45,7 +45,7 @@ import {
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { ExternalDocument } from '@/types/base/documents.types';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
@@ -107,12 +107,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         queryKey: ['documents', selectedProjectId],
         queryFn: async () => {
             if (!selectedProjectId) return [];
-            const { data, error } = await supabase
-                .from('documents')
-                .select('id, name')
-                .eq('project_id', selectedProjectId);
-            if (error) throw error;
-            return data || [];
+            const api = atomsApiClient();
+            const data = await api.documents.listWithFilters({ project_id: selectedProjectId });
+            return data.map((d: any) => ({ id: d.id, name: d.name }));
         },
         enabled: !!selectedProjectId,
     });
@@ -121,12 +118,9 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         queryKey: ['requirements', selectedDocumentId],
         queryFn: async () => {
             if (!selectedDocumentId) return [];
-            const { data, error } = await supabase
-                .from('requirements')
-                .select('id, name')
-                .eq('document_id', selectedDocumentId);
-            if (error) throw error;
-            return data || [];
+            const api = atomsApiClient();
+            const data = await api.requirements.listByDocument(selectedDocumentId);
+            return data.map((r: any) => ({ id: r.id, name: r.name }));
         },
         enabled: !!selectedDocumentId,
     });
@@ -154,19 +148,10 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', props.orgId)
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
+            const api = atomsApiClient();
+            const members = await api.organizations.listMembers(props.orgId);
+            const me = members.find((m: any) => m.user_id === user?.id);
+            setUserRole((me as any)?.role || null);
         };
 
         fetchUserRole();
@@ -246,19 +231,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         if (!user?.id || !editingProjectName.trim()) return;
 
         try {
-            // Use Supabase directly for the update
-            const { error } = await supabase
-                .from('projects')
-                .update({
-                    name: editingProjectName.trim(),
-                    updated_by: user.id,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', project.id)
-                .select()
-                .single();
-
-            if (error) throw error;
+            const api = atomsApiClient();
+            await api.projects.update(project.id, {
+                name: editingProjectName.trim(),
+                updated_by: user.id,
+                updated_at: new Date().toISOString(),
+            } as any);
 
             setIsEditingProject(null);
             setEditingProjectName('');

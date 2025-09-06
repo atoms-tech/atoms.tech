@@ -16,7 +16,7 @@ import { useOrgInvitation } from '@/hooks/queries/useOrganization';
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { InvitationStatus } from '@/types/base/enums.types';
 import { Invitation } from '@/types/base/invitations.types';
 
@@ -44,23 +44,11 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
     const { data: organizations } = useQuery({
         queryKey: queryKeys.organizations.list(),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('id, name')
-                .in('id', organizationIds);
-
-            if (error) {
-                console.error('Error fetching organizations:', error);
-                throw error;
-            }
-
-            return data.reduce(
-                (acc, org) => {
-                    acc[org.id] = org.name;
-                    return acc;
-                },
-                {} as Record<string, string>,
-            );
+            const api = atomsApiClient();
+            const list = await api.organizations.listWithFilters({});
+            return (list as any[])
+                .filter((o) => organizationIds.includes(o.id))
+                .reduce((acc: Record<string, string>, org: any) => { acc[org.id] = org.name; return acc; }, {} as Record<string, string>);
         },
         enabled: organizationIds.length > 0,
     });
@@ -86,18 +74,8 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             });
 
             // Update the invitation status to accepted
-            const { error } = await supabase
-                .from('organization_invitations')
-                .update({
-                    status: InvitationStatus.accepted,
-                    updated_by: user.id,
-                })
-                .eq('id', invitation.id);
-
-            if (error) {
-                console.error('Error accepting invitation:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.orgInvitations.updateStatus(invitation.id, InvitationStatus.accepted, user.id);
 
             // Update the member count for the organization
             await setOrgMemberCount(invitation.organization_id);
@@ -146,18 +124,8 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
         }
 
         try {
-            const { error } = await supabase
-                .from('organization_invitations')
-                .update({
-                    status: InvitationStatus.rejected,
-                    updated_by: user.id,
-                })
-                .eq('id', invitation.id);
-
-            if (error) {
-                console.error('Error rejecting invitation:', error);
-                throw error;
-            }
+            const api = atomsApiClient();
+            await api.orgInvitations.updateStatus(invitation.id, InvitationStatus.rejected, user.id);
 
             toast({
                 title: 'Success',

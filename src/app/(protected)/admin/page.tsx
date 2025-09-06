@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import LayoutView from '@/components/views/LayoutView';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 type User = {
     email: string;
@@ -37,15 +37,13 @@ export default function AdminPage() {
 
     useEffect(() => {
         (async () => {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('email, full_name, id, is_approved, created_at')
-                .order('created_at', { ascending: false });
-            if (error) {
-                console.error('Error retrieving pending members:', error);
-                return;
+            try {
+                const api = atomsApiClient();
+                const list = await api.auth.listProfiles();
+                setUsers(list || []);
+            } catch (e) {
+                console.error('Error retrieving pending members:', e);
             }
-            setUsers(data || []);
         })();
     }, []);
 
@@ -58,14 +56,9 @@ export default function AdminPage() {
     });
 
     const approveUser = async (unapprovedUser: User) => {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ is_approved: true })
-            .eq('id', unapprovedUser.id);
-        if (error) {
-            console.error('Failed to approve user:', error);
-            return;
-        }
+        try {
+            const api = atomsApiClient();
+            await api.auth.setApproval(unapprovedUser.id, true);
         setUsers((prev) =>
             prev.map((user) =>
                 user.id === unapprovedUser.id ? { ...user, is_approved: true } : user,
@@ -81,22 +74,23 @@ export default function AdminPage() {
                 name: unapprovedUser.full_name || 'User',
             }),
         });
+        } catch (error) {
+            console.error('Failed to approve user:', error);
+        }
     };
 
     const unapproveUser = async (approvedUser: User) => {
-        const { error } = await supabase
-            .from('profiles')
-            .update({ is_approved: false })
-            .eq('id', approvedUser.id);
-        if (error) {
-            console.error('Failed to unapprove user:', error);
-            return;
-        }
+        try {
+            const api = atomsApiClient();
+            await api.auth.setApproval(approvedUser.id, false);
         setUsers((prev) =>
             prev.map((user) =>
                 user.id === approvedUser.id ? { ...user, is_approved: false } : user,
             ),
         );
+        } catch (error) {
+            console.error('Failed to unapprove user:', error);
+        }
         /* TODO: Send email to user confirming they've been unapproved
         await fetch('/api/send-confirmation', {
             method: 'POST',

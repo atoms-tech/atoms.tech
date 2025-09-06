@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { Property } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { TablesInsert } from '@/types/base/database.types';
 import { Document } from '@/types/base/documents.types';
 
@@ -56,14 +56,8 @@ export function useCreateDocument() {
                 version: 1,
             };
 
-            const { data, error } = await supabase
-                .from('documents')
-                .insert(insertData)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as Document;
+            const api = atomsApiClient();
+            return api.documents.create(insertData);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({
@@ -82,19 +76,12 @@ export function useUpdateDocument() {
                 throw new Error('Document ID is required for update');
             }
 
-            const { data, error } = await supabase
-                .from('documents')
-                .update({
-                    ...document,
-                    updated_at: new Date().toISOString(),
-                    version: (document.version || 1) + 1,
-                })
-                .eq('id', document.id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as Document;
+            const api = atomsApiClient();
+            return api.documents.update(document.id, {
+                ...document,
+                updated_at: new Date().toISOString(),
+                version: (document.version || 1) + 1,
+            } as Document);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({
@@ -112,19 +99,8 @@ export function useDeleteDocument() {
 
     return useMutation({
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
-            const { data, error } = await supabase
-                .from('documents')
-                .update({
-                    is_deleted: true,
-                    deleted_at: new Date().toISOString(),
-                    deleted_by: deletedBy,
-                })
-                .eq('id', id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as Document;
+            const api = atomsApiClient();
+            return api.documents.softDelete(id, deletedBy);
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({
@@ -150,13 +126,8 @@ export function useDuplicateDocument() {
             userId: string;
         }) => {
             // Get the original document
-            const { data: originalDocument, error: fetchError } = await supabase
-                .from('documents')
-                .select('*')
-                .eq('id', documentId)
-                .single();
-
-            if (fetchError) throw fetchError;
+            const api = atomsApiClient();
+            const originalDocument = await api.documents.getById(documentId);
             if (!originalDocument) throw new Error('Document not found');
 
             // Create a new document with duplicated data
@@ -175,15 +146,7 @@ export function useDuplicateDocument() {
                 version: 1,
             };
 
-            const { data: newDocument, error: createError } = await supabase
-                .from('documents')
-                .insert(duplicatedDocument)
-                .select()
-                .single();
-
-            if (createError) throw createError;
-            if (!newDocument) throw new Error('Failed to create duplicated document');
-
+            const newDocument = await api.documents.create(duplicatedDocument as any);
             return newDocument as Document;
         },
         onSuccess: (data) => {
@@ -200,16 +163,8 @@ export function useCreateBaseOrgProperties() {
     return useMutation({
         mutationFn: async ({ orgId, userId }: { orgId: string; userId: string }) => {
             // First check if base properties exist for the organization
-            const { data: existingProperties, error: fetchError } = await supabase
-                .from('properties')
-                .select('*')
-                .eq('org_id', orgId)
-                .eq('is_base', true)
-                .eq('scope', 'org')
-                .is('document_id', null)
-                .is('project_id', null);
-
-            if (fetchError) throw fetchError;
+            const api = atomsApiClient();
+            const existingProperties = await api.properties.listOrgBase(orgId);
 
             // If base properties already exist, return them
             const existingPropertyNames = new Set(existingProperties.map((p) => p.name));
@@ -297,13 +252,8 @@ export function useCreateBaseOrgProperties() {
                 updated_by: userId,
             }));
 
-            const { data: createdProperties, error: insertError } = await supabase
-                .from('properties')
-                .insert(baseProperties)
-                .select();
-
-            if (insertError) throw insertError;
-
+            const api2 = atomsApiClient();
+            const createdProperties = await api2.properties.createMany(baseProperties);
             return createdProperties as Property[];
         },
         onSuccess: (data) => {
@@ -330,15 +280,8 @@ export function useCreateDocumentProperties() {
             _propertyIds?: string[];
         }) => {
             // Find the base properties for this org
-            const { data: baseProperties, error: fetchError } = await supabase
-                .from('properties')
-                .select('*')
-                .eq('org_id', orgId)
-                .eq('is_base', true)
-                .is('document_id', null)
-                .is('project_id', null);
-
-            if (fetchError) throw fetchError;
+            const api = atomsApiClient();
+            const baseProperties = await api.properties.listOrgBase(orgId);
 
             if (!baseProperties || baseProperties.length === 0) {
                 throw new Error('No base properties found for this organization');
@@ -356,13 +299,7 @@ export function useCreateDocumentProperties() {
                 updated_at: timestamp,
             }));
 
-            const { data: createdProperties, error: insertError } = await supabase
-                .from('properties')
-                .insert(documentProperties)
-                .select();
-
-            if (insertError) throw insertError;
-
+            const createdProperties = await api.properties.createMany(documentProperties as any);
             return createdProperties as Property[];
         },
         onSuccess: (data) => {
@@ -385,17 +322,9 @@ export function useCreateDocumentWithDefaultSchemas() {
                 throw new Error('Project ID is required to create a document');
             }
 
-            const { data: project, error: projectError } = await supabase
-                .from('projects')
-                .select('organization_id')
-                .eq('id', document.project_id)
-                .single();
-
-            console.log('project', project);
-
-            if (projectError) throw projectError;
-
-            const orgId = project.organization_id;
+            const api = atomsApiClient();
+            const project = await api.projects.getById(document.project_id as string);
+            const orgId = (project as any)?.organization_id as string;
 
             // Check/create base property schemas for the organization
             // Only ensure base properties exist, don't create document properties

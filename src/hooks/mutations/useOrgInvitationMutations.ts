@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 
 export type OrganizationInvitationInput = Omit<
@@ -14,22 +14,8 @@ export function useCreateOrgInvitation() {
 
     return useMutation({
         mutationFn: async (input: OrganizationInvitationInput) => {
-            const { data, error } = await supabase
-                .from('organization_invitations')
-                .insert(input)
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Failed to create organization invitation', error);
-                throw error;
-            }
-
-            if (!data) {
-                throw new Error('Failed to create organization invitation');
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.organizations.invite(input as any);
         },
         onSuccess: (data) => {
             // Invalidate relevant queries

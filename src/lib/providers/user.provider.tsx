@@ -3,7 +3,7 @@
 import { User } from '@supabase/supabase-js';
 import { ReactNode, createContext, useContext, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Profile } from '@/types';
 
 interface UserContextType {
@@ -20,21 +20,19 @@ export function UserProvider({
     initialProfile,
 }: {
     children: ReactNode;
-    initialUser: User;
-    initialProfile: Profile;
+    initialUser: User | null;
+    initialProfile: Profile | null;
 }) {
     const [user, setUser] = useState<User | null>(initialUser);
     const [profile, setProfile] = useState<Profile | null>(initialProfile);
 
     const refreshUser = async () => {
-        const { data: updatedUser } = await supabase.auth.getUser();
-        const { data: updatedProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', updatedUser?.user?.id || '')
-            .single();
-
-        setUser(updatedUser?.user || null);
+        const api = atomsApiClient();
+        const updatedUser = await api.auth.getUser();
+        const updatedProfile = updatedUser?.id
+            ? await api.auth.getProfile(updatedUser.id)
+            : null;
+        setUser(updatedUser || null);
         setProfile(updatedProfile || null);
     };
 

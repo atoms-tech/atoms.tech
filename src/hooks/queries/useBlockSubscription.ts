@@ -1,22 +1,13 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
 
 const fetchBlocks = async (documentId: string) => {
-    const { data: blocks, error } = await supabase
-        .from('blocks')
-        .select('*')
-        .eq('document_id', documentId)
-        .eq('is_deleted', false)
-        .order('position');
-
-    if (error) {
-        console.error('Error fetching blocks:', error);
-        throw error;
-    }
+    const api = atomsApiClient();
+    const blocks = await api.documents.listBlocks(documentId);
 
     return blocks;
 };
@@ -33,18 +24,9 @@ export function useBlockSubscription(documentId: string) {
         const loadInitialBlocksAndSubscribe = async () => {
             try {
                 // First set up the subscription to not miss any events
-                channel = supabase
-                    .channel(`blocks:${documentId}`)
-                    .on<Block>(
-                        'postgres_changes',
-                        {
-                            event: 'INSERT',
-                            schema: 'public',
-                            table: 'blocks',
-                            filter: `document_id=eq.${documentId}`,
-                        },
-                        async (payload) => {
-                            const newBlock = payload.new;
+                const api = atomsApiClient();
+                const subscription = api.realtime.subscribeBlocks(documentId, {
+                    onInsert: (newBlock) => {
                             setLocalBlocks((prev) => {
                                 const exists = prev.some((b) => b.id === newBlock.id);
                                 return exists
@@ -54,18 +36,8 @@ export function useBlockSubscription(documentId: string) {
                                       );
                             });
                             addBlock(newBlock);
-                        },
-                    )
-                    .on<Block>(
-                        'postgres_changes',
-                        {
-                            event: 'UPDATE',
-                            schema: 'public',
-                            table: 'blocks',
-                            filter: `document_id=eq.${documentId}`,
-                        },
-                        async (payload) => {
-                            const updatedBlock = payload.new;
+                    },
+                    onUpdate: (updatedBlock) => {
                             // Handle soft deletes
                             if (updatedBlock.is_deleted) {
                                 setLocalBlocks((prev) =>
@@ -83,26 +55,16 @@ export function useBlockSubscription(documentId: string) {
                                     .sort((a, b) => a.position - b.position),
                             );
                             updateBlock(updatedBlock.id, updatedBlock.content);
-                        },
-                    )
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'DELETE',
-                            schema: 'public',
-                            table: 'blocks',
-                            filter: `document_id=eq.${documentId}`,
-                        },
-                        async (payload) => {
-                            const deletedBlockId = payload.old.id;
+                    },
+                    onDelete: (deletedBlockId) => {
                             setLocalBlocks((prev) =>
                                 prev.filter((b) => b.id !== deletedBlockId),
                             );
                             deleteBlock(deletedBlockId);
-                        },
-                    );
-
-                await channel.subscribe();
+                    },
+                });
+                channel = subscription.channel;
+                await subscription.subscribe();
 
                 // Then fetch initial data
                 const initialBlocks = await fetchBlocks(documentId);
@@ -118,9 +80,7 @@ export function useBlockSubscription(documentId: string) {
         loadInitialBlocksAndSubscribe();
 
         return () => {
-            if (channel) {
-                channel.unsubscribe();
-            }
+            if (channel) channel.unsubscribe();
         };
     }, [documentId, addBlock, updateBlock, deleteBlock, setBlocks]);
 

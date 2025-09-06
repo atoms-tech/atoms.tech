@@ -28,7 +28,6 @@ import {
 } from '@/components/custom/BlockCanvas/components/EditableTable/components';
 import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import { TanStackCellRenderer } from './TanStackCellRenderer';
@@ -151,22 +150,20 @@ export function TanStackEditableTable<
         async (action: string) => {
             const getUserRole = async () => {
                 try {
-                    const { data, error } = await supabase
-                        .from('project_members')
-                        .select('role')
-                        .eq('user_id', userId)
-                        .eq(
-                            'project_id',
-                            Array.isArray(projectId) ? projectId[0] : projectId,
-                        )
-                        .single();
+                    const { atomsApiClient } = await import('@/lib/atoms-api');
+                    const api = atomsApiClient();
+                    const members = await api.projects.listMembers(
+                        Array.isArray(projectId) ? projectId[0] : (projectId as string),
+                    );
+                    const data = members.find((m: any) => m.user_id === userId) || null;
+                    const error = null as any;
 
                     if (error) {
                         console.error('Error fetching user role:', error);
                         return 'viewer';
                     }
 
-                    return data?.role || 'viewer';
+                    return (data as any)?.role || 'viewer';
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';
@@ -174,7 +171,7 @@ export function TanStackEditableTable<
             };
 
             const userRole = await getUserRole();
-            return rolePermissions[userRole].includes(action);
+            return (rolePermissions as any)[userRole]?.includes(action);
         },
         [userId, projectId, rolePermissions],
     );
@@ -514,7 +511,7 @@ export function TanStackEditableTable<
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
+                // Supabase not needed here; relying on domain layer below
 
                 // Get organization ID from the current document
                 const urlParts = window.location.pathname.split('/');
@@ -530,20 +527,10 @@ export function TanStackEditableTable<
                     const documentId = urlParts[docIndex + 1];
 
                     // Get organization ID from document
-                    const { data: document } = await supabase
-                        .from('documents')
-                        .select(
-                            `
-                            project_id,
-                            projects!inner(organization_id)
-                        `,
-                        )
-                        .eq('id', documentId)
-                        .single();
-
-                    const organizationId = (
-                        document as { projects?: { organization_id?: string } }
-                    )?.projects?.organization_id;
+                    const { atomsApiClient } = await import('@/lib/atoms-api');
+                    const api = atomsApiClient();
+                    const document = await api.documents.getById(documentId);
+                    const organizationId = (document as any)?.organization_id;
 
                     if (organizationId) {
                         const reqId = await generateNextRequirementId(organizationId);

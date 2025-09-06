@@ -8,7 +8,7 @@ import React, { memo } from 'react';
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 function useUserRole(userId: string) {
     const params = useParams();
@@ -21,19 +21,12 @@ function useUserRole(userId: string) {
 
     const getUserRole = async (): Promise<string> => {
         try {
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('user_id', userId)
-                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return 'viewer';
-            }
-
-            return data?.role || 'viewer';
+            const api = atomsApiClient();
+            const members = await api.projects.listMembers(
+                Array.isArray(projectId) ? projectId[0] : (projectId as string),
+            );
+            const me = members.find((m: any) => m.user_id === userId);
+            return (me as any)?.role || 'viewer';
         } catch (err) {
             console.error('Unexpected error fetching user role:', err);
             return 'viewer';

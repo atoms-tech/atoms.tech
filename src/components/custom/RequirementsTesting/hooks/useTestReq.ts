@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RequirementTest, TestReq } from '@/components/custom/RequirementsTesting/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 
 interface TestFilters {
@@ -28,43 +28,14 @@ export function useProjectTestCases(
     return useQuery({
         queryKey: [...queryKeys.testReq.list, projectId, filters, pagination],
         queryFn: async () => {
-            let query = supabase
-                .from('test_req')
-                .select('*', { count: 'exact' })
-                .eq('project_id', projectId)
-                .eq('is_active', true);
-
-            // Apply filters
-            if (filters.status?.length) {
-                query = query.in('status', filters.status);
-            }
-            if (filters.priority?.length) {
-                query = query.in('priority', filters.priority);
-            }
-            if (filters.test_type?.length) {
-                query = query.in('test_type', filters.test_type);
-            }
-            if (filters.search) {
-                query = query.or(
-                    `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`,
-                );
-            }
-
-            // Apply pagination
-            const { page, pageSize, orderBy, orderDirection } = pagination;
-            const from = (page - 1) * pageSize;
-            const to = from + pageSize - 1;
-
-            query = query
-                .order(orderBy, { ascending: orderDirection === 'asc' })
-                .range(from, to);
-
-            const { data, error, count } = await query;
-
-            if (error) throw error;
-
+            const api = atomsApiClient();
+            const { data, count } = await api.testing.listProjectTests(
+                projectId,
+                filters as any,
+                pagination,
+            );
             return {
-                data: data.map((test) => ({
+                data: data.map((test: any) => ({
                     ...test,
                     id: test.id,
                     name: test.title, // Map to expected property for view components
@@ -96,13 +67,8 @@ export function useLinkedRequirementsCount(testId: string) {
         queryFn: async () => {
             if (!testId) return 0;
 
-            const { data, error, count } = await supabase
-                .from('requirement_tests')
-                .select('*', { count: 'exact' })
-                .eq('test_id', testId);
-
-            if (error || !data) throw error;
-            return count || 0;
+            const api = atomsApiClient();
+            return api.testing.getLinkedRequirementsCount(testId);
         },
         enabled: !!testId,
     });
@@ -117,24 +83,11 @@ export function useTestRequirements(testId: string) {
         queryFn: async () => {
             if (!testId) return [];
 
-            const { data: relationData, error: relationError } = await supabase
-                .from('requirement_tests')
-                .select('requirement_id')
-                .eq('test_id', testId);
-
-            if (relationError) throw relationError;
-
-            if (!relationData.length) return [];
-
-            const requirementIds = relationData.map((r) => r.requirement_id);
-
-            const { data, error } = await supabase
-                .from('requirements')
-                .select('*')
-                .in('id', requirementIds);
-
-            if (error) throw error;
-            return data;
+            const api = atomsApiClient();
+            const relations = await api.testing.listRelationsByTest(testId);
+            if (!relations.length) return [];
+            const requirementIds = relations.map((r: any) => r.requirement_id);
+            return api.requirements.listByIds(requirementIds);
         },
         enabled: !!testId,
     });
@@ -149,27 +102,15 @@ export function useRequirementTestCases(requirementId: string) {
         queryFn: async () => {
             if (!requirementId) return [];
 
-            const { data: relationData, error: relationError } = await supabase
-                .from('requirement_tests')
-                .select('test_id, execution_status')
-                .eq('requirement_id', requirementId);
-
-            if (relationError) throw relationError;
-
+            const api = atomsApiClient();
+            const relationData = await api.testing.listRelationsByRequirement(
+                requirementId,
+            );
             if (!relationData.length) return [];
-
-            const testIds = relationData.map((r) => r.test_id);
-
-            const { data, error } = await supabase
-                .from('test_req')
-                .select('*')
-                .in('id', testIds);
-
-            if (error) throw error;
-
-            // Map the status from the junction table
-            return data.map((test) => {
-                const relation = relationData.find((r) => r.test_id === test.id);
+            const testIds = relationData.map((r: any) => r.test_id);
+            const rows = await api.testing.getTestsByIds(testIds);
+            return rows.map((test: any) => {
+                const relation = relationData.find((r: any) => r.test_id === test.id);
                 return {
                     ...test,
                     name: test.title,
@@ -202,27 +143,12 @@ export function useProjectRequirementTests(projectId: string) {
         queryKey: [...queryKeys.requirementTests.list, projectId],
         queryFn: async () => {
             // First get all tests for this project
-            const { data: tests, error: testsError } = await supabase
-                .from('test_req')
-                .select('id')
-                .eq('project_id', projectId)
-                .eq('is_active', true);
-
-            if (testsError) throw testsError;
-
-            if (!tests.length) return [];
-
-            const testIds = tests.map((t) => t.id);
-
-            // Then get all requirement-test relations for these tests
-            const { data, error } = await supabase
-                .from('requirement_tests')
-                .select('*')
-                .in('test_id', testIds);
-
-            if (error) throw error;
-
-            return data.map((rt) => ({
+            const api = atomsApiClient();
+            const { data: tests } = await api.testing.listProjectTests(projectId);
+            if (!tests?.length) return [];
+            const testIds = tests.map((t: any) => t.id);
+            const data = await api.testing.listRelationsByTests(testIds);
+            return data.map((rt: any) => ({
                 ...rt,
                 requirementId: rt.requirement_id,
                 testCaseId: rt.test_id,
@@ -285,14 +211,8 @@ export function useCreateTestReq() {
                 updated_at: new Date().toISOString(),
             };
 
-            const { data, error } = await supabase
-                .from('test_req')
-                .insert(testData)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return data as TestReq;
+            const api = atomsApiClient();
+            return (await api.testing.createTest(testData)) as TestReq;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries
@@ -339,21 +259,8 @@ export function useCreateRequirementTest() {
                 updated_at: new Date().toISOString(),
             };
 
-            const { data, error } = await supabase
-                .from('requirement_tests')
-                .insert(relationData)
-                .select()
-                .single();
-
-            if (error) {
-                // Handle unique constraint violation (relationship already exists)
-                if (error.code === '23505') {
-                    throw new Error('This requirement is already linked to this test');
-                }
-                throw error;
-            }
-
-            return data as RequirementTest;
+            const api = atomsApiClient();
+            return (await api.testing.createRelation(relationData)) as RequirementTest;
         },
         onSuccess: (data) => {
             // Invalidate relevant queries

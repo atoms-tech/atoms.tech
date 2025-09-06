@@ -2,9 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { getUserOrganizations } from '@/lib/db/client';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { OrganizationType } from '@/types';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useOrganization(orgId: string) {
@@ -34,18 +32,8 @@ export function useOrganization(orgId: string) {
                 return null; // Return null instead of throwing to prevent UI errors
             }
 
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('id', orgId)
-                .eq('is_deleted', false)
-                .single();
-
-            if (error) {
-                console.error('Error fetching organization:', error);
-                return null; // Return null instead of throwing to prevent UI errors
-            }
-            return data;
+            const api = atomsApiClient();
+            return api.organizations.getById(orgId);
         },
         enabled: !!orgId && orgId !== 'user' && orgId !== 'project',
     });
@@ -55,22 +43,8 @@ export function useOrganizationsWithFilters(filters?: QueryFilters) {
     return useQuery({
         queryKey: queryKeys.organizations.list(filters || {}),
         queryFn: async () => {
-            let query = supabase
-                .from('organizations')
-                .select('*')
-                .eq('is_deleted', false);
-            if (filters) {
-                Object.entries(filters).forEach(([key, value]) => {
-                    if (value !== undefined) {
-                        query = query.eq(key, value);
-                    }
-                });
-            }
-
-            const { data, error } = await query;
-
-            if (error) throw error;
-            return data;
+            const api = atomsApiClient();
+            return api.organizations.listWithFilters(filters || {});
         },
     });
 }
@@ -95,7 +69,8 @@ export function useOrganizationsByMembership(userId: string) {
             }
 
             try {
-                const orgs = await getUserOrganizations(userId);
+                const api = atomsApiClient();
+                const orgs = await api.organizations.listForUser(userId);
                 console.log(`Retrieved ${orgs.length} organizations for user ${userId}`);
                 return orgs;
             } catch (error) {
@@ -123,18 +98,8 @@ export function useOrgsByUser(userId: string) {
                 return [];
             }
 
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('created_by', userId)
-                .eq('is_deleted', false);
-
-            if (error) {
-                console.error('Error fetching organizations by user:', error);
-                throw error;
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.organizations.listWithFilters({ created_by: userId });
         },
         enabled: !!userId && userId !== 'user',
     });
@@ -156,19 +121,8 @@ export function usePersonalOrg(userId: string) {
                 throw new Error('Invalid user ID format');
             }
 
-            const { data: organization, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('created_by', userId)
-                .eq('type', OrganizationType.personal)
-                .eq('is_deleted', false)
-                .single();
-            if (error) {
-                console.error('Error fetching organizations:', error);
-                throw error;
-            }
-
-            return organization;
+            const api = atomsApiClient();
+            return api.organizations.getPersonalOrg(userId);
         },
         enabled: !!userId && userId !== 'user',
     });
@@ -184,18 +138,8 @@ export function useOrgInvitation(email: string) {
                 throw new Error('Invalid email format');
             }
 
-            const { data, error } = await supabase
-                .from('organization_invitations')
-                .select('*')
-                .eq('email', email)
-                .neq('status', 'rejected'); // Exclude rejected invitations
-
-            if (error) {
-                console.error('Error fetching organization invitations by email:', error);
-                throw error;
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.orgInvitations.listByEmail(email);
         },
         enabled: !!email,
     });
@@ -216,17 +160,8 @@ export function useUserSentOrgInvitations(userId: string) {
                 throw new Error('Invalid user ID format');
             }
 
-            const { data, error } = await supabase
-                .from('organization_invitations')
-                .select('*')
-                .eq('created_by', userId);
-
-            if (error) {
-                console.error('Error fetching user sent invitations:', error);
-                throw error;
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.orgInvitations.listByCreator(userId);
         },
         enabled: !!userId,
     });
@@ -236,17 +171,8 @@ export function useOrgInvitationsByOrgId(orgId: string) {
     return useQuery({
         queryKey: queryKeys.organizationInvitations.byOrganization(orgId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('organization_invitations')
-                .select('*')
-                .eq('organization_id', orgId);
-
-            if (error) {
-                console.error('Error fetching invitations by organization ID:', error);
-                throw error;
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.orgInvitations.listByOrganization(orgId);
         },
         enabled: !!orgId,
     });

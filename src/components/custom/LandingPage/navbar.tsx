@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignOut } from '@/hooks/useSignOut';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 
 import { GridBackground } from './grid-background';
 
@@ -85,46 +85,19 @@ export function Navbar() {
         setLoading('dashboard', true);
 
         try {
-            // Fetch the user's profile to get pinned_organization_id and personal_organization_id
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('pinned_organization_id, personal_organization_id')
-                .eq('id', userProfile?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                setLoading('dashboard', false);
-                return;
-            }
-
-            if (data) {
-                let targetOrgId = data.pinned_organization_id;
-
-                if (!targetOrgId && data.personal_organization_id) {
-                    // If no pinned organization, set it to personal_organization_id by default
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({
-                            pinned_organization_id: data.personal_organization_id,
-                        })
-                        .eq('id', userProfile?.id || '');
-
-                    if (!updateError) {
-                        targetOrgId = data.personal_organization_id;
-                    } else {
-                        console.error('Error updating pinned organization:', updateError);
-                        setLoading('dashboard', false);
-                        return;
-                    }
+            const api = atomsApiClient();
+            const prof = userProfile?.id ? await api.auth.getProfile(userProfile.id) : null;
+            if (prof) {
+                let targetOrgId = (prof as any).pinned_organization_id as string | null;
+                const personal = (prof as any).personal_organization_id as string | null;
+                if (!targetOrgId && personal) {
+                    await api.auth.updateProfile(userProfile?.id || '', { pinned_organization_id: personal } as any);
+                    targetOrgId = personal;
                 }
-
                 if (targetOrgId) {
-                    console.log('Navigating to pinned organization:', targetOrgId);
                     router.push(`/org/${targetOrgId}`);
                 } else {
-                    console.log('No pinned or personal organization found');
-                    router.push('/home'); // Fallback to home if no organization is found
+                    router.push('/home');
                 }
             }
         } catch (err) {
@@ -386,3 +359,4 @@ export function Navbar() {
         </>
     );
 }
+// Removed direct Supabase usage in favor of atoms-api

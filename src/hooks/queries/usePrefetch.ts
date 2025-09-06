@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Organization } from '@/types/base/organizations.types';
 import { Profile } from '@/types/base/profiles.types';
 
@@ -14,14 +14,8 @@ export function usePrefetch() {
             await queryClient.prefetchQuery({
                 queryKey: queryKeys.organizations.detail(orgId),
                 queryFn: async () => {
-                    const { data, error } = await supabase
-                        .from('organizations')
-                        .select('*')
-                        .eq('id', orgId)
-                        .single();
-
-                    if (error) throw error;
-                    return data as Organization;
+                    const api = atomsApiClient();
+                    return (await api.organizations.getById(orgId)) as Organization;
                 },
             });
         },
@@ -33,14 +27,8 @@ export function usePrefetch() {
             await queryClient.prefetchQuery({
                 queryKey: queryKeys.profiles.detail(userId),
                 queryFn: async () => {
-                    const { data, error } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', userId)
-                        .single();
-
-                    if (error) throw error;
-                    return data as Profile;
+                    const api = atomsApiClient();
+                    return (await api.auth.getProfile(userId)) as Profile;
                 },
             });
         },

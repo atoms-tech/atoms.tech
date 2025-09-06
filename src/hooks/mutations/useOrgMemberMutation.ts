@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { atomsApiClient } from '@/lib/atoms-api';
 import { Database } from '@/types/base/database.types';
 
 export type OrganizationMemberInput = Pick<
@@ -25,22 +25,8 @@ export function useCreateOrgMember() {
 
     return useMutation({
         mutationFn: async (input: OrganizationMemberInput) => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .insert(input)
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Failed to create organization member', error);
-                throw error;
-            }
-
-            if (!data) {
-                throw new Error('Failed to create organization member');
-            }
-
-            return data;
+            const api = atomsApiClient();
+            return api.organizations.addMember(input as any);
         },
         onSuccess: (data) => {
             // Invalidate relevant queries
@@ -57,31 +43,8 @@ export function useSetOrgMemberCount() {
     return useMutation({
         mutationFn: async (orgId: string) => {
             // Query the organization_members table to count members
-            const { count, error: countError } = await supabase
-                .from('organization_members')
-                .select('*', { count: 'exact', head: true })
-                .eq('organization_id', orgId);
-
-            if (countError) {
-                console.error('Failed to count organization members', countError);
-                throw countError;
-            }
-
-            // Update the member_count in the organizations table
-            const { error: updateError } = await supabase
-                .from('organizations')
-                .update({ member_count: count })
-                .eq('id', orgId);
-
-            if (updateError) {
-                console.error(
-                    'Failed to update member count in organizations',
-                    updateError,
-                );
-                throw updateError;
-            }
-
-            return count;
+            const api = atomsApiClient();
+            return api.organizations.updateMemberCount(orgId);
         },
         onSuccess: (_, orgId) => {
             // Invalidate relevant queries
@@ -106,18 +69,8 @@ export function useSetOrgMemberRole() {
             role: OrganizationRole;
         }) => {
             // Update the role of the user in the organization_members table
-            const { error } = await supabase
-                .from('organization_members')
-                .update({ role })
-                .eq('organization_id', orgId)
-                .eq('user_id', userId);
-
-            if (error) {
-                console.error('Failed to update organization member role', error);
-                throw error;
-            }
-
-            return { userId, orgId, role };
+            const api = atomsApiClient();
+            return api.organizations.setMemberRole(orgId, userId, role);
         },
         onSuccess: (_, { orgId }) => {
             // Invalidate relevant queries

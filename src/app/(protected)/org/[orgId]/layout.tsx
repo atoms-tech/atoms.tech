@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
 import { getQueryClient } from '@/lib/constants/queryClient';
-import { getAuthUserServer } from '@/lib/db/server';
+import { atomsApiServer } from '@/lib/atoms-api/server';
 import { prefetchOrgPageData } from '@/lib/db/utils/prefetchData';
 
 interface OrgLayoutProps {
@@ -21,11 +21,8 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
     const userId = cookieStore.get('user_id')?.value;
 
     try {
-        await prefetchOrgPageData(
-            orgId,
-            userId ?? (await getAuthUserServer()).user.id,
-            queryClient,
-        );
+        const fallbackUserId = userId || (await (await atomsApiServer()).auth.getUser())?.id || '';
+        await prefetchOrgPageData(orgId, fallbackUserId, queryClient);
 
         return (
             <div className="relative flex-1">
