@@ -29,15 +29,18 @@ export async function http<T = unknown>(
             else url.searchParams.set(k, String(v as QueryScalar));
         }
     }
-    const res = await fetch(url.toString(), {
+    const resInit: RequestInit = {
         method,
         headers: {
             'Content-Type': 'application/json',
             ...(options.headers || {}),
         },
         credentials: 'include',
-        body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+    };
+    if (method !== 'GET' && options.body !== undefined) {
+        resInit.body = JSON.stringify(options.body);
+    }
+    const res = await fetch(url.toString(), resInit);
     if (res.status === 204) return undefined as unknown as T;
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

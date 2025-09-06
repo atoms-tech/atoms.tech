@@ -48,7 +48,7 @@ for (const file of files) {
     if (!isAllowed(file)) {
         // Check banned imports in UI code
         for (const imp of bannedImports) {
-            if (src.includes(`from '${imp}'`) || src.includes(`from \"${imp}\"`)) {
+            if (src.includes(`from '${imp}'`) || src.includes(`from "${imp}"`)) {
                 errors.push(
                     `${file}: direct import of ${imp} is not allowed. Use atomsApiClient/server.`,
                 );

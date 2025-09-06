@@ -7,5 +7,5 @@ export const getUserProfileServer = async (userId: string) => {
 
 export const getAuthUserServer = async () => {
     const api = await atomsApiServer();
-    return await api.auth.getAuthUser();
+    return await api.auth.getUser();
 };

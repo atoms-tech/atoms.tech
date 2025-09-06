@@ -1,15 +1,6 @@
 'use client';
 
-import {
-    addMinutes,
-    eachDayOfInterval,
-    endOfMonth,
-    format,
-    isBefore,
-    isWeekend,
-    startOfDay,
-    startOfMonth,
-} from 'date-fns';
+import { addMinutes, eachDayOfInterval, endOfMonth, format, isBefore } from 'date-fns';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -39,13 +30,17 @@ export function ScheduleDemoDialog({ className }: ScheduleDemoDialogProps) {
         description: '',
     });
 
-    const today = startOfDay(new Date());
-    const monthStart = startOfMonth(today);
+    // Avoid relying on date-fns helpers that changed across major versions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthEnd = endOfMonth(today);
 
-    const days = eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(
-        (day) => !isWeekend(day) && !isBefore(day, today),
-    );
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd }).filter((day) => {
+        const dow = day.getDay();
+        const weekend = dow === 0 || dow === 6;
+        return !weekend && !isBefore(day, today);
+    });
 
     const timeSlots: string[] = [];
     if (selectedDate) {

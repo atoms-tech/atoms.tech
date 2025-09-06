@@ -72,7 +72,7 @@ function splitTypeDefinitions(content) {
             line.trim().startsWith('import') ||
             line.trim().startsWith('export type Json'),
     );
-    const exports = [];
+    const _exports = [];
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];

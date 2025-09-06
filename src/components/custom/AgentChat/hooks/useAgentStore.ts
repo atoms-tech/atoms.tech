@@ -234,7 +234,7 @@ export const useAgentStore = create<AgentStore>()(
                     throw new Error('User context is required');
                 }
 
-                try {
+                {
                     // Fetch organization name
                     let orgName: string | undefined;
                     try {
@@ -302,8 +302,6 @@ export const useAgentStore = create<AgentStore>()(
                     }
 
                     return await response.json();
-                } catch (error) {
-                    throw error;
                 }
             },
 
@@ -411,9 +409,7 @@ export const useAgentStore = create<AgentStore>()(
                                         [key: string]: unknown;
                                     }) => ({
                                         ...msg,
-                                        timestamp: new Date(
-                                            msg.timestamp || msg.timestamp,
-                                        ),
+                                        timestamp: new Date(msg.timestamp),
                                     }),
                                 );
 
