@@ -8,6 +8,7 @@ import {
     Search,
     Target,
     Trash2,
+    Unlink,
     Zap,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
@@ -69,7 +70,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const {
         data: requirementTree,
         isLoading: treeLoading,
-        refetch: refetchTree,
+        refetch: _refetchTree,
     } = useRequirementTree(selectedProject);
 
     // Fetch requirements for selected project
@@ -147,8 +148,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 setSelectedParent('');
                 setSelectedChildren([]);
 
-                // Refresh tree to show new hierarchy
-                refetchTree();
+                // Tree will automatically refetch due to cache invalidation
             }
         } catch (error) {
             console.error('Failed to create relationships:', error);
@@ -156,7 +156,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 `Failed to create relationships: ${error instanceof Error ? error.message : 'Unknown error'}`,
             );
         }
-    }, [selectedParent, selectedChildren, createRelationshipMutation, refetchTree]);
+    }, [selectedParent, selectedChildren, createRelationshipMutation]);
 
     // Handle deleting a relationship
     const handleDeleteRelationship = useCallback(
@@ -165,27 +165,36 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             title: string;
             parent_id: string | null;
         }) => {
+            console.log('Delete button clicked - Node data:', node);
+            console.log('Parent ID:', node.parent_id);
+            console.log('Requirement ID:', node.requirement_id);
+
             if (!node.parent_id || !node.requirement_id) {
                 alert('Cannot delete: Invalid relationship data');
                 return;
             }
 
             const confirmDelete = confirm(
-                `Are you sure you want to remove the relationship between "${node.title}" and its parent? This will break the hierarchy connection.`,
+                `Are you sure you want to disconnect "${node.title}" from its parent?\n\n` +
+                    `⚠️  This will break the hierarchy connection and make it an independent node.\n` +
+                    `📍 The node itself will NOT be deleted.`,
             );
 
             if (!confirmDelete) return;
 
+            const deleteRequest = {
+                ancestorId: node.parent_id,
+                descendantId: node.requirement_id,
+            };
+
+            console.log('Sending delete request:', deleteRequest);
+
             try {
-                await deleteRelationshipMutation.mutateAsync({
-                    ancestorId: node.parent_id,
-                    descendantId: node.requirement_id,
-                });
+                await deleteRelationshipMutation.mutateAsync(deleteRequest);
 
-                alert('Relationship deleted successfully!');
+                alert('Connection successfully disconnected! 🔗💥');
 
-                // Refresh tree to show updated hierarchy
-                refetchTree();
+                // Tree will automatically refetch due to cache invalidation
             } catch (error) {
                 console.error('Failed to delete relationship:', error);
                 alert(
@@ -193,7 +202,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 );
             }
         },
-        [deleteRelationshipMutation, refetchTree],
+        [deleteRelationshipMutation],
     );
 
     return (
@@ -914,9 +923,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                         )
                                                                     }
                                                                     className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-all border border-red-500/20 hover:border-red-500/40"
-                                                                    title="Remove this relationship"
+                                                                    title="Disconnect: Remove parent connection"
                                                                 >
-                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <Unlink className="h-4 w-4" />
                                                                 </button>
                                                             </div>
                                                         )}

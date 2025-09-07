@@ -143,24 +143,18 @@ export function useCreateRelationship() {
     return useMutation({
         mutationFn: createRelationship,
         onSuccess: (data, variables) => {
-            // Invalidate related queries
+            // Targeted invalidation - only invalidate queries that actually changed
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.descendants(variables.ancestorId),
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
-            // Invalidate all tree queries (regardless of projectId)
+            // Only invalidate tree queries - more targeted than all requirements
             queryClient.invalidateQueries({
                 queryKey: ['requirements', 'tree'],
             });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.requirements.relationships(),
-            });
-            // Force refetch all requirements-related queries
-            queryClient.invalidateQueries({
-                queryKey: ['requirements'],
-            });
+            // Remove broad invalidation to prevent unnecessary refetches
         },
         onError: (error) => {
             console.error('Failed to create relationship:', error);
@@ -174,24 +168,18 @@ export function useDeleteRelationship() {
     return useMutation({
         mutationFn: deleteRelationship,
         onSuccess: (data, variables) => {
-            // Invalidate related queries
+            // Targeted invalidation - only invalidate queries that actually changed
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.descendants(variables.ancestorId),
             });
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
-            // Invalidate all tree queries (regardless of projectId)
+            // Only invalidate tree queries - more targeted than all requirements
             queryClient.invalidateQueries({
                 queryKey: ['requirements', 'tree'],
             });
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.requirements.relationships(),
-            });
-            // Force refetch all requirements-related queries
-            queryClient.invalidateQueries({
-                queryKey: ['requirements'],
-            });
+            // Remove broad invalidation to prevent unnecessary refetches
         },
         onError: (error) => {
             console.error('Failed to delete relationship:', error);
@@ -204,6 +192,8 @@ export function useRequirementDescendants(requirementId: string, maxDepth?: numb
         queryKey: queryKeys.requirements.descendants(requirementId, maxDepth),
         queryFn: () => getRequirementDescendants(requirementId, maxDepth),
         enabled: !!requirementId,
+        staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes
+        gcTime: 8 * 60 * 1000, // Keep in cache for 8 minutes
     });
 }
 
@@ -212,6 +202,8 @@ export function useRequirementAncestors(requirementId: string, maxDepth?: number
         queryKey: queryKeys.requirements.ancestors(requirementId, maxDepth),
         queryFn: () => getRequirementAncestors(requirementId, maxDepth),
         enabled: !!requirementId,
+        staleTime: 3 * 60 * 1000, // Consider data fresh for 3 minutes
+        gcTime: 8 * 60 * 1000, // Keep in cache for 8 minutes
     });
 }
 
@@ -219,5 +211,8 @@ export function useRequirementTree(projectId?: string) {
     return useQuery({
         queryKey: queryKeys.requirements.tree(projectId),
         queryFn: () => getRequirementTree(projectId),
+        enabled: !!projectId, // Only run when projectId is provided
+        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+        gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     });
 }

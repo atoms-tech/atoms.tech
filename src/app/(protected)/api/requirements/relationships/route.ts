@@ -92,13 +92,44 @@ export async function DELETE(request: NextRequest) {
         const body = (await request.json()) as DeleteRelationshipRequest;
         const { ancestorId, descendantId } = body;
 
+        // Debug logging
+        console.log('DELETE API called with body:', body);
+        console.log('ancestorId:', ancestorId, 'type:', typeof ancestorId);
+        console.log('descendantId:', descendantId, 'type:', typeof descendantId);
+        console.log('user.id:', user.id);
+
         // Validate input
         if (!ancestorId || !descendantId) {
+            console.log('Validation failed: missing required parameters');
             return NextResponse.json(
                 { error: 'ancestorId and descendantId are required' },
                 { status: 400 },
             );
         }
+
+        // UUID validation
+        const uuidRegex =
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(ancestorId)) {
+            console.log('Invalid ancestorId format:', ancestorId);
+            return NextResponse.json(
+                { error: 'Invalid ancestorId format' },
+                { status: 400 },
+            );
+        }
+        if (!uuidRegex.test(descendantId)) {
+            console.log('Invalid descendantId format:', descendantId);
+            return NextResponse.json(
+                { error: 'Invalid descendantId format' },
+                { status: 400 },
+            );
+        }
+
+        console.log('Calling database function with parameters:', {
+            p_ancestor_id: ancestorId,
+            p_descendant_id: descendantId,
+            p_updated_by: user.id,
+        });
 
         // Call database function to delete relationship
         const { data, error } = await supabase.rpc('delete_requirement_relationship', {
@@ -115,9 +146,14 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
+        console.log('Database function response:', data);
+
         // Check if the operation was successful
         const result = data[0];
+        console.log('Result object:', result);
+
         if (!result.success) {
+            console.log('Database function reported failure:', result);
             return NextResponse.json(
                 {
                     error: result.error_code,
@@ -126,6 +162,11 @@ export async function DELETE(request: NextRequest) {
                 { status: 400 },
             );
         }
+
+        console.log(
+            'Database function succeeded, relationships deleted:',
+            result.relationships_deleted,
+        );
 
         return NextResponse.json({
             success: true,
