@@ -851,7 +851,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             : typeof value === 'string' && value
                               ? new Date(value)
                               : null;
-                    const displayDate = dateVal ? dateVal.toISOString() : '';
+                    const displayDate = dateVal ? dateVal.toISOString().slice(0, 10) : '';
                     return {
                         kind: GridCellKind.Custom,
                         allowOverlay: isEditMode,
@@ -2214,6 +2214,37 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         let processedValue: any = newValue;
 
                         switch (targetColumn.type) {
+                            case 'multi_select': {
+                                // For multi-select columns, split by comma and validate options
+                                const rawParts = newValue
+                                    .split(',')
+                                    .map((s) => s.trim())
+                                    .filter((s) => s.length > 0);
+
+                                let validOptions: string[] = [];
+                                if (Array.isArray(targetColumn.options)) {
+                                    validOptions = targetColumn.options.map((opt) => {
+                                        if (typeof opt === 'string') return opt;
+                                        if (
+                                            typeof opt === 'object' &&
+                                            opt !== null &&
+                                            'label' in opt
+                                        ) {
+                                            return (opt as { label: string }).label;
+                                        }
+                                        return String(opt);
+                                    });
+                                }
+
+                                const filtered =
+                                    validOptions.length > 0
+                                        ? rawParts.filter((p) => validOptions.includes(p))
+                                        : rawParts;
+
+                                processedValue = filtered;
+                                console.debug(`Multi-select value parsed`, filtered);
+                                break;
+                            }
                             case 'select':
                                 console.debug(`Processing select column:`, {
                                     columnOptions: targetColumn.options,
