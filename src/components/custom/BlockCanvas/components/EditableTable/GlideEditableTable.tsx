@@ -53,6 +53,7 @@ import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 import { AddColumnDialog } from './components/AddColumnDialog';
+import { useGlideCopy } from './hooks/useGlideCopy';
 import {
     /*CellValue,*/
     EditableColumn,
@@ -876,6 +877,9 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         },
         [sortedData, localColumns, isEditMode],
     );
+
+    // Copy support: provide cells for the current selection so Ctrl/Cmd+C works
+    const { getCellsForSelection } = useGlideCopy(getCellContent);
 
     const onCellEdited = useCallback(
         async (cell: Item, newValue: GridCell) => {
@@ -2767,6 +2771,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             ]}
                             width={tableRef.current?.offsetWidth || undefined}
                             getCellContent={getCellContent}
+                            getCellsForSelection={getCellsForSelection}
                             onCellEdited={isEditMode ? onCellEdited : undefined}
                             onCellActivated={handleCellActivated}
                             onKeyDown={handleGridKeyDown}
