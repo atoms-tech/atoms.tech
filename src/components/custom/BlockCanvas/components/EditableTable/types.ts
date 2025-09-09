@@ -15,7 +15,13 @@ export interface PropertyConfig {
     document_id?: string;
 }
 
-export type EditableColumnType = 'text' | 'select' | 'multi_select' | 'number' | 'date';
+export type EditableColumnType =
+    | 'text'
+    | 'select'
+    | 'multi_select'
+    | 'number'
+    | 'date'
+    | 'people';
 
 export interface ValidationRule {
     validate: (value: string | number | Date | null) => boolean;
@@ -46,6 +52,7 @@ export interface EditableColumn<T> {
     accessor: keyof T;
     type: EditableColumnType;
     options?: string[]; // For select type columns
+    propertyId?: string; // Underlying property id for persistence of options
     required?: boolean;
     validation?: ColumnValidation;
     isSortable?: boolean;

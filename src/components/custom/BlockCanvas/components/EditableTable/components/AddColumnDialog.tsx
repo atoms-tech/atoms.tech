@@ -1,7 +1,9 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
+import { usePeopleOptions } from '@/components/custom/BlockCanvas/components/EditableTable/hooks/usePeopleOptions';
 import {
     EditableColumnType,
     PropertyConfig,
@@ -57,6 +59,15 @@ export function AddColumnDialog({
     const { data: properties, isLoading: isLoadingProperties } =
         useOrganizationProperties(orgId, isOpen && activeTab === 'existing');
 
+    // Prefill people options from org/project members when creating a People column
+    const params = useParams();
+    const resolvedOrgId = orgId || (params?.orgId as string) || '';
+    const resolvedProjectId = (params?.projectId as string) || '';
+    const { data: peoplePrefill = [] } = usePeopleOptions(
+        resolvedOrgId || undefined,
+        resolvedProjectId || undefined,
+    );
+
     // Memoize availableProperties to prevent unnecessary recalculations
     const availableProperties = useMemo(
         () => initialProperties || properties || [],
@@ -94,10 +105,23 @@ export function AddColumnDialog({
                 defaultScope.includes('document') && {
                     document_id: documentId,
                 }),
-            ...(['select', 'multi_select'].includes(columnType) &&
-                options && {
-                    options: options.split(',').map((opt) => opt.trim()),
-                }),
+            ...(['select', 'multi_select', 'people'].includes(columnType) && {
+                options:
+                    columnType === 'people'
+                        ? Array.from(
+                              new Set([
+                                  ...peoplePrefill,
+                                  ...((options || '')
+                                      .split(',')
+                                      .map((opt) => opt.trim())
+                                      .filter(Boolean) || []),
+                              ]),
+                          )
+                        : (options || '')
+                              .split(',')
+                              .map((opt) => opt.trim())
+                              .filter(Boolean),
+            }),
         };
 
         onSave(columnName, columnType, propertyConfig, defaultValue);
@@ -161,6 +185,7 @@ export function AddColumnDialog({
                                     <option value="multi_select">Multi Select</option>
                                     <option value="number">Number</option>
                                     <option value="date">Date</option>
+                                    <option value="people">People</option>
                                 </select>
                             </div>
                             {['select', 'multi_select'].includes(columnType) && (

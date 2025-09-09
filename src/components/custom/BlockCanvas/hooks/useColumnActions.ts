@@ -8,7 +8,7 @@ import {
 import { Column, Property, PropertyType } from '@/components/custom/BlockCanvas/types';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { Json } from '@/types/base/database.types';
+import { Database, Json } from '@/types/base/database.types';
 
 const columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
     switch (type) {
@@ -22,6 +22,9 @@ const columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
             return PropertyType.multi_select;
         case 'date':
             return PropertyType.date;
+        case 'people':
+            // Store as multi_select in DB, with options.format = 'people'
+            return PropertyType.multi_select;
         default:
             return PropertyType.text;
     }
@@ -64,9 +67,17 @@ export const useColumnActions = ({
                             ? documentId
                             : null,
                         is_base: propertyConfig.is_base,
-                        options: propertyConfig.options
-                            ? { values: propertyConfig.options }
-                            : null,
+                        options:
+                            type === 'people'
+                                ? ({
+                                      values: propertyConfig.options ?? [],
+                                      format: 'people',
+                                  } as unknown as Json)
+                                : propertyConfig.options
+                                  ? ({
+                                        values: propertyConfig.options,
+                                    } as unknown as Json)
+                                  : null,
                         scope: propertyConfig.scope.join(','),
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString(),
@@ -195,6 +206,42 @@ export const useColumnActions = ({
             }
         },
         [queryClient, orgId],
+    );
+
+    // Append options to a property's options.values list
+    const appendPropertyOptions = useCallback(
+        async (propertyId: string, newValues: string[]) => {
+            // Fetch current property
+            const { data: prop, error: fetchErr } = await supabase
+                .from('properties')
+                .select('id, options')
+                .eq('id', propertyId)
+                .single();
+            if (fetchErr) throw fetchErr;
+
+            type PropertyRow = Database['public']['Tables']['properties']['Row'];
+            const typedProp = prop as unknown as PropertyRow;
+            const rawValues = (typedProp as { options: { values?: unknown } } | null)
+                ?.options?.values;
+            const currValues: string[] = Array.isArray(rawValues)
+                ? (rawValues as string[])
+                : [];
+
+            const merged = Array.from(
+                new Set([...(currValues || []), ...newValues].filter((v) => !!v)),
+            );
+
+            const { error: updErr } = await supabase
+                .from('properties')
+                .update({ options: { values: merged } as unknown as Json })
+                .eq('id', propertyId);
+            if (updErr) throw updErr;
+
+            // Invalidate property caches
+            await queryClient.invalidateQueries({ queryKey: queryKeys.properties.root });
+            return merged;
+        },
+        [queryClient],
     );
 
     const deleteColumn = useCallback(
@@ -371,6 +418,7 @@ export const useColumnActions = ({
     return {
         createPropertyAndColumn,
         createColumnFromProperty,
+        appendPropertyOptions,
         deleteColumn,
     };
 };

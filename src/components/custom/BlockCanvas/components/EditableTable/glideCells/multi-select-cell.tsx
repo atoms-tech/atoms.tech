@@ -385,12 +385,13 @@ const renderer: CustomRenderer<MultiSelectCell> = {
         return true;
     },
     measure: (ctx, cell, t) => {
-        const { values, options } = (cell as any).data as any;
+        const data: any = (cell as any)?.data ?? {};
+        const { values, options } = data;
         if (!values) return (t as any).cellHorizontalPadding * 2;
         const labels = resolveValues(
             values,
             prepareOptions(options ?? []),
-            ((cell as any).data as any).allowDuplicates,
+            Boolean(data.allowDuplicates),
         ).map((x) => x.label ?? x.value);
         return (
             labels.reduce(
@@ -418,21 +419,31 @@ const renderer: CustomRenderer<MultiSelectCell> = {
         }),
     }),
     onPaste: (val, cell) => {
+        const prev: any = cell as any;
+        const data: any = prev?.data ?? {};
         if (!val || !val.trim()) {
-            return { ...(cell as any), values: [] } as any;
+            return {
+                ...prev,
+                copyData: '',
+                data: { ...data, values: [] },
+            } as any;
         }
         let values = val.split(',').map((s) => s.trim());
-        if (!((cell as any).data as any).allowDuplicates) {
+        const allowDuplicates = Boolean(data?.allowDuplicates);
+        const allowCreation = Boolean(data?.allowCreation);
+        if (!allowDuplicates) {
             values = values.filter((v, index) => values.indexOf(v) === index);
         }
-        if (!((cell as any).data as any).allowCreation) {
-            const opts = prepareOptions(
-                (((cell as any).data as any).options ?? []) as any,
-            );
+        if (!allowCreation) {
+            const opts = prepareOptions((data?.options ?? []) as any);
             values = values.filter((v) => opts.find((o) => o.value === v));
         }
         if (values.length === 0) return undefined as any;
-        return { ...(cell as any), values } as any;
+        return {
+            ...prev,
+            copyData: values.join(', '),
+            data: { ...data, values },
+        } as any;
     },
 };
 
