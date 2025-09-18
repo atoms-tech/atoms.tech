@@ -270,11 +270,38 @@ export default function Draw() {
     }, [pipelineResponse, excalidrawApi]);
 
     // This function is called by the "Generate" button
-    const handleManualGenerate = useCallback(() => {
+    //const handleManualGenerate = useCallback(() => {
         // This is a manual generation
-        isManualGeneration.current = true;
-        handleGenerate();
-    }, [handleGenerate]);
+     //   isManualGeneration.current = true;
+         //return prompt and diagramType before generating
+    //    console.log('Requirement:', prompt);
+    //    console.log('Diagram Type:', diagramType);
+
+    //    // (optional: show in UI)
+    //    alert(`Requirement: ${prompt}\nDiagram Type: ${diagramType}`);
+
+        // 2. Call your existing generation logic
+        
+    //    handleGenerate();
+    //}, [handleGenerate]);'''
+
+    const handleManualGenerate = async () => {
+        const response = await fetch('http://localhost:8000/diagram', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+            requirement: prompt,
+            diagram_type: diagramType,
+            }),
+        });
+         alert(`Requirement: ${prompt}\nDiagram Type: ${diagramType}`);
+        const data = await response.json();
+        console.log('Received:', data);
+        };
+
+
 
     const handleExcalidrawMount = useCallback(
         (api: { addMermaidDiagram: (mermaidSyntax: string) => Promise<void> }) => {
