@@ -286,7 +286,9 @@ export default function Draw() {
     //}, [handleGenerate]);'''
 
     const handleManualGenerate = async () => {
-        const response = await fetch('http://localhost:8000/diagram', {
+        alert(`Requirement: ${prompt}\nDiagram Type: ${diagramType}`);
+
+        const response = await fetch('/api/fetch_req_diagramType', {
             method: 'POST',
             headers: {
             'Content-Type': 'application/json',
