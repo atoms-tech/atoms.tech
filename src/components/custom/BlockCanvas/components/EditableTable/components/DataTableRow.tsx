@@ -4,6 +4,7 @@ import React from 'react';
 
 import { CellRenderer } from '@/components/custom/BlockCanvas/components/EditableTable/CellRenderer';
 import {
+    BaseRow,
     CellValue,
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
@@ -12,9 +13,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
-import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
-interface DataTableRowProps<T> {
+interface DataTableRowProps<T extends BaseRow> {
     item: T;
     columns: EditableColumn<T>[];
     isEditing: boolean;
@@ -27,12 +27,7 @@ interface DataTableRowProps<T> {
     onCellSelect?: (row: number, col: number) => void;
 }
 
-export function DataTableRow<
-    T extends Record<string, CellValue> & {
-        id: string;
-        ai_analysis: RequirementAiAnalysis;
-    },
->({
+export function DataTableRow<T extends BaseRow>({
     item,
     columns,
     isEditing,
@@ -117,8 +112,10 @@ export function DataTableRow<
                                 column={column}
                                 isEditing={isEditing}
                                 value={
-                                    editingData[item.id]?.[column.accessor] ??
-                                    item[column.accessor]
+                                    (editingData[item.id]?.[
+                                        column.accessor
+                                    ] as CellValue) ??
+                                    (item[column.accessor] as CellValue)
                                 }
                                 onCellChange={onCellChange}
                             />
@@ -222,8 +219,16 @@ export function DataTableRow<
                             </div>
                         ))}
 
-                        {item.ai_analysis?.descriptionHistory &&
-                            item.ai_analysis.descriptionHistory.length > 0 && (
+                        {(
+                            item as unknown as {
+                                ai_analysis?: { descriptionHistory?: unknown[] };
+                            }
+                        ).ai_analysis?.descriptionHistory &&
+                            (
+                                item as unknown as {
+                                    ai_analysis?: { descriptionHistory?: unknown[] };
+                                }
+                            ).ai_analysis!.descriptionHistory!.length > 0 && (
                                 <>
                                     <div className="border-t border-dashed border-muted mt-4 pt-4">
                                         <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium mb-4">
@@ -231,7 +236,19 @@ export function DataTableRow<
                                         </div>
                                         <div className="relative">
                                             <div className="absolute top-0 bottom-0 left-[11px] border-l border-dotted border-muted-foreground/40"></div>
-                                            {[...item.ai_analysis.descriptionHistory]
+                                            {[
+                                                ...(
+                                                    item as unknown as {
+                                                        ai_analysis: {
+                                                            descriptionHistory: {
+                                                                description: string;
+                                                                createdAt: string;
+                                                                createdBy: string;
+                                                            }[];
+                                                        };
+                                                    }
+                                                ).ai_analysis.descriptionHistory,
+                                            ]
                                                 .reverse()
                                                 .map((historyItem) => {
                                                     const date = new Date(

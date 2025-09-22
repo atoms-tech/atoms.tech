@@ -41,7 +41,7 @@ export const useDocumentRealtime = ({
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    // Fetch blocks and their requirements
+    // Initial full fetch of blocks and their requirements
     const fetchBlocks = useCallback(async () => {
         try {
             setLoading(true);
@@ -165,27 +165,42 @@ export const useDocumentRealtime = ({
                     table: 'blocks',
                     filter: `document_id=eq.${documentId}`,
                 },
+                // Handle individual block changes instead of fetching all blocks
                 (payload) => {
-                    // Handle individual block changes instead of fetching all blocks
-                    if (payload.eventType === 'UPDATE') {
-                        setBlocks((prevBlocks) => {
-                            if (!prevBlocks) return prevBlocks;
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
 
+                        if (payload.eventType === 'INSERT') {
+                            return [
+                                ...prevBlocks,
+                                {
+                                    ...(payload.new as Block),
+                                    order: payload.new.position,
+                                    requirements: [],
+                                    columns: [],
+                                },
+                            ];
+                        }
+                        if (payload.eventType === 'UPDATE') {
                             return prevBlocks.map((block) =>
                                 block.id === payload.new.id
                                     ? {
                                           ...block,
-                                          ...payload.new,
+                                          ...(payload.new as Block),
+                                          order: payload.new.position,
                                           requirements: block.requirements,
                                           columns: block.columns,
                                       }
                                     : block,
                             );
-                        });
-                    } else {
-                        // For INSERT and DELETE, fetch all blocks
-                        fetchBlocks();
-                    }
+                        }
+                        if (payload.eventType === 'DELETE') {
+                            return prevBlocks.filter(
+                                (block) => block.id !== payload.old.id,
+                            );
+                        }
+                        return prevBlocks;
+                    });
                 },
             )
             .subscribe();
@@ -268,8 +283,49 @@ export const useDocumentRealtime = ({
                     schema: 'public',
                     table: 'columns',
                 },
-                () => {
-                    fetchBlocks();
+                (payload) => {
+                    const newCol = payload.new as Column | undefined;
+                    const oldCol = payload.old as Column | undefined;
+
+                    setBlocks((prevBlocks) => {
+                        if (!prevBlocks) return prevBlocks;
+
+                        return prevBlocks.map((block) => {
+                            if (
+                                block.id !== newCol?.block_id &&
+                                block.id !== oldCol?.block_id
+                            ) {
+                                return block;
+                            }
+
+                            if (payload.eventType === 'INSERT' && newCol) {
+                                return {
+                                    ...block,
+                                    columns: [...(block.columns ?? []), newCol],
+                                };
+                            }
+
+                            if (payload.eventType === 'UPDATE' && newCol) {
+                                return {
+                                    ...block,
+                                    columns: (block.columns ?? []).map((c) =>
+                                        c.id === newCol.id ? newCol : c,
+                                    ),
+                                };
+                            }
+
+                            if (payload.eventType === 'DELETE' && oldCol) {
+                                return {
+                                    ...block,
+                                    columns: (block.columns ?? []).filter(
+                                        (c) => c.id !== oldCol.id,
+                                    ),
+                                };
+                            }
+
+                            return block;
+                        });
+                    });
                 },
             )
             .subscribe();

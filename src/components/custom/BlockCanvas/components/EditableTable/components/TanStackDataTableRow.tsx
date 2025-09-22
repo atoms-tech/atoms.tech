@@ -3,12 +3,13 @@ import * as React from 'react';
 import { memo } from 'react';
 
 import { TanStackCellRenderer } from '@/components/custom/BlockCanvas/components/EditableTable/TanStackCellRenderer';
-import { CellValue } from '@/components/custom/BlockCanvas/components/EditableTable/types';
+import {
+    BaseRow,
+    CellValue,
+} from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { cn } from '@/lib/utils';
 
-interface TanStackDataTableRowProps<
-    T extends Record<string, CellValue> & { id: string },
-> {
+interface TanStackDataTableRowProps<T extends BaseRow> {
     row: Row<T>;
     isEditMode: boolean;
     selectedCell: { rowIndex: number; columnId: string } | null;
@@ -18,7 +19,7 @@ interface TanStackDataTableRowProps<
 }
 
 // Individual memo-wrapped cell component
-function CellComponent<T extends Record<string, CellValue> & { id: string }>({
+function CellComponent<T extends BaseRow>({
     cell,
     isEditMode,
     isSelected,
@@ -77,9 +78,7 @@ function CellComponent<T extends Record<string, CellValue> & { id: string }>({
 // Use type assertion with memo to maintain proper typing
 const MemoizedCell = memo(CellComponent) as typeof CellComponent;
 
-function TanStackDataTableRowComponent<
-    T extends Record<string, CellValue> & { id: string },
->({
+function TanStackDataTableRowComponent<T extends BaseRow>({
     row,
     isEditMode,
     selectedCell,
@@ -113,7 +112,7 @@ function TanStackDataTableRowComponent<
 }
 
 // Use a more lenient comparison function that allows for cell editing
-const arePropsEqual = <T extends Record<string, CellValue> & { id: string }>(
+const arePropsEqual = <T extends BaseRow>(
     prevProps: TanStackDataTableRowProps<T>,
     nextProps: TanStackDataTableRowProps<T>,
 ): boolean => {

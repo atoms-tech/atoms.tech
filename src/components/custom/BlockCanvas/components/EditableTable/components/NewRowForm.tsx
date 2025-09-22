@@ -2,13 +2,14 @@ import { Check, X } from 'lucide-react';
 
 import { CellRenderer } from '@/components/custom/BlockCanvas/components/EditableTable/CellRenderer';
 import {
+    BaseRow,
     CellValue,
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 
-interface NewRowFormProps<T> {
+interface NewRowFormProps<T extends BaseRow> {
     columns: EditableColumn<T>[];
     editingData: Record<string, T>;
     onCellChange: (itemId: string, accessor: keyof T, value: CellValue) => void;
@@ -16,7 +17,7 @@ interface NewRowFormProps<T> {
     onCancel: () => void;
 }
 
-export function NewRowForm<T extends Record<string, CellValue> & { id: string }>({
+export function NewRowForm<T extends BaseRow>({
     columns,
     editingData,
     onCellChange,

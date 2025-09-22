@@ -15,7 +15,6 @@ import { useCallback, useEffect, useReducer, useState } from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import {
     AddRowPlaceholder,
@@ -28,14 +27,9 @@ import {
 } from './components';
 import { useTableSort } from './hooks/useTableSort';
 import { TableState, tableReducer } from './reducers/tableReducer';
-import { CellValue, EditableTableProps } from './types';
+import { BaseRow, CellValue, EditableTableProps } from './types';
 
-export function EditableTable<
-    T extends Record<string, CellValue> & {
-        id: string;
-        ai_analysis: RequirementAiAnalysis;
-    },
->({
+export function EditableTable<T extends BaseRow>({
     data,
     columns,
     onSave,
@@ -78,7 +72,7 @@ export function EditableTable<
     /* eslint-enable @typescript-eslint/no-unused-vars */
 
     // Use the extracted custom hooks
-    const { sortedData, handleSort } = useTableSort(data, sortKey);
+    const { sortedData, handleSort } = useTableSort<T>(data, sortKey as keyof T);
     const { user } = useUser();
     const userId = user?.id || ''; // Ensure userId is extracted correctly
     const params = useParams();
@@ -538,7 +532,7 @@ export function EditableTable<
                             columns={columns}
                             sortKey={sortKey}
                             sortOrder={sortOrder}
-                            onSort={handleSort}
+                            onSort={handleSort as (key: keyof T) => void}
                             isEditMode={isEditMode}
                         />
                         <TableBody>

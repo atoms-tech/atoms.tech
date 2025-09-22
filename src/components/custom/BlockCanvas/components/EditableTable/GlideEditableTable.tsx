@@ -41,13 +41,12 @@ import { useParams } from 'next/navigation';
 import { useLayer } from 'react-laag';
 
 //import { RequirementAiAnalysis } from '@/types/base/requirements.types';
-import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
 import {
     BlockTableMetadata,
     useBlockMetadataActions,
 } from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
 import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
-import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
+// import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { PropertyType } from '@/components/custom/BlockCanvas/types';
 import { useUser } from '@/lib/providers/user.provider';
 
@@ -56,7 +55,7 @@ import { AddColumnDialog } from './components/AddColumnDialog';
 import { useGlideCopy } from './hooks/useGlideCopy';
 import { usePeopleOptions } from './hooks/usePeopleOptions';
 import {
-    /*CellValue,*/
+    BaseRow /*CellValue,*/,
     EditableColumn,
     EditableColumnType,
     GlideTableProps,
@@ -68,7 +67,7 @@ import {
 // import { table } from 'console';
 // import { string } from 'zod';
 
-export function GlideEditableTable<T extends DynamicRequirement = DynamicRequirement>(
+export function GlideEditableTable<T extends BaseRow = BaseRow>(
     props: GlideTableProps<T>,
 ) {
     const { resolvedTheme } = useTheme();
@@ -122,15 +121,51 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     const userName = profile?.full_name || '';
 
     const { updateBlockMetadata } = useBlockMetadataActions();
+    // Wrapper persistence functions to support adapter or fallback props
+    const saveRow = useCallback(
+        async (item: T, isNew: boolean) => {
+            if (props.dataAdapter) {
+                await props.dataAdapter.saveRow(
+                    item,
+                    isNew,
+                    blockId ? { blockId } : undefined,
+                );
+            } else {
+                await onSave?.(item, isNew, userId, userName);
+            }
+        },
+        [props.dataAdapter, blockId, onSave, userId, userName],
+    );
+
+    const deleteRow = useCallback(
+        async (item: T) => {
+            if (props.dataAdapter?.deleteRow) {
+                await props.dataAdapter.deleteRow(
+                    item,
+                    blockId ? { blockId } : undefined,
+                );
+            } else {
+                await props.onDelete?.(item);
+            }
+        },
+        [props.dataAdapter, blockId, props.onDelete],
+    );
+
+    const refreshAfterSave = useCallback(async () => {
+        if (props.dataAdapter?.postSaveRefresh) {
+            await props.dataAdapter.postSaveRefresh();
+        } else {
+            await onPostSave?.();
+        }
+    }, [props.dataAdapter, onPostSave]);
+
     //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-    // States for AI Analysis Sidebar
-    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
-        null,
-    );
-    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+    // Optional row detail panel state
+    const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+    const [isRowDetailOpen, setIsRowDetailOpen] = useState(false);
 
     // undo/redo history management
     const [historyIndex, setHistoryIndex] = useState<number>(-1);
@@ -231,10 +266,10 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     continue;
                 }
                 const fullItem: T = { ...originalItem, ...changes };
-                await onSave?.(fullItem, false, userId, userName);
+                await saveRow(fullItem, false);
             }
 
-            await onPostSave?.();
+            await refreshAfterSave();
 
             // small delay to let the updated props.data come in, then clear buffer
             await new Promise((r) => setTimeout(r, 250));
@@ -243,7 +278,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         } finally {
             isSavingRef.current = false;
         }
-    }, [onPostSave, data, onSave, userId, userName]);
+    }, [refreshAfterSave, data, saveRow]);
 
     // Debounce saves, should be abstracted to table props and switched off when realtime collaboration enabled.
     const useDebouncedSave = (delay = 5000) => {
@@ -360,10 +395,10 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
         sortedDataRef.current = sortedData;
     }, [sortedData]);
 
-    // For AI Sidebar
-    const selectedRequirement = useMemo(() => {
-        return sortedData.find((r) => r.id === selectedRequirementId) || null;
-    }, [sortedData, selectedRequirementId]);
+    // For optional row detail panel
+    const selectedRow = useMemo(() => {
+        return sortedData.find((r) => r.id === selectedRowId) || null;
+    }, [sortedData, selectedRowId]);
 
     // Row deletion and selection tracking logic
     const [gridSelection, setGridSelection] = useState<GridSelection>({
@@ -732,44 +767,29 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
     );
 
     const getCellContent = useCallback(
-        ([col, row]: Item): GridCell => {
-            const rowData = sortedData[row];
+        (cell: Item): GridCell => {
+            const [col, row] = cell;
             const column = localColumns[col];
-            const accessor = column.accessor;
-            const value = rowData?.[accessor];
-
-            if (!column || !rowData) {
-                console.warn('[getCellContent] Missing column or rowData:', {
-                    col,
-                    row,
-                    column,
-                    rowData,
-                });
-                return {
-                    kind: GridCellKind.Text,
-                    allowOverlay: isEditMode,
-                    data: value?.toString() ?? '',
-                    displayData: value?.toString() ?? '',
-                    allowWrapping: true, //  enable text wrapping for missing data fallback
-                };
-            }
-
-            // Determine effective column type, falling back to PropertyConfig if provided
-            const effectiveType =
-                (column as any)?.propertyConfig?.property_type || column.type;
-
-            // Utility to pull options from either column.options or propertyConfig.options.values
-            const columnOptions = (() => {
-                if (Array.isArray(column.options)) return column.options;
-                const pc: any = (column as any)?.propertyConfig;
-                if (pc?.options) {
-                    if (Array.isArray(pc.options)) return pc.options;
-                    if (Array.isArray(pc.options.values)) return pc.options.values;
+            const rowData = sortedData[row];
+            const value = rowData?.[column.accessor];
+            const columnOptions = Array.isArray(column.options) ? column.options : [];
+            switch (column.type) {
+                case 'people': {
+                    const stringValue = Array.isArray(value)
+                        ? value.join(', ')
+                        : String(value ?? '');
+                    const options = peopleNames.length > 0 ? peopleNames : columnOptions;
+                    return {
+                        kind: GridCellKind.Custom,
+                        allowOverlay: isEditMode,
+                        copyData: stringValue,
+                        data: {
+                            kind: 'people-cell',
+                            value: stringValue,
+                            allowedValues: options,
+                        },
+                    } as GridCell;
                 }
-                return [] as string[];
-            })();
-
-            switch (effectiveType) {
                 case 'multi_select': {
                     const values = Array.isArray(value)
                         ? (value as string[])
@@ -801,30 +821,6 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                         },
                     } as GridCell;
                 }
-                case 'people': {
-                    // Treat people like multi_select but options sourced from org/project members
-                    const values = Array.isArray(value)
-                        ? (value as string[])
-                        : value
-                          ? [String(value)]
-                          : [];
-
-                    // Reuse multi-select cell for rendering/editing
-                    const options = peopleNames.length > 0 ? peopleNames : columnOptions;
-
-                    return {
-                        kind: GridCellKind.Custom,
-                        allowOverlay: isEditMode,
-                        copyData: values.join(', '),
-                        data: {
-                            kind: 'multi-select-cell',
-                            values,
-                            options,
-                            allowCreation: true,
-                            allowDuplicates: false,
-                        },
-                    } as GridCell;
-                }
                 case 'select': {
                     const stringValue = typeof value === 'string' ? value : '';
                     if (!Array.isArray(column.options)) {
@@ -842,7 +838,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
                     console.debug('[getCellContent] select cell', {
                         header: column.header,
-                        accessor: String(accessor),
+                        accessor: String(column.accessor),
                         rowIndex: row,
                         rowId: rowData?.id,
                         rawValue: value,
@@ -907,7 +903,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     } as TextCell;
             }
         },
-        [sortedData, localColumns, isEditMode],
+        [sortedData, localColumns, isEditMode, peopleNames],
     );
 
     // Copy support: provide cells for the current selection so Ctrl/Cmd+C works
@@ -1104,7 +1100,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             } catch {}
             gridRef.current?.focus();
         },
-        [localData, localColumns, debouncedSave],
+        [localData, localColumns, debouncedSave, addToHistory, sortedData],
     );
 
     // Add new row. Flush pending edits first to prevent data loss.
@@ -1140,13 +1136,13 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
             }
 
             // 3) Persist the new row then refresh, then sync metadata
-            await onSave?.(newRow, true, userId, userName);
-            await onPostSave?.();
+            await saveRow(newRow, true);
+            await refreshAfterSave();
             await saveTableMetadataRef.current?.();
         } catch (e) {
             console.error('[GlideEditableTable] Failed to append row:', e);
         }
-    }, [columns, localData, onSave, onPostSave, userId, userName]);
+    }, [columns, localData, saveRow, refreshAfterSave]);
 
     const handleRowMoved = useCallback(
         (from: number, to: number) => {
@@ -1178,6 +1174,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
 
                 return reindexed;
             });
+            saveTableMetadataRef.current?.();
         },
         [debouncedSave, addToHistory],
     );
@@ -1840,15 +1837,17 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                 // entering popup edit mode: temporarily disable blur-based deselection
                 (isEditingCellRef as React.RefObject<boolean>).current = true;
             } else {
-                // open AI sidebar in view mode
-                const row = sortedData[cell[1]];
-                if (row?.id) {
-                    setSelectedRequirementId(row.id);
-                    setIsAiSidebarOpen(true);
+                // open row detail panel in view mode if provided
+                if (props.rowDetailPanel) {
+                    const row = sortedData[cell[1]];
+                    if (row?.id) {
+                        setSelectedRowId(row.id);
+                        setIsRowDetailOpen(true);
+                    }
                 }
             }
         },
-        [isEditMode, sortedData],
+        [isEditMode, sortedData, props.rowDetailPanel],
     );
 
     // enhanced selection tracking
@@ -2571,7 +2570,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             console.debug(
                                 `[${operationId}] Saving existing row ${rowId}...`,
                             );
-                            await onSave?.(updatedRow, false, userId, userName);
+                            await saveRow(updatedRow, false);
                             savedExistingCount++;
                             console.debug(
                                 `[${operationId}] Successfully saved existing row ${rowId}`,
@@ -2602,7 +2601,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             console.debug(
                                 `[${operationId}] Saving new row ${newRow.id}...`,
                             );
-                            await onSave?.(newRow, true, userId, userName);
+                            await saveRow(newRow, true);
                             savedNewCount++;
                             console.debug(
                                 `[${operationId}] Successfully saved new row ${newRow.id}`,
@@ -3031,21 +3030,22 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                             }}
                         />
 
-                        <RequirementAnalysisSidebar
-                            requirement={selectedRequirement}
-                            open={isAiSidebarOpen}
-                            onOpenChange={(open) => {
-                                setIsAiSidebarOpen(open);
-                                if (!open) {
-                                    setSelectedRequirementId(null);
-                                    // Refocus after delay to accommodate keyboard controls.
-                                    setTimeout(() => {
-                                        gridRef.current?.focus();
-                                    }, 50);
-                                }
-                            }}
-                            columns={localColumns as EditableColumn<DynamicRequirement>[]}
-                        />
+                        {props.rowDetailPanel ? (
+                            <props.rowDetailPanel
+                                row={selectedRow}
+                                open={isRowDetailOpen}
+                                onOpenChange={(open) => {
+                                    setIsRowDetailOpen(open);
+                                    if (!open) {
+                                        setSelectedRowId(null);
+                                        setTimeout(() => {
+                                            gridRef.current?.focus();
+                                        }, 50);
+                                    }
+                                }}
+                                columns={localColumns as EditableColumn<T>[]}
+                            />
+                        ) : null}
 
                         {/* Add Column Dialog invoked from header menu (left/right) */}
                         {isEditMode && (

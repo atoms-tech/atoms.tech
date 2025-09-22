@@ -29,10 +29,11 @@ import {
 import { Table, TableBody } from '@/components/ui/table';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { RequirementAiAnalysis } from '@/types/base/requirements.types';
+
+// import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
 import { TanStackCellRenderer } from './TanStackCellRenderer';
-import { CellValue, EditableTableProps } from './types';
+import { BaseRow, CellValue, EditableTableProps } from './types';
 
 // Add these types near the top of the file
 type OptimisticUpdate = {
@@ -48,12 +49,7 @@ type OptimisticUpdate = {
  * This is a TanStack Table implementation of the EditableTable
  * that preserves the same API surface while using modern table state management
  */
-export function TanStackEditableTable<
-    T extends Record<string, CellValue> & {
-        id: string;
-        ai_analysis: RequirementAiAnalysis;
-    },
->({
+export function TanStackEditableTable<T extends BaseRow>({
     data,
     columns,
     onSave,

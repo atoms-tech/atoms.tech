@@ -3,6 +3,7 @@ import * as React from 'react';
 import { memo, useEffect, useMemo, useRef } from 'react';
 
 import {
+    BaseRow,
     CellValue,
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
@@ -322,9 +323,14 @@ interface TanStackCellRendererProps<
 }
 
 // Main cell renderer component for TanStack Table
-function TanStackCellRendererComponent<
-    T extends Record<string, CellValue> & { id: string },
->({ cell, isEditing, onSave, onBlur, isSelected, value }: TanStackCellRendererProps<T>) {
+function TanStackCellRendererComponent<T extends BaseRow>({
+    cell,
+    isEditing,
+    onSave,
+    onBlur,
+    isSelected,
+    value,
+}: TanStackCellRendererProps<T>) {
     const column = cell.column.columnDef as unknown as EditableColumn<T>;
 
     // Memoize string and array values

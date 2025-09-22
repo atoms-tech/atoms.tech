@@ -12,9 +12,9 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-import { CellValue, EditableColumn } from './types';
+import { BaseRow, CellValue, EditableColumn } from './types';
 
-interface CellRendererProps<T extends Record<string, CellValue> & { id: string }> {
+interface CellRendererProps<T extends BaseRow> {
     item: T;
     column: EditableColumn<T>;
     isEditing: boolean;
@@ -151,7 +151,7 @@ const DisplayCell = memo(({ value }: { value: CellValue }) => {
 DisplayCell.displayName = 'DisplayCell';
 
 // Main cell renderer with memoization
-function CellRendererComponent<T extends Record<string, CellValue> & { id: string }>({
+function CellRendererComponent<T extends BaseRow>({
     item,
     column,
     isEditing,
