@@ -2,10 +2,10 @@ echo "🚀 Running pre-push checks..."
 
 # Lint Check
 echo "📝 Linting staged files..."
-bun run lint
+yarn lint
 
 # Format check
 echo "🔍 Formatting staged files..."
-bun prettier src --check
+yarn format:check
 
 echo "✅ Pre-push checks passed! Ready to push."
