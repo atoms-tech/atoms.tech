@@ -691,12 +691,9 @@ ${'='.repeat(50)}
             >
                 {/* Resize Handle */}
                 <div
-                    className="absolute left-0 top-0 w-[3px] h-full cursor-col-resize hover:w-1.5 transition-all z-10 group bg-border hover:bg-accent"
+                    className="absolute left-0 top-0 w-[1px] h-full cursor-col-resize hover:w-1.5 transition-all z-10 group bg-border hover:bg-accent"
                     onMouseDown={handleResizeStart}
-                >
-                    {/* Visual indicator for resize */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-8 bg-border/60 rounded-full group-hover:bg-accent/80 transition-colors" />
-                </div>
+                />
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">

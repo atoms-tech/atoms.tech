@@ -355,7 +355,7 @@ export default function UserDashboard() {
                                     initial={false}
                                 >
                                     <Card
-                                        className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer border-2`}
+                                        className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer`}
                                         onClick={() => handleOrganizationClick(org)}
                                     >
                                         <CardHeader className="pb-3">

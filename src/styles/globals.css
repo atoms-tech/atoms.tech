@@ -41,7 +41,7 @@
         --chart-4: 220 13% 95%; /* very light gray */
         --chart-5: 0 0% 100%; /* white */
 
-        --radius: 0rem;
+        --radius: 0.5rem;
 
         --grid-size: 40px;
         --grid-color: rgba(0, 0, 0, 0.03);

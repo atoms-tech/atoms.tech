@@ -286,7 +286,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            className={`px-2 py-1 rounded-lg text-xs font-medium ${
                                                 member.role === 'owner'
                                                     ? 'bg-purple-100 text-purple-800'
                                                     : member.role === 'admin'

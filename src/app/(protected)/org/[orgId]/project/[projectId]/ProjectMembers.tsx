@@ -281,7 +281,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(roleInput as ProjectRole)}`}
+                                    className={`px-2 py-1 rounded-lg text-xs font-medium ${getRoleColor(roleInput as ProjectRole)}`}
                                 >
                                     <div className="flex items-center gap-2">
                                         {roleInput}
@@ -392,7 +392,7 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(member.role as ProjectRole)} 
+                                            className={`px-2 py-1 rounded-lg text-xs font-medium ${getRoleColor(member.role as ProjectRole)} 
                                                 ${member.id === user?.id || !hasProjectPermission(userRole, 'changeRole') ? 'pointer-events-none' : ''}`}
                                         >
                                             {member.id === user?.id ||

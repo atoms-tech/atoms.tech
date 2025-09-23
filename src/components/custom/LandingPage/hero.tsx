@@ -70,7 +70,7 @@ export function Hero() {
                         WRITE LIKE WORD · ORGANIZE LIKE EXCEL · AUTOMATE EVERYTHING ELSE
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl">
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px] rounded-md">
                             <div className="flex items-start gap-3 h-full">
                                 <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
                                     <MessageSquare className="h-4 w-4 text-gray-300 transition-colors duration-300" />
@@ -87,7 +87,7 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px] rounded-md">
                             <div className="flex items-start gap-3 h-full">
                                 <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
                                     <Trash2 className="h-4 w-4 text-gray-300 transition-colors duration-300" />
@@ -104,7 +104,7 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px] rounded-md">
                             <div className="flex items-start gap-3 h-full">
                                 <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
                                     <Code2 className="h-4 w-4 text-gray-300 transition-colors duration-300" />
@@ -121,7 +121,7 @@ export function Hero() {
                             </div>
                         </div>
 
-                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px]">
+                        <div className="group bg-gradient-to-br from-white/5 to-white/2 border border-white/10 px-5 py-5 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer min-h-[80px] rounded-md">
                             <div className="flex items-start gap-3 h-full">
                                 <div className="p-2 bg-white/10 rounded-lg transition-colors duration-300 flex-shrink-0">
                                     <LinkIcon className="h-4 w-4 text-gray-300 transition-colors duration-300" />

@@ -232,7 +232,7 @@ const SidebarContainer = ({
                     // Adjust the padding for floating and inset variants.
                     variant === 'floating' || variant === 'inset'
                         ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]'
-                        : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r-[3px] group-data-[side=right]:border-l-[1.5px]',
+                        : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r-[1px] group-data-[side=right]:border-l-[1px]',
                     className,
                 )}
                 {...props}
