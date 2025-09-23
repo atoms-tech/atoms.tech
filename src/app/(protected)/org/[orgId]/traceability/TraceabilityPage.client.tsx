@@ -1,7 +1,7 @@
 'use client';
 
-import { ArrowRight, GitBranch, Network, Plus, Search, Target, Trash2, Unlink, Zap } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { ArrowRight, GitBranch, Network, Plus, Search, Target, Trash2, Zap } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
 import { useOrganizationProjects } from '@/hooks/queries/useProject';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
 import { useCreateRelationship, useDeleteRelationship, useRequirementTree } from '@/hooks/queries/useRequirementRelationships';
@@ -37,10 +38,17 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+    
+    // Tree View selection state
+    const [selectedTreeRequirement, setSelectedTreeRequirement] = useState<RequirementWithDocuments | null>(null);
+    
+    // Sidebar state for requirement analysis (same as GlideEditableTable)
+    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
 
     // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
-    const deleteRelationshipMutation = useDeleteRelationship();
+    const _deleteRelationshipMutation = useDeleteRelationship();
 
     // Fetch organization projects
     const { data: projects, isLoading: projectsLoading } = useOrganizationProjects(orgId);
@@ -50,8 +58,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
     // Fetch requirement tree for hierarchy visualization
     const {
-        data: requirementTree,
-        isLoading: treeLoading,
+        data: _requirementTree,
+        isLoading: _treeLoading,
         refetch: _refetchTree,
     } = useRequirementTree(selectedProject);
 
@@ -62,13 +70,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     ) as { data: RequirementWithDocuments[] | undefined; isLoading: boolean };
 
     // Filter requirements based on search term
-    const filteredRequirements =
-        requirements?.filter(
+    const filteredRequirements = useMemo(() => {
+        return requirements?.filter(
             (req) =>
                 req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 req.external_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 req.description?.toLowerCase().includes(searchTerm.toLowerCase()),
         ) || [];
+    }, [requirements, searchTerm]);
 
     // Get available children (excluding the selected parent to prevent cycles)
     const availableChildren = filteredRequirements.filter(
@@ -94,6 +103,47 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedParent('');
         setSelectedChildren([]);
     }, []);
+    
+    // Tree View handlers - similar to GlideEditableTable functionality
+    const handleTreeRequirementSelect = useCallback((requirement: RequirementWithDocuments) => {
+        setSelectedTreeRequirement(requirement);
+    }, []);
+
+    const handleTreeExpand = useCallback(() => {
+        if (selectedTreeRequirement?.id) {
+            console.log('Opening sidebar for requirement ID:', selectedTreeRequirement.id);
+            setSelectedRequirementId(selectedTreeRequirement.id);
+            setIsAiSidebarOpen(true);
+        }
+    }, [selectedTreeRequirement]);
+
+    const handleTreeTrace = useCallback(() => {
+        if (selectedTreeRequirement?.id && orgId && selectedProject) {
+            const requirementSlug = selectedTreeRequirement.id;
+            const traceUrl = `/org/${orgId}/project/${selectedProject}/requirements/${requirementSlug}/trace`;
+
+            console.log('Navigating to trace page:', {
+                requirementId: selectedTreeRequirement.id,
+                orgId,
+                projectId: selectedProject,
+                traceUrl,
+            });
+
+            router.push(traceUrl);
+        } else {
+            console.warn('Missing required parameters for trace navigation:', {
+                hasRequirement: !!selectedTreeRequirement,
+                hasId: !!selectedTreeRequirement?.id,
+                orgId,
+                selectedProject,
+            });
+        }
+    }, [selectedTreeRequirement, orgId, selectedProject, router]);
+
+    // For AI Sidebar - similar to GlideEditableTable
+    const selectedRequirement = useMemo(() => {
+        return filteredRequirements.find((r) => r.id === selectedRequirementId) || null;
+    }, [filteredRequirements, selectedRequirementId]);
 
     const createParentChildRelationship = useCallback(async () => {
         if (!selectedParent || selectedChildren.length === 0) return;
@@ -140,53 +190,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         }
     }, [selectedParent, selectedChildren, createRelationshipMutation]);
 
-    // Handle deleting a relationship
-    const handleDeleteRelationship = useCallback(
-        async (node: {
-            requirement_id: string;
-            title: string;
-            parent_id: string | null;
-        }) => {
-            console.log('Delete button clicked - Node data:', node);
-            console.log('Parent ID:', node.parent_id);
-            console.log('Requirement ID:', node.requirement_id);
-
-            if (!node.parent_id || !node.requirement_id) {
-                alert('Cannot delete: Invalid relationship data');
-                return;
-            }
-
-            const confirmDelete = confirm(
-                `Are you sure you want to disconnect "${node.title}" from its parent?\n\n` +
-                    `⚠️  This will break the hierarchy connection and make it an independent node.\n` +
-                    `📍 The node itself will NOT be deleted.`,
-            );
-
-            if (!confirmDelete) return;
-
-            const deleteRequest = {
-                ancestorId: node.parent_id,
-                descendantId: node.requirement_id,
-            };
-
-            console.log('Sending delete request:', deleteRequest);
-
-            try {
-                await deleteRelationshipMutation.mutateAsync(deleteRequest);
-
-                alert('Connection successfully disconnected! 🔗💥');
-
-                // Tree will automatically refetch due to cache invalidation
-            } catch (error) {
-                console.error('Failed to delete relationship:', error);
-                alert(
-                    `Failed to delete relationship: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                );
-            }
-        },
-        [deleteRelationshipMutation],
-    );
-
     return (
         <div className="flex h-full w-full flex-col p-4">
             <Tabs defaultValue="hierarchy" className="flex h-full flex-col gap-4">
@@ -200,6 +203,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             setSelectedParent('');
                             setSelectedChildren([]);
                             setSearchTerm('');
+                            setSelectedTreeRequirement(null); // Clear tree selection
                             router.push(`/org/${newOrgId}/traceability`);
                         }}
                         disabled={orgsLoading}
@@ -217,7 +221,10 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     </Select>
 
                     {/* Project Selector */}
-                    <Select value={selectedProject} onValueChange={setSelectedProject} disabled={projectsLoading}>
+                    <Select value={selectedProject} onValueChange={(projectId) => {
+                        setSelectedProject(projectId);
+                        setSelectedTreeRequirement(null); // Clear tree selection when project changes
+                    }} disabled={projectsLoading}>
                         <SelectTrigger className="w-72">
                             <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select Project'} />
                         </SelectTrigger>
@@ -436,67 +443,84 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         <TabsContent value="matrix" className="flex-1">
                             <Card className="h-full">
                                 <CardHeader className="py-4">
-                                    <CardTitle className="text-lg font-bold">Requirements Hierarchy Tree</CardTitle>
+                                    <CardTitle className="text-lg font-bold">Requirements Tree View</CardTitle>
+                                    <CardDescription>
+                                        Click on any requirement to select it and access Expand/Trace actions
+                                    </CardDescription>
                                 </CardHeader>
-                                <CardContent>
-                                    {treeLoading ? (
+                                <CardContent className="space-y-4">
+                                    {requirementsLoading ? (
                                         <div className="flex items-center justify-center py-12 text-muted-foreground">
-                                            Loading hierarchy...
+                                            Loading requirements...
                                         </div>
-                                    ) : requirementTree && requirementTree.length > 0 ? (
+                                    ) : filteredRequirements && filteredRequirements.length > 0 ? (
                                         <div className="space-y-2">
-                                            {requirementTree
-                                                .filter((node) => node.has_children || node.depth > 0)
-                                                .sort((a, b) => (a.path || '').localeCompare(b.path || ''))
-                                                .map((node, index) => (
-                                                    <div
-                                                        key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                        className="flex items-center gap-3 p-3 rounded-md border"
-                                                        style={{ marginLeft: `${node.depth * 24}px` }}
-                                                    >
-                                                        {/* Depth Indicator */}
-                                                        {node.depth > 0 && (
-                                                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                                                        )}
-                                                        {/* Node badges */}
-                                                        <Badge variant="outline" className="text-xs font-mono">
-                                                            {(() => {
-                                                                const req = requirements?.find((r) => r.id === node.requirement_id);
-                                                                const extId = req?.external_id;
-                                                                const nodeTitle = node.title;
-                                                                const fallback = node.requirement_id?.slice(0, 8);
-                                                                return extId || nodeTitle || fallback || 'NO-ID';
-                                                            })()}
-                                                        </Badge>
-                                                        <Badge variant="secondary" className="text-xs">
-                                                            {node.depth === 0 ? 'PARENT' : `CHILD-L${node.depth}`}
-                                                        </Badge>
-                                                        <div className="flex-1 min-w-0">
-                                                            {(() => {
-                                                                const requirement = requirements?.find((r) => r.id === node.requirement_id);
-                                                                const requirementId = requirement?.external_id || node.requirement_id?.slice(0, 8);
-                                                                const description = requirement?.description;
-                                                                return (
-                                                                    <div>
-                                                                        <h3 className="font-medium text-sm">{requirementId}</h3>
-                                                                        {description && (
-                                                                            <p className="text-xs text-muted-foreground truncate">{description}</p>
-                                                                        )}
-                                                                    </div>
-                                                                );
-                                                            })()}
+                                            {filteredRequirements.map((requirement) => (
+                                                <div
+                                                    key={requirement.id}
+                                                    className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                                                        selectedTreeRequirement?.id === requirement.id 
+                                                            ? 'border-primary bg-muted' 
+                                                            : 'border-border'
+                                                    }`}
+                                                    onClick={() => handleTreeRequirementSelect(requirement)}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <Badge variant="outline" className="text-xs font-mono">
+                                                                    {requirement.external_id || requirement.id.slice(0, 8)}
+                                                                </Badge>
+                                                                <h3 className="font-medium text-sm">
+                                                                    {requirement.name}
+                                                                </h3>
+                                                                {requirement.documents && (
+                                                                    <Badge variant="outline" className="text-xs">
+                                                                        📄 {requirement.documents.name}
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            {requirement.description && (
+                                                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                    {requirement.description}
+                                                                </p>
+                                                            )}
                                                         </div>
-                                                        {node.depth > 0 && (
-                                                            <Button variant="outline" size="icon" onClick={() => handleDeleteRelationship(node)} title="Disconnect parent">
-                                                                <Unlink className="h-4 w-4" />
-                                                            </Button>
+                                                        {selectedTreeRequirement?.id === requirement.id && (
+                                                            <div className="flex items-center gap-2 ml-4">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleTreeTrace();
+                                                                    }}
+                                                                    className="text-xs h-8 px-3"
+                                                                >
+                                                                    <Target className="h-4 w-4 mr-1" />
+                                                                    Trace
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleTreeExpand();
+                                                                    }}
+                                                                    className="text-xs h-8 px-3"
+                                                                >
+                                                                    <Search className="h-4 w-4 mr-1" />
+                                                                    Expand
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                     </div>
-                                                ))}
+                                                </div>
+                                            ))}
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 text-muted-foreground">
-                                            No hierarchy found. Create some relationships to see the tree.
+                                            {searchTerm ? 'No requirements match your search' : 'No requirements found'}
                                         </div>
                                     )}
                                 </CardContent>
@@ -531,6 +555,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     </div>
                 )}
             </Tabs>
+            
+            {/* AI Sidebar - similar to GlideEditableTable */}
+            <RequirementAnalysisSidebar
+                requirement={selectedRequirement}
+                open={isAiSidebarOpen}
+                onOpenChange={setIsAiSidebarOpen}
+                columns={[]} // Can be empty array or retrieve from context if needed
+            />
         </div>
     );
 }
