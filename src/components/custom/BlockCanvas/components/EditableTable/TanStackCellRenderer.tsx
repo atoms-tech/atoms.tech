@@ -311,15 +311,13 @@ const MultiSelectCellWrapper = memo(
 );
 MultiSelectCellWrapper.displayName = 'MultiSelectCellWrapper';
 
-interface TanStackCellRendererProps<
-    T extends Record<string, CellValue> & { id: string },
-> {
+interface TanStackCellRendererProps<T extends BaseRow> {
     cell: Cell<T, unknown>;
     isEditing: boolean;
     onSave: (value: CellValue) => void;
     onBlur?: () => void;
     isSelected?: boolean;
-    value: CellValue;
+    value: CellValue | undefined;
 }
 
 // Main cell renderer component for TanStack Table
@@ -388,7 +386,7 @@ function TanStackCellRendererComponent<T extends BaseRow>({
     // Simplified memoized cell content with fewer dependencies
     const cellContent = useMemo(() => {
         if (!shouldShowEditComponent) {
-            return <DisplayCell value={value} />;
+            return <DisplayCell value={(value ?? null) as CellValue} />;
         }
 
         switch (column.type) {
