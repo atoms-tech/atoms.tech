@@ -345,7 +345,7 @@ export default function UserDashboard() {
                         variants={containerVariants}
                         initial={false}
                         animate="show"
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr gap-6"
                     >
                         {filteredOrganizations.length > 0 ? (
                             filteredOrganizations.map((org: Organization) => (
@@ -379,7 +379,7 @@ export default function UserDashboard() {
                                                             strokeWidth: 2,
                                                         }}
                                                     />
-                                                    <CardTitle className="text-lg font-semibold">
+                                                    <CardTitle className="text-lg font-semibold line-clamp-2">
                                                         {org.name}
                                                     </CardTitle>
                                                 </div>
@@ -390,12 +390,12 @@ export default function UserDashboard() {
                                                     <Users className="h-5 w-5 text-green-500" />
                                                 )}
                                             </div>
-                                            <CardDescription className="text-sm text-muted-foreground">
+                                            <CardDescription className="text-sm text-muted-foreground line-clamp-2">
                                                 {org.slug}
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent className="pb-3">
-                                            <p className="text-sm">
+                                            <p className="text-sm line-clamp-3">
                                                 {org.description ||
                                                     'No description provided'}
                                             </p>

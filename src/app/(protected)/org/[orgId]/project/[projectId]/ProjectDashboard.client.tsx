@@ -401,7 +401,7 @@ export default function ProjectPage() {
                     </div>
                     <div className="space-y-4">
                         {/* Documents Grid View */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 auto-rows-fr">
                             {filteredDocuments?.map((doc) => (
                                 <div
                                     key={doc.id}
@@ -509,7 +509,7 @@ export default function ProjectPage() {
                                         {/* Document Info */}
                                         <div className="flex-1 flex flex-col">
                                             {doc.description && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-tight flex-1">
+                                                <p className="text-xs text-muted-foreground line-clamp-3 mb-2">
                                                     {doc.description}
                                                 </p>
                                             )}

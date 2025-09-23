@@ -514,7 +514,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             ))}
                         </div>
                     ) : props.projects && props.projects.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
                             {props.projects
                                 .filter((project) =>
                                     project.name
@@ -657,7 +657,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
                                             {isEditingProject !== project.id && (
                                                 <CardContent>
-                                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                                    <p className="text-sm text-muted-foreground line-clamp-3">
                                                         {project.description ||
                                                             'No description provided'}
                                                     </p>

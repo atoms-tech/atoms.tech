@@ -366,10 +366,10 @@ export default function ExternalDocsPage({
                                                 >
                                                     {file.name}
                                                 </h3>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-gray-400 truncate">
                                                     {file.type}
                                                 </p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-xs text-gray-400 truncate">
                                                     {file.size
                                                         ? `${(file.size / 1024).toFixed(2)} KB`
                                                         : 'Unknown size'}
