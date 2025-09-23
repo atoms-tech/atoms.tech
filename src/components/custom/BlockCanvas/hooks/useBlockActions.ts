@@ -304,7 +304,20 @@ export const useBlockActions = ({
             console.log('Local state updated with new block');
 
             // If it's a table block, create columns based on base properties
-            if (type === BlockType.table) {
+            // Skip default columns for generic tables (genericTable/textTable/rows)
+            const isGenericKind =
+                type === BlockType.table &&
+                typeof content === 'object' &&
+                content !== null &&
+                'tableKind' in (content as Record<string, unknown>) &&
+                ['genericTable', 'textTable', 'rows'].includes(
+                    String(
+                        (content as Record<string, unknown> & { tableKind?: string })
+                            .tableKind || '',
+                    ),
+                );
+
+            if (type === BlockType.table && !isGenericKind) {
                 console.log('Creating columns for table block', {
                     blockId: createdBlock.id,
                 });

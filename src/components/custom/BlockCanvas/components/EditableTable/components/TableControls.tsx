@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { AddColumnDialog } from '@/components/custom/BlockCanvas/components/EditableTable/components/AddColumnDialog';
 import {
+    BaseRow,
     EditableColumn,
     EditableColumnType,
     PropertyConfig,
@@ -17,7 +18,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 
-export interface TableControlsProps<T = unknown> {
+export interface TableControlsProps<T extends BaseRow = BaseRow> {
     showFilter: boolean;
     filterComponent?: React.ReactNode;
     onNewRow: () => void;
@@ -39,7 +40,7 @@ export interface TableControlsProps<T = unknown> {
     columns?: EditableColumn<T>[];
 }
 
-export function TableControls<T extends Record<string, unknown>>({
+export function TableControls<T extends BaseRow>({
     showFilter,
     filterComponent,
     onNewRow,

@@ -20,6 +20,8 @@ export interface RequirementMetadata {
 export interface BlockTableMetadata {
     columns: ColumnMetadata[];
     requirements: RequirementMetadata[];
+    // Optional alternate key for generic tables
+    rows?: RequirementMetadata[];
 }
 
 export const useBlockMetadataActions = () => {
@@ -67,12 +69,22 @@ export const useBlockMetadataActions = () => {
                     : {};
 
                 const currentContent: BlockTableMetadata = {
-                    columns: Array.isArray(safeContent.columns)
-                        ? safeContent.columns
+                    columns: Array.isArray(
+                        (safeContent as Partial<BlockTableMetadata>).columns,
+                    )
+                        ? ((safeContent as Partial<BlockTableMetadata>)
+                              .columns as ColumnMetadata[])
                         : [],
-                    requirements: Array.isArray(safeContent.requirements)
-                        ? safeContent.requirements
+                    requirements: Array.isArray(
+                        (safeContent as Partial<BlockTableMetadata>).requirements,
+                    )
+                        ? ((safeContent as Partial<BlockTableMetadata>)
+                              .requirements as RequirementMetadata[])
                         : [],
+                    rows: Array.isArray((safeContent as Partial<BlockTableMetadata>).rows)
+                        ? ((safeContent as Partial<BlockTableMetadata>)
+                              .rows as RequirementMetadata[])
+                        : undefined,
                 };
 
                 const updatedContent: BlockTableMetadata = {

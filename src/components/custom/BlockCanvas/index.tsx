@@ -242,12 +242,14 @@ export function BlockCanvas({
     // Currently doesnt pass info, is getting hyjacked somewhere... Needs invesigation/rework.
     const createTableWithLayout = useCallback(
         async (layout: 'blank' | 'requirements_default', name: string) => {
+            // We always create type='table' (DB constraint), and encode generic/requirements
+            // via content.tableKind. 'blank' → genericTable, 'requirements_default' → requirements.
             const content: Json = {
+                tableKind: layout === 'blank' ? 'genericTable' : 'requirements',
+                columns: [],
                 requirements: [],
-                tableLayout: layout,
+                rows: [],
             } as unknown as Json;
-            // Pass the name along with content by immediately updating the created block's name
-            // The create API uses a default name; we'll override post-create via handleUpdateBlock
             const created = await handleAddBlock(BlockType.table, content);
             if (created?.id && name) {
                 await handleUpdateBlock(created.id, { name });
@@ -398,6 +400,14 @@ export function BlockCanvas({
                         variant="ghost"
                         size="icon"
                         onClick={() => setIsAddTableOpen(true)}
+                    >
+                        <Table className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => createTableWithLayout('blank', 'Untitled Table')}
+                        title="Add Generic Table"
                     >
                         <Table className="h-4 w-4" />
                     </Button>

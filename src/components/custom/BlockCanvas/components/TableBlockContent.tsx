@@ -13,6 +13,7 @@ import {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     PropertyConfig,
     RowDetailPanelRenderer,
+    TableDataAdapter,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { BlockTableMetadata } from '@/components/custom/BlockCanvas/types';
@@ -37,6 +38,8 @@ interface TableBlockContentProps {
     blockId?: string;
     tableMetadata?: BlockTableMetadata | null;
     rowDetailPanel?: RowDetailPanelRenderer<DynamicRequirement>;
+    dataAdapter?: TableDataAdapter<DynamicRequirement>;
+    rowMetadataKey?: 'requirements' | 'rows';
 }
 
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
@@ -54,6 +57,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         blockId,
         tableMetadata,
         rowDetailPanel,
+        dataAdapter,
+        rowMetadataKey,
     }) => {
         // Get global setting from doc store as fallback
         const {
@@ -123,6 +128,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 tableMetadata,
                 onDeleteColumn,
                 rowDetailPanel: EffectiveRowDetailPanel,
+                dataAdapter,
+                rowMetadataKey,
             }),
             [
                 dynamicRequirements,
@@ -136,6 +143,8 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 tableMetadata,
                 onDeleteColumn,
                 EffectiveRowDetailPanel,
+                dataAdapter,
+                rowMetadataKey,
             ],
         );
 

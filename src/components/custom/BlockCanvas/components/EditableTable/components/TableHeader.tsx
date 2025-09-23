@@ -1,11 +1,14 @@
 import { CaretSortIcon } from '@radix-ui/react-icons';
 
-import { EditableColumn } from '@/components/custom/BlockCanvas/components/EditableTable/types';
+import {
+    BaseRow,
+    EditableColumn,
+} from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Button } from '@/components/ui/button';
 import { TableHead, TableRow, TableHeader as UITableHeader } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface TableHeaderProps<T> {
+interface TableHeaderProps<T extends BaseRow> {
     columns: EditableColumn<T>[];
     sortKey: keyof T | null;
     sortOrder: 'asc' | 'desc';
@@ -13,7 +16,7 @@ interface TableHeaderProps<T> {
     isEditMode: boolean;
 }
 
-export function TableHeader<T>({
+export function TableHeader<T extends BaseRow>({
     columns,
     // sortKey and sortOrder are intentionally not used
     onSort,

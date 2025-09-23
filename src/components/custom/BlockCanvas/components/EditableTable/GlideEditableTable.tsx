@@ -92,6 +92,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         //setDeleteConfirmOpen,
         isLoading = false,
         blockId,
+        dataAdapter,
+        onDelete,
+        rowMetadataKey,
+        rowDetailPanel,
         //tableMetadata, // Unneeded: metadata is being used in parent to pass in settings, and saving uses local array to track.
     } = props;
 
@@ -124,40 +128,33 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     // Wrapper persistence functions to support adapter or fallback props
     const saveRow = useCallback(
         async (item: T, isNew: boolean) => {
-            if (props.dataAdapter) {
-                await props.dataAdapter.saveRow(
-                    item,
-                    isNew,
-                    blockId ? { blockId } : undefined,
-                );
+            if (dataAdapter) {
+                await dataAdapter.saveRow(item, isNew, blockId ? { blockId } : undefined);
             } else {
                 await onSave?.(item, isNew, userId, userName);
             }
         },
-        [props.dataAdapter, blockId, onSave, userId, userName],
+        [dataAdapter, blockId, onSave, userId, userName],
     );
 
     const deleteRow = useCallback(
         async (item: T) => {
-            if (props.dataAdapter?.deleteRow) {
-                await props.dataAdapter.deleteRow(
-                    item,
-                    blockId ? { blockId } : undefined,
-                );
+            if (dataAdapter?.deleteRow) {
+                await dataAdapter.deleteRow(item, blockId ? { blockId } : undefined);
             } else {
-                await props.onDelete?.(item);
+                await onDelete?.(item);
             }
         },
-        [props.dataAdapter, blockId, props.onDelete],
+        [dataAdapter, blockId, onDelete],
     );
 
     const refreshAfterSave = useCallback(async () => {
-        if (props.dataAdapter?.postSaveRefresh) {
-            await props.dataAdapter.postSaveRefresh();
+        if (dataAdapter?.postSaveRefresh) {
+            await dataAdapter.postSaveRefresh();
         } else {
             await onPostSave?.();
         }
-    }, [props.dataAdapter, onPostSave]);
+    }, [dataAdapter, onPostSave]);
 
     //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
@@ -518,7 +515,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         try {
             const metadataToSave: Partial<BlockTableMetadata> = {
                 columns: columnMetadata,
-                requirements: rowMetadata,
+                // Write to either requirements or rows based on prop
+                ...(rowMetadataKey === 'rows'
+                    ? { rows: rowMetadata }
+                    : { requirements: rowMetadata }),
             };
 
             await updateBlockMetadata(blockId, metadataToSave);
@@ -532,7 +532,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 err,
             );
         }
-    }, [blockId, columns, updateBlockMetadata]);
+    }, [blockId, columns, updateBlockMetadata, rowMetadataKey]);
 
     // References to latest version of save methods. Fixes stale reference when editing data on a newly added column.
     const handleSaveAllRef = useRef(handleSaveAll);
@@ -871,15 +871,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                     const options = columnOptions;
 
-                    console.debug('[getCellContent] select cell', {
-                        header: column.header,
-                        accessor: String(column.accessor),
-                        rowIndex: row,
-                        rowId: rowData?.id,
-                        rawValue: value,
-                        value: stringValue,
-                        options,
-                    });
+                    // console.debug('[getCellContent] select cell', {
+                    //     header: column.header,
+                    //     accessor: String(column.accessor),
+                    //     rowIndex: row,
+                    //     rowId: rowData?.id,
+                    //     rawValue: value,
+                    //     value: stringValue,
+                    //     options,
+                    // });
 
                     return {
                         kind: GridCellKind.Custom,
@@ -1135,7 +1135,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             } catch {}
             gridRef.current?.focus();
         },
-        [localData, localColumns, debouncedSave, addToHistory, sortedData],
+        [localColumns, debouncedSave, addToHistory, sortedData, appendPropertyOptions],
     );
 
     // Add new row. Flush pending edits first to prevent data loss.
@@ -1177,7 +1177,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         } catch (e) {
             console.error('[GlideEditableTable] Failed to append row:', e);
         }
-    }, [columns, localData, saveRow, refreshAfterSave]);
+    }, [columns, localData, saveRow, refreshAfterSave, addToHistory]);
 
     const handleRowMoved = useCallback(
         (from: number, to: number) => {
@@ -1653,7 +1653,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         setTimeout(() => {
             isUndoingRef.current = false;
         }, 100);
-    }, [historyIndex, debouncedSave, sortedData, addToHistory]);
+    }, [historyIndex, debouncedSave]);
 
     const performRedo = useCallback(() => {
         if (historyIndex >= historyRef.current.length - 1) {
@@ -1745,7 +1745,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         setTimeout(() => {
             isUndoingRef.current = false;
         }, 100);
-    }, [historyIndex, debouncedSave, addToHistory, sortedData]);
+    }, [historyIndex, debouncedSave]);
     // Save hotkey, temp fix for dev. 'Ctrl' + 's'
     // now also handles undo/redo
     const handleKeyDown = useCallback(
@@ -2736,16 +2736,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }, 3000);
             }
         },
-        [
-            isEditMode,
-            localData,
-            sortedData,
-            onSave,
-            userId,
-            userName,
-            onPostSave,
-            saveTableMetadata,
-        ],
+        [isEditMode, sortedData, onPostSave, saveTableMetadata, saveRow, localData],
     );
 
     // paste event listener setup

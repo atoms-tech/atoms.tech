@@ -31,7 +31,13 @@ import { useDocumentStore } from '@/store/document.store';
 import { Requirement } from '@/types/base/requirements.types';
 
 import { AddColumnDialog } from './EditableTable/components/AddColumnDialog';
-import { EditableColumnType, PropertyConfig } from './EditableTable/types';
+import {
+    BaseRow,
+    EditableColumn,
+    EditableColumnType,
+    PropertyConfig,
+} from './EditableTable/types';
+import { GenericTableBlockContent } from './GenericTableBlockContent';
 import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
 
@@ -240,7 +246,14 @@ export const TableBlock: React.FC<BlockProps> = ({
     }, [block.columns]);
 
     // Effective columns used by UI (optimistic first, then server)
-    const effectiveColumnsRaw = optimisticColumns ?? block.columns ?? [];
+    const effectiveColumnsRaw = useMemo(() => {
+        return optimisticColumns ?? block.columns ?? [];
+    }, [optimisticColumns, block.columns]);
+
+    // Read tableKind once to decide pipeline
+    const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
+    const isGenericTable =
+        tableKind === 'genericTable' || tableKind === 'textTable' || tableKind === 'rows';
 
     // Grab column/requirement metadata from block level.
     const tableContentMetadata: BlockTableMetadata | null = useMemo(() => {
@@ -319,6 +332,32 @@ export const TableBlock: React.FC<BlockProps> = ({
         ),
     });
 
+    const handleSaveRequirement = useCallback(
+        async (
+            dynamicReq: DynamicRequirement,
+            isNew: boolean,
+            userId?: string,
+            userName?: string,
+        ) => {
+            const foundId = userId ?? userProfile?.id;
+            const foundName = userName ?? userProfile?.full_name;
+            if (!foundId) return;
+            await saveRequirement(dynamicReq, isNew, foundId, foundName || '');
+        },
+        [saveRequirement, userProfile?.id, userProfile?.full_name],
+    );
+
+    const handleDeleteRequirement = useCallback(
+        async (dynamicReq: DynamicRequirement) => {
+            if (!userProfile?.id) return;
+            await deleteRequirement(dynamicReq, userProfile.id);
+            setLocalRequirements((prev) =>
+                prev.filter((req) => req.id !== dynamicReq.id),
+            );
+        },
+        [deleteRequirement, userProfile?.id],
+    );
+
     const handleNameChange = useCallback(
         (newName: string) => {
             setBlockName(newName);
@@ -357,13 +396,13 @@ export const TableBlock: React.FC<BlockProps> = ({
                     isSortable: true,
                     options: _property.options?.values,
                 };
-                console.debug('[TableBlock] column mapped', {
-                    id: col.id,
-                    header: propertyKey,
-                    property_type: _property.property_type,
-                    mappedType: columnDef.type,
-                    options: _property.options?.values,
-                });
+                // console.debug('[TableBlock] column mapped', {
+                //     id: col.id,
+                //     header: propertyKey,
+                //     property_type: _property.property_type,
+                //     mappedType: columnDef.type,
+                //     options: _property.options?.values,
+                // });
                 return columnDef;
             })
             .sort((a, b) => a.position - b.position);
@@ -391,8 +430,6 @@ export const TableBlock: React.FC<BlockProps> = ({
                 };
             })
             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-        //console.debug('[TableBlock] Requirments with metadata: ', reqsWithMetadata);
 
         return reqsWithMetadata;
     }, [getDynamicRequirements, tableContentMetadata?.requirements]);
@@ -456,16 +493,9 @@ export const TableBlock: React.FC<BlockProps> = ({
                     userProfile.id,
                 );
                 if (result?.column) {
-                    const enrichedCol = {
-                        ...(result.column as Column),
-                        property: (result.property as unknown as Property) ?? undefined,
-                    } as Column;
                     setOptimisticColumns((prev) => {
                         const base = prev ?? (block.columns || []);
-                        const byId = new Map<string, Column>();
-                        for (const c of base) byId.set(c.id, c);
-                        byId.set(enrichedCol.id, enrichedCol);
-                        return Array.from(byId.values());
+                        return [...base, result.column as Column];
                     });
                 }
                 await refreshRequirements();
@@ -482,7 +512,6 @@ export const TableBlock: React.FC<BlockProps> = ({
         ],
     );
 
-    // Memoize handler to pass down to table level.
     const handleDeleteColumn = useCallback(
         async (columnId: string) => {
             try {
@@ -495,52 +524,6 @@ export const TableBlock: React.FC<BlockProps> = ({
             }
         },
         [block.id, deleteColumn],
-    );
-
-    // Memoize handleSaveRequirement
-    const handleSaveRequirement = useCallback(
-        async (
-            dynamicReq: DynamicRequirement,
-            isNew: boolean,
-            userId?: string,
-            userName?: string,
-        ) => {
-            // Retrieve user info from args or curr profile. Allows debouncing saves.
-            const foundId = userId ?? userProfile?.id;
-            const foundName = userName ?? userProfile?.full_name;
-
-            console.log('🎯 STEP 4: handleSaveRequirement called in TableBlock', {
-                isNew,
-                dynamicReq,
-                foundId,
-            });
-
-            if (!foundId) {
-                console.log('❌ STEP 4: No userProfile.id or userId, returning early');
-                return;
-            }
-
-            console.log('🎯 STEP 4: Calling saveRequirement from useRequirementActions');
-            await saveRequirement(dynamicReq, isNew, foundId, foundName || '');
-            console.log('✅ STEP 4: saveRequirement completed successfully');
-        },
-        [saveRequirement, userProfile?.id, userProfile?.full_name],
-    );
-
-    // Memoize handleDeleteRequirement
-    const handleDeleteRequirement = useCallback(
-        async (dynamicReq: DynamicRequirement) => {
-            if (!userProfile?.id) return;
-            await deleteRequirement(dynamicReq, userProfile.id);
-
-            // Immediately remove from local state to prevent reappear
-            setLocalRequirements((prev) =>
-                prev.filter((req) => req.id !== dynamicReq.id),
-            );
-
-            //await refreshRequirements(); // Temp fix for better syncing. Should push down to table level or track deleted reqs at block level later.
-        },
-        [deleteRequirement, userProfile?.id],
     );
 
     const handleBlockDelete = useCallback(() => {
@@ -565,18 +548,53 @@ export const TableBlock: React.FC<BlockProps> = ({
                     documentId={params.documentId as string}
                 />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
-                    {!effectiveColumnsRaw ||
-                    !Array.isArray(effectiveColumnsRaw) ||
-                    effectiveColumnsRaw.length === 0 ? (
-                        <>
-                            <TableBlockLoadingState
-                                isLoading={true}
-                                isError={false}
-                                error={null}
-                            />
-                        </>
+                    {isGenericTable ? (
+                        <GenericTableBlockContent
+                            blockId={block.id}
+                            documentId={block.document_id}
+                            columns={
+                                effectiveColumnsRaw
+                                    .filter((col) => col.property)
+                                    .map((col, index) => {
+                                        const _property = col.property as Property;
+                                        const propertyKey = _property.name;
+                                        const metadata = (
+                                            tableContentMetadata?.columns ?? []
+                                        ).find((meta) => meta.columnId === col.id);
+                                        return {
+                                            id: col.id,
+                                            header: propertyKey,
+                                            accessor: propertyKey as keyof BaseRow,
+                                            type: propertyTypeToColumnType(
+                                                _property.property_type,
+                                            ),
+                                            width: metadata?.width ?? col.width ?? 150,
+                                            position:
+                                                metadata?.position ??
+                                                col.position ??
+                                                index,
+                                            required: false,
+                                            isSortable: true,
+                                            options: _property.options?.values,
+                                        } as unknown as EditableColumn<BaseRow>;
+                                    })
+                                    .sort(
+                                        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                                    ) as unknown as EditableColumn<BaseRow>[]
+                            } // ok when empty
+                            isEditMode={isEditMode}
+                            alwaysShowAddRow={isEditMode}
+                            tableMetadata={tableContentMetadata}
+                        />
+                    ) : !effectiveColumnsRaw ||
+                      !Array.isArray(effectiveColumnsRaw) ||
+                      effectiveColumnsRaw.length === 0 ? (
+                        <TableBlockLoadingState
+                            isLoading={true}
+                            isError={false}
+                            error={null}
+                        />
                     ) : (
-                        // Must be inlined, passing as an object causes remount on data change.
                         <TableBlockContent
                             dynamicRequirements={dynamicRequirements}
                             columns={columns}

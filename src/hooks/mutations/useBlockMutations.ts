@@ -34,7 +34,8 @@ export function useCreateBlock() {
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
                 .insert({
-                    content: input.content,
+                    content:
+                        (input as { content?: Json | null })?.content ?? ({} as Json),
                     document_id: input.document_id,
                     position: input.position,
                     type: input.type,
@@ -66,13 +67,18 @@ export function useUpdateBlock() {
             // Separate content from other fields
             const { id, content, ...otherFields } = input;
 
+            // Build update payload. Only include `content` if explicitly provided.
+            const updatePayload: Record<string, unknown> = {
+                ...otherFields,
+                updated_at: new Date().toISOString(),
+            };
+            if (content !== undefined) {
+                updatePayload.content = (content as Json) ?? null;
+            }
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
-                .update({
-                    ...otherFields,
-                    content: content || null, // Ensure content is properly handled as JSON
-                    updated_at: new Date().toISOString(),
-                })
+                .update(updatePayload)
                 .eq('id', id)
                 .select()
                 .single();
