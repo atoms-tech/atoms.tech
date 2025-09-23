@@ -9,10 +9,11 @@ import {
 } from '@/hooks/mutations/useRequirementMutations';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
-import { Json } from '@/types/base/database.types';
+import { Json, TablesInsert, TablesUpdate } from '@/types/base/database.types';
 import {
     ERequirementPriority,
     ERequirementStatus,
+    RequirementPriority,
     RequirementStatus,
     RequirementFormat as _RequirementFormat,
     RequirementLevel as _RequirementLevel,
@@ -91,6 +92,15 @@ export const useRequirementActions = ({
         }
     }, [blockId, documentId, setLocalRequirements]);
 
+    // Natural field keys present as top-level DB columns
+    const NATURAL_FIELD_KEYS = new Set([
+        'name',
+        'description',
+        'external_id',
+        'status',
+        'priority',
+    ]);
+
     // Helper function to create properties object from dynamic requirement
     const createPropertiesObjectFromDynamicReq = async (
         dynamicReq: DynamicRequirement,
@@ -114,12 +124,10 @@ export const useRequirementActions = ({
             const lowerCaseName = prop.name.toLowerCase();
 
             // Check if this property maps to a natural field
-            if (
-                ['name', 'description', 'external_id', 'status', 'priority'].includes(
-                    lowerCaseName,
-                )
-            ) {
+            if (NATURAL_FIELD_KEYS.has(lowerCaseName)) {
                 naturalFields[lowerCaseName] = typeof value === 'string' ? value : '';
+                // Do not duplicate natural fields inside JSON properties; DB owns these columns
+                return;
             }
 
             if (column) {
@@ -188,6 +196,38 @@ export const useRequirementActions = ({
                     });
                 }
 
+                // Overlay DB top-level fields for natural properties so UI shows true values
+                if (properties && properties.length > 0) {
+                    properties.forEach((prop) => {
+                        const keyLc = prop.name.toLowerCase();
+                        if (!NATURAL_FIELD_KEYS.has(keyLc)) return;
+                        switch (keyLc) {
+                            case 'name':
+                                dynamicReq[prop.name] = (req.name ??
+                                    '') as unknown as CellValue;
+                                break;
+                            case 'description':
+                                dynamicReq[prop.name] = (req.description ??
+                                    '') as unknown as CellValue;
+                                break;
+                            case 'external_id':
+                                dynamicReq[prop.name] = (req.external_id ??
+                                    '') as unknown as CellValue;
+                                break;
+                            case 'status':
+                                // Use raw DB enum value to match select option values
+                                dynamicReq[prop.name] =
+                                    req.status as unknown as string as unknown as CellValue;
+                                break;
+                            case 'priority':
+                                // Use raw DB enum value to match select option values
+                                dynamicReq[prop.name] =
+                                    req.priority as unknown as string as unknown as CellValue;
+                                break;
+                        }
+                    });
+                }
+
                 return dynamicReq;
             });
     };
@@ -233,6 +273,23 @@ export const useRequirementActions = ({
 
         // Return the mapped value if it exists, otherwise return draft as default
         return statusMap[normalizedValue] || RequirementStatus.draft;
+    };
+
+    // Helper function to convert display values back to priority enum values
+    const _parseDisplayValueToPriority = (displayValue: string): ERequirementPriority => {
+        if (!displayValue) return RequirementPriority.low as ERequirementPriority;
+
+        const normalizedValue = displayValue.toLowerCase().replace(/\s+/g, '_');
+        const priorityMap: Record<string, ERequirementPriority> = {
+            low: RequirementPriority.low as ERequirementPriority,
+            medium: RequirementPriority.medium as ERequirementPriority,
+            high: RequirementPriority.high as ERequirementPriority,
+            critical: RequirementPriority.critical as ERequirementPriority,
+        };
+        return (
+            priorityMap[normalizedValue] ||
+            (RequirementPriority.low as ERequirementPriority)
+        );
     };
 
     const getLastPosition = async (): Promise<number> => {
@@ -326,14 +383,24 @@ export const useRequirementActions = ({
                 }
             }
 
-            const requirementData = {
+            // Normalize priority if provided
+            let priorityEnum: ERequirementPriority | undefined;
+            if (naturalFields?.priority) {
+                priorityEnum = _parseDisplayValueToPriority(naturalFields.priority);
+            }
+
+            // Normalize and validate name (DB requires min length when trimmed)
+            const normalizedName = (naturalFields?.name || '').trim();
+            const safeName =
+                normalizedName.length >= 2 ? normalizedName : 'New Requirement';
+
+            const baseData = {
                 ai_analysis: analysis_history,
                 block_id: blockId,
                 document_id: documentId,
-                properties: propertiesObj as unknown as Json, // Ensure properties is treated as Json
+                properties: propertiesObj as unknown as Json, // Keep additional per-column values in JSON
                 updated_by: userId,
-                // Use natural fields from properties if they exist
-                ...(naturalFields?.name && { name: naturalFields.name }),
+                // Allow description/external_id/status/priority when provided
                 ...(naturalFields?.description && {
                     description: naturalFields.description,
                 }),
@@ -341,10 +408,8 @@ export const useRequirementActions = ({
                     external_id: naturalFields.external_id,
                 }),
                 ...(status && { status }),
-                ...(naturalFields?.priority && {
-                    priority: naturalFields.priority as ERequirementPriority,
-                }),
-            };
+                ...(priorityEnum && { priority: priorityEnum }),
+            } as Partial<Requirement>;
 
             let savedRequirement: Requirement;
             if (isNew) {
@@ -397,9 +462,9 @@ export const useRequirementActions = ({
                 }
 
                 const newRequirementData = {
-                    ...requirementData,
+                    ...baseData,
                     created_by: userId,
-                    name: naturalFields?.name || 'New Requirement', // Default name for new requirements
+                    name: safeName,
                     external_id: externalId,
                     position, // Add the position field
                     // Ensure ai_analysis is properly initialized
@@ -418,9 +483,11 @@ export const useRequirementActions = ({
                     '🎯 STEP 5d: Inserting new requirement into database:',
                     newRequirementData,
                 );
+                const insertPayload =
+                    newRequirementData as unknown as TablesInsert<'requirements'>;
                 const { data, error } = await supabase
                     .from('requirements')
-                    .insert(newRequirementData)
+                    .insert(insertPayload)
                     .select()
                     .single();
 
@@ -451,18 +518,25 @@ export const useRequirementActions = ({
             } else {
                 // For updates, only include fields that have values to avoid nullifying existing data
                 const updateData: Partial<Requirement> = {
-                    ...requirementData,
+                    ...baseData,
                     updated_at: new Date().toISOString(),
                 };
+
+                // Only update name when provided and meets constraint
+                if (naturalFields?.name && naturalFields.name.trim().length >= 2) {
+                    updateData.name = naturalFields.name.trim();
+                }
 
                 // If position is provided in the dynamic requirement, include it in the update
                 if ('position' in dynamicReq) {
                     updateData.position = dynamicReq.position as number;
                 }
 
+                const updatePayload =
+                    updateData as unknown as TablesUpdate<'requirements'>;
                 const { data, error } = await supabase
                     .from('requirements')
-                    .update(updateData)
+                    .update(updatePayload)
                     .eq('id', dynamicReq.id)
                     .select()
                     .single();

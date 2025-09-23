@@ -635,6 +635,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         });
     }, [columns]);
 
+    // Track if a manual row reorder is in progress to avoid remote overwrite
+    const isReorderingRef = useRef(false);
+
     // sync incoming database data with local state
     useEffect(() => {
         // prevent sync during active operations
@@ -665,6 +668,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     return prev;
                 }
 
+                // If user just reordered rows, avoid overwriting local order until save completes
+                if (isReorderingRef.current) {
+                    console.debug('[Data Sync] Skipping - local reordering in progress');
+                    return prev;
+                }
+
                 const needsUpdate =
                     data.length !== prev.length ||
                     !data.every((row, index) => {
@@ -675,17 +684,43 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 // Merge pending edits into incoming data to avoid overwriting user changes
                 const pendingEdits = editingDataRef.current || {};
                 const hasPendingEdits = Object.keys(pendingEdits).length > 0;
-                const merged = data.map((row) =>
+                const mergedFromServerOrder = data.map((row) =>
                     pendingEdits[row.id]
                         ? ({ ...row, ...(pendingEdits[row.id] as Partial<T>) } as T)
                         : row,
                 );
 
+                // Detect pure order change: same IDs as prev but different sequence
+                const sameIdSet = (() => {
+                    if (data.length !== prev.length) return false;
+                    const a = new Set<string>(data.map((r: any) => r.id));
+                    for (const r of prev as any[]) if (!a.has(r.id)) return false;
+                    return true;
+                })();
+
+                if (sameIdSet && (needsUpdate || hasPendingEdits)) {
+                    // Preserve local order; only update row contents from server and pending edits
+                    const incomingById = new Map<string, T>(
+                        mergedFromServerOrder.map((r: any) => [r.id as string, r]),
+                    );
+                    const mergedPreservingOrder = (prev as any[]).map((r, idx) => {
+                        const incoming = incomingById.get(r.id);
+                        // Keep the local position/order when rehydrating data
+                        return incoming
+                            ? ({ ...incoming, position: r.position } as T)
+                            : (r as T);
+                    });
+                    console.debug(
+                        '[Data Sync] Applying merged data preserving local order',
+                    );
+                    return mergedPreservingOrder;
+                }
+
                 if (needsUpdate || hasPendingEdits) {
                     console.debug(
                         '[Data Sync] Applying merged data (server + pending edits)',
                     );
-                    return merged;
+                    return mergedFromServerOrder;
                 }
 
                 console.debug('[Data Sync] No changes needed - already in sync');
@@ -1160,6 +1195,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 });
             }
 
+            // mark reordering window to avoid remote overwrite
+            isReorderingRef.current = true;
+
             setLocalData((prev) => {
                 const updated = [...prev];
                 const [moved] = updated.splice(from, 1);
@@ -1175,6 +1213,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 return reindexed;
             });
             saveTableMetadataRef.current?.();
+            // allow some time for metadata save/realtime to propagate, then re-enable sync
+            setTimeout(() => {
+                isReorderingRef.current = false;
+            }, 1000);
         },
         [debouncedSave, addToHistory],
     );

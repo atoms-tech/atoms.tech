@@ -13,6 +13,7 @@ import {
     BlockProps,
     BlockTableMetadata,
     BlockWithRequirements,
+    Column,
     Property,
     PropertyType,
 } from '@/components/custom/BlockCanvas/types';
@@ -222,6 +223,25 @@ export const TableBlock: React.FC<BlockProps> = ({
     // Use the document store for edit mode state
     const { isEditMode, useTanStackTables, useGlideTables } = useDocumentStore();
 
+    // Optimistic columns state to immediately reflect column adds/deletes before realtime
+    const [optimisticColumns, setOptimisticColumns] = useState<Column[] | null>(null);
+
+    // Merge server columns into optimistic view when server updates arrive
+    React.useEffect(() => {
+        const serverCols = block.columns || [];
+        if (!serverCols || serverCols.length === 0) return;
+        setOptimisticColumns((prev) => {
+            if (!prev || prev.length === 0) return serverCols;
+            const byId = new Map<string, Column>();
+            for (const c of prev) byId.set(c.id, c);
+            for (const c of serverCols) byId.set(c.id, c);
+            return Array.from(byId.values());
+        });
+    }, [block.columns]);
+
+    // Effective columns used by UI (optimistic first, then server)
+    const effectiveColumnsRaw = optimisticColumns ?? block.columns ?? [];
+
     // Grab column/requirement metadata from block level.
     const tableContentMetadata: BlockTableMetadata | null = useMemo(() => {
         if (block.type !== 'table') return null;
@@ -291,8 +311,11 @@ export const TableBlock: React.FC<BlockProps> = ({
         localRequirements,
         setLocalRequirements,
         properties: useMemo(
-            () => block.columns?.map((col) => col.property).filter(Boolean) as Property[],
-            [block.columns],
+            () =>
+                (effectiveColumnsRaw || [])
+                    .map((col) => col.property)
+                    .filter(Boolean) as Property[],
+            [effectiveColumnsRaw],
         ),
     });
 
@@ -310,11 +333,11 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     // Memoize columns to prevent unnecessary recalculations and re-renders
     const columns = useMemo(() => {
-        if (!block.columns) return [];
+        if (!effectiveColumnsRaw) return [];
 
         const metadataColumns = tableContentMetadata?.columns ?? [];
 
-        const mapped = block.columns
+        const mapped = effectiveColumnsRaw
             .filter((col) => col.property)
             .map((col, index) => {
                 const _property = col.property as Property;
@@ -345,7 +368,7 @@ export const TableBlock: React.FC<BlockProps> = ({
             })
             .sort((a, b) => a.position - b.position);
         return mapped;
-    }, [block.columns, tableContentMetadata?.columns]);
+    }, [effectiveColumnsRaw, tableContentMetadata?.columns]);
 
     // Memoize dynamicRequirements to avoid recreating every render unless localRequirements changes
     const dynamicRequirements = useMemo(() => {
@@ -385,7 +408,7 @@ export const TableBlock: React.FC<BlockProps> = ({
             if (!userProfile?.id) return;
 
             try {
-                await createPropertyAndColumn(
+                const result = await createPropertyAndColumn(
                     name,
                     type,
                     propertyConfig,
@@ -393,12 +416,32 @@ export const TableBlock: React.FC<BlockProps> = ({
                     block.id,
                     userProfile.id,
                 );
+                // Optimistically add the new column to local state for immediate UI feedback
+                if (result?.column) {
+                    const enrichedCol = {
+                        ...(result.column as Column),
+                        property: result.property as Property,
+                    } as Column;
+                    setOptimisticColumns((prev) => {
+                        const base = prev ?? (block.columns || []);
+                        const byId = new Map<string, Column>();
+                        for (const c of base) byId.set(c.id, c);
+                        byId.set(enrichedCol.id, enrichedCol);
+                        return Array.from(byId.values());
+                    });
+                }
                 await refreshRequirements();
             } catch (error) {
                 console.error('Error adding column:', error);
             }
         },
-        [createPropertyAndColumn, block.id, refreshRequirements, userProfile?.id],
+        [
+            createPropertyAndColumn,
+            block.id,
+            refreshRequirements,
+            userProfile?.id,
+            block.columns,
+        ],
     );
 
     const handleAddColumnFromProperty = useCallback(
@@ -406,18 +449,37 @@ export const TableBlock: React.FC<BlockProps> = ({
             if (!userProfile?.id) return;
 
             try {
-                await createColumnFromProperty(
+                const result = await createColumnFromProperty(
                     propertyId,
                     defaultValue,
                     block.id,
                     userProfile.id,
                 );
+                if (result?.column) {
+                    const enrichedCol = {
+                        ...(result.column as Column),
+                        property: (result.property as unknown as Property) ?? undefined,
+                    } as Column;
+                    setOptimisticColumns((prev) => {
+                        const base = prev ?? (block.columns || []);
+                        const byId = new Map<string, Column>();
+                        for (const c of base) byId.set(c.id, c);
+                        byId.set(enrichedCol.id, enrichedCol);
+                        return Array.from(byId.values());
+                    });
+                }
                 await refreshRequirements();
             } catch (error) {
                 console.error('Error adding column from property:', error);
             }
         },
-        [createColumnFromProperty, block.id, refreshRequirements, userProfile?.id],
+        [
+            createColumnFromProperty,
+            block.id,
+            refreshRequirements,
+            userProfile?.id,
+            block.columns,
+        ],
     );
 
     // Memoize handler to pass down to table level.
@@ -425,6 +487,9 @@ export const TableBlock: React.FC<BlockProps> = ({
         async (columnId: string) => {
             try {
                 await deleteColumn(columnId, block.id);
+                setOptimisticColumns((prev) =>
+                    (prev || []).filter((c) => c.id !== columnId),
+                );
             } catch (err) {
                 console.error('Failed to delete column:', err);
             }
@@ -500,9 +565,9 @@ export const TableBlock: React.FC<BlockProps> = ({
                     documentId={params.documentId as string}
                 />
                 <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
-                    {!block.columns ||
-                    !Array.isArray(block.columns) ||
-                    block.columns.length === 0 ? (
+                    {!effectiveColumnsRaw ||
+                    !Array.isArray(effectiveColumnsRaw) ||
+                    effectiveColumnsRaw.length === 0 ? (
                         <>
                             <TableBlockLoadingState
                                 isLoading={true}

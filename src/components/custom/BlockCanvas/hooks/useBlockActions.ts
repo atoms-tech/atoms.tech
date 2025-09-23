@@ -277,15 +277,28 @@ export const useBlockActions = ({
 
             // Replace the temporary block with the real one
             setLocalBlocks((prevBlocks) => {
-                return prevBlocks.map((block) =>
-                    block.id === tempId
-                        ? {
-                              ...createdBlock,
+                // If we don't find the temp block, append the created one to ensure visibility
+                const hasTemp = prevBlocks.some((b) => b.id === tempId);
+                const next = hasTemp
+                    ? prevBlocks.map((block) =>
+                          block.id === tempId
+                              ? {
+                                    ...createdBlock,
+                                    requirements: [],
+                                    order: block.order,
+                                }
+                              : block,
+                      )
+                    : [
+                          ...prevBlocks,
+                          {
+                              ...(createdBlock as BlockWithRequirements),
                               requirements: [],
-                              order: block.order,
-                          }
-                        : block,
-                );
+                              order: prevBlocks.length,
+                          },
+                      ];
+
+                return next;
             });
 
             console.log('Local state updated with new block');
@@ -299,11 +312,44 @@ export const useBlockActions = ({
                 try {
                     await createDefaultBlockColumns(createdBlock.id);
                     console.log('Successfully created columns for table block');
+
+                    // Immediately hydrate the new block's columns (and properties) locally
+                    const { data: freshColumns, error: freshColumnsError } =
+                        await supabase
+                            .from('columns')
+                            .select('*, property:properties(*)')
+                            .eq('block_id', createdBlock.id)
+                            .order('position', { ascending: true });
+                    if (freshColumnsError) {
+                        console.error(
+                            'Failed to fetch columns for new table block:',
+                            freshColumnsError,
+                        );
+                    } else {
+                        setLocalBlocks((prev) =>
+                            prev.map((b) =>
+                                b.id === createdBlock.id
+                                    ? ({
+                                          ...b,
+                                          columns: freshColumns as unknown[] as never,
+                                      } as typeof b)
+                                    : b,
+                            ),
+                        );
+                    }
                 } catch (error) {
                     console.error('Failed to create columns for table block:', error);
                     throw error;
                 }
             }
+
+            // Force a full document refetch to hydrate relations for the new table without remount flicker
+            // Warm caches with a targeted query; realtime listeners will populate
+            await supabase
+                .from('columns')
+                .select('id')
+                .eq('block_id', createdBlock.id)
+                .limit(1);
 
             return createdBlock;
         } catch (error) {

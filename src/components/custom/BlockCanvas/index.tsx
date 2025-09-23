@@ -61,6 +61,8 @@ export function BlockCanvas({
         error,
         setDocument,
         blocks,
+        hydrateBlockRelations,
+        refetchDocument,
     } = useDocumentRealtime({
         documentId,
         _orgId: '',
@@ -113,26 +115,19 @@ export function BlockCanvas({
 
     // Adapt the blocks to include order property
     useEffect(() => {
-        // Skip re-processing if we're in the middle of adding a block
-        // This prevents unnecessary re-renders
-        if (isAddingBlockRef.current) {
-            return;
-        }
+        if (!originalBlocks) return;
 
-        if (originalBlocks) {
-            const blocksWithOrder = originalBlocks.map(
-                (block: BlockWithRequirements, index: number) => {
-                    // Create a new object with all required properties
-                    const enhancedBlock = {
-                        ...block,
-                        order: block.position || index, // Use position as order or fallback to index
-                    } as BlockWithRequirements;
+        const blocksWithOrder = originalBlocks.map(
+            (block: BlockWithRequirements, index: number) => {
+                const enhancedBlock = {
+                    ...block,
+                    order: block.position || index,
+                } as BlockWithRequirements;
 
-                    return enhancedBlock;
-                },
-            );
-            setEnhancedBlocks(blocksWithOrder);
-        }
+                return enhancedBlock;
+            },
+        );
+        setEnhancedBlocks(blocksWithOrder);
     }, [originalBlocks, orgId, projectId]);
 
     // Wrapper for setLocalBlocks that adds order
@@ -184,6 +179,24 @@ export function BlockCanvas({
             isAddingBlockRef.current = true;
             try {
                 const result = await originalHandleAddBlock(type, content);
+                // If a table block was created, opportunistically hydrate its relations once
+                if (result?.id && type === BlockType.table) {
+                    try {
+                        if (typeof hydrateBlockRelations === 'function') {
+                            await hydrateBlockRelations(result.id);
+                        }
+                        // As a reliable fallback, do a full refetch to hydrate columns/requirements
+                        if (typeof refetchDocument === 'function') {
+                            await refetchDocument({ silent: false });
+                            // Some DBs need a brief delay for column/property joins
+                            setTimeout(() => {
+                                refetchDocument({ silent: true }).catch(() => {});
+                            }, 300);
+                        }
+                    } catch (e) {
+                        console.warn('Table relations hydration failed (non-fatal):', e);
+                    }
+                }
                 console.log('Block added successfully:', result);
                 return result;
             } catch (error) {
@@ -194,7 +207,7 @@ export function BlockCanvas({
                 isAddingBlockRef.current = false;
             }
         },
-        [originalHandleAddBlock],
+        [originalHandleAddBlock, hydrateBlockRelations, refetchDocument],
     );
 
     const sensors = useSensors(

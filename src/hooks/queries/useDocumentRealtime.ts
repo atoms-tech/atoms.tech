@@ -22,7 +22,13 @@ interface DocumentState {
     blocks: BlockWithRequirements[] | undefined;
     loading: boolean;
     error: Error | null;
-    setDocument: (blocks: BlockWithRequirements[]) => void;
+    setDocument: React.Dispatch<
+        React.SetStateAction<BlockWithRequirements[] | undefined>
+    >;
+    // lightweight way to rescan a single block's relations when created
+    hydrateBlockRelations?: (blockId: string) => Promise<void>;
+    // full refetch of all blocks + relations
+    refetchDocument: (options?: { silent?: boolean }) => Promise<void>;
 }
 
 export const useDocumentRealtime = ({
@@ -42,117 +48,173 @@ export const useDocumentRealtime = ({
     const [error, setError] = useState<Error | null>(null);
 
     // Initial full fetch of blocks and their requirements
-    const fetchBlocks = useCallback(async () => {
+    const fetchBlocks = useCallback(
+        async (opts?: { silent?: boolean }) => {
+            try {
+                if (!opts?.silent) setLoading(true);
+
+                // Fetch blocks
+                const { data: blocksData, error: blocksError } = await supabase
+                    .from('blocks')
+                    .select('*')
+                    .eq('document_id', documentId)
+                    .is('is_deleted', false)
+                    .order('position');
+
+                if (blocksError) throw blocksError;
+
+                // Fetch requirements for all blocks
+                const { data: requirementsData, error: requirementsError } =
+                    await supabase
+                        .from('requirements')
+                        .select('*')
+                        .is('is_deleted', false)
+                        .eq('document_id', documentId)
+                        .order('position');
+
+                if (requirementsError) throw requirementsError;
+
+                // Fetch columns for table blocks
+                const tableBlocks = blocksData.filter((block) => block.type === 'table');
+                console.log(
+                    '🔍 Table blocks found:',
+                    tableBlocks.length,
+                    tableBlocks.map((b) => b.id),
+                );
+
+                const { data: columnsData, error: columnsError } = await supabase
+                    .from('columns')
+                    .select('*, property:properties(*)')
+                    .in(
+                        'block_id',
+                        tableBlocks.map((block) => block.id),
+                    )
+                    .order('position', { ascending: true });
+
+                if (columnsError) {
+                    console.error('❌ Columns fetch error:', columnsError);
+                    throw columnsError;
+                }
+                console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
+
+                // Group requirements by block_id
+                const requirementsByBlock = requirementsData.reduce(
+                    (acc: { [key: string]: Requirement[] }, req: Requirement) => {
+                        if (!acc[req.block_id]) {
+                            acc[req.block_id] = [];
+                        }
+                        acc[req.block_id].push(req);
+                        return acc;
+                    },
+                    {},
+                );
+
+                // Group columns by block_id
+                const columnsByBlock = (columnsData as ColumnRow[]).reduce(
+                    (acc: { [key: string]: Column[] }, col) => {
+                        const blockId = col.block_id;
+                        if (blockId && !acc[blockId]) {
+                            acc[blockId] = [];
+                        }
+                        if (blockId) {
+                            acc[blockId].push(col as unknown as Column);
+                        }
+                        return acc;
+                    },
+                    {},
+                );
+                console.log('🔍 Columns grouped by block:', columnsByBlock);
+
+                // Combine blocks with their requirements and columns
+                const blocksWithRequirements: BlockWithRequirements[] = blocksData.map(
+                    (block: Block) => {
+                        const blockColumns = columnsByBlock[block.id] || [];
+                        console.log('🔍 Block data assembly:', {
+                            blockId: block.id,
+                            blockType: block.type,
+                            hasColumnsData: !!columnsByBlock[block.id],
+                            columnsCount: blockColumns.length,
+                            columns: blockColumns,
+                        });
+
+                        return {
+                            ...block,
+                            order: block.position || 0,
+                            requirements: requirementsByBlock[block.id] || [],
+                            columns: blockColumns,
+                        };
+                    },
+                );
+
+                // Merge with any existing local state to avoid dropping optimistic updates
+                setBlocks((prev) => {
+                    if (!prev || prev.length === 0) return blocksWithRequirements;
+
+                    const byId = new Map<string, BlockWithRequirements>();
+                    for (const b of prev) byId.set(b.id, b);
+                    for (const b of blocksWithRequirements) byId.set(b.id, b);
+                    const merged = Array.from(byId.values()).sort(
+                        (a, b) => (a.order || 0) - (b.order || 0),
+                    );
+                    return merged;
+                });
+
+                setError(null);
+            } catch (err) {
+                setError(err as Error);
+            } finally {
+                if (!opts?.silent) setLoading(false);
+            }
+        },
+        [documentId],
+    );
+
+    // Hydrate a single block's relations (columns + requirements) without full refetch
+    const hydrateBlockRelations = useCallback(async (blockId: string) => {
         try {
-            setLoading(true);
-
-            // Fetch blocks
-            const { data: blocksData, error: blocksError } = await supabase
-                .from('blocks')
-                .select('*')
-                .eq('document_id', documentId)
-                .is('is_deleted', false)
-                .order('position');
-
-            if (blocksError) throw blocksError;
-
-            // Fetch requirements for all blocks
+            // Fetch requirements for the block
             const { data: requirementsData, error: requirementsError } = await supabase
                 .from('requirements')
                 .select('*')
                 .is('is_deleted', false)
-                .eq('document_id', documentId)
+                .eq('block_id', blockId)
                 .order('position');
 
             if (requirementsError) throw requirementsError;
 
-            // Fetch columns for table blocks
-            const tableBlocks = blocksData.filter((block) => block.type === 'table');
-            console.log(
-                '🔍 Table blocks found:',
-                tableBlocks.length,
-                tableBlocks.map((b) => b.id),
-            );
-
+            // Fetch columns for the block including joined property
             const { data: columnsData, error: columnsError } = await supabase
                 .from('columns')
                 .select('*, property:properties(*)')
-                .in(
-                    'block_id',
-                    tableBlocks.map((block) => block.id),
-                )
+                .eq('block_id', blockId)
                 .order('position', { ascending: true });
 
-            if (columnsError) {
-                console.error('❌ Columns fetch error:', columnsError);
-                throw columnsError;
-            }
-            console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
+            if (columnsError) throw columnsError;
 
-            // Group requirements by block_id
-            const requirementsByBlock = requirementsData.reduce(
-                (acc: { [key: string]: Requirement[] }, req: Requirement) => {
-                    if (!acc[req.block_id]) {
-                        acc[req.block_id] = [];
-                    }
-                    acc[req.block_id].push(req);
-                    return acc;
-                },
-                {},
-            );
-
-            // Group columns by block_id
-            const columnsByBlock = (columnsData as ColumnRow[]).reduce(
-                (acc: { [key: string]: Column[] }, col) => {
-                    const blockId = col.block_id;
-                    if (blockId && !acc[blockId]) {
-                        acc[blockId] = [];
-                    }
-                    if (blockId) {
-                        acc[blockId].push(col as unknown as Column);
-                    }
-                    return acc;
-                },
-                {},
-            );
-            console.log('🔍 Columns grouped by block:', columnsByBlock);
-
-            // Combine blocks with their requirements and columns
-            const blocksWithRequirements: BlockWithRequirements[] = blocksData.map(
-                (block: Block) => {
-                    const blockColumns = columnsByBlock[block.id] || [];
-                    console.log('🔍 Block data assembly:', {
-                        blockId: block.id,
-                        blockType: block.type,
-                        hasColumnsData: !!columnsByBlock[block.id],
-                        columnsCount: blockColumns.length,
-                        columns: blockColumns,
-                    });
-
-                    return {
-                        ...block,
-                        order: block.position || 0,
-                        requirements: requirementsByBlock[block.id] || [],
-                        columns: blockColumns,
-                    };
-                },
-            );
-            setBlocks(blocksWithRequirements);
-
-            setError(null);
+            setBlocks((prev) => {
+                if (!prev) return prev;
+                return prev.map((b) =>
+                    b.id === blockId
+                        ? {
+                              ...b,
+                              requirements: (requirementsData || []) as Requirement[],
+                              columns: (columnsData || []) as unknown as Column[],
+                          }
+                        : b,
+                );
+            });
         } catch (err) {
-            setError(err as Error);
-        } finally {
-            setLoading(false);
+            // Do not surface as hook error; this is a targeted hydration
+            console.error('Failed to hydrate block relations:', err);
         }
-    }, [documentId]);
+    }, []);
 
     // Subscribe to changes
     useEffect(() => {
         if (!documentId) return;
 
         // Initial fetch
-        fetchBlocks();
+        fetchBlocks({ silent: false });
 
         // Subscribe to blocks changes
         const blocksSubscription = supabase
@@ -171,6 +233,12 @@ export const useDocumentRealtime = ({
                         if (!prevBlocks) return prevBlocks;
 
                         if (payload.eventType === 'INSERT') {
+                            // Avoid duplicates when we already optimistically added the block
+                            const exists = prevBlocks.some(
+                                (b) => b.id === (payload.new as Block).id,
+                            );
+                            if (exists) return prevBlocks;
+
                             return [
                                 ...prevBlocks,
                                 {
@@ -179,7 +247,7 @@ export const useDocumentRealtime = ({
                                     requirements: [],
                                     columns: [],
                                 },
-                            ];
+                            ].sort((a, b) => (a.order || 0) - (b.order || 0));
                         }
                         if (payload.eventType === 'UPDATE') {
                             return prevBlocks.map((block) =>
@@ -283,43 +351,75 @@ export const useDocumentRealtime = ({
                     schema: 'public',
                     table: 'columns',
                 },
-                (payload) => {
+                async (payload) => {
                     const newCol = payload.new as Column | undefined;
                     const oldCol = payload.old as Column | undefined;
+
+                    // For INSERTs, enrich the column with its joined property so tables can render headers
+                    let enrichedNewCol: Column | undefined = newCol;
+                    if (payload.eventType === 'INSERT' && newCol?.id) {
+                        const { data: colWithProperty } = await supabase
+                            .from('columns')
+                            .select('*, property:properties(*)')
+                            .eq('id', newCol.id)
+                            .single();
+                        if (colWithProperty) {
+                            enrichedNewCol = colWithProperty as unknown as Column;
+                        }
+                    }
 
                     setBlocks((prevBlocks) => {
                         if (!prevBlocks) return prevBlocks;
 
                         return prevBlocks.map((block) => {
                             if (
-                                block.id !== newCol?.block_id &&
-                                block.id !== oldCol?.block_id
+                                block.id !== enrichedNewCol?.block_id &&
+                                block.id !== oldCol?.block_id &&
+                                block.id !== newCol?.block_id
                             ) {
                                 return block;
                             }
 
-                            if (payload.eventType === 'INSERT' && newCol) {
+                            if (
+                                payload.eventType === 'INSERT' &&
+                                (enrichedNewCol || newCol)
+                            ) {
+                                const colToAdd = (enrichedNewCol || newCol) as Column;
+                                const nextColumns = [
+                                    ...(block.columns ?? []),
+                                    colToAdd,
+                                ].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
                                 return {
                                     ...block,
-                                    columns: [...(block.columns ?? []), newCol],
+                                    columns: nextColumns,
                                 };
                             }
 
                             if (payload.eventType === 'UPDATE' && newCol) {
+                                const nextColumns = (block.columns ?? [])
+                                    .map((c) =>
+                                        c.id === newCol.id
+                                            ? { ...c, ...newCol, property: c.property }
+                                            : c,
+                                    )
+                                    .sort(
+                                        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                                    );
                                 return {
                                     ...block,
-                                    columns: (block.columns ?? []).map((c) =>
-                                        c.id === newCol.id ? newCol : c,
-                                    ),
+                                    columns: nextColumns,
                                 };
                             }
 
                             if (payload.eventType === 'DELETE' && oldCol) {
+                                const nextColumns = (block.columns ?? [])
+                                    .filter((c) => c.id !== oldCol.id)
+                                    .sort(
+                                        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                                    );
                                 return {
                                     ...block,
-                                    columns: (block.columns ?? []).filter(
-                                        (c) => c.id !== oldCol.id,
-                                    ),
+                                    columns: nextColumns,
                                 };
                             }
 
@@ -337,10 +437,20 @@ export const useDocumentRealtime = ({
         };
     }, [documentId, fetchBlocks]);
 
+    const refetchDocument = useCallback(
+        async (options?: { silent?: boolean }) => {
+            await fetchBlocks({ silent: options?.silent ?? false });
+        },
+        [fetchBlocks],
+    );
+
     return {
         blocks,
         loading,
         error,
         setDocument: setBlocks,
+        // expose a lightweight rescan for newly added blocks
+        hydrateBlockRelations,
+        refetchDocument,
     };
 };
