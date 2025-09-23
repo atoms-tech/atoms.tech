@@ -1,16 +1,19 @@
 import { Plus } from 'lucide-react';
 
-import { EditableColumn } from '@/components/custom/BlockCanvas/components/EditableTable/types';
+import {
+    BaseRow,
+    EditableColumn,
+} from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-interface AddRowPlaceholderProps<T> {
+interface AddRowPlaceholderProps<T extends BaseRow> {
     columns: EditableColumn<T>[];
     onClick: () => void;
     isEditMode: boolean;
 }
 
-export function AddRowPlaceholder<T>({
+export function AddRowPlaceholder<T extends BaseRow>({
     columns,
     onClick,
     isEditMode,
