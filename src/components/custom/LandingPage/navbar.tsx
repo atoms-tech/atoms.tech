@@ -4,7 +4,7 @@ import { Loader2, Menu, User, X } from 'lucide-react';
 import { useCookies } from 'next-client-cookies';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { GridBackground } from './grid-background';
 
 export function Navbar() {
+    const pathName = usePathname();
     const cookies = useCookies();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { isAuthenticated, isLoading, userProfile } = useAuth();
@@ -77,6 +78,7 @@ export function Navbar() {
     );
 
     const handleSignIn = () => {
+        if (pathName === '/login') return;
         setLoading('signIn', true);
         router.push('/login');
     };
