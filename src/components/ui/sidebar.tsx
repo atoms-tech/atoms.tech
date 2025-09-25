@@ -743,10 +743,18 @@ SidebarMenuSub.displayName = 'SidebarMenuSub';
 
 const SidebarMenuSubItem = ({
     ref,
+    className,
     ...props
 }: HTMLAttributes<HTMLLIElement> & {
     ref?: RefObject<HTMLLIElement>;
-}) => <li ref={ref} {...props} />;
+}) => (
+    <li
+        ref={ref}
+        data-sidebar="menu-sub-item"
+        className={cn('group/menu-sub-item relative', className)}
+        {...props}
+    />
+);
 SidebarMenuSubItem.displayName = 'SidebarMenuSubItem';
 
 const SidebarMenuSubButton = ({
@@ -771,7 +779,7 @@ const SidebarMenuSubButton = ({
             data-size={size}
             data-active={isActive}
             className={cn(
-                'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
+                'peer/menu-sub-button flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-sub-action]]/menu-sub-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
                 'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
                 size === 'sm' && 'text-xs',
                 size === 'md' && 'text-sm',
@@ -783,6 +791,41 @@ const SidebarMenuSubButton = ({
     );
 };
 SidebarMenuSubButton.displayName = 'SidebarMenuSubButton';
+
+const SidebarMenuSubAction = ({
+    ref,
+    className,
+    asChild = false,
+    showOnHover = false,
+    ...props
+}: HTMLAttributes<HTMLButtonElement> & {
+    ref?: RefObject<HTMLButtonElement>;
+    asChild?: boolean;
+    showOnHover?: boolean;
+}) => {
+    const Comp = asChild ? Slot : 'button';
+
+    return (
+        <Comp
+            ref={ref}
+            data-sidebar="menu-sub-action"
+            className={cn(
+                'absolute right-1 top-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-none ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-sub-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0',
+                // Increases the hit area of the button on mobile.
+                'after:absolute after:-inset-2 after:md:hidden',
+                'peer-data-[size=sm]/menu-sub-button:top-1',
+                'peer-data-[size=default]/menu-sub-button:top-1.5',
+                'peer-data-[size=lg]/menu-sub-button:top-2.5',
+                'group-data-[collapsible=icon]:hidden',
+                showOnHover &&
+                    'group-focus-within/menu-sub-item:opacity-100 group-hover/menu-sub-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-sub-button:text-sidebar-accent-foreground md:opacity-0',
+                className,
+            )}
+            {...props}
+        />
+    );
+};
+SidebarMenuSubAction.displayName = 'SidebarMenuSubAction';
 
 export const Sidebar = SidebarProvider;
 export { SidebarTrigger };
@@ -809,4 +852,5 @@ export {
     SidebarMenuSub,
     SidebarMenuSubItem,
     SidebarMenuSubButton,
+    SidebarMenuSubAction,
 };
