@@ -46,32 +46,39 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
+import { useUpdateProfile } from '@/hooks/mutations/useProfileMutation';
+import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
+import { useProfile } from '@/hooks/queries/useProfile';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization, OrganizationType } from '@/types';
 
 function AppSidebar() {
     const router = useRouter();
     const { signOut, isLoading: isSigningOut } = useSignOut();
-    const { user, profile } = useUser();
-    const { organizations, setCurrentOrganization } = useOrganization();
+    const { user } = useUser();
+    const { data: profile } = useProfile(user?.id || '');
+    const { mutate: updateProfile } = useUpdateProfile();
+    const { data: organizationsQuery } = useOrganizationsByMembership(user?.id || '');
+    const organizations: Organization[] = organizationsQuery ?? [];
+    const { setCurrentOrganization } = useOrganization();
     const { setUserContext } = useAgentStore();
 
     const personalOrganization = organizations.find(
         (org) => org.type === OrganizationType.personal,
     );
-    const [pinnedOrganization, setPinnedOrganization] = React.useState<
-        Organization | undefined
-    >(organizations.find((org) => org.id === profile?.pinned_organization_id));
 
     const filteredOrganizations = organizations.filter(
         (org) => org.id !== personalOrganization?.id,
     );
     const sortedOrganizations = [
-        ...filteredOrganizations.filter((org) => org.id === pinnedOrganization?.id),
-        ...filteredOrganizations.filter((org) => org.id !== pinnedOrganization?.id),
+        ...filteredOrganizations.filter(
+            (org) => org.id === profile?.pinned_organization_id,
+        ),
+        ...filteredOrganizations.filter(
+            (org) => org.id !== profile?.pinned_organization_id,
+        ),
     ];
 
     // States for collapsibles
@@ -104,21 +111,21 @@ function AppSidebar() {
     };
 
     // Handle pinning an organization
-    const handlePinOrganization = async (org: Organization) => {
+    const handlePinOrganization = async (orgId: string) => {
         try {
-            setPinnedOrganization(org);
+            const newPinnedOrganizationId =
+                profile?.pinned_organization_id === orgId ? null : orgId;
 
             // Update Agent Store context
             setUserContext({
-                orgId: org.id || undefined,
-                pinnedOrganizationId: org.id || undefined,
+                orgId: newPinnedOrganizationId || undefined,
+                pinnedOrganizationId: newPinnedOrganizationId || undefined,
             });
 
-            const { error } = await supabase
-                .from('profiles')
-                .update({ pinned_organization_id: org.id })
-                .eq('id', user?.id || '');
-            if (error) console.error('Error Updating Pinned Organization: ', error);
+            updateProfile({
+                id: user?.id || '',
+                pinned_organization_id: newPinnedOrganizationId || null,
+            });
         } catch (err) {
             console.error('Unexpected error:', err);
         }
@@ -251,17 +258,13 @@ function AppSidebar() {
                                                         <SidebarMenuSubAction
                                                             onClick={() =>
                                                                 handlePinOrganization(
-                                                                    organizations.find(
-                                                                        (orgIndex) =>
-                                                                            orgIndex.id ===
-                                                                            org.id,
-                                                                    ) as Organization,
+                                                                    org.id,
                                                                 )
                                                             }
                                                         >
                                                             <Pin
-                                                                fill={`${org.id === pinnedOrganization?.id ? 'hsl(var(--border))' : ''}`}
-                                                                stroke={`${org.id === pinnedOrganization?.id ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))'}`}
+                                                                fill={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : ''}`}
+                                                                stroke={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))'}`}
                                                                 strokeWidth={2}
                                                             />
                                                         </SidebarMenuSubAction>
