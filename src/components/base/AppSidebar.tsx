@@ -6,12 +6,13 @@ import {
     GitBranch,
     Hammer,
     Home,
-    LayoutDashboard,
     ListTree,
     LucideIcon,
+    Pin,
     Sparkles,
     Table,
     User,
+    Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +20,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import React, { useCallback, useEffect } from 'react';
 
 import { setCookie } from '@/app/(protected)/org/actions';
+import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
 import { Button } from '@/components/ui/button';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,6 +44,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarMenuSub,
+    SidebarMenuSubAction,
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
@@ -44,7 +52,7 @@ import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { OrganizationType } from '@/types';
+import { Organization, OrganizationType } from '@/types';
 
 interface MenuItem {
     title: string;
@@ -63,7 +71,8 @@ const _items: MenuItem[] = [
 
 function AppSidebar() {
     // State for traceability dropdown
-    const [traceOpen, setTraceOpen] = React.useState(false);
+    const [traceOpen, setTraceOpen] = React.useState<boolean>(false);
+    const [isOrganizationOpen, setIsOrganizationOpen] = React.useState<boolean>(true);
     // Get traceView from URL
     let traceView = '';
     if (typeof window !== 'undefined') {
@@ -74,7 +83,9 @@ function AppSidebar() {
     const pathname = usePathname();
     const { signOut, isLoading: isSigningOut } = useSignOut();
     const { user, profile } = useUser();
-    const { organizations, currentOrganization } = useOrganization();
+    const { organizations, currentOrganization, setCurrentOrganization } =
+        useOrganization();
+    const { setUserContext } = useAgentStore();
 
     // Find personal and enterprise organizations from context
     const personalOrg = organizations.find(
@@ -83,9 +94,23 @@ function AppSidebar() {
     const enterpriseOrg = organizations.find(
         (org) => org.type === OrganizationType.enterprise,
     );
+    const [pinnedOrganization, setPinnedOrganization] = React.useState<
+        Organization | undefined
+    >(organizations.find((org) => org.id === profile?.pinned_organization_id));
 
-    // Define primaryEnterpriseOrg based on enterpriseOrg
-    const primaryEnterpriseOrg = enterpriseOrg;
+    const filteredOrganizations = organizations.filter(
+        (org) => org.id !== personalOrg?.id,
+    );
+    const ORGS_PER_CLICK = 5;
+    const [orgLimit, setOrgLimit] = React.useState<number>(ORGS_PER_CLICK);
+    const [isShowMore, setIsShowMore] = React.useState<boolean>(
+        filteredOrganizations.length < orgLimit + 1,
+    );
+
+    const sortedOrganizations = [
+        ...filteredOrganizations.filter((org) => org.id === pinnedOrganization?.id),
+        ...filteredOrganizations.filter((org) => org.id !== pinnedOrganization?.id),
+    ];
 
     const _isOrgPage = pathname?.startsWith('/org') ?? false;
     const _isPlaygroundPage = currentOrganization?.type === OrganizationType.personal;
@@ -111,56 +136,42 @@ function AppSidebar() {
         }
     }, [personalOrg, router, enterpriseOrg]);
 
+    const navigateToOrganization = (org: Organization) => {
+        console.log('Navigating to Organization:');
+        setCurrentOrganization(org);
+        router.push(`/org/${org.id}`);
+    };
+
     const navigateToAdmin = () => {
         console.log('Navigating to admin page:');
         router.push('/admin');
     };
 
-    const navigateToPinnedOrganization = useCallback(async () => {
+    // Handle pinning an organization
+    const handlePinOrganization = async (org: Organization) => {
         try {
-            // Fetch the user's profile to get pinned_organization_id and personal_organization_id
-            const { data, error } = await supabase
+            setPinnedOrganization(org);
+
+            // Update Agent Store context
+            setUserContext({
+                orgId: org.id || undefined,
+                pinnedOrganizationId: org.id || undefined,
+            });
+
+            const { error } = await supabase
                 .from('profiles')
-                .select('pinned_organization_id, personal_organization_id')
-                .eq('id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user profile:', error);
-                return;
-            }
-
-            if (data) {
-                let targetOrgId = data.pinned_organization_id;
-
-                if (!targetOrgId && data.personal_organization_id) {
-                    // If no pinned organization, set it to personal_organization_id by default
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({
-                            pinned_organization_id: data.personal_organization_id,
-                        })
-                        .eq('id', user?.id || '');
-
-                    if (!updateError) {
-                        targetOrgId = data.personal_organization_id;
-                    } else {
-                        console.error('Error updating pinned organization:', updateError);
-                        return;
-                    }
-                }
-
-                if (targetOrgId) {
-                    console.log('Navigating to pinned organization:', targetOrgId);
-                    router.push(`/org/${targetOrgId}`);
-                } else {
-                    console.log('No pinned or personal organization found');
-                }
-            }
+                .update({ pinned_organization_id: org.id })
+                .eq('id', user?.id || '');
+            if (error) console.error('Error Updating Pinned Organization: ', error);
         } catch (err) {
             console.error('Unexpected error:', err);
         }
-    }, [user?.id, router]);
+    };
+
+    const handleClickShowMore = () => {
+        setIsShowMore(filteredOrganizations.length < orgLimit + ORGS_PER_CLICK + 1);
+        setOrgLimit(orgLimit + ORGS_PER_CLICK);
+    };
 
     useEffect(() => {
         const handleResize = () => {
@@ -213,23 +224,6 @@ function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            {primaryEnterpriseOrg && (
-                                <SidebarMenuItem className="mb-0.5">
-                                    <SidebarMenuButton asChild>
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start"
-                                            onClick={navigateToPinnedOrganization}
-                                        >
-                                            <LayoutDashboard className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                            <span className="text-xs font-medium">
-                                                Dashboard
-                                            </span>
-                                        </Button>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )}
-
                             {personalOrg && (
                                 <SidebarMenuItem className="mb-0.5">
                                     <SidebarMenuButton asChild>
@@ -247,61 +241,98 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             )}
 
-                            {profile?.job_title === 'admin' && (
+                            <Collapsible
+                                open={isOrganizationOpen}
+                                onOpenChange={setIsOrganizationOpen}
+                            >
                                 <SidebarMenuItem className="mb-0.5">
-                                    <SidebarMenuButton asChild>
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full justify-start"
-                                            onClick={navigateToAdmin}
-                                        >
-                                            <Hammer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                            <span className="text-xs font-medium">
-                                                Admin
-                                            </span>
-                                        </Button>
-                                    </SidebarMenuButton>
+                                    <CollapsibleTrigger asChild className="mb-0.5">
+                                        <SidebarMenuButton asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start"
+                                            >
+                                                <Users className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                <span className="text-xs font-medium">
+                                                    Organizations
+                                                </span>
+                                                <ChevronDown
+                                                    className={`ml-auto h-3 w-3 transition-transform ${isOrganizationOpen ? '-rotate-180' : ''}`}
+                                                />
+                                            </Button>
+                                        </SidebarMenuButton>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <SidebarMenuSub>
+                                            {sortedOrganizations
+                                                .slice(0, orgLimit)
+                                                .map((org: Organization) => (
+                                                    <SidebarMenuSubItem
+                                                        key={org.id}
+                                                        className="mb-0.5"
+                                                    >
+                                                        <SidebarMenuSubButton
+                                                            asChild
+                                                            className="mr-5"
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="w-full justify-start"
+                                                                onClick={() =>
+                                                                    navigateToOrganization(
+                                                                        org,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <span className="text-xs font-medium truncate">
+                                                                    {org.name}
+                                                                </span>
+                                                            </Button>
+                                                        </SidebarMenuSubButton>
+                                                        <SidebarMenuSubAction
+                                                            onClick={() =>
+                                                                handlePinOrganization(
+                                                                    organizations.find(
+                                                                        (orgIndex) =>
+                                                                            orgIndex.id ===
+                                                                            org.id,
+                                                                    ) as Organization,
+                                                                )
+                                                            }
+                                                        >
+                                                            <Pin
+                                                                fill={`${org.id === pinnedOrganization?.id ? 'hsl(var(--border))' : ''}`}
+                                                                stroke={`${org.id === pinnedOrganization?.id ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))'}`}
+                                                                strokeWidth={2}
+                                                            />
+                                                        </SidebarMenuSubAction>
+                                                    </SidebarMenuSubItem>
+                                                ))}
+                                            {!isShowMore && (
+                                                <SidebarMenuSubItem className="mb-0.5">
+                                                    <SidebarMenuSubButton
+                                                        asChild
+                                                        className="mr-5"
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            className="w-full justify-start"
+                                                            onClick={() =>
+                                                                handleClickShowMore()
+                                                            }
+                                                        >
+                                                            <span className="text-xs font-medium text-muted-foreground truncate">
+                                                                Show More
+                                                            </span>
+                                                        </Button>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            )}
+                                        </SidebarMenuSub>
+                                    </CollapsibleContent>
                                 </SidebarMenuItem>
-                            )}
+                            </Collapsible>
 
-                            {/* Create Organization button (only if user has only personal org) */}
-                            {/* {!isLoading && hasOnlyPersonalOrg && (
-                                <SidebarMenuItem className="mb-1">
-                                    <SidebarMenuButton asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full text-xs"
-                                            onClick={handleCreateOrganization}
-                                        >
-                                            <Building className="h-3.5 w-3.5 mr-2" />
-                                            <span>Create Organization</span>
-                                        </Button>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )} */}
-
-                            {/* Create New button (only on org pages) */}
-                            {/* {isOrgPage && (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full relative z-20 text-xs"
-                                            onClick={handleCreateNew}
-                                        >
-                                            <Plus className="h-3.5 w-3.5 mr-2" />
-                                            <span>Create New</span>
-                                        </Button>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )} */}
-
-                            {/* <CreatePanel
-                                isOpen={isCreatePanelOpen}
-                                onClose={() => setIsCreatePanelOpen(false)}
-                                showTabs={createPanelType}
-                                initialTab={createPanelType}
-                            /> */}
                             {/* Traceability Dropdown */}
                             <SidebarMenuItem className="mb-0.5">
                                 <SidebarMenuButton asChild>
@@ -315,7 +346,7 @@ function AppSidebar() {
                                             Traceability
                                         </span>
                                         <ChevronDown
-                                            className={`ml-auto h-3 w-3 transition-transform ${traceOpen ? 'rotate-180' : ''}`}
+                                            className={`ml-auto h-3 w-3 transition-transform ${traceOpen ? '-rotate-180' : ''}`}
                                         />
                                     </Button>
                                 </SidebarMenuButton>
@@ -366,6 +397,23 @@ function AppSidebar() {
                                     </SidebarMenuSub>
                                 )}
                             </SidebarMenuItem>
+
+                            {profile?.job_title === 'admin' && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToAdmin}
+                                        >
+                                            <Hammer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Admin
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -375,8 +423,8 @@ function AppSidebar() {
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton className="w-full">
-                                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-secondary transition-colors">
+                                <SidebarMenuButton>
+                                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md">
                                         <User className="h-3.5 w-3.5 text-muted-foreground" />
                                         <span className="text-xs font-medium">
                                             {profile?.full_name || user?.email}
