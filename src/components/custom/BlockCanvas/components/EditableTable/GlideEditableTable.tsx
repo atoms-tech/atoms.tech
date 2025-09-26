@@ -96,7 +96,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         onDelete,
         rowMetadataKey,
         rowDetailPanel,
-        //tableMetadata, // Unneeded: metadata is being used in parent to pass in settings, and saving uses local array to track.
+        tableMetadata, // Use to detect table kind as a fallback
     } = props;
 
     const [selection, setSelection] = useState<GridSelection | undefined>(undefined);
@@ -469,7 +469,13 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             ...(col.width !== undefined ? { width: col.width } : {}),
         }));
 
-        const rowMetadata = latestSortedData.map((row, idx) => ({
+        const rowMetadataRows = latestSortedData.map((row, idx) => ({
+            rowId: row.id,
+            position: idx,
+            ...(row.height !== undefined ? { height: row.height } : {}),
+        }));
+
+        const rowMetadataRequirements = latestSortedData.map((row, idx) => ({
             requirementId: row.id,
             position: idx,
             ...(row.height !== undefined ? { height: row.height } : {}),
@@ -513,14 +519,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }
 
         try {
+            const isGeneric =
+                rowMetadataKey === 'rows' ||
+                (tableMetadata as unknown as { tableKind?: string })?.tableKind ===
+                    'genericTable';
+
             const metadataToSave: Partial<BlockTableMetadata> = {
                 columns: columnMetadata,
-                // Write to either requirements or rows based on prop
-                ...(rowMetadataKey === 'rows'
-                    ? { rows: rowMetadata }
-                    : { requirements: rowMetadata }),
-                // Preserve table kind according to the current mode
-                tableKind: rowMetadataKey === 'rows' ? 'genericTable' : 'requirements',
+                ...(isGeneric
+                    ? { rows: rowMetadataRows }
+                    : { requirements: rowMetadataRequirements }),
+                tableKind: isGeneric ? 'genericTable' : 'requirements',
             };
 
             await updateBlockMetadata(blockId, metadataToSave);

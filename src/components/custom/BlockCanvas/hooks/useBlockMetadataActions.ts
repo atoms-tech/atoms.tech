@@ -17,11 +17,17 @@ export interface RequirementMetadata {
     height?: number;
 }
 
+export interface RowMetadata {
+    rowId: string;
+    position: number;
+    height?: number;
+}
+
 export interface BlockTableMetadata {
     columns: ColumnMetadata[];
     requirements: RequirementMetadata[];
     // Optional alternate key for generic tables
-    rows?: RequirementMetadata[];
+    rows?: RowMetadata[];
     // Preserve the table kind so we don't switch pipelines inadvertently
     tableKind?: string;
 }
@@ -85,7 +91,7 @@ export const useBlockMetadataActions = () => {
                         : [],
                     rows: Array.isArray((safeContent as Partial<BlockTableMetadata>).rows)
                         ? ((safeContent as Partial<BlockTableMetadata>)
-                              .rows as RequirementMetadata[])
+                              .rows as RowMetadata[])
                         : undefined,
                     tableKind: (safeContent as Partial<BlockTableMetadata>).tableKind,
                 };
