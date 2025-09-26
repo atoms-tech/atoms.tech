@@ -37,7 +37,7 @@ import {
     SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
-    SidebarGroupLabel,
+    SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -156,20 +156,20 @@ function AppSidebar() {
 
     return (
         <SidebarContainer variant="sidebar" collapsible="offcanvas">
+            <SidebarHeader className="flex items-start gap-2 px-1 ml-4 pt-4 pb-0">
+                <Link href="/" className="flex items-center gap-2">
+                    <Image
+                        src="/atom.png"
+                        alt="Atoms logo"
+                        width={32}
+                        height={32}
+                        className="object-contain dark:invert"
+                    />
+                    <span className="font-bold">ATOMS</span>
+                </Link>
+            </SidebarHeader>
             <SidebarContent className="px-3 py-2">
                 <SidebarGroup>
-                    <SidebarGroupLabel className="flex items-center gap-2 px-1 mb-4">
-                        <Link href="/" className="flex items-center gap-2">
-                            <Image
-                                src="/atom.png"
-                                alt="Atoms logo"
-                                width={32}
-                                height={32}
-                                className="object-contain dark:invert"
-                            />
-                            <span className="font-semibold text-base">ATOMS</span>
-                        </Link>
-                    </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             <SidebarMenuItem className="mb-0.5">
@@ -263,7 +263,7 @@ function AppSidebar() {
                                                             }
                                                         >
                                                             <Pin
-                                                                fill={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : ''}`}
+                                                                fill={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : 'none'}`}
                                                                 stroke={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))'}`}
                                                                 strokeWidth={2}
                                                             />
