@@ -83,8 +83,7 @@ export const GenericTableBlockContent: React.FC<Props> = ({
 }) => {
     const [rows, setRows] = useState<BaseRow[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    // Adapter kept for future composition; using useRowActions directly for now
-    // const rowsAdapter = useMemo(() => createTableRowsAdapter(), []);
+    // const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { saveRow, deleteRow, refreshRows } = useRowActions({
         blockId,
@@ -101,6 +100,16 @@ export const GenericTableBlockContent: React.FC<Props> = ({
         }
     }, [refreshRows]);
 
+    // Silent refresh used after saves to avoid UI flicker  // Was actually caused my metadata issue. Can prob be removed.
+    // const silentRefresh = useCallback(async () => {
+    //     setIsRefreshing(true);
+    //     try {
+    //         await refreshRows();
+    //     } finally {
+    //         setIsRefreshing(false);
+    //     }
+    // }, [refreshRows]);
+
     useEffect(() => {
         void refresh();
     }, [refresh]);
@@ -108,9 +117,18 @@ export const GenericTableBlockContent: React.FC<Props> = ({
     const tableProps: GlideTableProps<BaseRow> = {
         data: rows,
         columns,
-        onSave: async (item, isNew) => saveRow(item, isNew),
+        onSave: async (item, isNew) => {
+            console.log('[GenericRows] 📝 onSave called from GenericTable', {
+                isNew,
+                item,
+            });
+            await saveRow(item, isNew);
+        },
         onDelete: async (item) => deleteRow(item),
-        onPostSave: async () => refresh(),
+        // onPostSave: async () => {
+        //     console.log('[GenericRows] 🔄 onPostSave (silentRefresh)');
+        //     await silentRefresh();
+        // },
         isLoading,
         isEditMode,
         alwaysShowAddRow,

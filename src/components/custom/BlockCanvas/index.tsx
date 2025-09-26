@@ -403,14 +403,6 @@ export function BlockCanvas({
                     >
                         <Table className="h-4 w-4" />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => createTableWithLayout('blank', 'Untitled Table')}
-                        title="Add Generic Table"
-                    >
-                        <Table className="h-4 w-4" />
-                    </Button>
                 </div>
             )}
             <AddTableDialog

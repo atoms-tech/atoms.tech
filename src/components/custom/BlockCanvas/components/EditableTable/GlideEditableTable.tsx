@@ -519,6 +519,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 ...(rowMetadataKey === 'rows'
                     ? { rows: rowMetadata }
                     : { requirements: rowMetadata }),
+                // Preserve table kind according to the current mode
+                tableKind: rowMetadataKey === 'rows' ? 'genericTable' : 'requirements',
             };
 
             await updateBlockMetadata(blockId, metadataToSave);

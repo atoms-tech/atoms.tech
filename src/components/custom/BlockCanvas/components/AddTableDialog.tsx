@@ -29,8 +29,9 @@ export function AddTableDialog({ isOpen, onClose, onCreate }: AddTableDialogProp
         if (isSubmitting) return;
         try {
             setIsSubmitting(true);
-            await onCreate(layout, tableName.trim());
+            // Close immediately to prevent flicker/reopen during hydration
             onClose();
+            await onCreate(layout, tableName.trim());
         } finally {
             setIsSubmitting(false);
         }

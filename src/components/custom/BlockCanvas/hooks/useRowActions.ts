@@ -61,6 +61,7 @@ export const useRowActions = ({
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
 
     const refreshRows = useCallback(async () => {
+        console.log('[GenericRows] 🎯 refreshRows called', { blockId, documentId });
         try {
             const qb = (
                 supabase.from as unknown as (table: string) => SelectBuilderFinal<{
@@ -73,8 +74,7 @@ export const useRowActions = ({
                 .select('*')
                 .eq('block_id', blockId)
                 .eq('document_id', documentId)
-                .order('position', { ascending: true })
-                .limit(1)) as unknown as {
+                .order('position', { ascending: true })) as unknown as {
                 data:
                     | {
                           id: string;
@@ -93,6 +93,9 @@ export const useRowActions = ({
                 ...(r.row_data || {}),
             }));
             setLocalRows(mapped);
+            console.log('[GenericRows] ✅ refreshRows completed', {
+                count: mapped.length,
+            });
         } catch (e) {
             console.error('[useRowActions] Failed to refresh rows', e);
         }
@@ -105,6 +108,7 @@ export const useRowActions = ({
     };
 
     const getLastPosition = useCallback(async (): Promise<number> => {
+        console.log('[GenericRows] 🎯 getLastPosition called');
         try {
             const qb = (
                 supabase.from as unknown as (
@@ -128,10 +132,16 @@ export const useRowActions = ({
 
     const saveRow = useCallback(
         async (row: BaseRow, isNew: boolean) => {
+            console.log('[GenericRows] 🎯 saveRow called', { isNew, row });
             try {
                 const { id, position, height: _height, ...rest } = row;
                 if (isNew) {
                     const pos = position ?? (await getLastPosition());
+                    console.log('[GenericRows] 🎯 inserting new row', {
+                        id,
+                        pos,
+                        row_data: rest,
+                    });
                     const insertPayload = {
                         id,
                         block_id: blockId,
@@ -145,7 +155,15 @@ export const useRowActions = ({
                     const { error } = await ins.insert(insertPayload).select().single();
                     if (error) throw error;
                     setLocalRows((prev) => [...prev, { ...row, position: pos }]);
+                    console.log(
+                        '[GenericRows] ✅ new row inserted and local state updated',
+                    );
                 } else {
+                    console.log('[GenericRows] 🎯 updating existing row', {
+                        id,
+                        position,
+                        rest,
+                    });
                     const updatePayload = {
                         position: position ?? undefined,
                         row_data: rest as Record<string, CellValue>,
@@ -162,6 +180,7 @@ export const useRowActions = ({
                     setLocalRows((prev) =>
                         prev.map((r) => (r.id === id ? { ...r, ...row } : r)),
                     );
+                    console.log('[GenericRows] ✅ row updated and local state merged');
                 }
             } catch (e) {
                 console.error('[useRowActions] Failed to save row', e);
