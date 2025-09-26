@@ -7,7 +7,6 @@ import {
     Hammer,
     Home,
     ListTree,
-    LucideIcon,
     Pin,
     Sparkles,
     Table,
@@ -16,10 +15,9 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import React, { useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
 
-import { setCookie } from '@/app/(protected)/org/actions';
 import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,87 +52,45 @@ import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Organization, OrganizationType } from '@/types';
 
-interface MenuItem {
-    title: string;
-    url: string;
-    icon: LucideIcon;
-}
-
-// Menu items with app router paths
-const _items: MenuItem[] = [
-    {
-        title: 'Home',
-        url: '/home',
-        icon: Home,
-    },
-];
-
 function AppSidebar() {
-    // State for traceability dropdown
-    const [traceOpen, setTraceOpen] = React.useState<boolean>(false);
-    const [isOrganizationOpen, setIsOrganizationOpen] = React.useState<boolean>(true);
-    // Get traceView from URL
-    let traceView = '';
-    if (typeof window !== 'undefined') {
-        const params = new URLSearchParams(window.location.search);
-        traceView = params.get('view') || '';
-    }
     const router = useRouter();
-    const pathname = usePathname();
     const { signOut, isLoading: isSigningOut } = useSignOut();
     const { user, profile } = useUser();
-    const { organizations, currentOrganization, setCurrentOrganization } =
-        useOrganization();
+    const { organizations, setCurrentOrganization } = useOrganization();
     const { setUserContext } = useAgentStore();
 
-    // Find personal and enterprise organizations from context
-    const personalOrg = organizations.find(
+    const personalOrganization = organizations.find(
         (org) => org.type === OrganizationType.personal,
-    );
-    const enterpriseOrg = organizations.find(
-        (org) => org.type === OrganizationType.enterprise,
     );
     const [pinnedOrganization, setPinnedOrganization] = React.useState<
         Organization | undefined
     >(organizations.find((org) => org.id === profile?.pinned_organization_id));
 
     const filteredOrganizations = organizations.filter(
-        (org) => org.id !== personalOrg?.id,
+        (org) => org.id !== personalOrganization?.id,
     );
-    const ORGS_PER_CLICK = 5;
-    const [orgLimit, setOrgLimit] = React.useState<number>(ORGS_PER_CLICK);
-    const [isShowMore, setIsShowMore] = React.useState<boolean>(
-        filteredOrganizations.length < orgLimit + 1,
-    );
-
     const sortedOrganizations = [
         ...filteredOrganizations.filter((org) => org.id === pinnedOrganization?.id),
         ...filteredOrganizations.filter((org) => org.id !== pinnedOrganization?.id),
     ];
 
-    const _isOrgPage = pathname?.startsWith('/org') ?? false;
-    const _isPlaygroundPage = currentOrganization?.type === OrganizationType.personal;
-    const _isUserDashboardPage = pathname?.startsWith('/home/user') ?? false;
+    // States for collapsibles
+    const [isTraceOpen, setIsTraceOpen] = React.useState<boolean>(false);
+    const [isOrganizationOpen, setIsOrganizationOpen] = React.useState<boolean>(true);
 
-    // Check if user has only a personal org and no other memberships
-    const _hasOnlyPersonalOrg =
-        personalOrg &&
-        (!organizations ||
-            organizations.length === 0 ||
-            (organizations.length === 1 && organizations[0].id === personalOrg.id));
+    const ORGS_PER_CLICK = 5;
+    const [organizationLimit, setOrgLimit] = React.useState<number>(ORGS_PER_CLICK);
+    const [isShowMore, setIsShowMore] = React.useState<boolean>(
+        filteredOrganizations.length < organizationLimit + 1,
+    );
 
-    const navigateToPlayground = useCallback(() => {
-        if (personalOrg) {
-            console.log('Navigating to playground:', personalOrg.id);
-            // Only set preferred_org_id if there's no enterprise org
-            if (!enterpriseOrg) {
-                setCookie('preferred_org_id', personalOrg.id);
-            }
-            router.push(`/org/${personalOrg.id}`);
-        } else {
-            console.log('No personal organization found');
+    const navigateToPlayground = () => {
+        if (!personalOrganization) {
+            return console.error('No personal organization found');
         }
-    }, [personalOrg, router, enterpriseOrg]);
+        console.log('Navigating to Playground:');
+        router.push(`/org/${personalOrganization.id}`);
+    };
 
     const navigateToOrganization = (org: Organization) => {
         console.log('Navigating to Organization:');
@@ -169,8 +125,10 @@ function AppSidebar() {
     };
 
     const handleClickShowMore = () => {
-        setIsShowMore(filteredOrganizations.length < orgLimit + ORGS_PER_CLICK + 1);
-        setOrgLimit(orgLimit + ORGS_PER_CLICK);
+        setIsShowMore(
+            filteredOrganizations.length < organizationLimit + ORGS_PER_CLICK + 1,
+        );
+        setOrgLimit(organizationLimit + ORGS_PER_CLICK);
     };
 
     useEffect(() => {
@@ -224,7 +182,7 @@ function AppSidebar() {
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            {personalOrg && (
+                            {personalOrganization && (
                                 <SidebarMenuItem className="mb-0.5">
                                     <SidebarMenuButton asChild>
                                         <Button
@@ -241,6 +199,7 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             )}
 
+                            {/* Organizations Collapsible */}
                             <Collapsible
                                 open={isOrganizationOpen}
                                 onOpenChange={setIsOrganizationOpen}
@@ -265,7 +224,7 @@ function AppSidebar() {
                                     <CollapsibleContent>
                                         <SidebarMenuSub>
                                             {sortedOrganizations
-                                                .slice(0, orgLimit)
+                                                .slice(0, organizationLimit)
                                                 .map((org: Organization) => (
                                                     <SidebarMenuSubItem
                                                         key={org.id}
@@ -321,7 +280,7 @@ function AppSidebar() {
                                                                 handleClickShowMore()
                                                             }
                                                         >
-                                                            <span className="text-xs font-medium text-muted-foreground truncate">
+                                                            <span className="text-xs font-medium text-muted-foreground">
                                                                 Show More
                                                             </span>
                                                         </Button>
@@ -333,70 +292,94 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             </Collapsible>
 
-                            {/* Traceability Dropdown */}
-                            <SidebarMenuItem className="mb-0.5">
-                                <SidebarMenuButton asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full justify-start"
-                                        onClick={() => setTraceOpen((open) => !open)}
-                                    >
-                                        <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                        <span className="text-xs font-medium">
-                                            Traceability
-                                        </span>
-                                        <ChevronDown
-                                            className={`ml-auto h-3 w-3 transition-transform ${traceOpen ? '-rotate-180' : ''}`}
-                                        />
-                                    </Button>
-                                </SidebarMenuButton>
-                                {traceOpen && (
-                                    <SidebarMenuSub>
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton
-                                                asChild
-                                                isActive={
-                                                    pathname === '/traceability' &&
-                                                    (!traceView || traceView === 'matrix')
-                                                }
+                            {/* Traceability Collapsible */}
+                            <Collapsible open={isTraceOpen} onOpenChange={setIsTraceOpen}>
+                                <SidebarMenuItem className="mb-0.5">
+                                    <CollapsibleTrigger asChild className="mb-0.5">
+                                        <SidebarMenuButton asChild>
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full justify-start"
                                             >
-                                                <Link href="/traceability?view=matrix">
-                                                    <Table className="h-3.5 w-3.5" />
-                                                    <span>Matrix View</span>
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton
-                                                asChild
-                                                isActive={
-                                                    pathname === '/traceability' &&
-                                                    traceView === 'hierarchy'
-                                                }
-                                            >
-                                                <Link href="/traceability?view=hierarchy">
-                                                    <ListTree className="h-3.5 w-3.5" />
-                                                    <span>Hierarchy View</span>
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                        <SidebarMenuSubItem>
-                                            <SidebarMenuSubButton
-                                                asChild
-                                                isActive={
-                                                    pathname === '/traceability' &&
-                                                    traceView === 'test'
-                                                }
-                                            >
-                                                <Link href="/traceability?view=test">
-                                                    <FlaskConical className="h-3.5 w-3.5" />
-                                                    <span>Test Requirement</span>
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    </SidebarMenuSub>
-                                )}
-                            </SidebarMenuItem>
+                                                <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                <span className="text-xs font-medium">
+                                                    Traceability
+                                                </span>
+                                                <ChevronDown
+                                                    className={`ml-auto h-3 w-3 transition-transform ${isTraceOpen ? '-rotate-180' : ''}`}
+                                                />
+                                            </Button>
+                                        </SidebarMenuButton>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <SidebarMenuSub>
+                                            <SidebarMenuSubItem className="mb-0.5">
+                                                <SidebarMenuSubButton
+                                                    asChild
+                                                    className="mr-5"
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="w-full justify-start"
+                                                        onClick={() =>
+                                                            router.push(
+                                                                '/traceability?view=matrix',
+                                                            )
+                                                        }
+                                                    >
+                                                        <Table className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                        <span className="text-xs font-medium">
+                                                            Matrix View
+                                                        </span>
+                                                    </Button>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                            <SidebarMenuSubItem className="mb-0.5">
+                                                <SidebarMenuSubButton
+                                                    asChild
+                                                    className="mr-5"
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="w-full justify-start"
+                                                        onClick={() =>
+                                                            router.push(
+                                                                '/traceability?view=hierarchy',
+                                                            )
+                                                        }
+                                                    >
+                                                        <ListTree className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                        <span className="text-xs font-medium">
+                                                            Hierarchy View
+                                                        </span>
+                                                    </Button>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                            <SidebarMenuSubItem className="mb-0.5">
+                                                <SidebarMenuSubButton
+                                                    asChild
+                                                    className="mr-5"
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        className="w-full justify-start"
+                                                        onClick={() =>
+                                                            router.push(
+                                                                '/traceability?view=test',
+                                                            )
+                                                        }
+                                                    >
+                                                        <FlaskConical className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                                        <span className="text-xs font-medium">
+                                                            Test Requirement
+                                                        </span>
+                                                    </Button>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                        </SidebarMenuSub>
+                                    </CollapsibleContent>
+                                </SidebarMenuItem>
+                            </Collapsible>
 
                             {profile?.job_title === 'admin' && (
                                 <SidebarMenuItem className="mb-0.5">
