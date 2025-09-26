@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowBigDownIcon, Filter, Users } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
+import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
 import {
     ORGANIZATION_ROLE_ARRAY,
     OrganizationRole,
@@ -43,7 +44,8 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<OrganizationRole[]>([]);
 
-    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const { data: userRoleQuery } = useOrgMemberRole(params.orgId, user?.id || '');
+    const userRole: OrganizationRole | null = userRoleQuery ?? null;
 
     const {
         data: members = [],
@@ -55,26 +57,6 @@ export default function OrgMembers({ className }: OrgMembersProps) {
             params ? getOrganizationMembers(params.orgId) : Promise.resolve([]),
         enabled: params?.orgId ? true : false,
     });
-
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', params?.orgId || '')
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
-        };
-
-        fetchUserRole();
-    }, [params?.orgId, user?.id]);
 
     const handleRemoveMember = async (memberId: string) => {
         if (!hasOrganizationPermission(userRole, 'removeMember')) {

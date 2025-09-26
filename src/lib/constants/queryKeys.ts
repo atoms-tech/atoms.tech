@@ -76,6 +76,14 @@ export const queryKeys = {
             [...queryKeys.profiles.root, 'byEmail', email] as const,
     },
 
+    roles: {
+        root: ['roles'] as const,
+        byOrg: (orgId: string) =>
+            [...queryKeys.organizations.detail(orgId), 'role'] as const,
+        byProject: (projectId: string) =>
+            [...queryKeys.projects.detail(projectId), 'role'] as const,
+    },
+
     organizations: {
         root: ['organizations'] as const,
         list: (filters?: QueryFilters) =>

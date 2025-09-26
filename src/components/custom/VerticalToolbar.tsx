@@ -13,8 +13,9 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useProjectMemberRole } from '@/hooks/queries/useProjectMember';
+import { ProjectRole } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
 
@@ -33,7 +34,11 @@ const VerticalToolbar = () => {
     const { isEditMode, setIsEditMode } = useDocumentStore();
 
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<string | null>(null);
+    const { data: userRoleQuery } = useProjectMemberRole(
+        pathname?.split('/')[4] || '',
+        user?.id || '',
+    );
+    const userRole: ProjectRole | null = userRoleQuery ?? null;
 
     useEffect(() => {
         const handleResize = () => {
@@ -60,29 +65,6 @@ const VerticalToolbar = () => {
             clearTimeout(timeoutId);
         };
     }, []);
-
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            const projectId = pathname?.split('/')[4] || ''; // Extract project_id from the URL
-            if (!projectId || !user?.id) return;
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
-        };
-
-        fetchUserRole();
-    }, [pathname, user?.id]);
 
     const canEdit = ['owner', 'editor'].includes(userRole || '');
 

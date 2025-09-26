@@ -20,6 +20,7 @@ import {
     useUploadExternalDocument,
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
@@ -47,7 +48,6 @@ export default function ExternalDocsPage({
     const pathname = usePathname();
     const { toast } = useToast();
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
 
     // Extract orgId from URL path
     const pathOrgId = pathname ? pathname.split('/')[2] : null;
@@ -55,28 +55,8 @@ export default function ExternalDocsPage({
     // Use organization.id if available, otherwise fall back to path-based orgId
     const currentOrgId = organization?.id || pathOrgId;
 
-    // Fetch user role
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', currentOrgId || '')
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
-        };
-
-        if (currentOrgId) {
-            fetchUserRole();
-        }
-    }, [currentOrgId, user?.id]);
+    const { data: userRoleQuery } = useOrgMemberRole(currentOrgId || '', user?.id || '');
+    const userRole: OrganizationRole | null = userRoleQuery ?? null;
 
     // Only fetch documents if we have a valid orgId
     const { data, refetch } = useExternalDocumentsByOrg(currentOrgId ? currentOrgId : '');

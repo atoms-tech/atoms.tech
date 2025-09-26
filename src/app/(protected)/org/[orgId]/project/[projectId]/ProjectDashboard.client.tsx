@@ -37,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
+import { useProjectMemberRole } from '@/hooks/queries/useProjectMember';
 import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
@@ -72,7 +73,11 @@ export default function ProjectPage() {
     const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
     const { user } = useUser();
     const [isDeleting, setIsDeleting] = useState(false);
-    const [userRole, setUserRole] = useState<ProjectRole | null>(null);
+    const { data: userRoleQuery } = useProjectMemberRole(
+        params.projectId,
+        user?.id || '',
+    );
+    const userRole: ProjectRole | null = userRoleQuery ?? null;
     const {
         data: documents,
         isLoading: documentsLoading,
@@ -95,29 +100,6 @@ export default function ProjectPage() {
             projectMembersComponent.dispatchEvent(new CustomEvent('refetch'));
         }
     }, []);
-
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            const projectId = params?.projectId || ''; // Extract project_id from the URL
-            if (!projectId || !user?.id) return;
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
-        };
-
-        fetchUserRole();
-    }, [params?.projectId, user?.id]);
 
     const handleDocumentClick = (doc: Document) => {
         if (!hasProjectPermission(userRole, 'viewDocument')) {

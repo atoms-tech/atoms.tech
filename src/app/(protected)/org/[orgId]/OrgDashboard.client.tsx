@@ -37,12 +37,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
-import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import {
     useDeleteProject,
     useDuplicateProject,
 } from '@/hooks/mutations/useProjectMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
+import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
 import { supabase } from '@/lib/supabase/supabaseBrowser';
@@ -77,7 +77,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [_totalUsage, setTotalUsage] = useState(0); // Track total usage
-    const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
 
     const [isAiAnalysisDialogOpen, setIsAiAnalysisDialogOpen] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
@@ -92,7 +91,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         null,
     );
     const { user } = useUser();
-    const [userRole, setUserRole] = useState<OrganizationRole | null>(null);
+    const { data: userRoleQuery } = useOrgMemberRole(props.orgId, user?.id || '');
+    const userRole: OrganizationRole | null = userRoleQuery ?? null;
     const { toast } = useToast();
 
     // Project action mutations
@@ -143,34 +143,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
             setTotalUsage(usage);
         }
     }, [externalDocuments]);
-
-    useEffect(() => {
-        if (props.orgId) {
-            setOrgMemberCount(props.orgId).catch((error) => {
-                console.error('Failed to refresh member count:', error);
-            });
-        }
-    }, [props.orgId, setOrgMemberCount]);
-
-    useEffect(() => {
-        const fetchUserRole = async () => {
-            const { data, error } = await supabase
-                .from('organization_members')
-                .select('role')
-                .eq('organization_id', props.orgId)
-                .eq('user_id', user?.id || '')
-                .single();
-
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
-            }
-
-            setUserRole(data?.role || null);
-        };
-
-        fetchUserRole();
-    }, [props.orgId, user?.id]);
 
     const handleCreateProject = () => {
         setIsCreatePanelOpen(true);
