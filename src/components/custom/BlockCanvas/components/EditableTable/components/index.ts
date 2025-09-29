@@ -8,3 +8,5 @@ export * from './AddColumnDialog';
 export * from './TableControls';
 export * from './TableHeader';
 export * from './TanStackDataTableRow';
+
+export * from './RenameColumnDialog';

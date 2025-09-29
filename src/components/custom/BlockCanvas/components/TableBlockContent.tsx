@@ -30,6 +30,7 @@ interface TableBlockContentProps {
     ) => Promise<void>;
     onDeleteRequirement: (dynamicReq: DynamicRequirement) => Promise<void>;
     onDeleteColumn: (columnId: string) => Promise<void>;
+    onRenameColumn?: (columnId: string, newName: string) => Promise<void>; // ADD THIS LINE
     refreshRequirements: () => Promise<void>;
     isEditMode: boolean;
     alwaysShowAddRow?: boolean;
@@ -49,6 +50,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         onSaveRequirement,
         onDeleteRequirement,
         onDeleteColumn,
+        onRenameColumn,
         refreshRequirements,
         isEditMode,
         alwaysShowAddRow = false,
@@ -127,6 +129,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 blockId,
                 tableMetadata,
                 onDeleteColumn,
+                onRenameColumn,
                 rowDetailPanel: EffectiveRowDetailPanel,
                 dataAdapter,
                 rowMetadataKey,
@@ -142,6 +145,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 blockId,
                 tableMetadata,
                 onDeleteColumn,
+                onRenameColumn,
                 EffectiveRowDetailPanel,
                 dataAdapter,
                 rowMetadataKey,

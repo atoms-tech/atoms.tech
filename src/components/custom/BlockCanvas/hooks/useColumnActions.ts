@@ -1,6 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {
     EditableColumnType,
     PropertyConfig,
@@ -93,13 +95,24 @@ export const useColumnActions = ({
 
                 const property = propertyData as Property;
 
-                // Step 2: Create the column
+                // step 2: get the max position of existing columns for this block
+                const { data: existingColumns } = await supabase
+                    .from('columns')
+                    .select('position')
+                    .eq('block_id', blockId);
+
+                const maxPosition =
+                    existingColumns && existingColumns.length > 0
+                        ? Math.max(...existingColumns.map((c) => c.position ?? 0))
+                        : -1;
+
+                // step 3: create the column at the end
                 const { data: columnData, error: columnError } = await supabase
                     .from('columns')
                     .insert({
                         block_id: blockId,
                         property_id: property.id,
-                        position: 0, // This will be updated in a subsequent query
+                        position: maxPosition + 1, // place at the end, not at 0
                         width: null,
                         is_hidden: false,
                         is_pinned: false,
@@ -161,13 +174,24 @@ export const useColumnActions = ({
 
                 const property = propertyData as Property;
 
-                // Step 2: Create the column
+                // step 2: get the max position of existing columns for this block
+                const { data: existingColumns } = await supabase
+                    .from('columns')
+                    .select('position')
+                    .eq('block_id', blockId);
+
+                const maxPosition =
+                    existingColumns && existingColumns.length > 0
+                        ? Math.max(...existingColumns.map((c) => c.position ?? 0))
+                        : -1;
+
+                // step 3: create the column at the end
                 const { data: columnData, error: columnError } = await supabase
                     .from('columns')
                     .insert({
                         block_id: blockId,
                         property_id: property.id,
-                        position: 0, // This will be updated in a subsequent query
+                        position: maxPosition + 1, // place at the end
                         width: null,
                         is_hidden: false,
                         is_pinned: false,
@@ -275,7 +299,7 @@ export const useColumnActions = ({
                 const updatePromises = requirements.map((req) => {
                     const originalProps = req.properties;
 
-                    // Ensure it's an object before spreading
+                    // ensure it's an object before spreading
                     const currentProps =
                         originalProps &&
                         typeof originalProps === 'object' &&
@@ -283,8 +307,11 @@ export const useColumnActions = ({
                             ? { ...originalProps }
                             : {};
 
-                    // Delete any key that has matching column_id
-                    for (const key of Object.keys(currentProps)) {
+                    // safely get keys - handle null/undefined case
+                    const keys = currentProps ? Object.keys(currentProps) : [];
+
+                    // delete any key that has matching column_id
+                    for (const key of keys) {
                         const entry = currentProps[key];
                         if (
                             typeof entry === 'object' &&
@@ -322,6 +349,109 @@ export const useColumnActions = ({
         },
         [queryClient],
     );
+
+    // rename a property and update associated column
+    const renameProperty = useCallback(
+        async (propertyId: string, newName: string) => {
+            try {
+                // First get the old property name
+                const { data: oldProperty, error: fetchError } = await supabase
+                    .from('properties')
+                    .select('name')
+                    .eq('id', propertyId)
+                    .single();
+
+                if (fetchError) throw fetchError;
+                const oldName = oldProperty.name;
+
+                // Update the property name
+                const { data, error } = await supabase
+                    .from('properties')
+                    .update({
+                        name: newName,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', propertyId)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // CRITICAL: Migrate existing data in requirements table
+                // Find all requirements that have this property
+                const { data: requirements, error: reqError } = await supabase
+                    .from('requirements')
+                    .select('id, properties')
+                    .not('properties', 'is', null);
+
+                if (!reqError && requirements) {
+                    // Update each requirement's properties JSON
+                    const updates = requirements
+                        .filter((req) => {
+                            // Type guard to ensure properties is an object
+                            if (
+                                !req.properties ||
+                                typeof req.properties !== 'object' ||
+                                Array.isArray(req.properties)
+                            ) {
+                                return false;
+                            }
+                            // Check if old name exists in properties
+                            return oldName in (req.properties as Record<string, any>);
+                        })
+                        .map((req) => {
+                            // We know properties is an object here due to the filter above
+                            const props = req.properties as Record<string, any>;
+                            const newProps: Record<string, any> = {};
+
+                            // Copy all properties, renaming the key if it matches oldName
+                            Object.keys(props).forEach((key) => {
+                                if (key === oldName) {
+                                    newProps[newName] = props[key];
+                                } else {
+                                    newProps[key] = props[key];
+                                }
+                            });
+
+                            return {
+                                id: req.id,
+                                properties: newProps as Json,
+                            };
+                        });
+
+                    // Batch update all affected requirements
+                    for (const update of updates) {
+                        await supabase
+                            .from('requirements')
+                            .update({ properties: update.properties })
+                            .eq('id', update.id);
+                    }
+                }
+
+                // Invalidate relevant queries
+                await queryClient.invalidateQueries({
+                    queryKey: queryKeys.properties.root,
+                });
+                await queryClient.invalidateQueries({
+                    queryKey: queryKeys.requirements.root,
+                });
+
+                return data;
+            } catch (error) {
+                console.error('[useColumnActions] Failed to rename property:', error);
+                throw error;
+            }
+        },
+        [queryClient],
+    );
+
+    return {
+        createPropertyAndColumn,
+        createColumnFromProperty,
+        deleteColumn,
+        appendPropertyOptions,
+        renameProperty,
+    };
 
     // Not needed as we manage metadata at the block level.
     // const updateColumnsMetadata = useCallback(

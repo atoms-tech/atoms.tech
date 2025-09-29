@@ -1,6 +1,7 @@
 'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import '@/styles/globals.css';
 
 // We still need to validate role perms so readers cannot edit, ect.
@@ -52,6 +53,7 @@ import { useUser } from '@/lib/providers/user.provider';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 import { AddColumnDialog } from './components/AddColumnDialog';
+import { RenameColumnDialog } from './components/RenameColumnDialog';
 import { useGlideCopy } from './hooks/useGlideCopy';
 import { usePeopleOptions } from './hooks/usePeopleOptions';
 import {
@@ -61,6 +63,20 @@ import {
     GlideTableProps,
     PropertyConfig,
 } from './types';
+
+// define default columns that cannot be renamed
+const SYSTEM_COLUMNS = [
+    'external_id',
+    'name',
+    'description',
+    'status',
+    'priority',
+    'assignee',
+];
+
+const isSystemColumn = (columnHeader: string): boolean => {
+    return SYSTEM_COLUMNS.includes(columnHeader.toLowerCase());
+};
 
 // import { /*CellValue,*/ GlideTableProps } from './types';
 // import { ChartNoAxesColumnDecreasingIcon } from 'lucide-react';
@@ -159,6 +175,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     //const [columnToDelete, setColumnToDelete] = useState<{ id: string; blockId: string } | null>(null);
     const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    // column rename dialog state
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+    const [columnToRename, setColumnToRename] = useState<{
+        id: string;
+        currentName: string;
+    } | null>(null);
 
     // Optional row detail panel state
     const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
@@ -257,21 +279,42 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 return;
             }
 
+            // Get current column configuration to ensure we save with correct property names
+            const currentColumns = localColumnsRef.current;
+
             for (const [rowId, changes] of rows) {
                 const originalItem = data.find((d) => d.id === rowId);
                 if (!originalItem) {
                     continue;
                 }
-                const fullItem: T = { ...originalItem, ...changes };
+
+                // Remap changes to use current column names
+                const remappedChanges: any = {};
+                Object.entries(changes).forEach(([key, value]) => {
+                    // Find if this key matches any column's current accessor
+                    const column = currentColumns.find(
+                        (col) => col.accessor === key || col.header === key,
+                    );
+                    if (column) {
+                        // Use the current header/accessor name
+                        remappedChanges[column.header] = value;
+                    } else {
+                        // Keep as is if no matching column
+                        remappedChanges[key] = value;
+                    }
+                });
+
+                const fullItem: T = { ...originalItem, ...remappedChanges };
                 await saveRow(fullItem, false);
             }
 
             await refreshAfterSave();
 
-            // small delay to let the updated props.data come in, then clear buffer
+            // Clear buffer after successful save
             await new Promise((r) => setTimeout(r, 250));
             setEditingData({});
-        } catch {
+        } catch (error) {
+            console.error('[handleSaveAll] Error:', error);
         } finally {
             isSavingRef.current = false;
         }
@@ -349,9 +392,42 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }));
     }, [columns]);
 
-    const [localColumns, setLocalColumns] = useState(
-        [...normalizedColumns].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-    );
+    // use blockId as part of the state key to ensure isolation
+    const [localColumns, setLocalColumns] = useState(() => {
+        // always start fresh with the provided columns for this specific block
+        const sorted = [...normalizedColumns].sort(
+            (a, b) => (a.position ?? 0) - (b.position ?? 0),
+        );
+        return sorted.map((col, index) => ({
+            ...col,
+            position: col.position !== undefined ? col.position : index,
+        }));
+    });
+
+    // force reset when blockId changes (completely new table)
+    const prevBlockIdRef = useRef(blockId);
+    useEffect(() => {
+        if (blockId && blockId !== prevBlockIdRef.current) {
+            console.log('[GlideEditableTable] Block ID changed, resetting columns', {
+                oldBlockId: prevBlockIdRef.current,
+                newBlockId: blockId,
+            });
+
+            // completely reset to incoming columns only
+            const sorted = [...normalizedColumns].sort(
+                (a, b) => (a.position ?? 0) - (b.position ?? 0),
+            );
+            setLocalColumns(
+                sorted.map((col, index) => ({
+                    ...col,
+                    position: col.position !== undefined ? col.position : index,
+                })) as typeof localColumns,
+            );
+
+            prevBlockIdRef.current = blockId;
+        }
+    }, [blockId, normalizedColumns]);
+
     const localColumnsRef = useRef(localColumns);
     useEffect(() => {
         localColumnsRef.current = localColumns;
@@ -465,7 +541,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
         const columnMetadata = latestLocalColumns.map((col, idx) => ({
             columnId: col.id,
-            position: idx,
+            position: col.position !== undefined ? col.position : idx, // use existing position if available
+            name: col.header, // always include the column name in metadata
             ...(col.width !== undefined ? { width: col.width } : {}),
         }));
 
@@ -572,68 +649,43 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
     // watch for changes in columns from database and sync w local state
     useEffect(() => {
-        // normalize incoming columns to match local format
-        const normalized = columns.map((col) => ({
-            ...col,
-            title: col.header, // map header to title for consistency
-        }));
-
-        // sort by position to maintain order
-        const sortedNormalized = [...normalized].sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0),
-        );
-
-        const normalizedAccessors = new Set(sortedNormalized.map((c) => c.accessor));
-
-        setLocalColumns((prev) => {
-            const localAccessors = new Set(prev.map((c) => c.accessor));
-
-            const columnsAdded = [...normalizedAccessors].filter(
-                (a) => !localAccessors.has(a),
+        // skip if this is initial mount
+        if (localColumns.length === 0 && columns.length > 0) {
+            const normalized = columns.map((col) => ({
+                ...col,
+                title: col.header,
+            }));
+            const sorted = [...normalized].sort(
+                (a, b) => (a.position ?? 0) - (b.position ?? 0),
             );
+            // ensure the type matches localColumns
+            setLocalColumns(sorted as typeof localColumns);
+            return;
+        }
 
-            const filteredColumnsAdded = columnsAdded.filter(
-                (accessor) =>
-                    ![...deletedColumnIdsRef.current].some(
-                        (deletedId) =>
-                            sortedNormalized.find((col) => col.accessor === accessor)
-                                ?.id === deletedId,
-                    ),
+        // only sync if we have actual structural changes (columns added/removed)
+        const localIds = new Set(localColumns.map((c) => c.id));
+        const incomingIds = new Set(columns.map((c) => c.id));
+
+        const hasNewColumns = [...incomingIds].some((id) => !localIds.has(id));
+        const hasRemovedColumns = [...localIds].some((id) => !incomingIds.has(id));
+
+        if (hasNewColumns || hasRemovedColumns) {
+            console.log(
+                '[GlideEditableTable] Structural change detected, syncing columns',
             );
-
-            // Find columns that were removed
-            const columnsRemoved = [...localAccessors].filter(
-                (a) => !normalizedAccessors.has(a),
+            const normalized = columns.map((col) => ({
+                ...col,
+                title: col.header,
+            }));
+            const sorted = [...normalized].sort(
+                (a, b) => (a.position ?? 0) - (b.position ?? 0),
             );
-
-            // Only update if there are actual changes
-            if (filteredColumnsAdded.length === 0 && columnsRemoved.length === 0) {
-                return prev;
-            }
-
-            // Start with previous local columns
-            const merged = [...prev];
-
-            // Add new columns at the end
-            for (const added of filteredColumnsAdded) {
-                const newCol = sortedNormalized.find((c) => c.accessor === added);
-                if (newCol) {
-                    console.debug(
-                        '[GlideEditableTable] Adding new column:',
-                        newCol.header,
-                    );
-                    merged.push(newCol);
-                }
-            }
-
-            // Remove deleted columns
-            const filtered = merged.filter((col) =>
-                normalizedAccessors.has(col.accessor),
-            );
-
-            return filtered;
-        });
-    }, [columns]);
+            // ensure the type matches localColumns
+            setLocalColumns(sorted as typeof localColumns);
+        }
+        // if no structural changes, keep local state (preserves renames)
+    }, [columns.length]); // only depend on length to detect structural changes
 
     // Track if a manual row reorder is in progress to avoid remote overwrite
     const isReorderingRef = useRef(false);
@@ -804,10 +856,32 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     const getCellContent = useCallback(
         (cell: Item): GridCell => {
             const [col, row] = cell;
+
+            // SAFETY CHECK: Ensure column exists
             const column = localColumns[col];
+            if (!column) {
+                console.warn(`[getCellContent] Column at index ${col} not found`);
+                return {
+                    kind: GridCellKind.Text,
+                    allowOverlay: false,
+                    data: '',
+                    displayData: '',
+                } as TextCell;
+            }
+
             const rowData = sortedData[row];
+            if (!rowData) {
+                return {
+                    kind: GridCellKind.Text,
+                    allowOverlay: false,
+                    data: '',
+                    displayData: '',
+                } as TextCell;
+            }
+
             const value = rowData?.[column.accessor];
             const columnOptions = Array.isArray(column.options) ? column.options : [];
+
             switch (column.type) {
                 case 'people': {
                     const stringValue = Array.isArray(value)
@@ -833,16 +907,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                           : [];
                     const options = columnOptions;
 
-                    // console.debug('[getCellContent] multi_select cell', {
-                    //     header: column.header,
-                    //     accessor: String(accessor),
-                    //     rowIndex: row,
-                    //     rowId: rowData?.id,
-                    //     rawValue: value,
-                    //     values,
-                    //     options,
-                    // });
-
                     return {
                         kind: GridCellKind.Custom,
                         allowOverlay: isEditMode,
@@ -858,28 +922,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }
                 case 'select': {
                     const stringValue = typeof value === 'string' ? value : '';
-                    if (!Array.isArray(column.options)) {
-                        console.warn(
-                            '[getCellContent] Select column missing valid options array:',
-                            {
-                                columnId: column.id,
-                                header: column.header,
-                                options: column.options,
-                            },
-                        );
-                    }
-
                     const options = columnOptions;
-
-                    // console.debug('[getCellContent] select cell', {
-                    //     header: column.header,
-                    //     accessor: String(column.accessor),
-                    //     rowIndex: row,
-                    //     rowId: rowData?.id,
-                    //     rawValue: value,
-                    //     value: stringValue,
-                    //     options,
-                    // });
 
                     return {
                         kind: GridCellKind.Custom,
@@ -890,7 +933,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             value: stringValue,
                             allowedValues: options,
                         },
-                    };
+                    } as GridCell;
                 }
                 case 'number': {
                     const num =
@@ -934,7 +977,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         allowOverlay: isEditMode,
                         data: value?.toString() ?? '',
                         displayData: value?.toString() ?? '',
-                        allowWrapping: true, //  enable text wrapping for all text cells
+                        allowWrapping: true,
                     } as TextCell;
             }
         },
@@ -953,8 +996,18 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             }
 
             const [colIndex, rowIndex] = cell;
+
             const column = localColumns[colIndex];
+            if (!column) {
+                console.warn('[onCellEdited] Column not found at index:', colIndex);
+                return;
+            }
+
             const rowData = sortedData[rowIndex];
+            if (!rowData) {
+                console.warn('[onCellEdited] Row not found at index:', rowIndex);
+                return;
+            }
 
             if (!rowData || !column) {
                 console.warn('[onCellEdited] Invalid row/column', { rowIndex, colIndex });
@@ -1365,34 +1418,168 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         [debouncedSave, sortedData],
     );
 
-    // Call column deletion on passed Column ID
     const handleColumnDeleteConfirm = useCallback(async () => {
         if (!columnToDelete) return;
 
         try {
+            // Find the column to get its accessor before deletion
+            const columnToRemove = localColumns.find((col) => col.id === columnToDelete);
+            const columnAccessor = columnToRemove?.accessor;
+
             await props.onDeleteColumn?.(columnToDelete);
 
             // Update local deletion tracker
             deletedColumnIdsRef.current.add(columnToDelete);
 
-            // Compute updated local columns *before* triggering state update
+            // Update columns
             const newLocalColumns = localColumnsRef.current.filter(
                 (col) => col.id !== columnToDelete,
             );
 
-            // Update ref and state, then call metadata update.
+            // CRITICAL: Clean up data for the deleted column
+            if (columnAccessor) {
+                // Remove this column's data from localData
+                setLocalData((prevData) =>
+                    prevData.map((row) => {
+                        const newRow = { ...row };
+                        delete newRow[columnAccessor];
+                        return newRow;
+                    }),
+                );
+
+                // Remove this column's data from editingData
+                setEditingData((prevEdits) => {
+                    const newEdits = { ...prevEdits };
+                    Object.keys(newEdits).forEach((rowId) => {
+                        if (newEdits[rowId] && columnAccessor in newEdits[rowId]) {
+                            delete newEdits[rowId][columnAccessor as keyof Partial<T>];
+                            // If no more edits for this row, remove the row entry
+                            if (Object.keys(newEdits[rowId]).length === 0) {
+                                delete newEdits[rowId];
+                            }
+                        }
+                    });
+                    return newEdits;
+                });
+            }
+
+            // Update ref and state
             localColumnsRef.current = newLocalColumns;
             setLocalColumns(newLocalColumns);
 
-            saveTableMetadata();
+            await saveTableMetadata();
+
+            // Force grid to refresh
+            gridRef.current?.updateCells([]);
         } catch (err) {
             console.error('[GlideEditableTable] Failed to delete column:', err);
             return;
         }
-        // Cleanup state on success.
+
+        // Cleanup state on success
         setColumnToDelete(null);
         setDeleteConfirmOpen(false);
     }, [columnToDelete, props, saveTableMetadata]);
+
+    // handle column rename with optimistic updates and error recovery
+    const handleColumnRename = useCallback(
+        async (newName: string) => {
+            if (!columnToRename || !newName.trim()) return;
+
+            const oldName = columnToRename.currentName;
+
+            try {
+                // Update column definition locally - DO NOT touch data
+                setLocalColumns((prev) => {
+                    const updated = prev.map((col) => {
+                        if (col.id === columnToRename.id) {
+                            return {
+                                ...col,
+                                header: newName,
+                                title: newName,
+                                accessor: newName as keyof T,
+                            };
+                        }
+                        return col;
+                    });
+                    localColumnsRef.current = updated;
+                    return updated;
+                });
+
+                // Migrate localData keys from old name to new name
+                setLocalData((prevData) =>
+                    prevData.map((row) => {
+                        if (oldName in row) {
+                            const newRow = { ...row };
+                            newRow[newName as keyof T] = row[oldName as keyof T];
+                            delete newRow[oldName as keyof T];
+                            return newRow;
+                        }
+                        return row;
+                    }),
+                );
+
+                // Migrate editing buffer keys from old name to new name
+                setEditingData((prevEdits) => {
+                    const newEdits: Record<string, Partial<T>> = {};
+                    Object.entries(prevEdits).forEach(([rowId, rowEdits]) => {
+                        const newRowEdits: Partial<T> = {};
+                        Object.entries(rowEdits).forEach(([key, value]) => {
+                            if (key === oldName) {
+                                (newRowEdits as any)[newName] = value;
+                            } else {
+                                (newRowEdits as any)[key] = value;
+                            }
+                        });
+                        newEdits[rowId] = newRowEdits;
+                    });
+                    return newEdits;
+                });
+
+                // Persist the column rename to backend
+                if (props.onRenameColumn) {
+                    await props.onRenameColumn(columnToRename.id, newName);
+                }
+
+                // Save metadata but DO NOT refresh data
+                await saveTableMetadataRef.current?.();
+
+                // DO NOT call refreshAfterSave() - this clears the data!
+                // DO NOT clear editingData - let it save normally
+            } catch (err) {
+                console.error('[GlideEditableTable] Failed to rename column:', err);
+                // Revert changes on error
+                setLocalColumns((prev) =>
+                    prev.map((col) =>
+                        col.id === columnToRename.id
+                            ? {
+                                  ...col,
+                                  header: oldName,
+                                  title: oldName,
+                                  accessor: oldName as keyof T,
+                              }
+                            : col,
+                    ),
+                );
+
+                setLocalData((prevData) =>
+                    prevData.map((row) => {
+                        if (newName in row) {
+                            const newRow = { ...row };
+                            newRow[oldName as keyof T] = row[newName as keyof T];
+                            delete newRow[newName as keyof T];
+                            return newRow;
+                        }
+                        return row;
+                    }),
+                );
+            } finally {
+                setColumnToRename(null);
+                setRenameDialogOpen(false);
+            }
+        },
+        [columnToRename, props.onRenameColumn],
+    );
 
     // Call row deletion on array of selected Dynamic Requirement objects.
     const handleRowDeleteConfirm = useCallback(async () => {
@@ -3410,6 +3597,61 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                                     <div
                                         onClick={() => {
+                                            const col = localColumns[columnMenu.colIndex];
+                                            if (col) {
+                                                // check if this is a default column
+                                                // prevent renaming system columns
+                                                if (isSystemColumn(col.header)) {
+                                                    alert(
+                                                        `"${col.header}" is a system column and cannot be renamed.`,
+                                                    );
+                                                    setColumnMenu(undefined);
+                                                    return;
+                                                }
+
+                                                setColumnToRename({
+                                                    id: col.id,
+                                                    currentName: col.header,
+                                                });
+                                                setRenameDialogOpen(true);
+                                                setColumnMenu(undefined);
+                                            }
+                                        }}
+                                        style={{
+                                            padding: '8px 12px',
+                                            cursor: 'pointer',
+                                            background:
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9',
+                                            borderBottom:
+                                                resolvedTheme === 'dark'
+                                                    ? '1px solid #333'
+                                                    : '1px solid #eee',
+                                            color:
+                                                resolvedTheme === 'dark'
+                                                    ? '#f1f1f1'
+                                                    : '#222',
+                                            transition: 'background 0.2s ease',
+                                        }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#3a3a3a'
+                                                    : '#e6e6e6')
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.background =
+                                                resolvedTheme === 'dark'
+                                                    ? '#1f1f1f'
+                                                    : '#f9f9f9')
+                                        }
+                                    >
+                                        Rename Column
+                                    </div>
+
+                                    <div
+                                        onClick={() => {
                                             const colId =
                                                 localColumns[columnMenu.colIndex]?.id;
                                             if (colId) {
@@ -3509,6 +3751,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         }
                     }}
                     onConfirm={handleRowDeleteConfirm}
+                />
+                <RenameColumnDialog
+                    open={renameDialogOpen}
+                    onOpenChange={(open: boolean) => {
+                        setRenameDialogOpen(open);
+                        if (!open) {
+                            setColumnToRename(null);
+                        }
+                    }}
+                    currentName={columnToRename?.currentName || ''}
+                    onConfirm={handleColumnRename}
                 />
             </div>
         </div>

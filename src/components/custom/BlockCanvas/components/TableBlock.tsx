@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable react-hooks/exhaustive-deps */
 import { MoreVertical, Plus } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -204,12 +205,18 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const params = useParams();
     const { currentOrganization } = useOrganization();
-    const { createPropertyAndColumn, createColumnFromProperty, deleteColumn } =
-        useColumnActions({
-            orgId: currentOrganization?.id || '',
-            projectId: params.projectId as string,
-            documentId: params.documentId as string,
-        });
+
+    const {
+        createPropertyAndColumn,
+        createColumnFromProperty,
+        deleteColumn,
+        renameProperty = undefined, // provide default to handle if not implemented yet
+    } = useColumnActions({
+        orgId: currentOrganization?.id || '',
+        projectId: params.projectId as string,
+        documentId: params.documentId as string,
+    });
+
     const projectId = params?.projectId as string;
 
     // IMPORTANT: Initialize localRequirements once from block.requirements
@@ -232,18 +239,93 @@ export const TableBlock: React.FC<BlockProps> = ({
     // Optimistic columns state to immediately reflect column adds/deletes before realtime
     const [optimisticColumns, setOptimisticColumns] = useState<Column[] | null>(null);
 
-    // Merge server columns into optimistic view when server updates arrive
+    // reset optimistic columns when we get a new block (new table created)
+    React.useEffect(() => {
+        // clear any cached column state for new tables
+        setOptimisticColumns(null);
+        // clear deleted columns tracking for new table
+        setDeletedColumnIds(new Set());
+
+        // if this is a new table with no columns yet, don't carry over old state
+        if (!block.columns || block.columns.length === 0) {
+            console.debug('[TableBlock] New table detected, clearing column state');
+            setOptimisticColumns(null);
+            setDeletedColumnIds(new Set());
+        }
+    }, [block.id]);
+
+    // track deleted column ids to prevent them from reappearing
+    const [deletedColumnIds, setDeletedColumnIds] = useState<Set<string>>(new Set());
+
+    // merge server columns into optimistic view when server updates arrive
     React.useEffect(() => {
         const serverCols = block.columns || [];
-        if (!serverCols || serverCols.length === 0) return;
-        setOptimisticColumns((prev) => {
-            if (!prev || prev.length === 0) return serverCols;
-            const byId = new Map<string, Column>();
-            for (const c of prev) byId.set(c.id, c);
-            for (const c of serverCols) byId.set(c.id, c);
-            return Array.from(byId.values());
-        });
-    }, [block.columns]);
+
+        // only set optimistic columns if we have actual server columns
+        // don't merge with previous state if this is a fresh table
+        if (serverCols.length > 0) {
+            setOptimisticColumns((prev) => {
+                // if no previous state or block id changed, use server columns directly
+                if (!prev || prev.length === 0) {
+                    console.debug(
+                        '[TableBlock] Using server columns directly:',
+                        serverCols.length,
+                    );
+                    // clear deleted columns tracker when starting fresh
+                    setDeletedColumnIds(new Set());
+                    return serverCols;
+                }
+
+                // only merge if we're working with the same table
+                // check if the columns are for the same table by comparing properties
+                const prevIds = new Set(prev.map((c) => c.id));
+                const serverIds = new Set(serverCols.map((c) => c.id));
+                const hasOverlap = [...prevIds].some((id) => serverIds.has(id));
+
+                if (!hasOverlap && serverCols.length > 0) {
+                    // completely different set of columns - use server columns
+                    console.debug(
+                        '[TableBlock] New table columns detected, replacing old state',
+                    );
+                    // clear deleted columns tracker for new table
+                    setDeletedColumnIds(new Set());
+                    return serverCols;
+                }
+
+                // same table - merge updates but respect deletions
+                const byId = new Map<string, Column>();
+
+                // add previous columns first (excluding deleted ones)
+                for (const c of prev) {
+                    if (!deletedColumnIds.has(c.id)) {
+                        byId.set(c.id, c);
+                    }
+                }
+
+                // update with server columns (but don't resurrect deleted ones)
+                for (const c of serverCols) {
+                    if (!deletedColumnIds.has(c.id)) {
+                        byId.set(c.id, c);
+                    }
+                }
+
+                // check if deleted columns are no longer in server response
+                // if so, they're confirmed deleted and we can clear them from tracking
+                const confirmedDeleted = [...deletedColumnIds].filter(
+                    (id) => !serverIds.has(id),
+                );
+                if (confirmedDeleted.length > 0) {
+                    setDeletedColumnIds((prev) => {
+                        const newSet = new Set(prev);
+                        confirmedDeleted.forEach((id) => newSet.delete(id));
+                        return newSet;
+                    });
+                }
+
+                return Array.from(byId.values());
+            });
+        }
+    }, [block.columns, block.id, deletedColumnIds]); // add deletedColumnIds as dependency
 
     // Effective columns used by UI (optimistic first, then server)
     const effectiveColumnsRaw = useMemo(() => {
@@ -453,18 +535,25 @@ export const TableBlock: React.FC<BlockProps> = ({
                     block.id,
                     userProfile.id,
                 );
-                // Optimistically add the new column to local state for immediate UI feedback
+                // optimistically add the new column to local state for immediate ui feedback
                 if (result?.column) {
+                    // calculate the position for the new column (at the end)
+                    const currentColumns = optimisticColumns ?? (block.columns || []);
+                    const maxPosition = Math.max(
+                        -1, // start at -1 so first column gets position 0
+                        ...currentColumns.map((c) => c.position ?? 0),
+                    );
+
                     const enrichedCol = {
                         ...(result.column as Column),
                         property: result.property as Property,
+                        position: maxPosition + 1, // place at the end
                     } as Column;
+
                     setOptimisticColumns((prev) => {
                         const base = prev ?? (block.columns || []);
-                        const byId = new Map<string, Column>();
-                        for (const c of base) byId.set(c.id, c);
-                        byId.set(enrichedCol.id, enrichedCol);
-                        return Array.from(byId.values());
+                        // simply append the new column at the end
+                        return [...base, enrichedCol];
                     });
                 }
                 await refreshRequirements();
@@ -495,7 +584,18 @@ export const TableBlock: React.FC<BlockProps> = ({
                 if (result?.column) {
                     setOptimisticColumns((prev) => {
                         const base = prev ?? (block.columns || []);
-                        return [...base, result.column as Column];
+                        // calculate proper position for the new column
+                        const maxPosition = Math.max(
+                            -1,
+                            ...base.map((c) => c.position ?? 0),
+                        );
+
+                        const columnWithPosition = {
+                            ...(result.column as Column),
+                            position: maxPosition + 1, // place at the end
+                        };
+
+                        return [...base, columnWithPosition];
                     });
                 }
                 await refreshRequirements();
@@ -515,15 +615,82 @@ export const TableBlock: React.FC<BlockProps> = ({
     const handleDeleteColumn = useCallback(
         async (columnId: string) => {
             try {
+                // mark column as deleted to prevent it from reappearing
+                setDeletedColumnIds((prev) => new Set(prev).add(columnId));
+
+                // perform the deletion
                 await deleteColumn(columnId, block.id);
+
+                // update optimistic columns
                 setOptimisticColumns((prev) =>
                     (prev || []).filter((c) => c.id !== columnId),
                 );
             } catch (err) {
                 console.error('Failed to delete column:', err);
+                // if deletion fails, remove from deleted tracking
+                setDeletedColumnIds((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(columnId);
+                    return newSet;
+                });
             }
         },
         [block.id, deleteColumn],
+    );
+
+    const handleRenameColumn = useCallback(
+        async (columnId: string, newName: string) => {
+            try {
+                // find the column to rename
+                const columnToRename = effectiveColumnsRaw.find(
+                    (col) => col.id === columnId,
+                );
+                if (!columnToRename || !columnToRename.property) {
+                    console.error('Column or property not found for rename');
+                    return;
+                }
+
+                // check if renameProperty function exists before calling
+                if (typeof renameProperty === 'function') {
+                    // update the property name in the database
+                    await renameProperty(columnToRename.property.id, newName);
+                } else {
+                    console.warn(
+                        '[TableBlock] renameProperty function not available, falling back to local update only',
+                    );
+                }
+
+                // optimistically update the local state for immediate ui feedback
+                setOptimisticColumns((prev) => {
+                    const base = prev ?? effectiveColumnsRaw;
+                    return base.map((col) => {
+                        if (col.id === columnId && col.property) {
+                            return {
+                                ...col,
+                                property: {
+                                    ...col.property,
+                                    name: newName,
+                                },
+                            };
+                        }
+                        return col;
+                    });
+                });
+
+                // refresh to get updated data from database
+                await refreshRequirements();
+
+                console.debug('[TableBlock] Column renamed successfully:', {
+                    columnId,
+                    newName,
+                    propertyId: columnToRename.property.id,
+                });
+            } catch (err) {
+                console.error('Failed to rename column:', err);
+                // show error to user if needed
+            }
+        },
+        [effectiveColumnsRaw, refreshRequirements, renameProperty],
     );
 
     const handleBlockDelete = useCallback(() => {
@@ -601,6 +768,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             onSaveRequirement={handleSaveRequirement}
                             onDeleteRequirement={handleDeleteRequirement}
                             onDeleteColumn={handleDeleteColumn}
+                            onRenameColumn={handleRenameColumn}
                             refreshRequirements={refreshRequirements}
                             isEditMode={isEditMode}
                             alwaysShowAddRow={isEditMode}
