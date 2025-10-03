@@ -2,10 +2,10 @@ echo "🚀 Running pre-push checks..."
 
 # Lint Check
 echo "📝 Linting staged files..."
-yarn lint
+npm run lint
 
 # Format check
 echo "🔍 Formatting staged files..."
-yarn format:check
+npm run format:check
 
 echo "✅ Pre-push checks passed! Ready to push."
