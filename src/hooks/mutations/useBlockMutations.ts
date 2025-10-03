@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Block } from '@/types';
-import { Json } from '@/types/base/database.types';
+import { Json, TablesInsert } from '@/types/base/database.types';
 
 export type BlockContent = {
     columns?: Json | null;
@@ -31,17 +31,27 @@ export function useCreateBlock() {
         mutationFn: async (input: CreateBlockInput) => {
             console.log('Creating block', input);
 
+            const insertPayload: TablesInsert<'blocks'> = {
+                content: (input as { content?: Json | null })?.content ?? ({} as Json),
+                document_id: input.document_id,
+                position: input.position,
+                type: input.type,
+                created_by: input.created_by ?? null,
+                updated_by: input.updated_by ?? null,
+            };
+
+            const maybeOrgId = (input as { org_id?: string | null }).org_id;
+            if (maybeOrgId !== undefined) {
+                insertPayload.org_id = maybeOrgId ?? null;
+            }
+            const maybeName = (input as { name?: string | null }).name;
+            if (typeof maybeName === 'string' && maybeName.trim().length > 0) {
+                insertPayload.name = maybeName;
+            }
+
             const { data: block, error: blockError } = await supabase
                 .from('blocks')
-                .insert({
-                    content:
-                        (input as { content?: Json | null })?.content ?? ({} as Json),
-                    document_id: input.document_id,
-                    position: input.position,
-                    type: input.type,
-                    created_by: input.created_by,
-                    updated_by: input.updated_by,
-                })
+                .insert(insertPayload)
                 .select()
                 .single();
 

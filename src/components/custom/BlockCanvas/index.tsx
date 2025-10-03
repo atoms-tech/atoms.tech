@@ -69,7 +69,8 @@ export function BlockCanvas({
         _projectId: '',
         _userProfile: null,
     });
-    const { reorderBlocks, setUseTanStackTables, setUseGlideTables } = useDocumentStore();
+    const { reorderBlocks, setUseTanStackTables, setUseGlideTables, isEditMode } =
+        useDocumentStore();
     const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
     const [linePosition, setLinePosition] = useState<'top' | 'bottom' | ''>('');
     const { userProfile } = useAuth();
@@ -81,26 +82,111 @@ export function BlockCanvas({
 
     useEffect(() => {
         const fetchUserRole = async () => {
-            const projectId = params?.projectId || ''; // Extract project_id from the URL
-            if (!projectId || !userProfile?.id) return;
+            const projectIdParam = params?.projectId || '';
+            const projectIdStr = Array.isArray(projectIdParam)
+                ? projectIdParam[0]
+                : projectIdParam;
+            const orgIdStr = currentOrganization?.id || '';
+            if (!userProfile?.id) return;
 
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
-                .eq('user_id', userProfile.id)
-                .single();
+            // 1) Try project_members (fast path when projectId is present)
+            if (projectIdStr) {
+                const { data, error } = await supabase
+                    .from('project_members')
+                    .select('role')
+                    .eq('project_id', projectIdStr)
+                    .eq('user_id', userProfile.id)
+                    .single();
 
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return;
+                if (!error && data?.role) {
+                    setUserRole(data.role as 'owner' | 'editor' | 'viewer');
+                    return;
+                }
             }
 
-            setUserRole(data?.role || null);
+            // 2) Document-level fallback: check user_roles with document_id first
+            // Prefer document_role > project_role > admin_role
+            const pickRole = (r: {
+                document_role?: string | null;
+                project_role?: string | null;
+                admin_role?: string | null;
+            }): 'owner' | 'editor' | 'viewer' | null => {
+                if (r?.document_role === 'owner' || r?.project_role === 'owner')
+                    return 'owner';
+                if (r?.document_role === 'editor' || r?.project_role === 'editor')
+                    return 'editor';
+                if (r?.document_role === 'viewer' || r?.project_role === 'viewer')
+                    return 'viewer';
+                if (r?.admin_role === 'owner' || r?.admin_role === 'admin')
+                    return 'owner';
+                return null;
+            };
+
+            // Document scope
+            if (documentId) {
+                const { data: docRole, error: docRoleErr } = await supabase
+                    .from('user_roles')
+                    .select('document_role, project_role, admin_role')
+                    .eq('user_id', userProfile.id)
+                    .eq('document_id', documentId)
+                    .maybeSingle();
+
+                if (!docRoleErr && docRole) {
+                    const role = pickRole(
+                        docRole as unknown as Record<string, string | null>,
+                    );
+                    if (role) {
+                        setUserRole(role);
+                        return;
+                    }
+                }
+            }
+
+            // Project scope fallback (if not found above)
+            if (projectIdStr) {
+                const { data: projRole, error: projRoleErr } = await supabase
+                    .from('user_roles')
+                    .select('document_role, project_role, admin_role')
+                    .eq('user_id', userProfile.id)
+                    .eq('project_id', projectIdStr)
+                    .maybeSingle();
+
+                if (!projRoleErr && projRole) {
+                    const role = pickRole(
+                        projRole as unknown as Record<string, string | null>,
+                    );
+                    if (role) {
+                        setUserRole(role);
+                        return;
+                    }
+                }
+            }
+
+            // Org scope fallback (admin)
+            if (orgIdStr) {
+                const { data: orgRole, error: orgRoleErr } = await supabase
+                    .from('user_roles')
+                    .select('admin_role')
+                    .eq('user_id', userProfile.id)
+                    .eq('org_id', orgIdStr)
+                    .maybeSingle();
+
+                if (!orgRoleErr && orgRole?.admin_role) {
+                    const role = pickRole(
+                        orgRole as unknown as Record<string, string | null>,
+                    );
+                    if (role) {
+                        setUserRole(role);
+                        return;
+                    }
+                }
+            }
+
+            // If everything fails, leave as null; canPerformAction has a safe fallback for authenticated users
         };
 
         fetchUserRole();
-    }, [params?.projectId, userProfile?.id]);
+    }, [params?.projectId, userProfile?.id, currentOrganization?.id, documentId]);
 
     // Use a ref to track if we're in the middle of adding a block
     // This helps prevent unnecessary re-renders
@@ -179,23 +265,13 @@ export function BlockCanvas({
             isAddingBlockRef.current = true;
             try {
                 const result = await originalHandleAddBlock(type, content);
-                // If a table block was created, opportunistically hydrate its relations once
-                if (result?.id && type === BlockType.table) {
-                    try {
-                        if (typeof hydrateBlockRelations === 'function') {
-                            await hydrateBlockRelations(result.id);
-                        }
-                        // As a reliable fallback, do a full refetch to hydrate columns/requirements
-                        if (typeof refetchDocument === 'function') {
-                            await refetchDocument({ silent: false });
-                            // Some DBs need a brief delay for column/property joins
-                            setTimeout(() => {
-                                refetchDocument({ silent: true }).catch(() => {});
-                            }, 300);
-                        }
-                    } catch (e) {
-                        console.warn('Table relations hydration failed (non-fatal):', e);
-                    }
+                // For tables, perform a single refetch after creation to hydrate all relations
+                if (
+                    result?.id &&
+                    type === BlockType.table &&
+                    typeof refetchDocument === 'function'
+                ) {
+                    await refetchDocument({ silent: false });
                 }
                 console.log('Block added successfully:', result);
                 return result;
@@ -250,12 +326,10 @@ export function BlockCanvas({
                 requirements: [],
                 rows: [],
             } as unknown as Json;
-            const created = await handleAddBlock(BlockType.table, content);
-            if (created?.id && name) {
-                await handleUpdateBlock(created.id, { name });
-            }
+            await originalHandleAddBlock(BlockType.table, content, name);
+            // A single refetch will be triggered by the wrapper handleAddBlock for tables
         },
-        [handleAddBlock, handleUpdateBlock],
+        [originalHandleAddBlock],
     );
 
     const renderBlock = useCallback(
@@ -289,7 +363,11 @@ export function BlockCanvas({
 
     // Memoize the blocks to prevent unnecessary re-renders
     const memoizedBlocks = React.useMemo(() => {
-        return enhancedBlocks?.map(renderBlock) || [];
+        return (
+            enhancedBlocks?.map((block) =>
+                renderBlock({ ...block, content: block.content }),
+            ) || []
+        );
     }, [enhancedBlocks, renderBlock]);
 
     const handleDragOver = (event: DragOverEvent) => {
@@ -382,11 +460,12 @@ export function BlockCanvas({
                     <div className="space-y-4">{memoizedBlocks}</div>
                 </SortableContext>
             </DndContext>
-            {canPerformAction('addBlock') && (
+            {canPerformAction('addBlock') && isEditMode && (
                 <div className="flex gap-2 mt-4 z-10 relative">
                     <Button
                         variant="ghost"
                         size="icon"
+                        title="Add Text Block"
                         onClick={() =>
                             handleAddBlock(BlockType.text, {
                                 format: 'markdown',
@@ -399,6 +478,7 @@ export function BlockCanvas({
                     <Button
                         variant="ghost"
                         size="icon"
+                        title="Add Table (choose layout)"
                         onClick={() => setIsAddTableOpen(true)}
                     >
                         <Table className="h-4 w-4" />

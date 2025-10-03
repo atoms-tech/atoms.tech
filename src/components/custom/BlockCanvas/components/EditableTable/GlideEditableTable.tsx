@@ -1202,12 +1202,23 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         [localColumns, debouncedSave, addToHistory, sortedData, appendPropertyOptions],
     );
 
-    // Add new row. Flush pending edits first to prevent data loss.
+    // Add new row. Queue if a save is in progress; otherwise proceed and flush edits.
     const handleRowAppended = useCallback(async () => {
         try {
+            // If a save is actively in progress, queue the row add until it finishes
+            if (isSavingRef.current) {
+                // Defer row append slightly to allow the current save to settle
+                setTimeout(() => {
+                    handleRowAppended();
+                }, 150);
+                return;
+            }
+
             // 1) Flush any pending edits so they are persisted before we add a new row
-            saveTableMetadataRef.current?.(); // Do not await, add rows immediately.
-            handleSaveAllRef.current?.();
+            // Do not await metadata save to avoid blocking UI
+            saveTableMetadataRef.current?.();
+            // Persist buffered cell edits synchronously
+            await handleSaveAllRef.current?.();
 
             // 2) Create the new row at the end (position = max + 1)
             const maxPosition = Math.max(0, ...localData.map((d) => d.position ?? 0));
@@ -1234,10 +1245,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 });
             }
 
-            // 3) Persist the new row then refresh, then sync metadata
+            // 3) Persist the new row; avoid immediate full refresh to reduce flicker
             await saveRow(newRow, true);
-            await refreshAfterSave();
-            await saveTableMetadataRef.current?.();
+            // Opportunistically update metadata (non-blocking)
+            saveTableMetadataRef.current?.();
         } catch (e) {
             console.error('[GlideEditableTable] Failed to append row:', e);
         }
@@ -2080,9 +2091,13 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 // open row detail panel in view mode if provided
                 if (props.rowDetailPanel) {
                     const row = sortedData[cell[1]];
-                    if (row?.id) {
+                    // Open if row has an id (requirement rows always have stable ids)
+                    const hasId = Boolean(row?.id);
+                    if (hasId) {
                         setSelectedRowId(row.id);
                         setIsRowDetailOpen(true);
+                    } else {
+                        setIsRowDetailOpen(false);
                     }
                 }
             }
@@ -3093,7 +3108,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                 acc[col.accessor as string] =
                                                     colSizes[col.accessor] ||
                                                     col.width ||
-                                                    120;
+                                                    360; // This determins max column width.
                                                 return acc;
                                             },
                                             {} as Record<string, number>,

@@ -59,6 +59,8 @@ export const useRowActions = ({
     setLocalRows,
 }: UseRowActionsProps) => {
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
+    const isSavingRef = useRef(false);
+    const pendingOpsRef = useRef<Array<() => Promise<void>>>([]);
 
     const refreshRows = useCallback(async () => {
         console.log('[GenericRows] 🎯 refreshRows called', { blockId, documentId });
@@ -134,6 +136,12 @@ export const useRowActions = ({
         async (row: BaseRow, isNew: boolean) => {
             console.log('[GenericRows] 🎯 saveRow called', { isNew, row });
             try {
+                // If another save is in progress, enqueue this operation to run after
+                if (isSavingRef.current) {
+                    pendingOpsRef.current.push(async () => saveRow(row, isNew));
+                    return;
+                }
+                isSavingRef.current = true;
                 const { id, position, height: _height, ...rest } = row;
                 if (isNew) {
                     const pos = position ?? (await getLastPosition());
@@ -185,6 +193,17 @@ export const useRowActions = ({
             } catch (e) {
                 console.error('[useRowActions] Failed to save row', e);
                 throw e;
+            } finally {
+                isSavingRef.current = false;
+                // Drain any queued operations sequentially
+                const next = pendingOpsRef.current.shift();
+                if (next) {
+                    try {
+                        await next();
+                    } catch (err) {
+                        console.error('[GenericRows] Queued op failed:', err);
+                    }
+                }
             }
         },
         [blockId, documentId, getLastPosition, setLocalRows],

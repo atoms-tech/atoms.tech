@@ -385,13 +385,19 @@ export const useDocumentRealtime = ({
                                 (enrichedNewCol || newCol)
                             ) {
                                 const colToAdd = (enrichedNewCol || newCol) as Column;
-                                const nextColumns = [
-                                    ...(block.columns ?? []),
-                                    colToAdd,
-                                ].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+                                // de-dupe by id to avoid double insertions from parallel sources
+                                const exists = (block.columns ?? []).some(
+                                    (c) => c.id === colToAdd.id,
+                                );
+                                const nextColumns = exists
+                                    ? [...(block.columns ?? [])]
+                                    : [...(block.columns ?? []), colToAdd];
+                                const sorted = nextColumns.sort(
+                                    (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                                );
                                 return {
                                     ...block,
-                                    columns: nextColumns,
+                                    columns: sorted,
                                 };
                             }
 

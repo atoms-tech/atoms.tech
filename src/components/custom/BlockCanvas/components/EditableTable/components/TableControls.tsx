@@ -16,6 +16,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface TableControlsProps<T extends BaseRow = BaseRow> {
@@ -54,6 +55,7 @@ export function TableControls<T extends BaseRow>({
 }: Omit<TableControlsProps<T>, 'sortKey' | 'sortOrder' | 'onSort' | 'columns'>) {
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
     const { userProfile } = useAuth();
+    const { toast } = useToast();
 
     // Define rolePermissions with explicit type
     const rolePermissions: Record<'owner' | 'editor' | 'viewer', string[]> = {
@@ -68,9 +70,8 @@ export function TableControls<T extends BaseRow>({
 
     console.log('Project ID:', projectId); // Ensure projectId is logged for debugging
 
-    const canPerformAction = (action: string) => {
-        return rolePermissions[userRole].includes(action);
-    };
+    const canPerformAction = (action: string) =>
+        rolePermissions[userRole].includes(action);
 
     if (!isVisible || !canPerformAction('addRow')) return null;
 
@@ -127,6 +128,18 @@ export function TableControls<T extends BaseRow>({
                             <TooltipTrigger asChild>
                                 <Button
                                     onClick={() => {
+                                        // Require editor or owner to enter edit mode
+                                        if (
+                                            !rolePermissions[userRole].includes('addRow')
+                                        ) {
+                                            toast({
+                                                title: 'Insufficient permissions',
+                                                description:
+                                                    'You need editor access to modify this table.',
+                                                variant: 'destructive',
+                                            });
+                                            return;
+                                        }
                                         onEnterEditMode();
                                         onNewRow();
                                     }}

@@ -209,7 +209,11 @@ export const useBlockActions = ({
         }
     };
 
-    const handleAddBlock = async (type: BlockType, content: Json) => {
+    const handleAddBlock = async (
+        type: BlockType,
+        content: Json,
+        blockNameOverride?: string,
+    ) => {
         if (!userProfile?.id) {
             console.error('Cannot create block: User profile not found');
             throw new Error('User profile not found');
@@ -221,12 +225,13 @@ export const useBlockActions = ({
         }
 
         try {
-            // Create a temporary ID for optimistic updates
-            const tempId = uuidv4();
             const position = blocks?.length || 0;
-            const blockName = `${type.toString().charAt(0).toUpperCase() + type.toString().slice(1)} Block`;
+            const computedName =
+                blockNameOverride ||
+                `${type.toString().charAt(0).toUpperCase() + type.toString().slice(1)} Block`;
 
-            // Create a temporary block for immediate UI update
+            // Always add a temporary local block so UI shows skeleton immediately
+            const tempId = uuidv4();
             const tempBlock: BlockWithRequirements = {
                 id: tempId,
                 document_id: documentId,
@@ -237,7 +242,7 @@ export const useBlockActions = ({
                 position: position,
                 requirements: [],
                 org_id: orgId,
-                name: blockName,
+                name: computedName,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 deleted_at: null,
@@ -248,10 +253,8 @@ export const useBlockActions = ({
                 version: 1,
             };
 
-            // Update local state immediately for optimistic UI
             setLocalBlocks((prevBlocks) => {
                 const updatedBlocks = [...(prevBlocks || []), tempBlock];
-                // Only update orders if needed, avoid unnecessary re-renders
                 return updatedBlocks.map((block, index) => ({
                     ...block,
                     order: index,
@@ -268,16 +271,15 @@ export const useBlockActions = ({
                 created_by: userProfile.id,
                 updated_by: userProfile.id,
                 org_id: orgId,
-                name: blockName,
+                name: computedName,
             });
             console.log('Block created successfully', createdBlock);
 
             // Update the document store with the real block
             addBlock(createdBlock);
 
-            // Replace the temporary block with the real one
+            // Replace the temporary block with the real one to avoid flicker
             setLocalBlocks((prevBlocks) => {
-                // If we don't find the temp block, append the created one to ensure visibility
                 const hasTemp = prevBlocks.some((b) => b.id === tempId);
                 const next = hasTemp
                     ? prevBlocks.map((block) =>
@@ -297,72 +299,12 @@ export const useBlockActions = ({
                               order: prevBlocks.length,
                           },
                       ];
-
                 return next;
             });
 
             console.log('Local state updated with new block');
 
-            // If it's a table block, create columns based on base properties
-            // Skip default columns for generic tables (genericTable/textTable/rows)
-            const isGenericKind =
-                type === BlockType.table &&
-                typeof content === 'object' &&
-                content !== null &&
-                'tableKind' in (content as Record<string, unknown>) &&
-                ['genericTable', 'textTable', 'rows'].includes(
-                    String(
-                        (content as Record<string, unknown> & { tableKind?: string })
-                            .tableKind || '',
-                    ),
-                );
-
-            if (type === BlockType.table && !isGenericKind) {
-                console.log('Creating columns for table block', {
-                    blockId: createdBlock.id,
-                });
-
-                try {
-                    await createDefaultBlockColumns(createdBlock.id);
-                    console.log('Successfully created columns for table block');
-
-                    // Immediately hydrate the new block's columns (and properties) locally
-                    const { data: freshColumns, error: freshColumnsError } =
-                        await supabase
-                            .from('columns')
-                            .select('*, property:properties(*)')
-                            .eq('block_id', createdBlock.id)
-                            .order('position', { ascending: true });
-                    if (freshColumnsError) {
-                        console.error(
-                            'Failed to fetch columns for new table block:',
-                            freshColumnsError,
-                        );
-                    } else {
-                        setLocalBlocks((prev) =>
-                            prev.map((b) =>
-                                b.id === createdBlock.id
-                                    ? ({
-                                          ...b,
-                                          columns: freshColumns as unknown[] as never,
-                                      } as typeof b)
-                                    : b,
-                            ),
-                        );
-                    }
-                } catch (error) {
-                    console.error('Failed to create columns for table block:', error);
-                    throw error;
-                }
-            }
-
-            // Force a full document refetch to hydrate relations for the new table without remount flicker
-            // Warm caches with a targeted query; realtime listeners will populate
-            await supabase
-                .from('columns')
-                .select('id')
-                .eq('block_id', createdBlock.id)
-                .limit(1);
+            // Do not create columns client-side; server pipeline handles native columns
 
             return createdBlock;
         } catch (error) {

@@ -74,14 +74,42 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         // Added implementation for Glide bool, should change for an enum system later.
         const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
 
+        // Adapter to map { row } → { requirement } for the requirement analysis sidebar
+        const RequirementPanelAdapter: RowDetailPanelRenderer<DynamicRequirement> = ({
+            row,
+            open,
+            onOpenChange,
+            columns,
+        }) => {
+            // Debug which panel is called
+            console.debug(
+                `[Sidebar] req called for rowID '${(row as DynamicRequirement | null)?.id ?? ''}'`,
+            );
+            return (
+                <RequirementAnalysisSidebar
+                    requirement={(row as DynamicRequirement) ?? null}
+                    open={open}
+                    onOpenChange={onOpenChange}
+                    columns={columns}
+                />
+            );
+        };
+
+        // Default to requirement analysis (via adapter) if none provided
+        const EffectiveRowDetailPanel = rowDetailPanel ?? RequirementPanelAdapter;
+
         // Memoize the table component selection
         const TableComponent = useMemo(() => {
-            if (shouldUseGlideTables) return GlideEditableTable;
+            // Prefer Glide when a rowDetailPanel is provided, to ensure detail sidebars work
+            const hasDetailPanel = Boolean(EffectiveRowDetailPanel);
+            if (shouldUseGlideTables || hasDetailPanel) return GlideEditableTable;
             if (shouldUseTanStackTables) return TanStackEditableTable;
             return EditableTable;
-        }, [shouldUseGlideTables, shouldUseTanStackTables]) as React.FC<
-            typeof tableProps
-        >;
+        }, [
+            shouldUseGlideTables,
+            shouldUseTanStackTables,
+            EffectiveRowDetailPanel,
+        ]) as React.FC<typeof tableProps>;
 
         // Memoize the save handler to prevent unnecessary re-renders
         const handleSave = useCallback(
@@ -109,10 +137,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
             await refreshRequirements();
         }, [refreshRequirements]);
 
-        // Default to requirement analysis sidebar if none provided
-        const EffectiveRowDetailPanel =
-            rowDetailPanel ??
-            (RequirementAnalysisSidebar as unknown as RowDetailPanelRenderer<DynamicRequirement>);
+        // EffectiveRowDetailPanel defined above
 
         // Memoize the table props to prevent unnecessary re-renders
         const tableProps = useMemo(

@@ -42,6 +42,9 @@ import { GenericTableBlockContent } from './GenericTableBlockContent';
 import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
 
+// Toggle verbose debugging for this component
+const DEBUG_TABLE_BLOCK = false;
+
 // Helper function to convert property type to editable column type
 const propertyTypeToColumnType = (type: PropertyType): EditableColumnType => {
     switch (type) {
@@ -195,13 +198,15 @@ export const TableBlock: React.FC<BlockProps> = ({
     dragActivators,
     userProfile,
 }) => {
-    console.log('🔍 TableBlock render:', {
-        blockId: block.id,
-        blockType: block.type,
-        hasColumns: !!block.columns,
-        columnsLength: block.columns?.length,
-        columns: block.columns,
-    });
+    if (DEBUG_TABLE_BLOCK) {
+        console.log('🔍 TableBlock render:', {
+            blockId: block.id,
+            blockType: block.type,
+            hasColumns: !!block.columns,
+            columnsLength: block.columns?.length,
+            columns: block.columns,
+        });
+    }
 
     const params = useParams();
     const { currentOrganization } = useOrganization();
@@ -231,6 +236,13 @@ export const TableBlock: React.FC<BlockProps> = ({
     }, [block.requirements]);
 
     const [blockName, setBlockName] = useState(block.name || 'Untitled Table');
+
+    // keep local title in sync with server updates (e.g., after create or external rename)
+    React.useEffect(() => {
+        if (block.name && block.name !== blockName) {
+            setBlockName(block.name);
+        }
+    }, [block.name]);
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
     // Use the document store for edit mode state
@@ -336,6 +348,12 @@ export const TableBlock: React.FC<BlockProps> = ({
     const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
     const isGenericTable =
         tableKind === 'genericTable' || tableKind === 'textTable' || tableKind === 'rows';
+    if (DEBUG_TABLE_BLOCK && block.type === 'table') {
+        console.log('🔎 TableBlock pipeline:', {
+            tableKind: tableKind ?? 'unknown',
+            isGenericTable,
+        });
+    }
 
     // Grab column/requirement metadata from block level.
     const tableContentMetadata: BlockTableMetadata | null = useMemo(() => {
@@ -720,8 +738,13 @@ export const TableBlock: React.FC<BlockProps> = ({
                             blockId={block.id}
                             documentId={block.document_id}
                             columns={
-                                effectiveColumnsRaw
-                                    .filter((col) => col.property)
+                                // For generic tables, ignore base/system properties so blank tables start empty
+                                (effectiveColumnsRaw || [])
+                                    .filter((col) => {
+                                        if (!col.property) return false;
+                                        const prop = col.property as Property;
+                                        return !prop.is_base; // hide organization base properties in generic tables
+                                    })
                                     .map((col, index) => {
                                         const _property = col.property as Property;
                                         const propertyKey = _property.name;
@@ -776,6 +799,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                             useGlideTables={useGlideTables}
                             blockId={block.id}
                             tableMetadata={tableContentMetadata}
+                            rowMetadataKey={'requirements'}
                         />
                     )}
                 </div>

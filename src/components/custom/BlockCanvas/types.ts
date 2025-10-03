@@ -65,6 +65,7 @@ export interface BlockProps {
     properties?: Property[];
     dragActivators?: SyntheticListenerMap;
     userProfile?: Profile | null;
+    isLoading?: boolean;
 }
 
 export interface BlockActionsProps {
