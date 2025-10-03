@@ -1,20 +1,45 @@
 'use client';
 
-import { ArrowRight, GitBranch, Network, Plus, Search, Target, Trash2, Zap } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import {
+    ArrowRight,
+    GitBranch,
+    Network,
+    Plus,
+    Search,
+    Target,
+    Trash2,
+    Zap,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 
+import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
+import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useOrganizationProjects } from '@/hooks/queries/useProject';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
-import { useCreateRelationship, useDeleteRelationship, useRequirementTree } from '@/hooks/queries/useRequirementRelationships';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
+import {
+    useCreateRelationship,
+    useDeleteRelationship,
+    useRequirementTree,
+} from '@/hooks/queries/useRequirementRelationships';
 import { useUser } from '@/lib/providers/user.provider';
 import { Requirement } from '@/types';
 
@@ -38,13 +63,16 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
-    
+
     // Tree View selection state
-    const [selectedTreeRequirement, setSelectedTreeRequirement] = useState<RequirementWithDocuments | null>(null);
-    
+    const [selectedTreeRequirement, setSelectedTreeRequirement] =
+        useState<RequirementWithDocuments | null>(null);
+
     // Sidebar state for requirement analysis (same as GlideEditableTable)
     const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
-    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(null);
+    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
+        null,
+    );
 
     // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
@@ -54,7 +82,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const { data: projects, isLoading: projectsLoading } = useOrganizationProjects(orgId);
 
     // Fetch organizations for selector (by current user's memberships)
-    const { data: organizations, isLoading: orgsLoading } = useOrganizationsByMembership(user?.id ?? '');
+    const { data: organizations, isLoading: orgsLoading } = useOrganizationsByMembership(
+        user?.id ?? '',
+    );
 
     // Fetch requirement tree for hierarchy visualization
     const {
@@ -71,12 +101,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
     // Filter requirements based on search term
     const filteredRequirements = useMemo(() => {
-        return requirements?.filter(
-            (req) =>
-                req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                req.external_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                req.description?.toLowerCase().includes(searchTerm.toLowerCase()),
-        ) || [];
+        return (
+            requirements?.filter(
+                (req) =>
+                    req.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    req.external_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    req.description?.toLowerCase().includes(searchTerm.toLowerCase()),
+            ) || []
+        );
     }, [requirements, searchTerm]);
 
     // Get available children (excluding the selected parent to prevent cycles)
@@ -103,15 +135,21 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedParent('');
         setSelectedChildren([]);
     }, []);
-    
+
     // Tree View handlers - similar to GlideEditableTable functionality
-    const handleTreeRequirementSelect = useCallback((requirement: RequirementWithDocuments) => {
-        setSelectedTreeRequirement(requirement);
-    }, []);
+    const handleTreeRequirementSelect = useCallback(
+        (requirement: RequirementWithDocuments) => {
+            setSelectedTreeRequirement(requirement);
+        },
+        [],
+    );
 
     const handleTreeExpand = useCallback(() => {
         if (selectedTreeRequirement?.id) {
-            console.log('Opening sidebar for requirement ID:', selectedTreeRequirement.id);
+            console.log(
+                'Opening sidebar for requirement ID:',
+                selectedTreeRequirement.id,
+            );
             setSelectedRequirementId(selectedTreeRequirement.id);
             setIsAiSidebarOpen(true);
         }
@@ -209,7 +247,13 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         disabled={orgsLoading}
                     >
                         <SelectTrigger className="w-72">
-                            <SelectValue placeholder={orgsLoading ? 'Loading organizations...' : 'Select Organization'} />
+                            <SelectValue
+                                placeholder={
+                                    orgsLoading
+                                        ? 'Loading organizations...'
+                                        : 'Select Organization'
+                                }
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {organizations?.map((org) => (
@@ -221,12 +265,22 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     </Select>
 
                     {/* Project Selector */}
-                    <Select value={selectedProject} onValueChange={(projectId) => {
-                        setSelectedProject(projectId);
-                        setSelectedTreeRequirement(null); // Clear tree selection when project changes
-                    }} disabled={projectsLoading}>
+                    <Select
+                        value={selectedProject}
+                        onValueChange={(projectId) => {
+                            setSelectedProject(projectId);
+                            setSelectedTreeRequirement(null); // Clear tree selection when project changes
+                        }}
+                        disabled={projectsLoading}
+                    >
                         <SelectTrigger className="w-72">
-                            <SelectValue placeholder={projectsLoading ? 'Loading projects...' : 'Select Project'} />
+                            <SelectValue
+                                placeholder={
+                                    projectsLoading
+                                        ? 'Loading projects...'
+                                        : 'Select Project'
+                                }
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {projects?.map((project) => (
@@ -237,7 +291,10 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         </SelectContent>
                     </Select>
                     <TabsList className="w-fit">
-                        <TabsTrigger value="hierarchy" className="flex items-center gap-1">
+                        <TabsTrigger
+                            value="hierarchy"
+                            className="flex items-center gap-1"
+                        >
                             <GitBranch className="h-4 w-4" />
                             <span className="font-semibold">Hierarchy</span>
                         </TabsTrigger>
@@ -258,14 +315,18 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         <TabsContent value="hierarchy" className="flex-1">
                             <Card className="h-full">
                                 <CardHeader className="py-4">
-                                    <CardTitle className="text-lg font-bold">Requirements Hierarchy</CardTitle>
+                                    <CardTitle className="text-lg font-bold">
+                                        Requirements Hierarchy
+                                    </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="relative">
                                         <Input
                                             placeholder="Search requirements by name, ID, or description..."
                                             value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            onChange={(e) =>
+                                                setSearchTerm(e.target.value)
+                                            }
                                             className="pl-9"
                                         />
                                         <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -282,21 +343,38 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
                                     <Card className="border-dashed">
                                         <CardHeader className="py-3">
-                                            <CardTitle className="text-base">1. Select Parent Requirement</CardTitle>
+                                            <CardTitle className="text-base">
+                                                1. Select Parent Requirement
+                                            </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-3">
-                                            <Select value={selectedParent} onValueChange={handleParentSelect}>
+                                            <Select
+                                                value={selectedParent}
+                                                onValueChange={handleParentSelect}
+                                            >
                                                 <SelectTrigger className="w-full">
                                                     <SelectValue placeholder="Choose parent requirement..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     {filteredRequirements.map((req) => (
-                                                        <SelectItem key={req.id} value={req.id}>
+                                                        <SelectItem
+                                                            key={req.id}
+                                                            value={req.id}
+                                                        >
                                                             <div className="flex items-center gap-2">
-                                                                <Badge variant="outline" className="text-xs">
-                                                                    {req.external_id || req.id.slice(0, 8)}
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs"
+                                                                >
+                                                                    {req.external_id ||
+                                                                        req.id.slice(
+                                                                            0,
+                                                                            8,
+                                                                        )}
                                                                 </Badge>
-                                                                <span className="text-sm">{req.name}</span>
+                                                                <span className="text-sm">
+                                                                    {req.name}
+                                                                </span>
                                                             </div>
                                                         </SelectItem>
                                                     ))}
@@ -308,40 +386,78 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                     {selectedParent && (
                                         <Card className="border-dashed">
                                             <CardHeader className="py-3">
-                                                <CardTitle className="text-base">2. Select Child Requirements</CardTitle>
+                                                <CardTitle className="text-base">
+                                                    2. Select Child Requirements
+                                                </CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-3">
                                                 <div className="text-sm text-muted-foreground">
                                                     <span className="mr-2">Parent:</span>
-                                                    <Badge variant="outline" className="mr-2">
-                                                        {requirements?.find((r) => r.id === selectedParent)?.external_id || selectedParent.slice(0, 8)}
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="mr-2"
+                                                    >
+                                                        {requirements?.find(
+                                                            (r) =>
+                                                                r.id === selectedParent,
+                                                        )?.external_id ||
+                                                            selectedParent.slice(0, 8)}
                                                     </Badge>
                                                     <span className="font-medium text-foreground">
-                                                        {requirements?.find((r) => r.id === selectedParent)?.name}
+                                                        {
+                                                            requirements?.find(
+                                                                (r) =>
+                                                                    r.id ===
+                                                                    selectedParent,
+                                                            )?.name
+                                                        }
                                                     </span>
                                                 </div>
 
                                                 {selectedChildren.length > 0 && (
                                                     <div className="flex flex-wrap gap-2">
-                                                        {selectedChildren.map((childId) => (
-                                                            <Badge key={childId} className="text-xs" variant="secondary">
-                                                                {requirements?.find((r) => r.id === childId)?.external_id || childId.slice(0, 8)}
-                                                            </Badge>
-                                                        ))}
+                                                        {selectedChildren.map(
+                                                            (childId) => (
+                                                                <Badge
+                                                                    key={childId}
+                                                                    className="text-xs"
+                                                                    variant="secondary"
+                                                                >
+                                                                    {requirements?.find(
+                                                                        (r) =>
+                                                                            r.id ===
+                                                                            childId,
+                                                                    )?.external_id ||
+                                                                        childId.slice(
+                                                                            0,
+                                                                            8,
+                                                                        )}
+                                                                </Badge>
+                                                            ),
+                                                        )}
                                                     </div>
                                                 )}
 
                                                 <div className="flex items-center gap-2">
                                                     <Button
-                                                        onClick={createParentChildRelationship}
-                                                        disabled={selectedChildren.length === 0 || createRelationshipMutation.isPending}
+                                                        onClick={
+                                                            createParentChildRelationship
+                                                        }
+                                                        disabled={
+                                                            selectedChildren.length ===
+                                                                0 ||
+                                                            createRelationshipMutation.isPending
+                                                        }
                                                     >
                                                         <Plus className="h-4 w-4 mr-2" />
                                                         {createRelationshipMutation.isPending
                                                             ? 'Creating...'
                                                             : `Create Relationships (${selectedChildren.length})`}
                                                     </Button>
-                                                    <Button variant="outline" onClick={handleClearSelection}>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={handleClearSelection}
+                                                    >
                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                         Clear All
                                                     </Button>
@@ -358,80 +474,153 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                 <span>• Click to select/deselect</span>
                                             </div>
                                             {requirementsLoading ? (
-                                                <div className="text-center py-8 text-muted-foreground">Loading requirements...</div>
+                                                <div className="text-center py-8 text-muted-foreground">
+                                                    Loading requirements...
+                                                </div>
                                             ) : availableChildren.length > 0 ? (
                                                 <div className="space-y-2">
-                                                    {availableChildren.map((requirement) => (
-                                                        <div
-                                                            key={requirement.id}
-                                                            className={`p-3 border rounded-md cursor-pointer transition-colors ${
-                                                                selectedChildren.includes(requirement.id)
-                                                                    ? 'border-primary bg-muted'
-                                                                    : 'hover:bg-muted/50'
-                                                            }`}
-                                                            onClick={() => handleChildSelect(requirement.id)}
-                                                        >
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-2 mb-1">
-                                                                        <Badge variant={selectedChildren.includes(requirement.id) ? 'default' : 'outline'} className="text-xs font-mono">
-                                                                            {requirement.external_id || requirement.id.slice(0, 8)}
-                                                                        </Badge>
-                                                                        <h3 className="font-medium text-sm">
-                                                                            {requirement.name}
-                                                                        </h3>
-                                                                        {requirement.documents && (
-                                                                            <Badge variant="outline" className="text-xs">
-                                                                                📄 {requirement.documents.name}
+                                                    {availableChildren.map(
+                                                        (requirement) => (
+                                                            <div
+                                                                key={requirement.id}
+                                                                className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                                                                    selectedChildren.includes(
+                                                                        requirement.id,
+                                                                    )
+                                                                        ? 'border-primary bg-muted'
+                                                                        : 'hover:bg-muted/50'
+                                                                }`}
+                                                                onClick={() =>
+                                                                    handleChildSelect(
+                                                                        requirement.id,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <Badge
+                                                                                variant={
+                                                                                    selectedChildren.includes(
+                                                                                        requirement.id,
+                                                                                    )
+                                                                                        ? 'default'
+                                                                                        : 'outline'
+                                                                                }
+                                                                                className="text-xs font-mono"
+                                                                            >
+                                                                                {requirement.external_id ||
+                                                                                    requirement.id.slice(
+                                                                                        0,
+                                                                                        8,
+                                                                                    )}
                                                                             </Badge>
+                                                                            <h3 className="font-medium text-sm">
+                                                                                {
+                                                                                    requirement.name
+                                                                                }
+                                                                            </h3>
+                                                                            {requirement.documents && (
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className="text-xs"
+                                                                                >
+                                                                                    📄{' '}
+                                                                                    {
+                                                                                        requirement
+                                                                                            .documents
+                                                                                            .name
+                                                                                    }
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        {requirement.description && (
+                                                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                                {
+                                                                                    requirement.description
+                                                                                }
+                                                                            </p>
                                                                         )}
                                                                     </div>
-                                                                    {requirement.description && (
-                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
-                                                                            {requirement.description}
-                                                                        </p>
+                                                                    {selectedChildren.includes(
+                                                                        requirement.id,
+                                                                    ) && (
+                                                                        <ArrowRight className="h-4 w-4 text-muted-foreground ml-4" />
                                                                     )}
                                                                 </div>
-                                                                {selectedChildren.includes(requirement.id) && (
-                                                                    <ArrowRight className="h-4 w-4 text-muted-foreground ml-4" />
-                                                                )}
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ),
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="text-center py-8 text-muted-foreground">
-                                                    {searchTerm ? 'No requirements match your search' : 'No available child requirements'}
+                                                    {searchTerm
+                                                        ? 'No requirements match your search'
+                                                        : 'No available child requirements'}
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
                                         <div>
-                                            <h4 className="text-sm font-medium mb-3 text-muted-foreground">All Requirements (select parent first):</h4>
+                                            <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                                                All Requirements (select parent first):
+                                            </h4>
                                             {requirementsLoading ? (
-                                                <div className="text-center py-8 text-muted-foreground">Loading requirements...</div>
+                                                <div className="text-center py-8 text-muted-foreground">
+                                                    Loading requirements...
+                                                </div>
                                             ) : filteredRequirements.length > 0 ? (
                                                 <div className="space-y-2">
-                                                    {filteredRequirements.map((requirement) => (
-                                                        <div key={requirement.id} className="p-3 border rounded-md">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <Badge variant="outline" className="text-xs font-mono">
-                                                                    {requirement.external_id || requirement.id.slice(0, 8)}
-                                                                </Badge>
-                                                                <h3 className="font-medium text-sm">{requirement.name}</h3>
-                                                                {requirement.documents && (
-                                                                    <Badge variant="outline" className="text-xs">📄 {requirement.documents.name}</Badge>
+                                                    {filteredRequirements.map(
+                                                        (requirement) => (
+                                                            <div
+                                                                key={requirement.id}
+                                                                className="p-3 border rounded-md"
+                                                            >
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="text-xs font-mono"
+                                                                    >
+                                                                        {requirement.external_id ||
+                                                                            requirement.id.slice(
+                                                                                0,
+                                                                                8,
+                                                                            )}
+                                                                    </Badge>
+                                                                    <h3 className="font-medium text-sm">
+                                                                        {requirement.name}
+                                                                    </h3>
+                                                                    {requirement.documents && (
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="text-xs"
+                                                                        >
+                                                                            📄{' '}
+                                                                            {
+                                                                                requirement
+                                                                                    .documents
+                                                                                    .name
+                                                                            }
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+                                                                {requirement.description && (
+                                                                    <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                        {
+                                                                            requirement.description
+                                                                        }
+                                                                    </p>
                                                                 )}
                                                             </div>
-                                                            {requirement.description && (
-                                                                <p className="text-xs text-muted-foreground line-clamp-2">{requirement.description}</p>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                        ),
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="text-center py-8 text-muted-foreground">
-                                                    {searchTerm ? 'No requirements match your search' : 'No requirements found'}
+                                                    {searchTerm
+                                                        ? 'No requirements match your search'
+                                                        : 'No requirements found'}
                                                 </div>
                                             )}
                                         </div>
@@ -443,9 +632,12 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         <TabsContent value="matrix" className="flex-1">
                             <Card className="h-full">
                                 <CardHeader className="py-4">
-                                    <CardTitle className="text-lg font-bold">Requirements Tree View</CardTitle>
+                                    <CardTitle className="text-lg font-bold">
+                                        Requirements Tree View
+                                    </CardTitle>
                                     <CardDescription>
-                                        Click on any requirement to select it and access Expand/Trace actions
+                                        Click on any requirement to select it and access
+                                        Expand/Trace actions
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
@@ -453,40 +645,64 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                         <div className="flex items-center justify-center py-12 text-muted-foreground">
                                             Loading requirements...
                                         </div>
-                                    ) : filteredRequirements && filteredRequirements.length > 0 ? (
+                                    ) : filteredRequirements &&
+                                      filteredRequirements.length > 0 ? (
                                         <div className="space-y-2">
                                             {filteredRequirements.map((requirement) => (
                                                 <div
                                                     key={requirement.id}
                                                     className={`p-4 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
-                                                        selectedTreeRequirement?.id === requirement.id 
-                                                            ? 'border-primary bg-muted' 
+                                                        selectedTreeRequirement?.id ===
+                                                        requirement.id
+                                                            ? 'border-primary bg-muted'
                                                             : 'border-border'
                                                     }`}
-                                                    onClick={() => handleTreeRequirementSelect(requirement)}
+                                                    onClick={() =>
+                                                        handleTreeRequirementSelect(
+                                                            requirement,
+                                                        )
+                                                    }
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <Badge variant="outline" className="text-xs font-mono">
-                                                                    {requirement.external_id || requirement.id.slice(0, 8)}
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs font-mono"
+                                                                >
+                                                                    {requirement.external_id ||
+                                                                        requirement.id.slice(
+                                                                            0,
+                                                                            8,
+                                                                        )}
                                                                 </Badge>
                                                                 <h3 className="font-medium text-sm">
                                                                     {requirement.name}
                                                                 </h3>
                                                                 {requirement.documents && (
-                                                                    <Badge variant="outline" className="text-xs">
-                                                                        📄 {requirement.documents.name}
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="text-xs"
+                                                                    >
+                                                                        📄{' '}
+                                                                        {
+                                                                            requirement
+                                                                                .documents
+                                                                                .name
+                                                                        }
                                                                     </Badge>
                                                                 )}
                                                             </div>
                                                             {requirement.description && (
                                                                 <p className="text-xs text-muted-foreground line-clamp-2">
-                                                                    {requirement.description}
+                                                                    {
+                                                                        requirement.description
+                                                                    }
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        {selectedTreeRequirement?.id === requirement.id && (
+                                                        {selectedTreeRequirement?.id ===
+                                                            requirement.id && (
                                                             <div className="flex items-center gap-2 ml-4">
                                                                 <Button
                                                                     variant="outline"
@@ -520,7 +736,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 text-muted-foreground">
-                                            {searchTerm ? 'No requirements match your search' : 'No requirements found'}
+                                            {searchTerm
+                                                ? 'No requirements match your search'
+                                                : 'No requirements found'}
                                         </div>
                                     )}
                                 </CardContent>
@@ -532,30 +750,38 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                 <CardHeader>
                                     <CardTitle>Manage Relationships</CardTitle>
                                     <CardDescription>
-                                        Create and modify requirement dependencies using closure table
+                                        Create and modify requirement dependencies using
+                                        closure table
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <div className="text-center py-8 text-muted-foreground">
                                         <Plus className="h-12 w-12 mx-auto mb-4" />
                                         <p>Relationship management coming soon</p>
-                                        <p className="text-sm">This will allow creating parent-child relationships with cycle prevention</p>
+                                        <p className="text-sm">
+                                            This will allow creating parent-child
+                                            relationships with cycle prevention
+                                        </p>
                                     </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        </>
-                    )}
+                    </>
+                )}
 
                 {!selectedProject && !projectsLoading && (
                     <div className="text-center py-12 text-muted-foreground">
                         <GitBranch className="h-10 w-10 mx-auto mb-3" />
-                        <p className="text-base font-medium">Select a project to get started</p>
-                        <p className="text-sm">Choose a project to view and manage requirement relationships</p>
+                        <p className="text-base font-medium">
+                            Select a project to get started
+                        </p>
+                        <p className="text-sm">
+                            Choose a project to view and manage requirement relationships
+                        </p>
                     </div>
                 )}
             </Tabs>
-            
+
             {/* AI Sidebar - similar to GlideEditableTable */}
             <RequirementAnalysisSidebar
                 requirement={selectedRequirement}

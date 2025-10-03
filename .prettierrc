@@ -11,7 +11,14 @@
     "endOfLine": "lf",
     "bracketSameLine": false,
     "singleAttributePerLine": false,
-    "importOrder": ["<THIRD_PARTY_MODULES>", "", "^@/(.*)$", "", "^[.]"],
-    "importOrderCaseSensitive": true,
-    "plugins": ["@ianvs/prettier-plugin-sort-imports"]
+    "overrides": [
+        {
+            "files": ["*.{js,jsx,ts,tsx}"],
+            "options": {
+                "importOrder": ["<THIRD_PARTY_MODULES>", "", "^@/(.*)$", "", "^[.]"],
+                "importOrderCaseSensitive": true,
+                "plugins": ["@ianvs/prettier-plugin-sort-imports"]
+            }
+        }
+    ]
 }

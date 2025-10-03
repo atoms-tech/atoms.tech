@@ -11,6 +11,7 @@ This document provides a comprehensive analysis of the current traceability impl
 #### Core Tables Structure
 
 **1. `trace_links` Table - Flexible Relationship Management**
+
 ```sql
 -- Primary table for general traceability relationships
 CREATE TABLE trace_links (
@@ -33,6 +34,7 @@ CREATE TABLE trace_links (
 ```
 
 **2. `requirements_closure` Table - Optimized Hierarchy**
+
 ```sql
 -- Closure table for efficient parent-child hierarchy operations
 CREATE TABLE requirements_closure (
@@ -50,6 +52,7 @@ CREATE TABLE requirements_closure (
 #### Key Stored Procedures
 
 **1. Cycle Detection Function**
+
 ```sql
 -- Returns TRUE if creating relationship would cause cycle
 CREATE OR REPLACE FUNCTION check_requirement_cycle(
@@ -59,6 +62,7 @@ CREATE OR REPLACE FUNCTION check_requirement_cycle(
 ```
 
 **2. Relationship Management Functions**
+
 ```sql
 -- Create relationship with validation and cascade
 CREATE OR REPLACE FUNCTION create_requirement_relationship(
@@ -86,6 +90,7 @@ CREATE OR REPLACE FUNCTION delete_requirement_relationship(
 ```
 
 **3. Query Functions**
+
 ```sql
 -- Get hierarchical descendants
 CREATE OR REPLACE FUNCTION get_requirement_descendants(
@@ -125,6 +130,7 @@ CREATE OR REPLACE FUNCTION get_requirement_tree(
 #### Performance Optimizations
 
 **Indexes for Optimal Query Performance**
+
 ```sql
 -- Trace links indexes
 CREATE INDEX idx_trace_links_source ON trace_links(source_id, source_type);
@@ -144,6 +150,7 @@ CREATE INDEX idx_requirements_closure_ancestor_depth ON requirements_closure(anc
 #### Current Hook Structure
 
 **Query Hooks**
+
 ```typescript
 // Fetch outgoing trace links (current requirement as source)
 useTraceLinks(sourceId: string, sourceType: EEntityType, queryFilters?: QueryFilters)
@@ -165,19 +172,20 @@ useRequirementTree(projectId?: string)
 ```
 
 **Mutation Hooks**
+
 ```typescript
 // Single relationship creation
-useCreateTraceLink()
+useCreateTraceLink();
 
 // Bulk relationship creation
-useCreateTraceLinks()
+useCreateTraceLinks();
 
 // Relationship deletion (soft delete)
-useDeleteTraceLink()
+useDeleteTraceLink();
 
 // Hierarchical relationship operations
-useCreateRelationship()
-useDeleteRelationship()
+useCreateRelationship();
+useDeleteRelationship();
 ```
 
 #### Data Flow Pattern
@@ -201,6 +209,7 @@ graph TD
 #### Multi-Tenant Architecture
 
 **Hierarchy Structure**
+
 ```
 Organization (UUID)
 ├── Projects (UUID[])
@@ -211,6 +220,7 @@ Organization (UUID)
 ```
 
 **Current Scoping Implementation**
+
 ```typescript
 // Organization-level project fetching
 const { data: projects } = useOrganizationProjects(orgId);
@@ -225,6 +235,7 @@ const { data: docRequirements } = useDocumentRequirements(documentId);
 #### Access Control Patterns
 
 **Row Level Security (RLS)**
+
 - All tables implement organization-based isolation
 - Users can only access data within their organization
 - Project-level permissions control requirement visibility
@@ -237,6 +248,7 @@ const { data: docRequirements } = useDocumentRequirements(documentId);
 #### 1. Create Trace Relationship
 
 **Function Signature**
+
 ```typescript
 async function createTraceRelationship(params: {
     orgId: string;                          // Required: Organization scope
@@ -256,6 +268,7 @@ async function createTraceRelationship(params: {
 ```
 
 **Implementation Flow**
+
 1. Validate organization scope and user permissions
 2. Verify both requirements exist and are accessible
 3. Check for existing relationships (prevent duplicates)
@@ -266,6 +279,7 @@ async function createTraceRelationship(params: {
 #### 2. Bulk Create Relationships
 
 **Function Signature**
+
 ```typescript
 async function bulkCreateRelationships(params: {
     orgId: string;
@@ -291,6 +305,7 @@ async function bulkCreateRelationships(params: {
 ```
 
 **Use Cases**
+
 - Batch parent-child relationship creation
 - Importing traceability matrices
 - Workflow automation scenarios
@@ -298,6 +313,7 @@ async function bulkCreateRelationships(params: {
 #### 3. Query Requirement Hierarchy
 
 **Function Signature**
+
 ```typescript
 async function queryRequirementHierarchy(params: {
     orgId: string;
@@ -336,6 +352,7 @@ async function queryRequirementHierarchy(params: {
 #### 4. Search Requirements for Linking
 
 **Function Signature**
+
 ```typescript
 async function searchRequirementsForLinking(params: {
     orgId: string;
@@ -375,6 +392,7 @@ async function searchRequirementsForLinking(params: {
 #### 5. Validate Relationship Cycle
 
 **Function Signature**
+
 ```typescript
 async function validateRelationshipCycle(params: {
     orgId: string;
@@ -396,6 +414,7 @@ async function validateRelationshipCycle(params: {
 #### 6. Generate Traceability Matrix
 
 **Function Signature**
+
 ```typescript
 async function generateTraceabilityMatrix(params: {
     orgId: string;
@@ -464,7 +483,7 @@ enum TraceabilityErrorCode {
 
     // Rate Limiting
     RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-    BULK_OPERATION_TOO_LARGE = 'BULK_OPERATION_TOO_LARGE'
+    BULK_OPERATION_TOO_LARGE = 'BULK_OPERATION_TOO_LARGE',
 }
 ```
 
@@ -472,12 +491,12 @@ enum TraceabilityErrorCode {
 
 ```typescript
 class TraceabilityValidator {
-    static validateOrgAccess(orgId: string, userId: string): Promise<boolean>
-    static validateRequirementExists(reqId: string, orgId: string): Promise<boolean>
-    static validateRequirementScope(reqId: string, projectId?: string): Promise<boolean>
-    static validateRelationshipType(type: string): boolean
-    static validateBulkOperationSize(items: any[], maxSize: number): boolean
-    static sanitizeSearchQuery(query: string): string
+    static validateOrgAccess(orgId: string, userId: string): Promise<boolean>;
+    static validateRequirementExists(reqId: string, orgId: string): Promise<boolean>;
+    static validateRequirementScope(reqId: string, projectId?: string): Promise<boolean>;
+    static validateRelationshipType(type: string): boolean;
+    static validateBulkOperationSize(items: any[], maxSize: number): boolean;
+    static sanitizeSearchQuery(query: string): string;
 }
 ```
 
@@ -486,16 +505,18 @@ class TraceabilityValidator {
 #### Caching Strategy
 
 **1. Redis Caching for Frequent Queries**
+
 ```typescript
 interface CacheConfig {
-    requirementDetails: { ttl: 300 };       // 5 minutes
-    hierarchyQueries: { ttl: 600 };         // 10 minutes
-    projectRequirements: { ttl: 900 };      // 15 minutes
-    organizationProjects: { ttl: 1800 };    // 30 minutes
+    requirementDetails: { ttl: 300 }; // 5 minutes
+    hierarchyQueries: { ttl: 600 }; // 10 minutes
+    projectRequirements: { ttl: 900 }; // 15 minutes
+    organizationProjects: { ttl: 1800 }; // 30 minutes
 }
 ```
 
 **2. Query Optimization**
+
 ```sql
 -- Use partial indexes for active relationships
 CREATE INDEX idx_trace_links_active
@@ -512,10 +533,10 @@ WHERE depth <= 5;
 
 ```typescript
 const rateLimits = {
-    createRelationship: { requests: 100, window: 3600 },    // 100/hour
-    bulkOperations: { requests: 10, window: 3600 },         // 10/hour
-    searchRequirements: { requests: 1000, window: 3600 },   // 1000/hour
-    hierarchyQueries: { requests: 200, window: 3600 }       // 200/hour
+    createRelationship: { requests: 100, window: 3600 }, // 100/hour
+    bulkOperations: { requests: 10, window: 3600 }, // 10/hour
+    searchRequirements: { requests: 1000, window: 3600 }, // 1000/hour
+    hierarchyQueries: { requests: 200, window: 3600 }, // 200/hour
 };
 ```
 
@@ -559,7 +580,7 @@ interface AutoLinkRule {
     organizationId: string;
     projectId?: string;
     conditions: {
-        sourcePattern?: RegExp;              // Match requirement names/IDs
+        sourcePattern?: RegExp; // Match requirement names/IDs
         targetPattern?: RegExp;
         documentRelationship?: 'same' | 'sequential' | 'parent-child';
         statusMatch?: string[];
@@ -645,6 +666,7 @@ async function importTraceabilityMatrix(params: {
 ## Implementation Checklist
 
 ### Phase 1: Core MCP Tool Functions
+
 - [ ] Implement `createTraceRelationship()` with full validation
 - [ ] Implement `bulkCreateRelationships()` with error handling
 - [ ] Implement `queryRequirementHierarchy()` with caching
@@ -652,18 +674,21 @@ async function importTraceabilityMatrix(params: {
 - [ ] Add comprehensive error handling and logging
 
 ### Phase 2: Advanced Features
+
 - [ ] Implement `validateRelationshipCycle()` for pre-validation
 - [ ] Implement `generateTraceabilityMatrix()` for reporting
 - [ ] Add auto-linking rule engine
 - [ ] Add compliance reporting templates
 
 ### Phase 3: Integration and Optimization
+
 - [ ] Integrate with existing React Query cache invalidation
 - [ ] Add Redis caching for performance
 - [ ] Implement rate limiting and monitoring
 - [ ] Add comprehensive test coverage
 
 ### Phase 4: Workflow Automation
+
 - [ ] Implement import/export workflows
 - [ ] Add webhook integration for external tools
 - [ ] Create workflow templates for common patterns
@@ -672,24 +697,28 @@ async function importTraceabilityMatrix(params: {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Database function validation (cycle detection, relationship creation)
 - MCP tool parameter validation
 - Error handling scenarios
 - Permission checking logic
 
 ### Integration Tests
+
 - End-to-end relationship creation workflows
 - Bulk operation performance and rollback
 - Cache invalidation and consistency
 - Cross-project linking scenarios
 
 ### Performance Tests
+
 - Large hierarchy traversal (>1000 nodes)
 - Bulk relationship creation (>100 relationships)
 - Concurrent modification scenarios
 - Cache hit/miss ratios
 
 ### Security Tests
+
 - Organization isolation verification
 - Permission boundary testing
 - SQL injection prevention
