@@ -450,7 +450,8 @@ export function RequirementForm({
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileUpload}
-                    accept=".pdf,.md"
+                    //accept other than pdf
+                    accept=".pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg"
                     multiple
                     className="hidden"
                 />

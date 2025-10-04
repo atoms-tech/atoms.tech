@@ -93,21 +93,7 @@ export class GumloopService {
 
         // Validate all files are PDFs or Markdown
         for (const file of files) {
-            if (
-                !file.type.includes('pdf') &&
-                !file.type.includes('markdown') &&
-                !file.name.endsWith('.md')
-            ) {
-                console.error(
-                    'Invalid file type detected:',
-                    file.type,
-                    'for file:',
-                    file.name,
-                );
-                throw new Error(
-                    `Only PDF and Markdown files are accepted. Invalid file: ${file.name}`,
-                );
-            }
+            // Removed file type restriction to allow all file types for MCP analysis
         }
 
         try {
