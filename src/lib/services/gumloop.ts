@@ -92,7 +92,7 @@ export class GumloopService {
         }
 
         // Validate all files are PDFs or Markdown
-        for (const file of files) {
+        for (const _file of files) {
             // Removed file type restriction to allow all file types for MCP analysis
         }
 

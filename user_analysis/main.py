@@ -12,6 +12,9 @@ import docx
 # Image OCR
 import pytesseract
 from PIL import Image
+from agent import req_agent
+from google.adk import Runner
+from google.genai import types
 
 app = FastAPI()
 
@@ -73,16 +76,47 @@ async def analyze_input(
 
     # --- MCP Client/ADK integration ---
     # Prepare the prompt for MCP analysis
-    prompt = f"Requirement: {user_input}\nDocument Content:\n{extracted_text}"
+    analysis_result = "Agent analysis performed"
+    try:
+        prompt = f"Requirement: {user_input}\nDocument Content:\n{extracted_text}"
 
-    # TODO: Replace with actual MCP client/ADK call
-    # Example:
-    # from adk.mcp_client import MCPClient
-    # mcp_client = MCPClient(llm="gemini-2.0-flash-001")
-    # analysis_result = mcp_client.analyze(prompt)
+        content = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    # For now, use a placeholder
-    analysis_result = "MCP AI analysis result would go here"
+        runner = Runner(agent=req_agent, app_name="req_llm_app")
+
+        events = runner.run(user_id="test_user", session_id="test_session", new_message=content)
+
+        final_text = None
+        for ev in events:
+            # ADK event object: prefer is_final_response() check
+            try:
+                if ev.is_final_response():
+                    final_text = ev.content.parts[0].text
+                    break
+            except Exception:
+                # Fallback heuristics
+                if getattr(ev, "type", "") in ("final_response", "response") and getattr(ev, "content", None):
+                    try:
+                        final_text = ev.content.parts[0].text
+                        break
+                    except Exception:
+                        pass
+
+        # If still none, attempt to pick last textual event
+        if final_text is None:
+            last_text = None
+            for ev in events:
+                try:
+                    if getattr(ev, "content", None) and ev.content.parts:
+                        last_text = ev.content.parts[0].text
+                except Exception:
+                    pass
+            final_text = last_text
+
+        # For now, use a placeholder
+        analysis_result = final_text
+    except Exception as e:
+        pass
 
     result = {
         "user_input": user_input,
