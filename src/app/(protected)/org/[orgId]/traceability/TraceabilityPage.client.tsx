@@ -13,8 +13,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
-import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
-import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,12 +62,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
-
-    // Sidebar state for requirement analysis (same as GlideEditableTable)
-    const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
-    const [selectedRequirementId, setSelectedRequirementId] = useState<string | null>(
-        null,
-    );
 
     // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
@@ -132,11 +124,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedParent('');
         setSelectedChildren([]);
     }, []);
-
-    // For AI Sidebar - similar to GlideEditableTable
-    const selectedRequirement = useMemo(() => {
-        return filteredRequirements.find((r) => r.id === selectedRequirementId) || null;
-    }, [filteredRequirements, selectedRequirementId]);
 
     // Handle deleting a relationship
     const handleDeleteRelationship = useCallback(
@@ -778,14 +765,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     </div>
                 )}
             </Tabs>
-
-            {/* AI Sidebar - similar to GlideEditableTable */}
-            <RequirementAnalysisSidebar
-                requirement={selectedRequirement as DynamicRequirement | null}
-                open={isAiSidebarOpen}
-                onOpenChange={setIsAiSidebarOpen}
-                columns={[]} // Can be empty array or retrieve from context if needed
-            />
         </div>
     );
 }
