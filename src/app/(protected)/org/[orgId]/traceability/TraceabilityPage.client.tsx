@@ -633,95 +633,125 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                     ) : requirementTree && requirementTree.length > 0 ? (
                                         <div className="space-y-2">
                                             {requirementTree
-                                                .filter((node) => node.has_children || node.depth > 0)
-                                                .sort((a, b) => (a.path || '').localeCompare(b.path || ''))
+                                                .filter(
+                                                    (node) =>
+                                                        node.has_children ||
+                                                        node.depth > 0,
+                                                )
+                                                .sort((a, b) =>
+                                                    (a.path || '').localeCompare(
+                                                        b.path || '',
+                                                    ),
+                                                )
                                                 .map((node, index) => {
-                                                    const requirement = requirements?.find(
-                                                        (r) => r.id === node.requirement_id,
-                                                    );
+                                                    const requirement =
+                                                        requirements?.find(
+                                                            (r) =>
+                                                                r.id ===
+                                                                node.requirement_id,
+                                                        );
                                                     return (
-                                                <div
-                                                    key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                    className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border"
-                                                    style={{
-                                                        marginLeft: `${node.depth * 24}px`,
-                                                    }}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-2">
+                                                        <div
+                                                            key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
+                                                            className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border"
+                                                            style={{
+                                                                marginLeft: `${node.depth * 24}px`,
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        {node.depth >
+                                                                            0 && (
+                                                                            <ArrowRight className="h-4 w-4 text-blue-400" />
+                                                                        )}
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="text-xs font-mono"
+                                                                        >
+                                                                            {requirement?.external_id ||
+                                                                                node.title ||
+                                                                                node.requirement_id?.slice(
+                                                                                    0,
+                                                                                    8,
+                                                                                )}
+                                                                        </Badge>
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="text-xs"
+                                                                        >
+                                                                            {node.depth ===
+                                                                            0
+                                                                                ? 'PARENT'
+                                                                                : `CHILD-L${node.depth}`}
+                                                                        </Badge>
+                                                                        <h3 className="font-medium text-sm">
+                                                                            {requirement?.name ||
+                                                                                node.title}
+                                                                        </h3>
+                                                                        {requirement?.documents && (
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className="text-xs"
+                                                                            >
+                                                                                📄{' '}
+                                                                                {
+                                                                                    requirement
+                                                                                        .documents
+                                                                                        .name
+                                                                                }
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    {requirement?.description && (
+                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                            {
+                                                                                requirement.description
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                    {node.path &&
+                                                                        node.depth >
+                                                                            0 && (
+                                                                            <p className="text-xs text-muted-foreground truncate mt-1">
+                                                                                Path:{' '}
+                                                                                {
+                                                                                    node.path
+                                                                                }
+                                                                            </p>
+                                                                        )}
+                                                                </div>
                                                                 {node.depth > 0 && (
-                                                                    <ArrowRight className="h-4 w-4 text-blue-400" />
-                                                                )}
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="text-xs font-mono"
-                                                                >
-                                                                    {requirement?.external_id ||
-                                                                        node.title ||
-                                                                        node.requirement_id?.slice(0, 8)}
-                                                                </Badge>
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="text-xs"
-                                                                >
-                                                                    {node.depth === 0 ? 'PARENT' : `CHILD-L${node.depth}`}
-                                                                </Badge>
-                                                                <h3 className="font-medium text-sm">
-                                                                    {requirement?.name || node.title}
-                                                                </h3>
-                                                                {requirement?.documents && (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        className="text-xs"
-                                                                    >
-                                                                        📄{' '}
-                                                                        {
-                                                                            requirement
-                                                                                .documents
-                                                                                .name
-                                                                        }
-                                                                    </Badge>
+                                                                    <div className="ml-4">
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                handleDeleteRelationship(
+                                                                                    node,
+                                                                                )
+                                                                            }
+                                                                            className="text-xs h-8 px-3"
+                                                                        >
+                                                                            <Unlink className="h-4 w-4 mr-1" />
+                                                                            Disconnect
+                                                                        </Button>
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            {requirement?.description && (
-                                                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                                                    {requirement.description}
-                                                                </p>
-                                                            )}
-                                                            {node.path && node.depth > 0 && (
-                                                                <p className="text-xs text-muted-foreground truncate mt-1">
-                                                                    Path: {node.path}
-                                                                </p>
-                                                            )}
                                                         </div>
-                                                        {node.depth > 0 && (
-                                                            <div className="ml-4">
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        handleDeleteRelationship(node)
-                                                                    }
-                                                                    className="text-xs h-8 px-3"
-                                                                >
-                                                                    <Unlink className="h-4 w-4 mr-1" />
-                                                                    Disconnect
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
                                                     );
-                                                })
-                                            }
+                                                })}
                                         </div>
                                     ) : (
                                         <div className="text-center py-12 text-muted-foreground">
                                             <Network className="h-12 w-12 mx-auto mb-4" />
-                                            <p className="font-medium">No hierarchy found</p>
+                                            <p className="font-medium">
+                                                No hierarchy found
+                                            </p>
                                             <p className="text-sm">
-                                                Create some relationships to see the tree structure
+                                                Create some relationships to see the tree
+                                                structure
                                             </p>
                                         </div>
                                     )}
