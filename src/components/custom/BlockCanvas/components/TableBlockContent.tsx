@@ -43,6 +43,21 @@ interface TableBlockContentProps {
     rowMetadataKey?: 'requirements' | 'rows';
 }
 
+// Hoisted, memoized row detail panel to keep a stable identity and avoid unnecessary re-renders
+const RequirementPanelAdapter: RowDetailPanelRenderer<DynamicRequirement> = React.memo(
+    ({ row, open, onOpenChange, columns }) => {
+        return (
+            <RequirementAnalysisSidebar
+                requirement={(row as DynamicRequirement) ?? null}
+                open={open}
+                onOpenChange={onOpenChange}
+                columns={columns}
+            />
+        );
+    },
+);
+RequirementPanelAdapter.displayName = 'RequirementPanelAdapter';
+
 export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
     ({
         dynamicRequirements,
@@ -73,27 +88,6 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
 
         // Added implementation for Glide bool, should change for an enum system later.
         const shouldUseGlideTables = useGlideTables || globalUseGlideTables;
-
-        // Adapter to map { row } → { requirement } for the requirement analysis sidebar
-        const RequirementPanelAdapter: RowDetailPanelRenderer<DynamicRequirement> = ({
-            row,
-            open,
-            onOpenChange,
-            columns,
-        }) => {
-            // Debug which panel is called
-            console.debug(
-                `[Sidebar] req called for rowID '${(row as DynamicRequirement | null)?.id ?? ''}'`,
-            );
-            return (
-                <RequirementAnalysisSidebar
-                    requirement={(row as DynamicRequirement) ?? null}
-                    open={open}
-                    onOpenChange={onOpenChange}
-                    columns={columns}
-                />
-            );
-        };
 
         // Default to requirement analysis (via adapter) if none provided
         const EffectiveRowDetailPanel = rowDetailPanel ?? RequirementPanelAdapter;

@@ -129,6 +129,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
     const recentlyPastedRowsRef = useRef<Set<string>>(new Set());
     const pasteOperationActiveRef = useRef<boolean>(false);
+    const onCellEditedRef = useRef<((cell: Item, newValue: GridCell) => void) | null>(
+        null,
+    );
 
     const prevEditModeRef = useRef<boolean>(isEditMode);
     const isSavingRef = useRef(false);
@@ -962,12 +965,38 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     } as NumberCell;
                 }
                 case 'date': {
-                    const dateVal =
-                        value instanceof Date
-                            ? value
-                            : typeof value === 'string' && value
-                              ? new Date(value)
-                              : null;
+                    let dateVal: Date | null = null;
+                    if (value instanceof Date) {
+                        dateVal = Number.isNaN(value.getTime()) ? null : value;
+                    } else if (typeof value === 'string' && value) {
+                        const parsed = new Date(value);
+                        if (Number.isNaN(parsed.getTime())) {
+                            // Invalid date: fix via editing pipeline (set to null)
+                            const key = `${col}:${row}`;
+                            setTimeout(() => {
+                                try {
+                                    const newValue = {
+                                        kind: GridCellKind.Custom,
+                                        allowOverlay: false,
+                                        copyData: '',
+                                        data: {
+                                            kind: 'date-picker-cell',
+                                            date: null,
+                                            displayDate: '',
+                                            format: 'date',
+                                        },
+                                    } as GridCell;
+                                    onCellEditedRef.current?.([col, row], newValue);
+                                } catch {}
+                            }, 0);
+                            dateVal = null;
+                            console.warn(
+                                '[GlideEditableTable] Invalid date detected in cell. Cleared to prevent rendering errors.',
+                            );
+                        } else {
+                            dateVal = parsed;
+                        }
+                    }
                     const displayDate = dateVal ? dateVal.toISOString().slice(0, 10) : '';
                     return {
                         kind: GridCellKind.Custom,
@@ -1159,7 +1188,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     }
                 } else if (kind === 'date-picker-cell') {
                     const dateVal: Date | null = data?.date ?? null;
-                    const iso = dateVal ? dateVal.toISOString() : '';
+                    const iso =
+                        dateVal && !Number.isNaN(dateVal.getTime())
+                            ? dateVal.toISOString()
+                            : '';
                     console.debug('[onCellEdited] Date picker update', {
                         rowIndex,
                         rowId,
@@ -1201,6 +1233,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         },
         [localColumns, debouncedSave, addToHistory, sortedData, appendPropertyOptions],
     );
+
+    useEffect(() => {
+        onCellEditedRef.current = (cell: Item, newValue: GridCell) => {
+            void onCellEdited(cell, newValue);
+        };
+    }, [onCellEdited]);
 
     // Add new row. Queue if a save is in progress; otherwise proceed and flush edits.
     const handleRowAppended = useCallback(async () => {
