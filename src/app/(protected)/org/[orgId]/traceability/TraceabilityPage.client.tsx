@@ -6,7 +6,6 @@ import {
     Network,
     Plus,
     Search,
-    Target,
     Trash2,
     Unlink,
     Zap,
@@ -65,10 +64,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
-
-    // Tree View selection state
-    const [selectedTreeRequirement, setSelectedTreeRequirement] =
-        useState<RequirementWithDocuments | null>(null);
 
     // Sidebar state for requirement analysis (same as GlideEditableTable)
     const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
@@ -137,48 +132,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedParent('');
         setSelectedChildren([]);
     }, []);
-
-    // Tree View handlers - similar to GlideEditableTable functionality
-    const handleTreeRequirementSelect = useCallback(
-        (requirement: RequirementWithDocuments) => {
-            setSelectedTreeRequirement(requirement);
-        },
-        [],
-    );
-
-    const handleTreeExpand = useCallback(() => {
-        if (selectedTreeRequirement?.id) {
-            console.log(
-                'Opening sidebar for requirement ID:',
-                selectedTreeRequirement.id,
-            );
-            setSelectedRequirementId(selectedTreeRequirement.id);
-            setIsAiSidebarOpen(true);
-        }
-    }, [selectedTreeRequirement]);
-
-    const handleTreeTrace = useCallback(() => {
-        if (selectedTreeRequirement?.id && orgId && selectedProject) {
-            const requirementSlug = selectedTreeRequirement.id;
-            const traceUrl = `/org/${orgId}/project/${selectedProject}/requirements/${requirementSlug}/trace`;
-
-            console.log('Navigating to trace page:', {
-                requirementId: selectedTreeRequirement.id,
-                orgId,
-                projectId: selectedProject,
-                traceUrl,
-            });
-
-            router.push(traceUrl);
-        } else {
-            console.warn('Missing required parameters for trace navigation:', {
-                hasRequirement: !!selectedTreeRequirement,
-                hasId: !!selectedTreeRequirement?.id,
-                orgId,
-                selectedProject,
-            });
-        }
-    }, [selectedTreeRequirement, orgId, selectedProject, router]);
 
     // For AI Sidebar - similar to GlideEditableTable
     const selectedRequirement = useMemo(() => {
@@ -288,7 +241,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             setSelectedParent('');
                             setSelectedChildren([]);
                             setSearchTerm('');
-                            setSelectedTreeRequirement(null); // Clear tree selection
                             router.push(`/org/${newOrgId}/traceability`);
                         }}
                         disabled={orgsLoading}
@@ -316,7 +268,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         value={selectedProject}
                         onValueChange={(projectId) => {
                             setSelectedProject(projectId);
-                            setSelectedTreeRequirement(null); // Clear tree selection when project changes
                         }}
                         disabled={projectsLoading}
                     >
