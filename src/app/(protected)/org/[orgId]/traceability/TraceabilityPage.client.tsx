@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 
 import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
+import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -784,7 +785,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             {/* AI Sidebar - similar to GlideEditableTable */}
             <RequirementAnalysisSidebar
-                requirement={selectedRequirement}
+                requirement={selectedRequirement as DynamicRequirement | null}
                 open={isAiSidebarOpen}
                 onOpenChange={setIsAiSidebarOpen}
                 columns={[]} // Can be empty array or retrieve from context if needed
