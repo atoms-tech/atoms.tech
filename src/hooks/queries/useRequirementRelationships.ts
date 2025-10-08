@@ -33,7 +33,9 @@ interface RequirementTreeNode {
 }
 
 // API functions
-async function createRelationship(request: CreateRelationshipRequest): Promise<RelationshipResult> {
+async function createRelationship(
+    request: CreateRelationshipRequest,
+): Promise<RelationshipResult> {
     const response = await fetch('/api/requirements/relationships', {
         method: 'POST',
         headers: {
@@ -50,7 +52,9 @@ async function createRelationship(request: CreateRelationshipRequest): Promise<R
     return response.json();
 }
 
-async function deleteRelationship(request: CreateRelationshipRequest): Promise<RelationshipResult> {
+async function deleteRelationship(
+    request: CreateRelationshipRequest,
+): Promise<RelationshipResult> {
     const response = await fetch('/api/requirements/relationships', {
         method: 'DELETE',
         headers: {
@@ -67,7 +71,10 @@ async function deleteRelationship(request: CreateRelationshipRequest): Promise<R
     return response.json();
 }
 
-async function getRequirementDescendants(requirementId: string, maxDepth?: number): Promise<RequirementNode[]> {
+async function getRequirementDescendants(
+    requirementId: string,
+    maxDepth?: number,
+): Promise<RequirementNode[]> {
     const params = new URLSearchParams({ requirementId, type: 'descendants' });
     if (maxDepth) params.append('maxDepth', maxDepth.toString());
     const response = await fetch(`/api/requirements/relationships?${params}`);
@@ -76,7 +83,10 @@ async function getRequirementDescendants(requirementId: string, maxDepth?: numbe
     return result.data;
 }
 
-async function getRequirementAncestors(requirementId: string, maxDepth?: number): Promise<RequirementNode[]> {
+async function getRequirementAncestors(
+    requirementId: string,
+    maxDepth?: number,
+): Promise<RequirementNode[]> {
     const params = new URLSearchParams({ requirementId, type: 'ancestors' });
     if (maxDepth) params.append('maxDepth', maxDepth.toString());
     const response = await fetch(`/api/requirements/relationships?${params}`);

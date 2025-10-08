@@ -55,3 +55,7 @@ bun.lock
 
 .kiro
 .vscode
+
+# Testing N8N, DB sql files
+N8N
+DB_Analyze

@@ -13,10 +13,7 @@ type QueryBuilder = {
     ) => Promise<RPCResponse<unknown>>;
 };
 type SupabaseMinimal = {
-    rpc: (
-        fn: string,
-        args: Record<string, unknown>,
-    ) => Promise<RPCResponse<unknown>>;
+    rpc: (fn: string, args: Record<string, unknown>) => Promise<RPCResponse<unknown>>;
     from: (table: string) => QueryBuilder;
     auth: {
         getUser: () => Promise<{
@@ -244,7 +241,7 @@ export async function GET(request: NextRequest) {
             );
         }
 
-    let response: RPCResponse<unknown>;
+        let response: RPCResponse<unknown>;
 
         switch (type) {
             case 'descendants':
