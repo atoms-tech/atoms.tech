@@ -2,14 +2,11 @@
 
 import {
     ChevronDown,
-    FlaskConical,
     GitBranch,
     Hammer,
     Home,
-    ListTree,
     Pin,
     Sparkles,
-    Table,
     User,
     Users,
 } from 'lucide-react';
@@ -82,7 +79,6 @@ function AppSidebar() {
     ];
 
     // States for collapsibles
-    const [isTraceOpen, setIsTraceOpen] = React.useState<boolean>(false);
     const [isOrganizationOpen, setIsOrganizationOpen] = React.useState<boolean>(true);
 
     const ORGS_PER_CLICK = 5;
@@ -295,94 +291,32 @@ function AppSidebar() {
                                 </SidebarMenuItem>
                             </Collapsible>
 
-                            {/* Traceability Collapsible */}
-                            <Collapsible open={isTraceOpen} onOpenChange={setIsTraceOpen}>
-                                <SidebarMenuItem className="mb-0.5">
-                                    <CollapsibleTrigger asChild className="mb-0.5">
-                                        <SidebarMenuButton asChild>
-                                            <Button
-                                                variant="ghost"
-                                                className="w-full justify-start"
-                                            >
-                                                <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                <span className="text-xs font-medium">
-                                                    Traceability
-                                                </span>
-                                                <ChevronDown
-                                                    className={`ml-auto h-3 w-3 transition-transform ${isTraceOpen ? '-rotate-180' : ''}`}
-                                                />
-                                            </Button>
-                                        </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <SidebarMenuSub>
-                                            <SidebarMenuSubItem className="mb-0.5">
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    className="mr-5"
-                                                >
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="w-full justify-start"
-                                                        onClick={() => {
-                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
-                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
-                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=matrix`);
-                                                        }}
-                                                    >
-                                                        <Table className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                        <span className="text-xs font-medium">
-                                                            Matrix View
-                                                        </span>
-                                                    </Button>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                            <SidebarMenuSubItem className="mb-0.5">
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    className="mr-5"
-                                                >
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="w-full justify-start"
-                                                        onClick={() => {
-                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
-                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
-                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=hierarchy`);
-                                                        }}
-                                                    >
-                                                        <ListTree className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                        <span className="text-xs font-medium">
-                                                            Hierarchy View
-                                                        </span>
-                                                    </Button>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                            <SidebarMenuSubItem className="mb-0.5">
-                                                <SidebarMenuSubButton
-                                                    asChild
-                                                    className="mr-5"
-                                                >
-                                                    <Button
-                                                        variant="ghost"
-                                                        className="w-full justify-start"
-                                                        onClick={() => {
-                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
-                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
-                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=test`);
-                                                        }}
-                                                    >
-                                                        <FlaskConical className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-                                                        <span className="text-xs font-medium">
-                                                            Test Requirement
-                                                        </span>
-                                                    </Button>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                        </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                </SidebarMenuItem>
-                            </Collapsible>
+                            {/* Traceability Single Link */}
+                            <SidebarMenuItem className="mb-0.5">
+                                <SidebarMenuButton asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start"
+                                        onClick={() => {
+                                            if (
+                                                !profile?.pinned_organization_id &&
+                                                filteredOrganizations.length === 0
+                                            )
+                                                return;
+                                            const orgId =
+                                                profile?.pinned_organization_id ||
+                                                filteredOrganizations[0]?.id;
+                                            if (orgId)
+                                                router.push(`/org/${orgId}/traceability`);
+                                        }}
+                                    >
+                                        <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                        <span className="text-xs font-medium">
+                                            Traceability
+                                        </span>
+                                    </Button>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
 
                             {profile?.job_title === 'admin' && (
                                 <SidebarMenuItem className="mb-0.5">
