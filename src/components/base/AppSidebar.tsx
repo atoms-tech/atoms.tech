@@ -324,11 +324,11 @@ function AppSidebar() {
                                                     <Button
                                                         variant="ghost"
                                                         className="w-full justify-start"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                '/traceability?view=matrix',
-                                                            )
-                                                        }
+                                                        onClick={() => {
+                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
+                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
+                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=matrix`);
+                                                        }}
                                                     >
                                                         <Table className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                                         <span className="text-xs font-medium">
@@ -345,11 +345,11 @@ function AppSidebar() {
                                                     <Button
                                                         variant="ghost"
                                                         className="w-full justify-start"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                '/traceability?view=hierarchy',
-                                                            )
-                                                        }
+                                                        onClick={() => {
+                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
+                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
+                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=hierarchy`);
+                                                        }}
                                                     >
                                                         <ListTree className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                                         <span className="text-xs font-medium">
@@ -366,11 +366,11 @@ function AppSidebar() {
                                                     <Button
                                                         variant="ghost"
                                                         className="w-full justify-start"
-                                                        onClick={() =>
-                                                            router.push(
-                                                                '/traceability?view=test',
-                                                            )
-                                                        }
+                                                        onClick={() => {
+                                                            if (!profile?.pinned_organization_id && filteredOrganizations.length === 0) return;
+                                                            const orgId = profile?.pinned_organization_id || filteredOrganizations[0]?.id;
+                                                            if (orgId) router.push(`/org/${orgId}/traceability?view=test`);
+                                                        }}
                                                     >
                                                         <FlaskConical className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                                         <span className="text-xs font-medium">
