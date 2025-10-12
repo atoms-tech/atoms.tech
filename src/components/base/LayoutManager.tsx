@@ -5,8 +5,9 @@ import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
 
 import AppSidebar from '@/components/base/AppSidebar';
-import { AgentDemo } from '@/components/custom/AgentChat';
+import { AgentDemo, LeftAgentPanel } from '@/components/custom/AgentChat';
 import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
+import { useLeftAgentStore } from '@/components/custom/AgentChat/left/useLeftAgentStore';
 import { EditModeFloatingToggle } from '@/components/custom/BlockCanvas/components/EditModeToggle';
 import HorizontalToolbar from '@/components/custom/HorizontalToolbar';
 import VerticalToolbar from '@/components/custom/VerticalToolbar';
@@ -33,8 +34,10 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
         toggleSidebar,
     } = useLayout();
 
-    // Get agent panel state for layout adjustments
+    // Get right agent panel state for layout adjustments
     const { isOpen: isAgentPanelOpen, panelWidth } = useAgentStore();
+    // Get left analysis panel state to also adjust layout on desktop
+    const { isOpen: isLeftPanelOpen, panelWidth: leftPanelWidth } = useLeftAgentStore();
 
     const pathname = usePathname();
     const _isSidebarExpanded = sidebarState === 'expanded';
@@ -52,9 +55,12 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
     // Show horizontal toolbar on mobile and tablet
     const showHorizontalToolbar = isMobile || isTablet;
 
-    // Calculate right margin for main content when agent panel is open
+    // Calculate right margin for main content when panels are open
     // Only apply on desktop (md and above) - mobile/tablet keep overlay behavior
-    const rightMargin = !isMobile && !isTablet && isAgentPanelOpen ? panelWidth : 0;
+    const rightMargin =
+        !isMobile && !isTablet
+            ? (isAgentPanelOpen ? panelWidth : 0) + (isLeftPanelOpen ? leftPanelWidth : 0)
+            : 0;
 
     // If layout is not ready, render a minimal container with loading spinner to prevent layout shift
     if (!isLayoutReady) {
@@ -103,6 +109,9 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
 
             {/* Agent Demo - positioned on the right side */}
             <AgentDemo autoInit={false} />
+
+            {/* Left Agent Panel - created on-demand by Analyze with AI */}
+            <LeftAgentPanel />
         </Sidebar>
     );
 };

@@ -1,5 +1,6 @@
 'use client';
 
+// Import our shared handleAnalyzeAPI
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -13,6 +14,7 @@ import {
     RequirementForm,
 } from '@/app/(protected)/org/[orgId]/project/[projectId]/requirements/[requirementSlug]/components';
 import { useGumloop } from '@/hooks/useGumloop';
+import { handleAnalyzeAPI } from '@/lib/analysis/handleAnalyzeAPI';
 
 interface AnalysisData {
     reqId: string;
@@ -39,7 +41,7 @@ export default function RequirementPage() {
         [key: string]: RegulationFile;
     }>({});
 
-    const { startPipeline, getPipelineRun } = useGumloop();
+    const { /* startPipeline, */ getPipelineRun } = useGumloop();
 
     const [isReasoning, setIsReasoning] = useState(false);
     const [isAnalysing, setIsAnalysing] = useState(false);
@@ -50,6 +52,7 @@ export default function RequirementPage() {
     );
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
 
+<<<<<<< HEAD
     const handleAnalyze = async () => {
         setAnalysisData(null);
         console.log('Starting analysis pipeline...');
@@ -71,6 +74,42 @@ export default function RequirementPage() {
         } catch (error) {
             console.error('Failed to start analysis pipeline:', error);
         }
+=======
+    // Old handleAnalyze logic commented out
+    // const handleAnalyze = async () => {
+    //     setAnalysisData(null);
+    //     console.log('Starting analysis pipeline...');
+    //     setIsAnalysing(true);
+    //
+    //     try {
+    //         const { run_id } = await startPipeline({
+    //             pipelineType: isReasoning
+    //                 ? 'requirement-analysis-reasoning'
+    //                 : 'requirement-analysis',
+    //             requirement: reqText,
+    //             systemName: systemName,
+    //             objective: objective,
+    //             fileNames: Object.values(selectedFiles).map((file) => file.gumloopName),
+    //             model_preference: isReasoning ? 'o1' : 'gemini-2.0-flash-001',
+    //             temperature: isReasoning ? 1 : 0.1,
+    //         });
+    //         setAnalysisPipelineRunId(run_id);
+    //     } catch (error) {
+    //         console.error('Failed to start analysis pipeline:', error);
+    //     }
+    // };
+
+    //new handleAnalyzeAPI logic without gumloop pipeline
+
+    const handleAnalyze = async () => {
+        await handleAnalyzeAPI({
+            reqText,
+            selectedFiles: selectedFiles as unknown as { [key: string]: { file?: File } },
+            setAnalysisData,
+            setIsAnalysing,
+            apiUrl: '/api/ai',
+        });
+>>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
     };
 
     useEffect(() => {
