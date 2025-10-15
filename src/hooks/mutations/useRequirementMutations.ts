@@ -197,7 +197,10 @@ export function useSyncRequirementData() {
     });
 }
 
-const invalidateRequirementQueries = (queryClient: QueryClient, data: Requirement) => {
+const invalidateRequirementQueries = (
+    queryClient: QueryClient,
+    data: { id: string; document_id: string; block_id: string },
+) => {
     queryClient.invalidateQueries({
         queryKey: queryKeys.requirements.list({}),
     });

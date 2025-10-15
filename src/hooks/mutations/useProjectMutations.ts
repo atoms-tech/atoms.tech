@@ -17,6 +17,8 @@ export type CreateProjectInput = Omit<
     | 'version'
     | 'settings'
     | 'tags'
+    | 'embedding'
+    | 'fts_vector'
 >;
 
 export function useCreateProject() {

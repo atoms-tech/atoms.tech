@@ -2,13 +2,15 @@ import { z } from 'zod';
 
 import { Block, EProjectStatus, EVisibility, Json, Project } from '@/types';
 
-export const ProjectSchema = z.object({
+export const ProjectSchema: z.ZodType<Project> = z.object({
     id: z.string(),
     created_at: z.string().nullable(),
     created_by: z.string(),
     deleted_at: z.string().nullable(),
     deleted_by: z.string().nullable(),
     description: z.string().nullable(),
+    embedding: z.string().nullable(),
+    fts_vector: z.any(),
     is_deleted: z.boolean().nullable(),
     metadata: z.any().nullable() as z.ZodType<Json>,
     name: z.string(),
@@ -33,7 +35,7 @@ export const ProjectSchema = z.object({
         'organization',
         'public',
     ]) as z.ZodType<EVisibility>,
-}) satisfies z.ZodType<Project>;
+}) as z.ZodType<Omit<Database['public']['Tables']['documents']['Row'], 'metadata'>>;
 
 export const BlockSchema = z.object({
     id: z.string(),

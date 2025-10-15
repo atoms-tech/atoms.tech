@@ -61,7 +61,6 @@ export function BlockCanvas({
         error,
         setDocument,
         blocks,
-        hydrateBlockRelations,
         refetchDocument,
     } = useDocumentRealtime({
         documentId,
@@ -283,7 +282,7 @@ export function BlockCanvas({
                 isAddingBlockRef.current = false;
             }
         },
-        [originalHandleAddBlock, hydrateBlockRelations, refetchDocument],
+        [originalHandleAddBlock, refetchDocument],
     );
 
     const sensors = useSensors(
