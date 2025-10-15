@@ -17,6 +17,8 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { useUser } from '@/lib/providers/user.provider';
 
+import { MCPServerDialog } from './MCPServerDialog';
+import { MCPServerList } from './MCPServerList';
 import { useAgentStore } from './hooks/useAgentStore';
 
 interface AgentSettingsProps {
@@ -330,6 +332,43 @@ export const AgentSettings: React.FC<AgentSettingsProps> = ({ onClose }) => {
                             <p>
                                 6. Return a response with a &quot;reply&quot; field for
                                 the agent
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <Separator />
+
+                {/* MCP Server Management */}
+                <div className="space-y-4">
+                    <div>
+                        <h3 className="text-sm font-medium mb-2">
+                            MCP Server Management
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-4">
+                            Connect external MCP servers to extend agent capabilities with
+                            custom tools
+                        </p>
+                    </div>
+
+                    <MCPServerList />
+                    <MCPServerDialog />
+
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                        <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mb-2">
+                            MCP Server Setup Guide
+                        </p>
+                        <div className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                            <p>
+                                1. Click &quot;Add MCP Server&quot; to configure a new
+                                server
+                            </p>
+                            <p>2. Choose HTTP/SSE for web-based servers</p>
+                            <p>3. Choose Stdio for local command-based servers</p>
+                            <p>4. Provide server details (URL or command)</p>
+                            <p>
+                                5. Tools will be available to the AI agent in future
+                                conversations
                             </p>
                         </div>
                     </div>
