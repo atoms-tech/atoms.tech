@@ -9,7 +9,7 @@ import {
     Requirement,
 } from '@/types';
 
-export const RequirementSchema = z.object({
+export const RequirementSchema: z.ZodType<Requirement> = z.object({
     id: z.string(),
     ai_analysis: z.any().nullable() as z.ZodType<Json>,
     block_id: z.string(),
@@ -19,9 +19,11 @@ export const RequirementSchema = z.object({
     deleted_by: z.string().nullable(),
     description: z.string().nullable(),
     document_id: z.string(),
+    embedding: z.string().nullable(),
     enchanced_requirement: z.string().nullable(),
     external_id: z.string().nullable(),
     format: z.enum(['incose', 'ears', 'other']) as z.ZodType<ERequirementFormat>,
+    fts_vector: z.any(),
     is_deleted: z.boolean().nullable(),
     level: z.enum(['component', 'system', 'subsystem']) as z.ZodType<ERequirementLevel>,
     name: z.string(),
@@ -50,4 +52,4 @@ export const RequirementSchema = z.object({
     position: z.number(),
     data: z.record(z.string(), z.any()).nullable().optional(),
     properties: z.any().nullable() as z.ZodType<Json | null>,
-}) satisfies z.ZodType<Requirement>;
+}) as z.ZodType<Database['public']['Tables']['requirements']['Row']>;

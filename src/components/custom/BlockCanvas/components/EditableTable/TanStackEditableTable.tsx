@@ -130,12 +130,14 @@ export function TanStackEditableTable<T extends BaseRow>({
     const [editingData, setEditingData] = useState<Record<string, T>>({});
 
     // Define role permissions
-    type RoleType = 'owner' | 'editor' | 'viewer';
+    type RoleType = 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
 
     const rolePermissions = React.useMemo(
         () =>
             ({
                 owner: ['editTable', 'deleteRow', 'addRow'],
+                admin: ['editTable', 'deleteRow', 'addRow'],
+                maintainer: ['editTable', 'deleteRow', 'addRow'],
                 editor: ['editTable', 'deleteRow', 'addRow'],
                 viewer: [],
             }) as Record<RoleType, string[]>,
