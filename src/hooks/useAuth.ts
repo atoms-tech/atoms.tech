@@ -36,11 +36,23 @@ export function useAuth() {
         if (initialized) return;
 
         const isDevelopment = process.env.NODE_ENV === 'development';
+        const bypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+        const devUserId = process.env.NEXT_PUBLIC_DEV_USER_ID;
 
         const checkUser = async () => {
             try {
                 console.log('useAuth: Checking session...');
                 setInitialized(true);
+
+                // Development auth bypass
+                if (isDevelopment && bypassAuth && devUserId) {
+                    console.log('useAuth: 🔓 Development auth bypass enabled');
+                    console.log('useAuth: Using dev user ID:', devUserId);
+                    setIsAuthenticated(true);
+                    await fetchUserProfile(devUserId);
+                    setIsLoading(false);
+                    return;
+                }
 
                 // In development, try to get user from cookies first
                 if (isDevelopment) {
@@ -121,29 +133,36 @@ export function useAuth() {
             setIsLoading(false);
         }, 2000); // Reduced to 2 seconds since we're skipping session check in dev
 
-        // Listen for auth state changes
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('useAuth: Auth state change:', event, !!session);
-            setIsAuthenticated(!!session);
-            if (session?.user) {
-                console.log(
-                    'useAuth: Auth state change - fetching profile for:',
-                    session.user.id,
-                );
-                await fetchUserProfile(session.user.id);
-            } else {
-                console.log('useAuth: Auth state change - no session, clearing profile');
-                setUserProfile(null);
-            }
-            // Ensure loading state is set to false after auth state change
-            console.log('useAuth: Auth state change - setting loading to false');
-            setIsLoading(false);
-        });
+        // Listen for auth state changes (skip in dev bypass mode)
+        let subscription: { unsubscribe: () => void } | null = null;
+
+        if (!(isDevelopment && bypassAuth && devUserId)) {
+            const {
+                data: { subscription: authSubscription },
+            } = supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log('useAuth: Auth state change:', event, !!session);
+                setIsAuthenticated(!!session);
+                if (session?.user) {
+                    console.log(
+                        'useAuth: Auth state change - fetching profile for:',
+                        session.user.id,
+                    );
+                    await fetchUserProfile(session.user.id);
+                } else {
+                    console.log(
+                        'useAuth: Auth state change - no session, clearing profile',
+                    );
+                    setUserProfile(null);
+                }
+                // Ensure loading state is set to false after auth state change
+                console.log('useAuth: Auth state change - setting loading to false');
+                setIsLoading(false);
+            });
+            subscription = authSubscription;
+        }
 
         return () => {
-            subscription.unsubscribe();
+            subscription?.unsubscribe();
             clearTimeout(fallbackTimeout);
         };
     }, [initialized]);

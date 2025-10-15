@@ -27,15 +27,33 @@ export function UserProvider({
     const [profile, setProfile] = useState<Profile | null>(initialProfile);
 
     const refreshUser = async () => {
-        const { data: updatedUser } = await supabase.auth.getUser();
-        const { data: updatedProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', updatedUser?.user?.id || '')
-            .single();
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        const bypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+        const devUserId = process.env.NEXT_PUBLIC_DEV_USER_ID;
 
-        setUser(updatedUser?.user || null);
-        setProfile(updatedProfile || null);
+        let userId = null;
+
+        if (isDevelopment && bypassAuth && devUserId) {
+            // Development bypass: use dev user ID directly
+            userId = devUserId;
+        } else {
+            // Production: get user from Supabase auth
+            const { data: updatedUser } = await supabase.auth.getUser();
+            userId = updatedUser?.user?.id;
+            setUser(updatedUser?.user || null);
+        }
+
+        if (userId) {
+            const { data: updatedProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            setProfile(updatedProfile || null);
+        } else {
+            setProfile(null);
+        }
     };
 
     return (

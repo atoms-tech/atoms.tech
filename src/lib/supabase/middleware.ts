@@ -2,6 +2,10 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const bypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS_AUTH === 'true';
+    const devUserId = process.env.NEXT_PUBLIC_DEV_USER_ID;
+
     let supabaseResponse = NextResponse.next({
         request,
     });
@@ -26,18 +30,31 @@ export async function updateSession(request: NextRequest) {
                     );
                 },
             },
+            auth: {
+                autoRefreshToken: !(isDevelopment && bypassAuth),
+                persistSession: !(isDevelopment && bypassAuth),
+                detectSessionInUrl: !(isDevelopment && bypassAuth),
+            },
         },
     );
 
-    // Do not run code between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with users being randomly logged out.
+    // Development auth bypass
+    let user = null;
+    if (isDevelopment && bypassAuth && devUserId) {
+        // Skip Supabase auth check in development
+        user = { id: devUserId };
+    } else {
+        // Do not run code between createServerClient and
+        // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+        // issues with users being randomly logged out.
 
-    // IMPORTANT: DO NOT REMOVE auth.getUser()
+        // IMPORTANT: DO NOT REMOVE auth.getUser()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+        const {
+            data: { user: authUser },
+        } = await supabase.auth.getUser();
+        user = authUser;
+    }
 
     // Ignore pages that don't need authentication
     if (

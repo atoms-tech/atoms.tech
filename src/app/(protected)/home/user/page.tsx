@@ -120,8 +120,11 @@ export default function UserDashboard() {
     }, [invitations]);
 
     const handleOrganizationClick = (organization: Organization) => {
+        console.log('🔥 Organization clicked:', organization.name, organization.id);
+        console.log('🔥 User ID:', user?.id);
         setCurrentUserId(user?.id || '');
         setCurrentOrganization(organization);
+        console.log('🔥 Navigating to:', `/org/${organization.id}`);
         router.push(`/org/${organization.id}`);
     };
 
