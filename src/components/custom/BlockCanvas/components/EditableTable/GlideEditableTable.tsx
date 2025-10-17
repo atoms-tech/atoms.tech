@@ -907,7 +907,7 @@ export function GlideEditableTable<T extends DynamicRequirement = DynamicRequire
                     } as TextCell;
             }
         },
-        [sortedData, localColumns, isEditMode],
+        [sortedData, localColumns, isEditMode, peopleNames], // NOTE: Added peopleNames -Evan
     );
 
     // Copy support: provide cells for the current selection so Ctrl/Cmd+C works
