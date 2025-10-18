@@ -3,6 +3,7 @@
 import { saveSession } from '@workos-inc/authkit-nextjs';
 import { WorkOS } from '@workos-inc/node';
 import { redirect } from 'next/navigation';
+import { Resend } from 'resend';
 
 // Helper function to get WorkOS client
 function getWorkOSClient() {
@@ -16,6 +17,62 @@ function getWorkOSClient() {
     return new WorkOS(apiKey, {
         clientId,
     });
+}
+
+/**
+ * Initiate OAuth login with Google
+ */
+export async function loginWithGoogle() {
+    try {
+        const workos = getWorkOSClient();
+        const clientId = process.env.WORKOS_CLIENT_ID;
+        const redirectUri =
+            process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ||
+            `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+
+        if (!clientId) {
+            throw new Error('WORKOS_CLIENT_ID is required');
+        }
+
+        const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+            provider: 'GoogleOAuth',
+            redirectUri,
+            clientId,
+        });
+
+        redirect(authorizationUrl);
+    } catch (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Initiate OAuth login with GitHub
+ */
+export async function loginWithGitHub() {
+    try {
+        const workos = getWorkOSClient();
+        const clientId = process.env.WORKOS_CLIENT_ID;
+        const redirectUri =
+            process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ||
+            `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+
+        if (!clientId) {
+            throw new Error('WORKOS_CLIENT_ID is required');
+        }
+
+        const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+            provider: 'GitHubOAuth',
+            redirectUri,
+            clientId,
+        });
+
+        redirect(authorizationUrl);
+    } catch (error) {
+        console.error('GitHub OAuth error:', error);
+        throw error;
+    }
 }
 
 /**
@@ -247,24 +304,108 @@ export async function requestPasswordReset(email: string) {
             };
         }
 
-        // Create password reset token (this automatically sends an email)
-        const workos = getWorkOSClient();
-        const _passwordReset = await workos.userManagement.createPasswordReset({
-            email,
-        });
+        console.log('Requesting password reset for email:', email);
 
-        // The createPasswordReset method automatically sends an email
-        // If we need to customize the URL, we can use the passwordResetUrl from the response
+        // Create password reset token via WorkOS
+        const workos = getWorkOSClient();
+        let passwordResetData;
+
+        try {
+            passwordResetData = await workos.userManagement.createPasswordReset({
+                email,
+            });
+            console.log('WorkOS password reset created:', {
+                id: passwordResetData.id,
+                email: passwordResetData.email,
+            });
+        } catch (workosError) {
+            console.error('WorkOS password reset creation failed:', {
+                error: workosError,
+                message:
+                    workosError instanceof Error ? workosError.message : 'Unknown error',
+                email,
+            });
+
+            // If WorkOS email sending is not configured, try fallback with Resend
+            const resendApiKey = process.env.RESEND_API_KEY;
+            const resendFromEmail = process.env.RESEND_FROM_EMAIL;
+            const resetUrl = process.env.WORKOS_PASSWORD_RESET_URL;
+
+            if (resendApiKey && resendFromEmail && resetUrl) {
+                console.log('Attempting fallback email sending via Resend');
+
+                try {
+                    // Re-create the password reset to get a token
+                    passwordResetData = await workos.userManagement.createPasswordReset({
+                        email,
+                    });
+
+                    const resend = new Resend(resendApiKey);
+                    const resetLink = `${resetUrl}?token=${passwordResetData.passwordResetToken}`;
+
+                    const emailResult = await resend.emails.send({
+                        from: resendFromEmail,
+                        to: email,
+                        subject: 'Reset Your Password - Atoms.Tech',
+                        html: `
+                            <h2>Reset Your Password</h2>
+                            <p>You requested to reset your password for your Atoms.Tech account.</p>
+                            <p>Click the link below to create a new password:</p>
+                            <p><a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 6px;">Reset Password</a></p>
+                            <p>Or copy and paste this link into your browser:</p>
+                            <p style="word-break: break-all;">${resetLink}</p>
+                            <p>This link will expire in 24 hours.</p>
+                            <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                            <hr />
+                            <p style="color: #666; font-size: 12px;">Atoms.Tech Password Reset</p>
+                        `,
+                    });
+
+                    console.log('Fallback password reset email sent via Resend:', {
+                        emailId: emailResult.data?.id,
+                        to: email,
+                    });
+
+                    return {
+                        success: true,
+                        message: `Password reset link has been sent to ${email}. Please check your email.`,
+                    };
+                } catch (fallbackError) {
+                    console.error('Fallback email sending failed:', {
+                        error: fallbackError,
+                        message:
+                            fallbackError instanceof Error
+                                ? fallbackError.message
+                                : 'Unknown error',
+                        email,
+                    });
+                    throw workosError; // Throw the original WorkOS error
+                }
+            } else {
+                console.error('Cannot send fallback email: Missing configuration', {
+                    hasResendKey: !!resendApiKey,
+                    hasFromEmail: !!resendFromEmail,
+                    hasResetUrl: !!resetUrl,
+                });
+                throw workosError; // Throw the original WorkOS error
+            }
+        }
+
+        // WorkOS successfully sent the email
         return {
             success: true,
             message: `Password reset link has been sent to ${email}. Please check your email.`,
         };
     } catch (error) {
         const errorString = String(error);
-        console.error('Auth action error (password reset):', errorString);
+        console.error('Auth action error (password reset):', {
+            error,
+            errorString,
+            message: error instanceof Error ? error.message : 'Unknown error',
+        });
 
         return {
-            error: 'Failed to create password reset. Please try again.',
+            error: 'Failed to send password reset email. Please try again or contact support.',
             success: false,
         };
     }

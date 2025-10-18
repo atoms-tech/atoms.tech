@@ -87,7 +87,15 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (error) {
-            console.error('Database error:', error);
+            console.error('Database error creating signup request:', {
+                error,
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code,
+                email,
+                fullName,
+            });
             return NextResponse.json(
                 { error: 'Failed to create signup request' },
                 { status: 500 },
@@ -96,21 +104,44 @@ export async function POST(request: NextRequest) {
 
         // Send email to support team
         try {
-            await resend.emails.send({
-                from: process.env.RESEND_FROM_EMAIL!,
-                to: 'support@atoms.tech',
-                subject: `New Signup Request: ${fullName} (${email})`,
-                html: `
-                    <h2>New Signup Request</h2>
-                    <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
-                    <p><strong>Email:</strong> ${escapeHtml(email)}</p>
-                    ${message ? `<p><strong>Message:</strong></p><p>${escapeHtml(message)}</p>` : ''}
-                    <hr />
-                    <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/signup-requests">View in Dashboard</a></p>
-                `,
-            });
+            const fromEmail = process.env.RESEND_FROM_EMAIL;
+            const apiKey = process.env.RESEND_API_KEY;
+
+            if (!fromEmail || !apiKey) {
+                console.warn(
+                    'Email notification not sent: Missing RESEND configuration',
+                    {
+                        hasFromEmail: !!fromEmail,
+                        hasApiKey: !!apiKey,
+                    },
+                );
+            } else {
+                const emailResult = await resend.emails.send({
+                    from: fromEmail,
+                    to: 'support@atoms.tech',
+                    subject: `New Signup Request: ${fullName} (${email})`,
+                    html: `
+                        <h2>New Signup Request</h2>
+                        <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
+                        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+                        ${message ? `<p><strong>Message:</strong></p><p>${escapeHtml(message)}</p>` : ''}
+                        <hr />
+                        <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/admin/signup-requests">View in Dashboard</a></p>
+                    `,
+                });
+                console.log('Signup notification email sent successfully:', {
+                    emailId: emailResult.data?.id,
+                    to: 'support@atoms.tech',
+                });
+            }
         } catch (emailError) {
-            console.error('Failed to send email notification:', emailError);
+            console.error('Failed to send email notification:', {
+                error: emailError,
+                message:
+                    emailError instanceof Error ? emailError.message : 'Unknown error',
+                email,
+                fullName,
+            });
             // Don't fail the request if email sending fails
         }
 
