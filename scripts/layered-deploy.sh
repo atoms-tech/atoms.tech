@@ -183,7 +183,7 @@ print_success "Created PR to main: $PR_URL"
 # Step 4: Handle PR merging
 if [[ "$AUTO_MERGE" == "true" ]]; then
     print_status "Auto-merging PR to main..."
-    gh pr merge $PR_URL --merge --delete-branch
+    gh pr merge $PR_URL --squash --delete-branch
     print_success "PR merged to main"
 else
     print_warning "Waiting for manual PR approval..."

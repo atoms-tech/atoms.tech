@@ -103,7 +103,7 @@ jobs:
         if: github.event.inputs.auto_merge == 'true'
         run: |
           echo "🔄 Auto-merging PR to main..."
-          gh pr merge ${{ steps.pr-to-main.outputs.pr_url }} --merge --delete-branch
+          gh pr merge ${{ steps.pr-to-main.outputs.pr_url }} --squash --delete-branch
           echo "✅ PR merged to main"
 
       - name: Fast-forward merge to main
