@@ -21,14 +21,12 @@ export default function ForgotPasswordPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
     const [isPending, setIsPending] = useState(false);
-    const [resetLink, setResetLink] = useState('');
     const [message, setMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setSuccess(false);
-        setResetLink('');
         setMessage('');
         setIsPending(true);
 
@@ -40,9 +38,6 @@ export default function ForgotPasswordPage() {
                     result.message ||
                         'Password reset email has been sent. Please check your email.',
                 );
-                if (result.resetUrl) {
-                    setResetLink(result.resetUrl);
-                }
             } else {
                 setError(result.error || 'Failed to request password reset');
             }
@@ -87,30 +82,6 @@ export default function ForgotPasswordPage() {
                                         </p>
                                     </div>
                                 </div>
-
-                                {resetLink && (
-                                    <div className="mt-4 p-3 bg-white dark:bg-black/30 rounded border border-green-200 dark:border-green-700">
-                                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                                            No email received? Use this direct link:
-                                        </p>
-                                        <div className="p-2 bg-gray-50 dark:bg-black/50 rounded border border-gray-200 dark:border-gray-700 break-all text-xs max-h-16 overflow-y-auto mb-2">
-                                            <code className="text-blue-600 dark:text-blue-400">
-                                                {resetLink}
-                                            </code>
-                                        </div>
-                                        <Button
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(resetLink);
-                                                alert('Link copied to clipboard!');
-                                            }}
-                                            className="w-full"
-                                            variant="outline"
-                                            size="sm"
-                                        >
-                                            Copy Backup Link
-                                        </Button>
-                                    </div>
-                                )}
 
                                 <p className="text-xs text-gray-600 dark:text-gray-400 mt-4">
                                     💡 Check your spam folder if you don&#39;t see the

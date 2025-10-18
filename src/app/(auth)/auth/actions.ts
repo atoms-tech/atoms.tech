@@ -247,14 +247,9 @@ export async function requestPasswordReset(email: string) {
             };
         }
 
-        // Get the password reset URL base from environment
-        const _passwordResetUrlBase =
-            process.env.WORKOS_PASSWORD_RESET_URL ||
-            'https://atoms.kooshapari.com/auth/reset-password';
-
         // Create password reset token (this automatically sends an email)
         const workos = getWorkOSClient();
-        const passwordReset = await workos.userManagement.createPasswordReset({
+        const _passwordReset = await workos.userManagement.createPasswordReset({
             email,
         });
 
@@ -263,7 +258,6 @@ export async function requestPasswordReset(email: string) {
         return {
             success: true,
             message: `Password reset link has been sent to ${email}. Please check your email.`,
-            resetUrl: passwordReset.passwordResetUrl, // Provide as fallback
         };
     } catch (error) {
         const errorString = String(error);
