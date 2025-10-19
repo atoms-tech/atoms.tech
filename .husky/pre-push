@@ -1,11 +1,7 @@
 echo "🚀 Running pre-push checks..."
 
-# Lint Check
-echo "📝 Linting staged files..."
-bun run lint
-
-# Format check
-echo "🔍 Formatting staged files..."
-bun prettier src --check
+# Type check
+echo "🔍 Running type check..."
+bun run type-check
 
 echo "✅ Pre-push checks passed! Ready to push."

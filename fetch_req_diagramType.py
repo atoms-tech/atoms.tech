@@ -178,10 +178,18 @@ async def receive_diagram(input: DiagramRequest):
             gemini_diagram_type = MERMAID_TYPE_MAP[lookup_key]
             # print(lookup_key) # debug
 
-            # Open prompt file and reate the full prompt with the specific inputs
-            file = open('prompt_Gemini_Test.txt', 'r')
-            full_prompt = file.read()
-            
+            # Open prompt file and create the full prompt with the specific inputs
+            try:
+                with open('prompt_Gemini_Test.txt', 'r') as file:
+                    prompt_template = file.read()
+            except FileNotFoundError:
+                raise HTTPException(status_code=500, detail="Prompt template file not found")
+
+            # Template the prompt with actual requirement and diagram type
+            full_prompt = prompt_template.format(
+                requirement=requirement,
+                diagram_type=gemini_diagram_type
+            )
 
             try:
                 # Generate response using Gemini
@@ -246,13 +254,13 @@ async def receive_diagram(input: DiagramRequest):
 
 
 def main():
-    print("Hello, World!")  
+    print("Hello, World!")
     print("DEBUG methods")
-    receive_diagram(diagram_type)  # was gemini_diagram_type
+    # Note: receive_diagram is an async endpoint, not meant to be called directly
     print("DEBUG after methods")
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
 
 
 

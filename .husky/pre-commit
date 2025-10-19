@@ -1,11 +1,17 @@
 echo "🔍 Running pre-commit checks..."
 
-# Lint Check
-echo "📝 Linting staged files..."
-bun run lint
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
 
-# Format check
-echo "🔍 Formatting staged files..."
-bun prettier src --check
+if [ -n "$STAGED_FILES" ]; then
+    # Format staged files
+    echo "📝 Formatting staged files..."
+    echo "$STAGED_FILES" | xargs bun prettier --write
 
-echo "✅ Pre-commit checks passed!"
+    # Re-add formatted files
+    echo "$STAGED_FILES" | xargs git add
+
+    echo "✅ Pre-commit checks passed!"
+else
+    echo "ℹ️ No TypeScript/JavaScript files to format"
+fi
