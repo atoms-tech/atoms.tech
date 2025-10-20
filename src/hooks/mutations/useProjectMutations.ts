@@ -1,9 +1,28 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Project } from '@/types/base/projects.types';
+
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
 
 export type CreateProjectInput = Omit<
     Project,
@@ -21,12 +40,14 @@ export type CreateProjectInput = Omit<
 
 export function useCreateProject() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (input: CreateProjectInput) => {
             // Start a Supabase transaction
             console.log('Creating project', input);
-            const { data: project, error: projectError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: project, error: projectError } = await client
                 .from('projects')
                 .insert({
                     name: input.name,
@@ -76,6 +97,7 @@ export function useCreateProject() {
 
 export function useCreateProjectMember() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -89,7 +111,8 @@ export function useCreateProjectMember() {
             role: ProjectRole;
             orgId: string; // Add orgId to the parameters
         }) => {
-            const { data, error } = await supabase
+            const client = ensureSupabaseClient();
+            const { data, error } = await client
                 .from('project_members')
                 .insert({
                     user_id: userId,
@@ -135,10 +158,12 @@ export type UpdateProjectInput = Partial<
 
 export function useUpdateProject(projectId: string) {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (input: UpdateProjectInput) => {
-            const { data: project, error: projectError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: project, error: projectError } = await client
                 .from('projects')
                 .update({
                     name: input.name,
@@ -179,6 +204,7 @@ export function useUpdateProject(projectId: string) {
 
 export function useDuplicateProject() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -190,8 +216,9 @@ export function useDuplicateProject() {
             userId: string;
             newName?: string;
         }) => {
+            const client = ensureSupabaseClient();
             // First, get the original project
-            const { data: originalProject, error: fetchError } = await supabase
+            const { data: originalProject, error: fetchError } = await client
                 .from('projects')
                 .select('*')
                 .eq('id', projectId)
@@ -219,7 +246,7 @@ export function useDuplicateProject() {
                 owned_by: userId,
             };
 
-            const { data: newProject, error: createError } = await supabase
+            const { data: newProject, error: createError } = await client
                 .from('projects')
                 .insert(duplicatedProject)
                 .select()
@@ -234,7 +261,7 @@ export function useDuplicateProject() {
             }
 
             // Add the user as owner of the new project
-            const { error: memberError } = await supabase.from('project_members').insert({
+            const { error: memberError } = await client.from('project_members').insert({
                 user_id: userId,
                 project_id: newProject.id,
                 role: 'owner',
@@ -266,6 +293,7 @@ export function useDuplicateProject() {
 
 export function useDeleteProject() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -275,7 +303,8 @@ export function useDeleteProject() {
             projectId: string;
             userId: string;
         }) => {
-            const { data: project, error: projectError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: project, error: projectError } = await client
                 .from('projects')
                 .update({
                     is_deleted: true,

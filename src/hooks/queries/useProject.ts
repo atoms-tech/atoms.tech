@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserProjects } from '@/lib/db/client';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { QueryFilters } from '@/types/base/filters.types';
 import { Project } from '@/types/base/projects.types';
 
@@ -10,23 +10,41 @@ export function useProject(projectId: string) {
     return useQuery({
         queryKey: queryKeys.projects.detail(projectId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('projects')
-                .select('*')
-                .eq('id', projectId)
-                .single();
+            const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            if (error) throw error;
-            return data as Project;
+            if (!response.ok) {
+                const message = `Error fetching project: ${response.statusText}`;
+                console.error(message);
+                throw new Error(message);
+            }
+
+            const payload = (await response.json()) as {
+                project: Project;
+            };
+
+            return payload.project;
         },
         enabled: !!projectId,
     });
 }
 
 export function useProjects(filters?: QueryFilters) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.projects.list(filters || {}),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             let query = supabase.from('projects').select('*');
 
             if (filters) {
@@ -42,13 +60,24 @@ export function useProjects(filters?: QueryFilters) {
             if (error) throw error;
             return data as Project[];
         },
+        enabled: !authLoading && !!supabase,
     });
 }
 
 export function useOrganizationProjects(organizationId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.projects.byOrg(organizationId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             const { data, error } = await supabase
                 .from('projects')
                 .select('*')
@@ -58,22 +87,44 @@ export function useOrganizationProjects(organizationId: string) {
             if (error) throw error;
             return data as Project[];
         },
-        enabled: !!organizationId,
+        enabled: !!organizationId && !authLoading && !!supabase,
     });
 }
 
 export function useUserProjects(userId: string, orgId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.projects.byOrg(orgId),
-        queryFn: async () => getUserProjects(userId, orgId),
-        enabled: !!userId && !!orgId,
+        queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
+            return getUserProjects(supabase, userId, orgId);
+        },
+        enabled: !!userId && !!orgId && !authLoading && !!supabase,
     });
 }
 
 export function useProjectsByMembershipForOrg(orgId: string, userId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.projects.byOrg(orgId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             const { data, error } = await supabase
                 .from('project_members')
                 .select('project_id')
@@ -96,6 +147,6 @@ export function useProjectsByMembershipForOrg(orgId: string, userId: string) {
 
             return projects;
         },
-        enabled: !!orgId && !!userId,
+        enabled: !!orgId && !!userId && !authLoading && !!supabase,
     });
 }

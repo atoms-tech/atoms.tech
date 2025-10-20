@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-
 interface Message {
     id: string;
     content: string;
@@ -38,6 +36,7 @@ interface AgentStore {
     currentOrgId?: string;
     currentPinnedOrganizationId?: string;
     currentUsername: string | null;
+    currentOrgName?: string | null;
 
     // Actions
     setIsOpen: (isOpen: boolean) => void;
@@ -63,6 +62,7 @@ interface AgentStore {
         orgId?: string;
         pinnedOrganizationId?: string;
         username?: string;
+        orgName?: string;
     }) => void;
 
     // N8N Integration methods
@@ -141,6 +141,7 @@ export const useAgentStore = create<AgentStore>()(
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
             organizationQueues: {},
+            currentOrgName: null,
 
             // Actions
             setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -212,6 +213,7 @@ export const useAgentStore = create<AgentStore>()(
                     currentOrgId: context.orgId,
                     currentPinnedOrganizationId: context.pinnedOrganizationId,
                     currentUsername: context.username || null,
+                    currentOrgName: context.orgName ?? null,
                 }),
 
             // N8N Integration methods
@@ -223,6 +225,7 @@ export const useAgentStore = create<AgentStore>()(
                     currentUserId,
                     currentOrgId,
                     currentPinnedOrganizationId,
+                    currentOrgName,
                     currentUsername,
                 } = get();
 
@@ -235,19 +238,7 @@ export const useAgentStore = create<AgentStore>()(
                 }
 
                 try {
-                    // Fetch organization name
-                    let orgName: string | undefined;
-                    try {
-                        const { data: orgData } = await supabase
-                            .from('organizations')
-                            .select('name')
-                            .eq('id', currentOrgId)
-                            .eq('is_deleted', false)
-                            .single();
-                        orgName = orgData?.name;
-                    } catch (orgError) {
-                        console.warn('Failed to fetch organization name:', orgError);
-                    }
+                    const orgName = currentOrgName ?? undefined;
 
                     // Create secure context with only necessary information
                     const secureContext: SecureUserContext = {

@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 
 import { Property } from '@/components/custom/BlockCanvas/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { TablesInsert } from '@/types/base/database.types';
 import { Document } from '@/types/base/documents.types';
 
@@ -32,8 +32,28 @@ export type CreateDocumentInput = Omit<
     | 'version'
 >;
 
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
+
 export function useCreateDocument() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
@@ -56,7 +76,8 @@ export function useCreateDocument() {
                 version: 1,
             };
 
-            const { data, error } = await supabase
+            const client = ensureSupabaseClient();
+            const { data, error } = await client
                 .from('documents')
                 .insert(insertData)
                 .select()
@@ -75,6 +96,7 @@ export function useCreateDocument() {
 
 export function useUpdateDocument() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
@@ -82,7 +104,8 @@ export function useUpdateDocument() {
                 throw new Error('Document ID is required for update');
             }
 
-            const { data, error } = await supabase
+            const client = ensureSupabaseClient();
+            const { data, error } = await client
                 .from('documents')
                 .update({
                     ...document,
@@ -109,10 +132,12 @@ export function useUpdateDocument() {
 
 export function useDeleteDocument() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
-            const { data, error } = await supabase
+            const client = ensureSupabaseClient();
+            const { data, error } = await client
                 .from('documents')
                 .update({
                     is_deleted: true,
@@ -136,6 +161,7 @@ export function useDeleteDocument() {
 
 export function useDuplicateDocument() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -150,7 +176,8 @@ export function useDuplicateDocument() {
             userId: string;
         }) => {
             // Get the original document
-            const { data: originalDocument, error: fetchError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: originalDocument, error: fetchError } = await client
                 .from('documents')
                 .select('*')
                 .eq('id', documentId)
@@ -175,7 +202,7 @@ export function useDuplicateDocument() {
                 version: 1,
             };
 
-            const { data: newDocument, error: createError } = await supabase
+            const { data: newDocument, error: createError } = await client
                 .from('documents')
                 .insert(duplicatedDocument)
                 .select()
@@ -196,11 +223,13 @@ export function useDuplicateDocument() {
 
 export function useCreateBaseOrgProperties() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({ orgId, userId }: { orgId: string; userId: string }) => {
             // First check if base properties exist for the organization
-            const { data: existingProperties, error: fetchError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: existingProperties, error: fetchError } = await client
                 .from('properties')
                 .select('*')
                 .eq('org_id', orgId)
@@ -297,7 +326,7 @@ export function useCreateBaseOrgProperties() {
                 updated_by: userId,
             }));
 
-            const { data: createdProperties, error: insertError } = await supabase
+            const { data: createdProperties, error: insertError } = await client
                 .from('properties')
                 .insert(baseProperties)
                 .select();
@@ -318,6 +347,7 @@ export function useCreateBaseOrgProperties() {
 
 export function useCreateDocumentProperties() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -330,7 +360,8 @@ export function useCreateDocumentProperties() {
             _propertyIds?: string[];
         }) => {
             // Find the base properties for this org
-            const { data: baseProperties, error: fetchError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: baseProperties, error: fetchError } = await client
                 .from('properties')
                 .select('*')
                 .eq('org_id', orgId)
@@ -356,7 +387,7 @@ export function useCreateDocumentProperties() {
                 updated_at: timestamp,
             }));
 
-            const { data: createdProperties, error: insertError } = await supabase
+            const { data: createdProperties, error: insertError } = await client
                 .from('properties')
                 .insert(documentProperties)
                 .select();
@@ -378,6 +409,7 @@ export function useCreateDocumentProperties() {
 export function useCreateDocumentWithDefaultSchemas() {
     const createDocumentMutation = useCreateDocument();
     const createBaseOrgPropertiesMutation = useCreateBaseOrgProperties();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (document: Partial<Document>) => {
@@ -385,7 +417,8 @@ export function useCreateDocumentWithDefaultSchemas() {
                 throw new Error('Project ID is required to create a document');
             }
 
-            const { data: project, error: projectError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: project, error: projectError } = await client
                 .from('projects')
                 .select('organization_id')
                 .eq('id', document.project_id)

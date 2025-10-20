@@ -2,23 +2,27 @@ import { useQuery } from '@tanstack/react-query';
 
 import { ProjectRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 export function useProjectMemberRole(projectId: string, userId: string) {
     return useQuery({
         queryKey: queryKeys.roles.byProject(projectId),
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('project_id', projectId)
-                .eq('user_id', userId)
-                .single();
-            if (error) {
-                console.log(error);
-                throw error;
+            const response = await fetch(`/api/projects/${projectId}/role`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                const message = `Error fetching project role: ${response.statusText}`;
+                console.error(message);
+                throw new Error(message);
             }
-            return data.role as ProjectRole;
+
+            const payload = (await response.json()) as {
+                role: ProjectRole;
+            };
+
+            return payload.role;
         },
         enabled: !!projectId && !!userId,
     });

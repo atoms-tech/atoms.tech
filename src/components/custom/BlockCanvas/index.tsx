@@ -33,9 +33,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { useDocumentRealtime } from '@/hooks/queries/useDocumentRealtime';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useOrganization } from '@/lib/providers/organization.provider';
 // Unused but might be needed in the future
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
 import { Json } from '@/types/base/database.types';
@@ -76,11 +76,25 @@ export function BlockCanvas({
     const { userProfile } = useAuth();
     const { currentOrganization } = useOrganization();
     const params = useParams();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     // Explicitly type userRole
     const [userRole, setUserRole] = useState<'owner' | 'editor' | 'viewer' | null>(null);
 
     useEffect(() => {
+        if (authLoading || !supabase) {
+            return;
+        }
+
+        if (authError) {
+            console.error('Failed to initialize Supabase client:', authError);
+            return;
+        }
+
         const fetchUserRole = async () => {
             const projectIdParam = params?.projectId || '';
             const projectIdStr = Array.isArray(projectIdParam)
@@ -186,7 +200,15 @@ export function BlockCanvas({
         };
 
         fetchUserRole();
-    }, [params?.projectId, userProfile?.id, currentOrganization?.id, documentId]);
+    }, [
+        authError,
+        authLoading,
+        currentOrganization?.id,
+        documentId,
+        params?.projectId,
+        supabase,
+        userProfile?.id,
+    ]);
 
     // Use a ref to track if we're in the middle of adding a block
     // This helps prevent unnecessary re-renders

@@ -4,7 +4,7 @@ import {
     BaseRow,
     CellValue,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 interface UseTableRowsOptions {
     blockId: string;
@@ -24,11 +24,13 @@ type SelectBuilder<T> = {
 export function useTableRows({ blockId, documentId }: UseTableRowsOptions) {
     const [rows, setRows] = useState<BaseRow[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const refresh = useCallback(async () => {
         if (!blockId || !documentId) return;
         setIsLoading(true);
         try {
+            const supabase = getClientOrThrow();
             const qb = (
                 supabase.from as unknown as (table: string) => SelectBuilder<{
                     id: string;
@@ -52,7 +54,7 @@ export function useTableRows({ blockId, documentId }: UseTableRowsOptions) {
         } finally {
             setIsLoading(false);
         }
-    }, [blockId, documentId]);
+    }, [blockId, documentId, getClientOrThrow]);
 
     useEffect(() => {
         void refresh();

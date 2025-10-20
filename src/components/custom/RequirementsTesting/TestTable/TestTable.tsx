@@ -10,8 +10,8 @@ import { TestReq } from '@/components/custom/RequirementsTesting/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 
 import { DataTable, columns } from './TanstackTestTable';
@@ -109,6 +109,7 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
     });
 
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const handleSearch = useCallback((value: string) => {
         setFilters((prev) => ({
@@ -142,6 +143,7 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
             id: string;
             updates: Partial<TestReq>;
         }) => {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_req')
                 .update(updates)
@@ -163,6 +165,7 @@ export default function TestCaseView({ projectId }: TestCaseViewProps) {
 
     const deleteTestReq = useMutation({
         mutationFn: async (id: string) => {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_req')
                 .update({ is_active: false })

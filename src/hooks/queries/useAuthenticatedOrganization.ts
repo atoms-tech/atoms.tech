@@ -1,22 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
+import { Organization } from '@/types/base/organizations.types';
 
 export function useAuthenticatedOrganization(orgId: string) {
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: _authError,
-    } = useAuthenticatedSupabase();
-
     return useQuery({
         queryKey: queryKeys.organizations.detail(orgId),
         queryFn: async () => {
-            if (!supabase) {
-                throw new Error('Supabase client not available');
-            }
-
             // Handle empty or invalid orgId more gracefully
             if (!orgId || orgId === '') {
                 console.warn('Empty organization ID provided');
@@ -40,24 +30,23 @@ export function useAuthenticatedOrganization(orgId: string) {
                 return null; // Return null instead of throwing to prevent UI errors
             }
 
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('id', orgId)
-                .eq('is_deleted', false)
-                .single();
+            const response = await fetch(`/api/organizations/${orgId}`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            if (error) {
-                console.error('Error fetching organization:', error);
-                throw error; // Throw error for proper error handling
+            if (!response.ok) {
+                const message = `Error fetching organization: ${response.statusText}`;
+                console.error('Error fetching organization:', message);
+                throw new Error(message);
             }
-            return data;
+
+            const payload = (await response.json()) as {
+                organization: Organization | null;
+            };
+
+            return payload.organization;
         },
-        enabled:
-            !!orgId &&
-            orgId !== 'user' &&
-            orgId !== 'project' &&
-            !authLoading &&
-            !!supabase,
+        enabled: !!orgId && orgId !== 'user' && orgId !== 'project',
     });
 }

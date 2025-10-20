@@ -1,11 +1,16 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { Database } from '@/types/base/database.types';
 
 /**
  * Generates the next unique requirement ID for an organization
  * Format: REQ-{org_prefix}-{sequential_number}
  * Example: REQ-ORG1-001, REQ-ORG1-002, etc.
  */
-export async function generateNextRequirementId(organizationId: string): Promise<string> {
+export async function generateNextRequirementId(
+    supabase: SupabaseClient<Database>,
+    organizationId: string,
+): Promise<string> {
     try {
         // Get the organization to determine the prefix
         const { data: org, error: orgError } = await supabase
@@ -79,6 +84,7 @@ export async function generateNextRequirementId(organizationId: string): Promise
  * Format: REQ-DOC-{sequential_number}
  */
 export async function generateDocumentScopedRequirementId(
+    supabase: SupabaseClient<Database>,
     documentId: string,
 ): Promise<string> {
     try {
@@ -128,6 +134,7 @@ export async function generateDocumentScopedRequirementId(
  * Format: REQ-PROJ-{sequential_number}
  */
 export async function generateProjectScopedRequirementId(
+    supabase: SupabaseClient<Database>,
     projectId: string,
 ): Promise<string> {
     try {
@@ -182,6 +189,7 @@ export async function generateProjectScopedRequirementId(
  * This ensures sequential numbering without conflicts
  */
 export async function generateBatchRequirementIds(
+    supabase: SupabaseClient<Database>,
     organizationId: string,
     count: number,
 ): Promise<string[]> {

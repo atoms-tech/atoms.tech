@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { generateBatchRequirementIds } from '@/lib/utils/requirementIdGenerator';
 import { Requirement } from '@/types/base/requirements.types';
 
@@ -12,6 +12,7 @@ interface RequirementWithoutId {
 
 export function useRequirementIdAssignment(documentId: string) {
     const [isAssigning, setIsAssigning] = useState(false);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     /**
      * Checks if a requirement needs a REQ-ID
@@ -127,6 +128,7 @@ export function useRequirementIdAssignment(documentId: string) {
 
             setIsAssigning(true);
             try {
+                const supabase = getClientOrThrow();
                 // Get organization ID from document
                 const { data: document, error: docError } = await supabase
                     .from('documents')
@@ -159,6 +161,7 @@ export function useRequirementIdAssignment(documentId: string) {
                     `Generating ${validRequirementIds.length} requirement IDs...`,
                 );
                 const externalIds = await generateBatchRequirementIds(
+                    supabase,
                     organizationId,
                     validRequirementIds.length,
                 );
@@ -231,7 +234,7 @@ export function useRequirementIdAssignment(documentId: string) {
                 setIsAssigning(false);
             }
         },
-        [documentId],
+        [documentId, getClientOrThrow],
     );
 
     return {

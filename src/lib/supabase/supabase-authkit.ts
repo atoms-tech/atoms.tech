@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient } from '@supabase/supabase-js';
 
 import { Database } from '@/types/base/database.types';
 
@@ -28,20 +28,32 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
  * This client is configured to work with WorkOS as a third-party auth provider.
  * Supabase will automatically validate WorkOS tokens using the issuer URL.
  */
-export const supabaseAuthKit = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
-    global: {
-        headers: {
-            // Supabase will use the Authorization header for authentication
-            // The token comes from WorkOS AuthKit session
+const globalForSupabase = globalThis as unknown as {
+    supabaseAuthKitClient?: SupabaseClient<Database>;
+    supabasePublicClient?: SupabaseClient<Database>;
+};
+
+export const supabaseAuthKit =
+    globalForSupabase.supabaseAuthKitClient ??
+    (globalForSupabase.supabaseAuthKitClient = createClient<Database>(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        {
+            global: {
+                headers: {
+                    // Supabase will use the Authorization header for authentication
+                    // The token comes from WorkOS AuthKit session
+                },
+            },
+            auth: {
+                // Use the issuer URL format for WorkOS
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                storageKey: 'atoms-workos-authkit',
+            },
         },
-    },
-    auth: {
-        // Use the issuer URL format for WorkOS
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-    },
-});
+    ));
 
 /**
  * Get Supabase client with WorkOS token
@@ -54,6 +66,8 @@ export function createSupabaseClientWithToken(token: string) {
         throw new Error('Supabase URL and key are not set');
     }
 
+    const tokenKey = token.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'token';
+
     return createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
         global: {
             headers: {
@@ -63,6 +77,7 @@ export function createSupabaseClientWithToken(token: string) {
         auth: {
             autoRefreshToken: false,
             persistSession: false,
+            storageKey: `atoms-workos-token-${tokenKey}`,
         },
     });
 }
@@ -77,6 +92,8 @@ export function createSupabaseClientWithTokenClient(token: string) {
         throw new Error('Supabase URL and key are not set');
     }
 
+    const tokenKey = token.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'token';
+
     return createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
         global: {
             headers: {
@@ -86,6 +103,7 @@ export function createSupabaseClientWithTokenClient(token: string) {
         auth: {
             autoRefreshToken: false,
             persistSession: false,
+            storageKey: `atoms-workos-client-token-${tokenKey}`,
         },
     });
 }
@@ -94,9 +112,16 @@ export function createSupabaseClientWithTokenClient(token: string) {
  * Default Supabase client (without auth)
  * Use this for public operations or when you don't have a token
  */
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-    },
-});
+export const supabase =
+    globalForSupabase.supabasePublicClient ??
+    (globalForSupabase.supabasePublicClient = createClient<Database>(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+                storageKey: 'atoms-workos-public',
+            },
+        },
+    ));

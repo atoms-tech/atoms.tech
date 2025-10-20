@@ -4,7 +4,7 @@ import {
     BaseRow,
     CellValue,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 interface UseRowActionsProps {
     blockId: string;
@@ -61,10 +61,12 @@ export const useRowActions = ({
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
     const isSavingRef = useRef(false);
     const pendingOpsRef = useRef<Array<() => Promise<void>>>([]);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const refreshRows = useCallback(async () => {
         console.log('[GenericRows] 🎯 refreshRows called', { blockId, documentId });
         try {
+            const supabase = getClientOrThrow();
             const qb = (
                 supabase.from as unknown as (table: string) => SelectBuilderFinal<{
                     id: string;
@@ -101,7 +103,7 @@ export const useRowActions = ({
         } catch (e) {
             console.error('[useRowActions] Failed to refresh rows', e);
         }
-    }, [blockId, documentId, setLocalRows]);
+    }, [blockId, documentId, getClientOrThrow, setLocalRows]);
 
     const getDynamicRows = (): BaseRow[] => {
         return (localRows || [])
@@ -112,6 +114,7 @@ export const useRowActions = ({
     const getLastPosition = useCallback(async (): Promise<number> => {
         console.log('[GenericRows] 🎯 getLastPosition called');
         try {
+            const supabase = getClientOrThrow();
             const qb = (
                 supabase.from as unknown as (
                     table: string,
@@ -130,12 +133,13 @@ export const useRowActions = ({
             console.error('[useRowActions] Failed to get last position', e);
             return 0;
         }
-    }, [blockId, documentId]);
+    }, [blockId, documentId, getClientOrThrow]);
 
     const saveRow = useCallback(
         async (row: BaseRow, isNew: boolean) => {
             console.log('[GenericRows] 🎯 saveRow called', { isNew, row });
             try {
+                const supabase = getClientOrThrow();
                 // If another save is in progress, enqueue this operation to run after
                 if (isSavingRef.current) {
                     pendingOpsRef.current.push(async () => saveRow(row, isNew));
@@ -206,13 +210,14 @@ export const useRowActions = ({
                 }
             }
         },
-        [blockId, documentId, getLastPosition, setLocalRows],
+        [blockId, documentId, getClientOrThrow, getLastPosition, setLocalRows],
     );
 
     const deleteRow = useCallback(
         async (row: BaseRow) => {
             try {
                 deletedRowIdsRef.current.add(row.id);
+                const supabase = getClientOrThrow();
                 const del = (
                     supabase.from as unknown as (table: string) => DeleteBuilder
                 )('table_rows');
@@ -225,7 +230,7 @@ export const useRowActions = ({
                 throw e;
             }
         },
-        [setLocalRows],
+        [getClientOrThrow, setLocalRows],
     );
 
     return {

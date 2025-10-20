@@ -1,11 +1,15 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import {
     BaseRow,
     SaveContext,
     TableDataAdapter,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Database } from '@/types/base/database.types';
 
-export function createTableRowsAdapter(): TableDataAdapter<BaseRow> {
+export function createTableRowsAdapter(
+    supabase: SupabaseClient<Database>,
+): TableDataAdapter<BaseRow> {
     return {
         async saveRow(item: BaseRow, isNew: boolean, context?: SaveContext) {
             const { blockId } = context || {};

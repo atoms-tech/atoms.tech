@@ -38,10 +38,10 @@ import { toast } from '@/components/ui/use-toast';
 import { useDeleteProject } from '@/hooks/mutations/useProjectMutations';
 import { useProjectDocuments } from '@/hooks/queries/useDocument';
 import { useProjectMemberRole } from '@/hooks/queries/useProjectMember';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { ProjectRole, hasProjectPermission } from '@/lib/auth/permissions';
 import { useProject } from '@/lib/providers/project.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Document } from '@/types/base/documents.types';
 
 import ProjectMembers from './ProjectMembers';
@@ -88,6 +88,7 @@ export default function ProjectPage() {
     const { mutateAsync: deleteProject } = useDeleteProject();
     const [documentToEdit, setDocumentToEdit] = useState<Document | null>(null);
     const [documentToDuplicate, setDocumentToDuplicate] = useState<Document | null>(null);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     console.log(userRole, 'userRole');
 
@@ -122,10 +123,11 @@ export default function ProjectPage() {
         if (!documentToDelete) return;
 
         try {
+            const client = getClientOrThrow();
             setIsDeleting(true);
 
             // Delete requirements associated with the document
-            const { error: requirementsError } = await supabase
+            const { error: requirementsError } = await client
                 .from('requirements')
                 .delete()
                 .eq('document_id', documentToDelete.id);
@@ -136,7 +138,7 @@ export default function ProjectPage() {
             }
 
             // Delete the document
-            const { error: documentError } = await supabase
+            const { error: documentError } = await client
                 .from('documents')
                 .delete()
                 .eq('id', documentToDelete.id);

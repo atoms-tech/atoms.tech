@@ -6,13 +6,18 @@ import { useParams } from 'next/navigation';
 import React, { memo } from 'react';
 
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 function useUserRole(userId: string) {
     const params = useParams();
     const projectId = params?.projectId || '';
+    const {
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     if (!projectId) {
         console.error('Project ID is missing from the URL.');
@@ -20,7 +25,17 @@ function useUserRole(userId: string) {
     }
 
     const getUserRole = async (): Promise<string> => {
+        if (authLoading) {
+            return 'viewer';
+        }
+
+        if (authError) {
+            console.error('Failed to initialize Supabase client:', authError);
+            return 'viewer';
+        }
+
         try {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('project_members')
                 .select('role')

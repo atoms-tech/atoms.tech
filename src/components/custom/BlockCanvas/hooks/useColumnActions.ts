@@ -8,8 +8,8 @@ import {
     PropertyConfig,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Column, Property, PropertyType } from '@/components/custom/BlockCanvas/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database, Json } from '@/types/base/database.types';
 
 const columnTypeToPropertyType = (type: EditableColumnType): PropertyType => {
@@ -44,6 +44,7 @@ export const useColumnActions = ({
     documentId,
 }: UseColumnActionsProps) => {
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const createPropertyAndColumn = useCallback(
         async (
@@ -55,6 +56,7 @@ export const useColumnActions = ({
             userId: string,
         ) => {
             try {
+                const supabase = getClientOrThrow();
                 // Step 1: Create the property
                 const { data: propertyData, error: propertyError } = await supabase
                     .from('properties')
@@ -150,7 +152,7 @@ export const useColumnActions = ({
                 throw error;
             }
         },
-        [orgId, projectId, documentId, queryClient],
+        [documentId, getClientOrThrow, orgId, projectId, queryClient],
     );
 
     const createColumnFromProperty = useCallback(
@@ -161,6 +163,7 @@ export const useColumnActions = ({
             userId: string,
         ) => {
             try {
+                const supabase = getClientOrThrow();
                 // Step 1: Get the property details
                 const { data: propertyData, error: propertyError } = await supabase
                     .from('properties')
@@ -229,12 +232,13 @@ export const useColumnActions = ({
                 throw error;
             }
         },
-        [queryClient, orgId],
+        [getClientOrThrow, orgId, queryClient],
     );
 
     // Append options to a property's options.values list
     const appendPropertyOptions = useCallback(
         async (propertyId: string, newValues: string[]) => {
+            const supabase = getClientOrThrow();
             // Fetch current property
             const { data: prop, error: fetchErr } = await supabase
                 .from('properties')
@@ -265,13 +269,14 @@ export const useColumnActions = ({
             await queryClient.invalidateQueries({ queryKey: queryKeys.properties.root });
             return merged;
         },
-        [queryClient],
+        [getClientOrThrow, queryClient],
     );
 
     const deleteColumn = useCallback(
         async (columnId: string, blockId: string) => {
             try {
                 console.log('[ColumnActions] Deleting column:', columnId);
+                const supabase = getClientOrThrow();
 
                 // Step 1: Delete the column itself
                 const { error: columnError } = await supabase
@@ -347,13 +352,14 @@ export const useColumnActions = ({
                 throw error;
             }
         },
-        [queryClient],
+        [getClientOrThrow, queryClient],
     );
 
     // rename a property and update associated column
     const renameProperty = useCallback(
         async (propertyId: string, newName: string) => {
             try {
+                const supabase = getClientOrThrow();
                 // First get the old property name
                 const { data: oldProperty, error: fetchError } = await supabase
                     .from('properties')
@@ -442,16 +448,8 @@ export const useColumnActions = ({
                 throw error;
             }
         },
-        [queryClient],
+        [getClientOrThrow, queryClient],
     );
-
-    return {
-        createPropertyAndColumn,
-        createColumnFromProperty,
-        deleteColumn,
-        appendPropertyOptions,
-        renameProperty,
-    };
 
     // Not needed as we manage metadata at the block level.
     // const updateColumnsMetadata = useCallback(
@@ -550,5 +548,6 @@ export const useColumnActions = ({
         createColumnFromProperty,
         appendPropertyOptions,
         deleteColumn,
+        renameProperty,
     };
 };

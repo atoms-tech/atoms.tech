@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 
 export type OrganizationMemberInput = Pick<
@@ -20,12 +20,33 @@ export type OrganizationMemberInput = Pick<
     | 'deleted_at'
 >;
 
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
+
 export function useCreateOrgMember() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (input: OrganizationMemberInput) => {
-            const { data, error } = await supabase
+            const client = ensureSupabaseClient();
+            const { data, error } = await client
                 .from('organization_members')
                 .insert(input)
                 .select()
@@ -53,11 +74,13 @@ export function useCreateOrgMember() {
 
 export function useSetOrgMemberCount() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (orgId: string) => {
             // Query the organization_members table to count members
-            const { count, error: countError } = await supabase
+            const client = ensureSupabaseClient();
+            const { count, error: countError } = await client
                 .from('organization_members')
                 .select('*', { count: 'exact', head: true })
                 .eq('organization_id', orgId);
@@ -68,7 +91,7 @@ export function useSetOrgMemberCount() {
             }
 
             // Update the member_count in the organizations table
-            const { error: updateError } = await supabase
+            const { error: updateError } = await client
                 .from('organizations')
                 .update({ member_count: count })
                 .eq('id', orgId);
@@ -94,6 +117,7 @@ export function useSetOrgMemberCount() {
 
 export function useSetOrgMemberRole() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({
@@ -106,7 +130,8 @@ export function useSetOrgMemberRole() {
             role: OrganizationRole;
         }) => {
             // Update the role of the user in the organization_members table
-            const { error } = await supabase
+            const client = ensureSupabaseClient();
+            const { error } = await client
                 .from('organization_members')
                 .update({ role })
                 .eq('organization_id', orgId)

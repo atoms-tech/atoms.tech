@@ -1,7 +1,12 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { BillingPlan, OrganizationType, PricingPlanInterval } from '@/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const getUserOrganizations = async (userId: string) => {
+import { BillingPlan, OrganizationType, PricingPlanInterval } from '@/types';
+import { Database } from '@/types/base/database.types';
+
+export const getUserOrganizations = async (
+    supabase: SupabaseClient<Database>,
+    userId: string,
+) => {
     if (!userId) {
         console.log('No userId provided to getUserOrganizations');
         return [];
@@ -36,7 +41,10 @@ export const getUserOrganizations = async (userId: string) => {
     }
 };
 
-export const getOrganizationMembers = async (organizationId: string) => {
+export const getOrganizationMembers = async (
+    supabase: SupabaseClient<Database>,
+    organizationId: string,
+) => {
     // Fetch all members of the organization along with their roles
     const { data: members, error: membersError } = await supabase
         .from('organization_members')
@@ -89,7 +97,11 @@ export const getOrganizationMembers = async (organizationId: string) => {
  * @param email The user's email (used for naming the organization)
  * @returns The personal organization
  */
-export const ensurePersonalOrganization = async (userId: string, email: string) => {
+export const ensurePersonalOrganization = async (
+    supabase: SupabaseClient<Database>,
+    userId: string,
+    email: string,
+) => {
     // First, check if the user already has a personal organization
     const { data: existingOrgs, error: fetchError } = await supabase
         .from('organizations')

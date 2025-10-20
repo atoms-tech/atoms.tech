@@ -20,8 +20,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateBaseOrgProperties } from '@/hooks/mutations/useDocumentMutations';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import {
     BillingPlan,
     OrganizationType,
@@ -70,6 +70,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useUser();
     const createBaseOrgProperties = useCreateBaseOrgProperties();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -93,6 +94,7 @@ export default function OrganizationForm({ onSuccess }: OrganizationFormProps) {
         setIsSubmitting(true);
 
         try {
+            const supabase = getClientOrThrow();
             // Ensure slug is unique
             let uniqueSlug = values.slug;
             let isUnique = false;

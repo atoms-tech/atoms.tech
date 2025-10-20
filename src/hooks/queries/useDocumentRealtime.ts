@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
 import { Profile } from '@/types/base/profiles.types';
@@ -46,6 +46,11 @@ export const useDocumentRealtime = ({
     const [blocks, setBlocks] = useState<BlockWithRequirements[]>();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     // Initial full fetch of blocks and their requirements
     const fetchBlocks = useCallback(
@@ -53,8 +58,17 @@ export const useDocumentRealtime = ({
             try {
                 if (!opts?.silent) setLoading(true);
 
+                if (!supabase) {
+                    if (authLoading) {
+                        return;
+                    }
+                    throw new Error(authError ?? 'Supabase client not available');
+                }
+
+                const client = supabase;
+
                 // Fetch blocks
-                const { data: blocksData, error: blocksError } = await supabase
+                const { data: blocksData, error: blocksError } = await client
                     .from('blocks')
                     .select('*')
                     .eq('document_id', documentId)
@@ -64,13 +78,12 @@ export const useDocumentRealtime = ({
                 if (blocksError) throw blocksError;
 
                 // Fetch requirements for all blocks
-                const { data: requirementsData, error: requirementsError } =
-                    await supabase
-                        .from('requirements')
-                        .select('*')
-                        .is('is_deleted', false)
-                        .eq('document_id', documentId)
-                        .order('position');
+                const { data: requirementsData, error: requirementsError } = await client
+                    .from('requirements')
+                    .select('*')
+                    .is('is_deleted', false)
+                    .eq('document_id', documentId)
+                    .order('position');
 
                 if (requirementsError) throw requirementsError;
 
@@ -82,7 +95,7 @@ export const useDocumentRealtime = ({
                     tableBlocks.map((b) => b.id),
                 );
 
-                const { data: columnsData, error: columnsError } = await supabase
+                const { data: columnsData, error: columnsError } = await client
                     .from('columns')
                     .select('*, property:properties(*)')
                     .in(
@@ -166,58 +179,80 @@ export const useDocumentRealtime = ({
                 if (!opts?.silent) setLoading(false);
             }
         },
-        [documentId],
+        [documentId, supabase, authLoading, authError],
     );
 
     // Hydrate a single block's relations (columns + requirements) without full refetch
-    const hydrateBlockRelations = useCallback(async (blockId: string) => {
-        try {
-            // Fetch requirements for the block
-            const { data: requirementsData, error: requirementsError } = await supabase
-                .from('requirements')
-                .select('*')
-                .is('is_deleted', false)
-                .eq('block_id', blockId)
-                .order('position');
+    const hydrateBlockRelations = useCallback(
+        async (blockId: string) => {
+            try {
+                if (!supabase) {
+                    if (authLoading) {
+                        return;
+                    }
+                    throw new Error(authError ?? 'Supabase client not available');
+                }
 
-            if (requirementsError) throw requirementsError;
+                const client = supabase;
 
-            // Fetch columns for the block including joined property
-            const { data: columnsData, error: columnsError } = await supabase
-                .from('columns')
-                .select('*, property:properties(*)')
-                .eq('block_id', blockId)
-                .order('position', { ascending: true });
+                // Fetch requirements for the block
+                const { data: requirementsData, error: requirementsError } = await client
+                    .from('requirements')
+                    .select('*')
+                    .is('is_deleted', false)
+                    .eq('block_id', blockId)
+                    .order('position');
 
-            if (columnsError) throw columnsError;
+                if (requirementsError) throw requirementsError;
 
-            setBlocks((prev) => {
-                if (!prev) return prev;
-                return prev.map((b) =>
-                    b.id === blockId
-                        ? {
-                              ...b,
-                              requirements: (requirementsData || []) as Requirement[],
-                              columns: (columnsData || []) as unknown as Column[],
-                          }
-                        : b,
-                );
-            });
-        } catch (err) {
-            // Do not surface as hook error; this is a targeted hydration
-            console.error('Failed to hydrate block relations:', err);
-        }
-    }, []);
+                // Fetch columns for the block including joined property
+                const { data: columnsData, error: columnsError } = await client
+                    .from('columns')
+                    .select('*, property:properties(*)')
+                    .eq('block_id', blockId)
+                    .order('position', { ascending: true });
+
+                if (columnsError) throw columnsError;
+
+                setBlocks((prev) => {
+                    if (!prev) return prev;
+                    return prev.map((b) =>
+                        b.id === blockId
+                            ? {
+                                  ...b,
+                                  requirements: (requirementsData || []) as Requirement[],
+                                  columns: (columnsData || []) as unknown as Column[],
+                              }
+                            : b,
+                    );
+                });
+            } catch (err) {
+                // Do not surface as hook error; this is a targeted hydration
+                console.error('Failed to hydrate block relations:', err);
+            }
+        },
+        [supabase, authLoading, authError],
+    );
 
     // Subscribe to changes
     useEffect(() => {
-        if (!documentId) return;
+        if (!documentId || authLoading) return;
+
+        if (!supabase) {
+            if (authError) {
+                setError(new Error(authError ?? 'Supabase client not available'));
+                setLoading(false);
+            }
+            return;
+        }
+
+        const client = supabase;
 
         // Initial fetch
         fetchBlocks({ silent: false });
 
         // Subscribe to blocks changes
-        const blocksSubscription = supabase
+        const blocksSubscription = client
             .channel(`blocks:${documentId}`)
             .on(
                 'postgres_changes',
@@ -274,7 +309,7 @@ export const useDocumentRealtime = ({
             .subscribe();
 
         // Subscribe to requirements changes
-        const requirementsSubscription = supabase
+        const requirementsSubscription = client
             .channel(`requirements:${documentId}`)
             .on(
                 'postgres_changes',
@@ -342,7 +377,7 @@ export const useDocumentRealtime = ({
             .subscribe();
 
         // Subscribe to columns changes
-        const columnsSubscription = supabase
+        const columnsSubscription = client
             .channel(`columns:${documentId}`)
             .on(
                 'postgres_changes',
@@ -358,7 +393,7 @@ export const useDocumentRealtime = ({
                     // For INSERTs, enrich the column with its joined property so tables can render headers
                     let enrichedNewCol: Column | undefined = newCol;
                     if (payload.eventType === 'INSERT' && newCol?.id) {
-                        const { data: colWithProperty } = await supabase
+                        const { data: colWithProperty } = await client
                             .from('columns')
                             .select('*, property:properties(*)')
                             .eq('id', newCol.id)
@@ -441,7 +476,7 @@ export const useDocumentRealtime = ({
             requirementsSubscription.unsubscribe();
             columnsSubscription.unsubscribe();
         };
-    }, [documentId, fetchBlocks]);
+    }, [documentId, fetchBlocks, supabase, authLoading, authError]);
 
     const refetchDocument = useCallback(
         async (options?: { silent?: boolean }) => {
