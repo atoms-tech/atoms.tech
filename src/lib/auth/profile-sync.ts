@@ -45,6 +45,24 @@ export async function getOrCreateProfileForWorkOSUser(
     }
 
     if (existingProfile) {
+        if (!existingProfile.workos_id && workosUser.id) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .update({ workos_id: workosUser.id })
+                .eq('id', existingProfile.id)
+                .select('*')
+                .maybeSingle();
+
+            if (error) {
+                console.error('Failed to update workos_id for profile:', error);
+                throw error;
+            }
+
+            if (data) {
+                return data;
+            }
+        }
+
         return existingProfile;
     }
 
@@ -59,6 +77,7 @@ export async function getOrCreateProfileForWorkOSUser(
         full_name: fullName || null,
         status: 'active',
         is_approved: false,
+        workos_id: workosUser.id,
     };
 
     const { data: insertedProfiles, error: insertError } = await supabase

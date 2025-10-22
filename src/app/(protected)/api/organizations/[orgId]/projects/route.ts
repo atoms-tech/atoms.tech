@@ -4,9 +4,12 @@ import { NextResponse } from 'next/server';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getUserProjectsServer } from '@/lib/db/server';
 
-export async function GET(_request: Request, { params }: { params: { orgId: string } }) {
+export async function GET(
+    _request: Request,
+    context: { params: Promise<{ orgId: string }> },
+) {
     try {
-        const orgId = params.orgId;
+        const { orgId } = await context.params;
 
         if (!orgId) {
             return NextResponse.json(

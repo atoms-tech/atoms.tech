@@ -9,10 +9,10 @@ import {
 
 export async function GET(
     _request: NextRequest,
-    { params }: { params: { orgId: string } },
+    context: { params: Promise<{ orgId: string }> },
 ) {
     try {
-        const orgId = params.orgId;
+        const { orgId } = await context.params;
 
         if (!orgId) {
             return NextResponse.json(

@@ -7,6 +7,11 @@ export type Json =
     | Json[];
 
 export type Database = {
+    // Allows to automatically instantiate createClient with right options
+    // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+    __InternalSupabase: {
+        PostgrestVersion: '12.2.3 (519615d)';
+    };
     public: {
         Tables: {
             assignments: {
@@ -72,38 +77,120 @@ export type Database = {
             audit_logs: {
                 Row: {
                     action: string;
-                    actor_id: string;
+                    actor_id: string | null;
+                    compliance_category: string | null;
+                    correlation_id: string | null;
                     created_at: string;
+                    description: string | null;
+                    details: Json | null;
                     entity_id: string;
                     entity_type: string;
+                    event_type: Database['public']['Enums']['audit_event_type'] | null;
                     id: string;
+                    ip_address: unknown | null;
                     metadata: Json | null;
                     new_data: Json | null;
                     old_data: Json | null;
+                    organization_id: string | null;
+                    project_id: string | null;
+                    resource_id: string | null;
+                    resource_type: Database['public']['Enums']['resource_type'] | null;
+                    risk_level: string | null;
+                    session_id: string | null;
+                    severity: Database['public']['Enums']['audit_severity'] | null;
+                    soc2_control: string | null;
+                    source_system: string | null;
+                    threat_indicators: string[] | null;
+                    timestamp: string | null;
+                    updated_at: string | null;
+                    user_agent: string | null;
+                    user_id: string | null;
                 };
                 Insert: {
                     action: string;
-                    actor_id: string;
+                    actor_id?: string | null;
+                    compliance_category?: string | null;
+                    correlation_id?: string | null;
                     created_at?: string;
+                    description?: string | null;
+                    details?: Json | null;
                     entity_id: string;
                     entity_type: string;
+                    event_type?: Database['public']['Enums']['audit_event_type'] | null;
                     id?: string;
+                    ip_address?: unknown | null;
                     metadata?: Json | null;
                     new_data?: Json | null;
                     old_data?: Json | null;
+                    organization_id?: string | null;
+                    project_id?: string | null;
+                    resource_id?: string | null;
+                    resource_type?: Database['public']['Enums']['resource_type'] | null;
+                    risk_level?: string | null;
+                    session_id?: string | null;
+                    severity?: Database['public']['Enums']['audit_severity'] | null;
+                    soc2_control?: string | null;
+                    source_system?: string | null;
+                    threat_indicators?: string[] | null;
+                    timestamp?: string | null;
+                    updated_at?: string | null;
+                    user_agent?: string | null;
+                    user_id?: string | null;
                 };
                 Update: {
                     action?: string;
-                    actor_id?: string;
+                    actor_id?: string | null;
+                    compliance_category?: string | null;
+                    correlation_id?: string | null;
                     created_at?: string;
+                    description?: string | null;
+                    details?: Json | null;
                     entity_id?: string;
                     entity_type?: string;
+                    event_type?: Database['public']['Enums']['audit_event_type'] | null;
                     id?: string;
+                    ip_address?: unknown | null;
                     metadata?: Json | null;
                     new_data?: Json | null;
                     old_data?: Json | null;
+                    organization_id?: string | null;
+                    project_id?: string | null;
+                    resource_id?: string | null;
+                    resource_type?: Database['public']['Enums']['resource_type'] | null;
+                    risk_level?: string | null;
+                    session_id?: string | null;
+                    severity?: Database['public']['Enums']['audit_severity'] | null;
+                    soc2_control?: string | null;
+                    source_system?: string | null;
+                    threat_indicators?: string[] | null;
+                    timestamp?: string | null;
+                    updated_at?: string | null;
+                    user_agent?: string | null;
+                    user_id?: string | null;
                 };
-                Relationships: [];
+                Relationships: [
+                    {
+                        foreignKeyName: 'fk_audit_logs_organization_id';
+                        columns: ['organization_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'organizations';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_audit_logs_project_id';
+                        columns: ['project_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'projects';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_audit_logs_user_id';
+                        columns: ['user_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                ];
             };
             billing_cache: {
                 Row: {
@@ -276,6 +363,57 @@ export type Database = {
                     },
                 ];
             };
+            diagram_element_links: {
+                Row: {
+                    created_at: string | null;
+                    created_by: string | null;
+                    diagram_id: string;
+                    element_id: string;
+                    id: string;
+                    link_type: string | null;
+                    metadata: Json | null;
+                    requirement_id: string;
+                    updated_at: string | null;
+                };
+                Insert: {
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    diagram_id: string;
+                    element_id: string;
+                    id?: string;
+                    link_type?: string | null;
+                    metadata?: Json | null;
+                    requirement_id: string;
+                    updated_at?: string | null;
+                };
+                Update: {
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    diagram_id?: string;
+                    element_id?: string;
+                    id?: string;
+                    link_type?: string | null;
+                    metadata?: Json | null;
+                    requirement_id?: string;
+                    updated_at?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'diagram_element_links_diagram_id_fkey';
+                        columns: ['diagram_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'excalidraw_diagrams';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'diagram_element_links_requirement_id_fkey';
+                        columns: ['requirement_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             documents: {
                 Row: {
                     created_at: string | null;
@@ -283,6 +421,8 @@ export type Database = {
                     deleted_at: string | null;
                     deleted_by: string | null;
                     description: string | null;
+                    embedding: string | null;
+                    fts_vector: unknown | null;
                     id: string;
                     is_deleted: boolean | null;
                     name: string;
@@ -299,6 +439,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name: string;
@@ -315,6 +457,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name?: string;
@@ -334,6 +478,39 @@ export type Database = {
                         referencedColumns: ['id'];
                     },
                 ];
+            };
+            embedding_cache: {
+                Row: {
+                    access_count: number | null;
+                    accessed_at: string | null;
+                    cache_key: string;
+                    created_at: string | null;
+                    embedding: string | null;
+                    id: string;
+                    model: string;
+                    tokens_used: number;
+                };
+                Insert: {
+                    access_count?: number | null;
+                    accessed_at?: string | null;
+                    cache_key: string;
+                    created_at?: string | null;
+                    embedding?: string | null;
+                    id?: string;
+                    model?: string;
+                    tokens_used?: number;
+                };
+                Update: {
+                    access_count?: number | null;
+                    accessed_at?: string | null;
+                    cache_key?: string;
+                    created_at?: string | null;
+                    embedding?: string | null;
+                    id?: string;
+                    model?: string;
+                    tokens_used?: number;
+                };
+                Relationships: [];
             };
             excalidraw_diagrams: {
                 Row: {
@@ -371,6 +548,33 @@ export type Database = {
                     thumbnail_url?: string | null;
                     updated_at?: string | null;
                     updated_by?: string | null;
+                };
+                Relationships: [];
+            };
+            excalidraw_element_links: {
+                Row: {
+                    create_by: string | null;
+                    created_at: string;
+                    element_id: string | null;
+                    excalidraw_canvas_id: string | null;
+                    id: string;
+                    requirement_id: string | null;
+                };
+                Insert: {
+                    create_by?: string | null;
+                    created_at?: string;
+                    element_id?: string | null;
+                    excalidraw_canvas_id?: string | null;
+                    id?: string;
+                    requirement_id?: string | null;
+                };
+                Update: {
+                    create_by?: string | null;
+                    created_at?: string;
+                    element_id?: string | null;
+                    excalidraw_canvas_id?: string | null;
+                    id?: string;
+                    requirement_id?: string | null;
                 };
                 Relationships: [];
             };
@@ -425,6 +629,36 @@ export type Database = {
                     updated_at?: string | null;
                     updated_by?: string | null;
                     url?: string | null;
+                };
+                Relationships: [];
+            };
+            mcp_sessions: {
+                Row: {
+                    created_at: string | null;
+                    expires_at: string;
+                    mcp_state: Json | null;
+                    oauth_data: Json;
+                    session_id: string;
+                    updated_at: string | null;
+                    user_id: string;
+                };
+                Insert: {
+                    created_at?: string | null;
+                    expires_at: string;
+                    mcp_state?: Json | null;
+                    oauth_data: Json;
+                    session_id: string;
+                    updated_at?: string | null;
+                    user_id: string;
+                };
+                Update: {
+                    created_at?: string | null;
+                    expires_at?: string;
+                    mcp_state?: Json | null;
+                    oauth_data?: Json;
+                    session_id?: string;
+                    updated_at?: string | null;
+                    user_id?: string;
                 };
                 Relationships: [];
             };
@@ -591,6 +825,8 @@ export type Database = {
                     deleted_at: string | null;
                     deleted_by: string | null;
                     description: string | null;
+                    embedding: string | null;
+                    fts_vector: unknown | null;
                     id: string;
                     is_deleted: boolean | null;
                     logo_url: string | null;
@@ -616,6 +852,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     logo_url?: string | null;
@@ -641,6 +879,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     logo_url?: string | null;
@@ -670,6 +910,7 @@ export type Database = {
                     email: string;
                     full_name: string | null;
                     id: string;
+                    is_approved: boolean;
                     is_deleted: boolean | null;
                     job_title: string | null;
                     last_login_at: string | null;
@@ -679,7 +920,7 @@ export type Database = {
                     preferences: Json | null;
                     status: Database['public']['Enums']['user_status'] | null;
                     updated_at: string | null;
-                    is_approved: boolean;
+                    workos_id: string | null;
                 };
                 Insert: {
                     avatar_url?: string | null;
@@ -690,6 +931,7 @@ export type Database = {
                     email: string;
                     full_name?: string | null;
                     id: string;
+                    is_approved?: boolean;
                     is_deleted?: boolean | null;
                     job_title?: string | null;
                     last_login_at?: string | null;
@@ -699,7 +941,7 @@ export type Database = {
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
-                    is_approved?: boolean;
+                    workos_id?: string | null;
                 };
                 Update: {
                     avatar_url?: string | null;
@@ -710,6 +952,7 @@ export type Database = {
                     email?: string;
                     full_name?: string | null;
                     id?: string;
+                    is_approved?: boolean;
                     is_deleted?: boolean | null;
                     job_title?: string | null;
                     last_login_at?: string | null;
@@ -719,19 +962,19 @@ export type Database = {
                     preferences?: Json | null;
                     status?: Database['public']['Enums']['user_status'] | null;
                     updated_at?: string | null;
-                    is_approved?: boolean;
+                    workos_id?: string | null;
                 };
                 Relationships: [];
             };
             project_invitations: {
                 Row: {
                     created_at: string | null;
+                    created_by: string;
                     deleted_at: string | null;
                     deleted_by: string | null;
                     email: string;
                     expires_at: string;
                     id: string;
-                    invited_by: string;
                     is_deleted: boolean | null;
                     metadata: Json | null;
                     project_id: string;
@@ -739,15 +982,16 @@ export type Database = {
                     status: Database['public']['Enums']['invitation_status'];
                     token: string;
                     updated_at: string | null;
+                    updated_by: string;
                 };
                 Insert: {
                     created_at?: string | null;
+                    created_by: string;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email: string;
                     expires_at?: string;
                     id?: string;
-                    invited_by: string;
                     is_deleted?: boolean | null;
                     metadata?: Json | null;
                     project_id: string;
@@ -755,15 +999,16 @@ export type Database = {
                     status?: Database['public']['Enums']['invitation_status'];
                     token?: string;
                     updated_at?: string | null;
+                    updated_by: string;
                 };
                 Update: {
                     created_at?: string | null;
+                    created_by?: string;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     email?: string;
                     expires_at?: string;
                     id?: string;
-                    invited_by?: string;
                     is_deleted?: boolean | null;
                     metadata?: Json | null;
                     project_id?: string;
@@ -771,6 +1016,7 @@ export type Database = {
                     status?: Database['public']['Enums']['invitation_status'];
                     token?: string;
                     updated_at?: string | null;
+                    updated_by?: string;
                 };
                 Relationships: [
                     {
@@ -852,6 +1098,8 @@ export type Database = {
                     deleted_at: string | null;
                     deleted_by: string | null;
                     description: string | null;
+                    embedding: string | null;
+                    fts_vector: unknown | null;
                     id: string;
                     is_deleted: boolean | null;
                     metadata: Json | null;
@@ -874,6 +1122,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     metadata?: Json | null;
@@ -896,6 +1146,8 @@ export type Database = {
                     deleted_at?: string | null;
                     deleted_by?: string | null;
                     description?: string | null;
+                    embedding?: string | null;
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     metadata?: Json | null;
@@ -926,9 +1178,12 @@ export type Database = {
                 Row: {
                     created_at: string | null;
                     created_by: string | null;
+                    deleted_at: string | null;
+                    deleted_by: string | null;
                     document_id: string | null;
                     id: string;
                     is_base: boolean | null;
+                    is_deleted: boolean;
                     name: string;
                     options: Json | null;
                     org_id: string;
@@ -941,9 +1196,12 @@ export type Database = {
                 Insert: {
                     created_at?: string | null;
                     created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
                     document_id?: string | null;
                     id?: string;
                     is_base?: boolean | null;
+                    is_deleted?: boolean;
                     name: string;
                     options?: Json | null;
                     org_id: string;
@@ -956,9 +1214,12 @@ export type Database = {
                 Update: {
                     created_at?: string | null;
                     created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
                     document_id?: string | null;
                     id?: string;
                     is_base?: boolean | null;
+                    is_deleted?: boolean;
                     name?: string;
                     options?: Json | null;
                     org_id?: string;
@@ -969,6 +1230,13 @@ export type Database = {
                     updated_by?: string | null;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: 'properties_deleted_by_fkey';
+                        columns: ['deleted_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
                     {
                         foreignKeyName: 'properties_document_id_fkey';
                         columns: ['document_id'];
@@ -992,6 +1260,143 @@ export type Database = {
                     },
                     {
                         foreignKeyName: 'properties_project_id_fkey';
+                        columns: ['project_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'projects';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            rag_embeddings: {
+                Row: {
+                    content_hash: string | null;
+                    created_at: string | null;
+                    embedding: string;
+                    entity_id: string;
+                    entity_type: string;
+                    id: string;
+                    metadata: Json | null;
+                    quality_score: number | null;
+                };
+                Insert: {
+                    content_hash?: string | null;
+                    created_at?: string | null;
+                    embedding: string;
+                    entity_id: string;
+                    entity_type: string;
+                    id?: string;
+                    metadata?: Json | null;
+                    quality_score?: number | null;
+                };
+                Update: {
+                    content_hash?: string | null;
+                    created_at?: string | null;
+                    embedding?: string;
+                    entity_id?: string;
+                    entity_type?: string;
+                    id?: string;
+                    metadata?: Json | null;
+                    quality_score?: number | null;
+                };
+                Relationships: [];
+            };
+            rag_search_analytics: {
+                Row: {
+                    cache_hit: boolean;
+                    created_at: string | null;
+                    execution_time_ms: number;
+                    id: string;
+                    organization_id: string | null;
+                    query_hash: string;
+                    query_text: string;
+                    result_count: number;
+                    search_type: string;
+                    user_id: string | null;
+                };
+                Insert: {
+                    cache_hit?: boolean;
+                    created_at?: string | null;
+                    execution_time_ms: number;
+                    id?: string;
+                    organization_id?: string | null;
+                    query_hash: string;
+                    query_text: string;
+                    result_count: number;
+                    search_type: string;
+                    user_id?: string | null;
+                };
+                Update: {
+                    cache_hit?: boolean;
+                    created_at?: string | null;
+                    execution_time_ms?: number;
+                    id?: string;
+                    organization_id?: string | null;
+                    query_hash?: string;
+                    query_text?: string;
+                    result_count?: number;
+                    search_type?: string;
+                    user_id?: string | null;
+                };
+                Relationships: [];
+            };
+            react_flow_diagrams: {
+                Row: {
+                    created_at: string | null;
+                    created_by: string | null;
+                    description: string | null;
+                    diagram_type: string | null;
+                    edges: Json;
+                    id: string;
+                    layout_algorithm: string | null;
+                    metadata: Json | null;
+                    name: string;
+                    nodes: Json;
+                    project_id: string;
+                    settings: Json | null;
+                    theme: string | null;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                    viewport: Json | null;
+                };
+                Insert: {
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    description?: string | null;
+                    diagram_type?: string | null;
+                    edges?: Json;
+                    id?: string;
+                    layout_algorithm?: string | null;
+                    metadata?: Json | null;
+                    name?: string;
+                    nodes?: Json;
+                    project_id: string;
+                    settings?: Json | null;
+                    theme?: string | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    viewport?: Json | null;
+                };
+                Update: {
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    description?: string | null;
+                    diagram_type?: string | null;
+                    edges?: Json;
+                    id?: string;
+                    layout_algorithm?: string | null;
+                    metadata?: Json | null;
+                    name?: string;
+                    nodes?: Json;
+                    project_id?: string;
+                    settings?: Json | null;
+                    theme?: string | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    viewport?: Json | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'react_flow_diagrams_project_id_fkey';
                         columns: ['project_id'];
                         isOneToOne: false;
                         referencedRelation: 'projects';
@@ -1078,9 +1483,11 @@ export type Database = {
                     deleted_by: string | null;
                     description: string | null;
                     document_id: string;
+                    embedding: string | null;
                     enchanced_requirement: string | null;
                     external_id: string | null;
                     format: Database['public']['Enums']['requirement_format'];
+                    fts_vector: unknown | null;
                     id: string;
                     is_deleted: boolean | null;
                     level: Database['public']['Enums']['requirement_level'];
@@ -1105,9 +1512,11 @@ export type Database = {
                     deleted_by?: string | null;
                     description?: string | null;
                     document_id: string;
+                    embedding?: string | null;
                     enchanced_requirement?: string | null;
                     external_id?: string | null;
                     format?: Database['public']['Enums']['requirement_format'];
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     level?: Database['public']['Enums']['requirement_level'];
@@ -1132,9 +1541,11 @@ export type Database = {
                     deleted_by?: string | null;
                     description?: string | null;
                     document_id?: string;
+                    embedding?: string | null;
                     enchanced_requirement?: string | null;
                     external_id?: string | null;
                     format?: Database['public']['Enums']['requirement_format'];
+                    fts_vector?: unknown | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     level?: Database['public']['Enums']['requirement_level'];
@@ -1173,6 +1584,110 @@ export type Database = {
                         referencedColumns: ['id'];
                     },
                 ];
+            };
+            requirements_closure: {
+                Row: {
+                    ancestor_id: string;
+                    created_at: string;
+                    created_by: string;
+                    depth: number;
+                    descendant_id: string;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    ancestor_id: string;
+                    created_at?: string;
+                    created_by: string;
+                    depth: number;
+                    descendant_id: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    ancestor_id?: string;
+                    created_at?: string;
+                    created_by?: string;
+                    depth?: number;
+                    descendant_id?: string;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'requirements_closure_ancestor_id_fkey';
+                        columns: ['ancestor_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_created_by_fkey';
+                        columns: ['created_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_descendant_id_fkey';
+                        columns: ['descendant_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'requirements_closure_updated_by_fkey';
+                        columns: ['updated_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            signup_requests: {
+                Row: {
+                    approved_at: string | null;
+                    approved_by: string | null;
+                    created_at: string;
+                    denial_reason: string | null;
+                    denied_at: string | null;
+                    denied_by: string | null;
+                    email: string;
+                    full_name: string;
+                    id: string;
+                    message: string | null;
+                    status: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    approved_at?: string | null;
+                    approved_by?: string | null;
+                    created_at?: string;
+                    denial_reason?: string | null;
+                    denied_at?: string | null;
+                    denied_by?: string | null;
+                    email: string;
+                    full_name: string;
+                    id?: string;
+                    message?: string | null;
+                    status?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    approved_at?: string | null;
+                    approved_by?: string | null;
+                    created_at?: string;
+                    denial_reason?: string | null;
+                    denied_at?: string | null;
+                    denied_by?: string | null;
+                    email?: string;
+                    full_name?: string;
+                    id?: string;
+                    message?: string | null;
+                    status?: string;
+                    updated_at?: string;
+                };
+                Relationships: [];
             };
             stripe_customers: {
                 Row: {
@@ -1230,6 +1745,76 @@ export type Database = {
                     },
                 ];
             };
+            table_rows: {
+                Row: {
+                    block_id: string;
+                    created_at: string | null;
+                    created_by: string | null;
+                    deleted_at: string | null;
+                    deleted_by: string | null;
+                    document_id: string;
+                    id: string;
+                    is_deleted: boolean | null;
+                    position: number;
+                    row_data: Json | null;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                    version: number;
+                };
+                Insert: {
+                    block_id: string;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
+                    document_id: string;
+                    id?: string;
+                    is_deleted?: boolean | null;
+                    position?: number;
+                    row_data?: Json | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    version?: number;
+                };
+                Update: {
+                    block_id?: string;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
+                    document_id?: string;
+                    id?: string;
+                    is_deleted?: boolean | null;
+                    position?: number;
+                    row_data?: Json | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    version?: number;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'table_rows_block_id_fkey';
+                        columns: ['block_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'blocks';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'table_rows_document_id_fkey';
+                        columns: ['document_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'document_summary';
+                        referencedColumns: ['document_id'];
+                    },
+                    {
+                        foreignKeyName: 'table_rows_document_id_fkey';
+                        columns: ['document_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'documents';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             test_matrix_views: {
                 Row: {
                     configuration: Json;
@@ -1283,11 +1868,14 @@ export type Database = {
                     category: string[] | null;
                     created_at: string | null;
                     created_by: string | null;
+                    deleted_at: string | null;
+                    deleted_by: string | null;
                     description: string | null;
                     estimated_duration: unknown | null;
                     expected_results: string | null;
                     id: string;
                     is_active: boolean | null;
+                    is_deleted: boolean;
                     method: Database['public']['Enums']['test_method'];
                     preconditions: string | null;
                     priority: Database['public']['Enums']['test_priority'];
@@ -1308,11 +1896,14 @@ export type Database = {
                     category?: string[] | null;
                     created_at?: string | null;
                     created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
                     description?: string | null;
                     estimated_duration?: unknown | null;
                     expected_results?: string | null;
                     id?: string;
                     is_active?: boolean | null;
+                    is_deleted?: boolean;
                     method?: Database['public']['Enums']['test_method'];
                     preconditions?: string | null;
                     priority?: Database['public']['Enums']['test_priority'];
@@ -1333,11 +1924,14 @@ export type Database = {
                     category?: string[] | null;
                     created_at?: string | null;
                     created_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
                     description?: string | null;
                     estimated_duration?: unknown | null;
                     expected_results?: string | null;
                     id?: string;
                     is_active?: boolean | null;
+                    is_deleted?: boolean;
                     method?: Database['public']['Enums']['test_method'];
                     preconditions?: string | null;
                     priority?: Database['public']['Enums']['test_priority'];
@@ -1354,6 +1948,13 @@ export type Database = {
                     version?: string | null;
                 };
                 Relationships: [
+                    {
+                        foreignKeyName: 'test_req_deleted_by_fkey';
+                        columns: ['deleted_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
                     {
                         foreignKeyName: 'test_req_project_id_fkey';
                         columns: ['project_id'];
@@ -1526,53 +2127,42 @@ export type Database = {
                     },
                 ];
             };
-            signup_requests: {
-                Row: {
-                    id: string;
-                    email: string;
-                    full_name: string;
-                    message: string | null;
-                    status: string;
-                    created_at: string;
-                    updated_at: string;
-                    approved_at: string | null;
-                    denied_at: string | null;
-                    approved_by: string | null;
-                    denied_by: string | null;
-                    denial_reason: string | null;
-                };
-                Insert: {
-                    id?: string;
-                    email: string;
-                    full_name: string;
-                    message?: string | null;
-                    status?: string;
-                    created_at?: string;
-                    updated_at?: string;
-                    approved_at?: string | null;
-                    denied_at?: string | null;
-                    approved_by?: string | null;
-                    denied_by?: string | null;
-                    denial_reason?: string | null;
-                };
-                Update: {
-                    id?: string;
-                    email?: string;
-                    full_name?: string;
-                    message?: string | null;
-                    status?: string;
-                    created_at?: string;
-                    updated_at?: string;
-                    approved_at?: string | null;
-                    denied_at?: string | null;
-                    approved_by?: string | null;
-                    denied_by?: string | null;
-                    denial_reason?: string | null;
-                };
-                Relationships: [];
-            };
         };
         Views: {
+            diagram_element_links_with_details: {
+                Row: {
+                    created_at: string | null;
+                    created_by: string | null;
+                    created_by_avatar: string | null;
+                    created_by_name: string | null;
+                    diagram_id: string | null;
+                    diagram_name: string | null;
+                    element_id: string | null;
+                    id: string | null;
+                    link_type: string | null;
+                    metadata: Json | null;
+                    requirement_description: string | null;
+                    requirement_id: string | null;
+                    requirement_name: string | null;
+                    updated_at: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'diagram_element_links_diagram_id_fkey';
+                        columns: ['diagram_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'excalidraw_diagrams';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'diagram_element_links_requirement_id_fkey';
+                        columns: ['requirement_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'requirements';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             document_summary: {
                 Row: {
                     block_count: number | null;
@@ -1598,13 +2188,25 @@ export type Database = {
                 Args: { invitation_token: string };
                 Returns: boolean;
             };
+            binary_quantize: {
+                Args: { '': string } | { '': unknown };
+                Returns: unknown;
+            };
             can_use_resource: {
-                Args: {
-                    org_id: string;
-                    resource_type: string;
-                    quantity: number;
-                };
+                Args: { org_id: string; quantity: number; resource_type: string };
                 Returns: boolean;
+            };
+            check_requirement_cycle: {
+                Args: { p_ancestor_id: string; p_descendant_id: string };
+                Returns: boolean;
+            };
+            cleanup_expired_oauth_tokens: {
+                Args: Record<PropertyKey, never>;
+                Returns: undefined;
+            };
+            cleanup_expired_sessions: {
+                Args: Record<PropertyKey, never>;
+                Returns: undefined;
             };
             create_columns_for_table_block: {
                 Args: { block_id: string; p_org_id: string };
@@ -1612,17 +2214,87 @@ export type Database = {
             };
             create_notification: {
                 Args: {
-                    user_id: string;
-                    type: Database['public']['Enums']['notification_type'];
-                    title: string;
                     message?: string;
                     metadata?: Json;
+                    title: string;
+                    type: Database['public']['Enums']['notification_type'];
+                    user_id: string;
                 };
                 Returns: string;
             };
             create_personal_organization: {
-                Args: { user_id: string; name: string };
+                Args: { name: string; user_id: string };
                 Returns: string;
+            };
+            create_requirement_relationship: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_created_by: string;
+                    p_descendant_id: string;
+                };
+                Returns: {
+                    error_code: string;
+                    message: string;
+                    relationships_created: number;
+                    success: boolean;
+                }[];
+            };
+            debug_closure_state: {
+                Args: Record<PropertyKey, never>;
+                Returns: {
+                    ancestor_id: string;
+                    ancestor_name: string;
+                    depth: number;
+                    descendant_id: string;
+                    descendant_name: string;
+                    relationship_type: string;
+                }[];
+            };
+            debug_delete_logic_step_by_step: {
+                Args: { p_ancestor_id: string; p_descendant_id: string };
+                Returns: {
+                    details: string;
+                    result_count: number;
+                    step_name: string;
+                }[];
+            };
+            debug_deletion_preview: {
+                Args: { p_ancestor_id: string; p_descendant_id: string };
+                Returns: {
+                    deletion_reason: string;
+                    path_from_descendant_id: string;
+                    path_to_ancestor_id: string;
+                    will_delete_ancestor_name: string;
+                    will_delete_depth: number;
+                    will_delete_descendant_name: string;
+                }[];
+            };
+            delete_requirement_relationship: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_descendant_id: string;
+                    p_updated_by: string;
+                };
+                Returns: {
+                    error_code: string;
+                    message: string;
+                    relationships_deleted: number;
+                    success: boolean;
+                }[];
+            };
+            delete_requirement_relationship_safe: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_descendant_id: string;
+                    p_updated_by: string;
+                };
+                Returns: {
+                    debug_info: Json;
+                    error_code: string;
+                    message: string;
+                    relationships_deleted: number;
+                    success: boolean;
+                }[];
             };
             gbt_bit_compress: {
                 Args: { '': unknown };
@@ -1852,50 +2524,133 @@ export type Database = {
                 Args: { name: string };
                 Returns: string;
             };
+            get_active_session: {
+                Args: { p_session_id: string };
+                Returns: {
+                    created_at: string;
+                    expires_at: string;
+                    mcp_state: Json;
+                    oauth_data: Json;
+                    session_id: string;
+                    updated_at: string;
+                    user_id: string;
+                }[];
+            };
             get_organization_usage: {
-                Args: {
-                    org_id: string;
-                    start_date?: string;
-                    end_date?: string;
-                };
+                Args: { end_date?: string; org_id: string; start_date?: string };
                 Returns: Json;
             };
-            get_user_organizations: {
-                Args: { user_id: string; include_inactive?: boolean };
+            get_requirement_ancestors: {
+                Args: { p_descendant_id: string; p_max_depth?: number };
                 Returns: {
-                    id: string;
-                    name: string;
-                    slug: string;
-                    role: Database['public']['Enums']['user_role_type'];
-                    type: Database['public']['Enums']['organization_type'];
-                    billing_plan: Database['public']['Enums']['billing_plan'];
-                    member_count: number;
-                    is_personal: boolean;
-                    status: Database['public']['Enums']['user_status'];
+                    depth: number;
+                    direct_parent: boolean;
+                    requirement_id: string;
+                    title: string;
                 }[];
+            };
+            get_requirement_descendants: {
+                Args: { p_ancestor_id: string; p_max_depth?: number };
+                Returns: {
+                    depth: number;
+                    direct_parent: boolean;
+                    requirement_id: string;
+                    title: string;
+                }[];
+            };
+            get_requirement_tree: {
+                Args: { p_project_id?: string };
+                Returns: {
+                    depth: number;
+                    has_children: boolean;
+                    parent_id: string;
+                    path: string;
+                    requirement_id: string;
+                    title: string;
+                }[];
+            };
+            get_user_organization_ids: {
+                Args: { p_user_id: string };
+                Returns: {
+                    organization_id: string;
+                }[];
+            };
+            get_user_organizations: {
+                Args: { include_inactive?: boolean; user_id: string };
+                Returns: {
+                    billing_plan: Database['public']['Enums']['billing_plan'];
+                    id: string;
+                    is_personal: boolean;
+                    member_count: number;
+                    name: string;
+                    role: Database['public']['Enums']['user_role_type'];
+                    slug: string;
+                    status: Database['public']['Enums']['user_status'];
+                    type: Database['public']['Enums']['organization_type'];
+                }[];
+            };
+            halfvec_avg: {
+                Args: { '': number[] };
+                Returns: unknown;
+            };
+            halfvec_out: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            halfvec_send: {
+                Args: { '': unknown };
+                Returns: string;
+            };
+            halfvec_typmod_in: {
+                Args: { '': unknown[] };
+                Returns: number;
+            };
+            handle_entity_update: {
+                Args: Record<PropertyKey, never>;
+                Returns: undefined;
             };
             has_project_access: {
                 Args: {
                     project_id: string;
-                    user_id: string;
                     required_role?: Database['public']['Enums']['project_role'];
+                    user_id: string;
                 };
                 Returns: boolean;
             };
+            hnsw_bit_support: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            hnsw_halfvec_support: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            hnsw_sparsevec_support: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            hnswhandler: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
             initialize_billing: {
-                Args: { user_id: string; org_id: string };
+                Args: { org_id: string; user_id: string };
                 Returns: undefined;
             };
             invite_organization_member: {
                 Args: {
-                    org_id: string;
                     email: string;
+                    org_id: string;
                     role?: Database['public']['Enums']['user_role_type'];
                 };
                 Returns: string;
             };
             is_project_owner_or_admin: {
                 Args: { project_id: string; user_id: string };
+                Returns: boolean;
+            };
+            is_super_admin: {
+                Args: { p_user_id: string };
                 Returns: boolean;
             };
             is_valid_email: {
@@ -1906,36 +2661,315 @@ export type Database = {
                 Args: { slug: string };
                 Returns: boolean;
             };
+            ivfflat_bit_support: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            ivfflat_halfvec_support: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            ivfflathandler: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            l2_norm: {
+                Args: { '': unknown } | { '': unknown };
+                Returns: number;
+            };
+            l2_normalize: {
+                Args: { '': string } | { '': unknown } | { '': unknown };
+                Returns: unknown;
+            };
             log_resource_usage: {
                 Args: {
-                    org_id: string;
-                    user_id: string;
                     feature: string;
+                    metadata?: Json;
+                    org_id: string;
                     quantity: number;
                     unit_type: string;
-                    metadata?: Json;
+                    user_id: string;
                 };
                 Returns: boolean;
             };
+            match_documents: {
+                Args: {
+                    filters?: Json;
+                    match_count?: number;
+                    query_embedding: string;
+                    similarity_threshold?: number;
+                };
+                Returns: {
+                    content: string;
+                    id: string;
+                    metadata: Json;
+                    similarity: number;
+                }[];
+            };
+            match_organizations: {
+                Args: {
+                    filters?: Json;
+                    match_count?: number;
+                    query_embedding: string;
+                    similarity_threshold?: number;
+                };
+                Returns: {
+                    content: string;
+                    id: string;
+                    metadata: Json;
+                    similarity: number;
+                }[];
+            };
+            match_projects: {
+                Args: {
+                    filters?: Json;
+                    match_count?: number;
+                    query_embedding: string;
+                    similarity_threshold?: number;
+                };
+                Returns: {
+                    content: string;
+                    id: string;
+                    metadata: Json;
+                    similarity: number;
+                }[];
+            };
+            match_requirements: {
+                Args: {
+                    filters?: Json;
+                    match_count?: number;
+                    query_embedding: string;
+                    similarity_threshold?: number;
+                };
+                Returns: {
+                    content: string;
+                    id: string;
+                    metadata: Json;
+                    similarity: number;
+                }[];
+            };
+            match_tests: {
+                Args: {
+                    filters?: Json;
+                    match_count?: number;
+                    query_embedding: string;
+                    similarity_threshold?: number;
+                };
+                Returns: {
+                    content: string;
+                    id: string;
+                    metadata: Json;
+                    similarity: number;
+                }[];
+            };
+            normalize_slug: {
+                Args: { input_slug: string };
+                Returns: string;
+            };
+            preview_delete_requirement_relationship: {
+                Args: { p_ancestor_id: string; p_descendant_id: string };
+                Returns: {
+                    ancestor_id: string;
+                    depth: number;
+                    descendant_id: string;
+                    will_be_deleted: boolean;
+                }[];
+            };
+            project_has_members: {
+                Args: { p_project_id: string };
+                Returns: boolean;
+            };
+            project_member_can_manage: {
+                Args: { p_project_id: string; p_user_id: string };
+                Returns: boolean;
+            };
+            remove_requirement_relationship: {
+                Args: {
+                    p_ancestor_id: string;
+                    p_descendant_id: string;
+                    p_updated_by: string;
+                };
+                Returns: {
+                    error_code: string;
+                    message: string;
+                    relationships_deleted: number;
+                    success: boolean;
+                }[];
+            };
             reorder_blocks: {
                 Args: {
-                    p_document_id: string;
                     p_block_ids: string[];
+                    p_document_id: string;
                     p_user_id: string;
                 };
                 Returns: undefined;
             };
+            search_documents_fts: {
+                Args: { filters?: Json; match_limit?: number; search_query: string };
+                Returns: {
+                    description: string;
+                    id: string;
+                    name: string;
+                    rank: number;
+                }[];
+            };
+            search_organizations_fts: {
+                Args: { filters?: Json; match_limit?: number; search_query: string };
+                Returns: {
+                    description: string;
+                    id: string;
+                    name: string;
+                    rank: number;
+                }[];
+            };
+            search_projects_fts: {
+                Args: { filters?: Json; match_limit?: number; search_query: string };
+                Returns: {
+                    description: string;
+                    id: string;
+                    name: string;
+                    rank: number;
+                }[];
+            };
+            search_requirements_fts: {
+                Args: { filters?: Json; match_limit?: number; search_query: string };
+                Returns: {
+                    description: string;
+                    id: string;
+                    name: string;
+                    rank: number;
+                }[];
+            };
+            setup_debug_test_scenario: {
+                Args: Record<PropertyKey, never>;
+                Returns: string;
+            };
+            sparsevec_out: {
+                Args: { '': unknown };
+                Returns: unknown;
+            };
+            sparsevec_send: {
+                Args: { '': unknown };
+                Returns: string;
+            };
+            sparsevec_typmod_in: {
+                Args: { '': unknown[] };
+                Returns: number;
+            };
             switch_organization: {
-                Args: { user_id: string; org_id: string };
+                Args: { org_id: string; user_id: string };
                 Returns: boolean;
             };
             sync_billing_data: {
                 Args: { org_id: string };
                 Returns: Json;
             };
+            test_specific_deletion: {
+                Args: { p_ancestor_id: string; p_descendant_id: string };
+                Returns: {
+                    details: string;
+                    result_count: number;
+                    test_step: string;
+                }[];
+            };
+            update_embedding_backfill: {
+                Args: {
+                    p_embedding: string;
+                    p_record_id: string;
+                    p_table_name: string;
+                    p_updated_by: string;
+                };
+                Returns: undefined;
+            };
+            update_session_activity: {
+                Args: { p_session_id: string; p_ttl_hours?: number };
+                Returns: boolean;
+            };
+            user_can_access_project: {
+                Args: { p_project_id: string; p_user_id: string };
+                Returns: boolean;
+            };
+            validate_closure_integrity: {
+                Args: Record<PropertyKey, never>;
+                Returns: {
+                    check_name: string;
+                    details: string;
+                    is_valid: boolean;
+                    issue_count: number;
+                }[];
+            };
+            vector_avg: {
+                Args: { '': number[] };
+                Returns: string;
+            };
+            vector_dims: {
+                Args: { '': string } | { '': unknown };
+                Returns: number;
+            };
+            vector_norm: {
+                Args: { '': string };
+                Returns: number;
+            };
+            vector_out: {
+                Args: { '': string };
+                Returns: unknown;
+            };
+            vector_send: {
+                Args: { '': string };
+                Returns: string;
+            };
+            vector_typmod_in: {
+                Args: { '': unknown[] };
+                Returns: number;
+            };
         };
         Enums: {
+            action_type:
+                | 'create'
+                | 'read'
+                | 'update'
+                | 'delete'
+                | 'manage'
+                | 'assign'
+                | 'invite'
+                | 'approve'
+                | 'reject'
+                | 'export'
+                | 'import'
+                | 'share'
+                | 'archive'
+                | 'restore'
+                | 'audit'
+                | 'monitor'
+                | 'configure'
+                | 'admin';
             assignment_role: 'assignee' | 'reviewer' | 'approver';
+            audit_event_type:
+                | 'login'
+                | 'logout'
+                | 'login_failed'
+                | 'password_change'
+                | 'mfa_enabled'
+                | 'mfa_disabled'
+                | 'permission_granted'
+                | 'permission_denied'
+                | 'role_assigned'
+                | 'role_removed'
+                | 'data_created'
+                | 'data_read'
+                | 'data_updated'
+                | 'data_deleted'
+                | 'data_exported'
+                | 'system_config_changed'
+                | 'backup_created'
+                | 'backup_restored'
+                | 'security_violation'
+                | 'suspicious_activity'
+                | 'rate_limit_exceeded'
+                | 'compliance_report_generated'
+                | 'audit_log_accessed'
+                | 'data_retention_applied';
+            audit_severity: 'low' | 'medium' | 'high' | 'critical';
             billing_plan: 'free' | 'pro' | 'enterprise';
             entity_type: 'document' | 'requirement';
             execution_status:
@@ -1949,7 +2983,7 @@ export type Database = {
             notification_type: 'invitation' | 'mention' | 'system';
             organization_type: 'personal' | 'team' | 'enterprise';
             pricing_plan_interval: 'none' | 'month' | 'year';
-            project_role: 'owner' | 'editor' | 'viewer';
+            project_role: 'owner' | 'admin' | 'maintainer' | 'editor' | 'viewer';
             project_status: 'active' | 'archived' | 'draft' | 'deleted';
             property_type:
                 | 'text'
@@ -1975,6 +3009,24 @@ export type Database = {
                 | 'in_progress'
                 | 'approved'
                 | 'rejected';
+            resource_type:
+                | 'organization'
+                | 'project'
+                | 'document'
+                | 'requirement'
+                | 'user'
+                | 'member'
+                | 'invitation'
+                | 'role'
+                | 'permission'
+                | 'external_document'
+                | 'diagram'
+                | 'trace_link'
+                | 'assignment'
+                | 'audit_log'
+                | 'security_event'
+                | 'system_config'
+                | 'compliance_report';
             subscription_status:
                 | 'active'
                 | 'inactive'
@@ -2008,7 +3060,7 @@ export type Database = {
                 | 'is_related_to'
                 | 'parent_of'
                 | 'child_of';
-            user_role_type: 'member' | 'admin' | 'owner';
+            user_role_type: 'member' | 'admin' | 'owner' | 'super_admin';
             user_status: 'active' | 'inactive';
             visibility: 'private' | 'team' | 'organization' | 'public';
         };
@@ -2018,21 +3070,25 @@ export type Database = {
     };
 };
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>];
 
 export type Tables<
     DefaultSchemaTableNameOrOptions extends
         | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-        | { schema: keyof Database },
+        | { schema: keyof DatabaseWithoutInternals },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: keyof DatabaseWithoutInternals;
     }
-        ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-              Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+        ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+              DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-    ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-          Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+}
+    ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+          DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
           Row: infer R;
       }
         ? R
@@ -2050,14 +3106,16 @@ export type Tables<
 export type TablesInsert<
     DefaultSchemaTableNameOrOptions extends
         | keyof DefaultSchema['Tables']
-        | { schema: keyof Database },
+        | { schema: keyof DatabaseWithoutInternals },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: keyof DatabaseWithoutInternals;
     }
-        ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-    ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+}
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Insert: infer I;
       }
         ? I
@@ -2073,14 +3131,16 @@ export type TablesInsert<
 export type TablesUpdate<
     DefaultSchemaTableNameOrOptions extends
         | keyof DefaultSchema['Tables']
-        | { schema: keyof Database },
+        | { schema: keyof DatabaseWithoutInternals },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: keyof DatabaseWithoutInternals;
     }
-        ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+        ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-    ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+}
+    ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Update: infer U;
       }
         ? U
@@ -2096,14 +3156,16 @@ export type TablesUpdate<
 export type Enums<
     DefaultSchemaEnumNameOrOptions extends
         | keyof DefaultSchema['Enums']
-        | { schema: keyof Database },
+        | { schema: keyof DatabaseWithoutInternals },
     EnumName extends DefaultSchemaEnumNameOrOptions extends {
-        schema: keyof Database;
+        schema: keyof DatabaseWithoutInternals;
     }
-        ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+        ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
         : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-    ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+}
+    ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
     : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
       ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
       : never;
@@ -2111,14 +3173,16 @@ export type Enums<
 export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
         | keyof DefaultSchema['CompositeTypes']
-        | { schema: keyof Database },
+        | { schema: keyof DatabaseWithoutInternals },
     CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-        schema: keyof Database;
+        schema: keyof DatabaseWithoutInternals;
     }
-        ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+        ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
         : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-    ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+}
+    ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
     : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
       ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
       : never;
@@ -2126,7 +3190,54 @@ export type CompositeTypes<
 export const Constants = {
     public: {
         Enums: {
+            action_type: [
+                'create',
+                'read',
+                'update',
+                'delete',
+                'manage',
+                'assign',
+                'invite',
+                'approve',
+                'reject',
+                'export',
+                'import',
+                'share',
+                'archive',
+                'restore',
+                'audit',
+                'monitor',
+                'configure',
+                'admin',
+            ],
             assignment_role: ['assignee', 'reviewer', 'approver'],
+            audit_event_type: [
+                'login',
+                'logout',
+                'login_failed',
+                'password_change',
+                'mfa_enabled',
+                'mfa_disabled',
+                'permission_granted',
+                'permission_denied',
+                'role_assigned',
+                'role_removed',
+                'data_created',
+                'data_read',
+                'data_updated',
+                'data_deleted',
+                'data_exported',
+                'system_config_changed',
+                'backup_created',
+                'backup_restored',
+                'security_violation',
+                'suspicious_activity',
+                'rate_limit_exceeded',
+                'compliance_report_generated',
+                'audit_log_accessed',
+                'data_retention_applied',
+            ],
+            audit_severity: ['low', 'medium', 'high', 'critical'],
             billing_plan: ['free', 'pro', 'enterprise'],
             entity_type: ['document', 'requirement'],
             execution_status: [
@@ -2141,7 +3252,7 @@ export const Constants = {
             notification_type: ['invitation', 'mention', 'system'],
             organization_type: ['personal', 'team', 'enterprise'],
             pricing_plan_interval: ['none', 'month', 'year'],
-            project_role: ['owner', 'editor', 'viewer'],
+            project_role: ['owner', 'admin', 'maintainer', 'editor', 'viewer'],
             project_status: ['active', 'archived', 'draft', 'deleted'],
             property_type: [
                 'text',
@@ -2168,6 +3279,25 @@ export const Constants = {
                 'in_progress',
                 'approved',
                 'rejected',
+            ],
+            resource_type: [
+                'organization',
+                'project',
+                'document',
+                'requirement',
+                'user',
+                'member',
+                'invitation',
+                'role',
+                'permission',
+                'external_document',
+                'diagram',
+                'trace_link',
+                'assignment',
+                'audit_log',
+                'security_event',
+                'system_config',
+                'compliance_report',
             ],
             subscription_status: [
                 'active',
@@ -2206,7 +3336,7 @@ export const Constants = {
                 'parent_of',
                 'child_of',
             ],
-            user_role_type: ['member', 'admin', 'owner'],
+            user_role_type: ['member', 'admin', 'owner', 'super_admin'],
             user_status: ['active', 'inactive'],
             visibility: ['private', 'team', 'organization', 'public'],
         },
