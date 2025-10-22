@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Block, EProjectStatus, EVisibility, Json, Project } from '@/types';
+import { Block, EProjectStatus, EVisibility, Json } from '@/types';
 
 export const ProjectSchema = z.object({
     id: z.string(),

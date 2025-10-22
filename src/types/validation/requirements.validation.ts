@@ -6,7 +6,6 @@ import {
     ERequirementPriority,
     ERequirementStatus,
     Json,
-    Requirement,
 } from '@/types';
 
 export const RequirementSchema = z.object({
