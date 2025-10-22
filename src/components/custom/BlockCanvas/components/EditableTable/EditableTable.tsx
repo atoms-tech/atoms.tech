@@ -185,7 +185,15 @@ export function EditableTable<T extends BaseRow>({
                         return 'viewer'; // Default to 'viewer' if there's an error
                     }
 
-                    return data?.role || 'viewer'; // Default to 'viewer' if role is undefined
+                    // Map database roles to expected roles
+                    const role = data?.role;
+                    if (role === 'admin' || role === 'maintainer') {
+                        return 'owner';
+                    }
+                    if (role === 'owner' || role === 'editor' || role === 'viewer') {
+                        return role;
+                    }
+                    return 'viewer'; // Default to 'viewer' for any other role
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';

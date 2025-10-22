@@ -168,7 +168,15 @@ export function TanStackEditableTable<T extends BaseRow>({
                         return 'viewer';
                     }
 
-                    return data?.role || 'viewer';
+                    // Map database roles to expected roles
+                    const role = data?.role;
+                    if (role === 'admin' || role === 'maintainer') {
+                        return 'owner';
+                    }
+                    if (role === 'owner' || role === 'editor' || role === 'viewer') {
+                        return role;
+                    }
+                    return 'viewer'; // Default to 'viewer' for any other role
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';

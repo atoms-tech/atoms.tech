@@ -117,7 +117,7 @@ export function useCreateRequirement() {
                 throw new Error('Failed to create requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -153,7 +153,7 @@ export function useUpdateRequirement() {
                 throw new Error('Failed to update requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -190,7 +190,7 @@ export function useDeleteRequirement() {
                 throw new Error('Failed to delete requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
