@@ -16,9 +16,10 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Only validate environment variables at runtime, not during build
 // Skip validation during build time or when environment variables are not available
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                   process.env.NODE_ENV !== 'production' ||
-                   !process.env.WORKOS_CLIENT_ID;
+const isBuildTime =
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    process.env.NODE_ENV !== 'production' ||
+    !process.env.WORKOS_CLIENT_ID;
 
 if (typeof window === 'undefined' && !isBuildTime) {
     if (!WORKOS_CLIENT_ID) {
