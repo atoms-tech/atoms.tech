@@ -21,6 +21,7 @@ import { useTheme } from 'next-themes';
 import { usePathname, useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
 
+import { RequirementLinkPanel } from '@/components/custom/Diagrams/RequirementLinkPanel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -107,6 +108,16 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     const [authError, setAuthError] = useState<string | null>(null);
     const [isSaveAsDialogOpen, setIsSaveAsDialogOpen] = useState(false);
     const [newDiagramName, setNewDiagramName] = useState('');
+
+    // State for requirement linking panel
+    const [showLinkPanel, setShowLinkPanel] = useState(false);
+    const [selectedElements, setSelectedElements] = useState<
+        readonly ExcalidrawElement[]
+    >([]);
+    const [linkPanelPosition, setLinkPanelPosition] = useState<{ x: number; y: number }>({
+        x: 10,
+        y: 10,
+    });
 
     const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const excalidrawApiRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -776,6 +787,80 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         [saveDiagram],
     );
 
+    // Utility functions for requirement linking
+    const updateElementRequirementLink = useCallback(
+        (requirementId: string, requirementName: string) => {
+            if (!excalidrawApiRef.current) return;
+
+            const elements = excalidrawApiRef.current.getSceneElements();
+            const selectedIds = Object.keys(
+                excalidrawApiRef.current.getAppState().selectedElementIds || {},
+            );
+
+            // Update selected elements with requirementId and documentId
+            const updatedElements = elements.map((el) => {
+                if (selectedIds.includes(el.id)) {
+                    // Add custom properties to element
+                    return {
+                        ...el,
+                        requirementId,
+                        documentId: pendingDocumentId || undefined,
+                    } as unknown as ExcalidrawElement;
+                }
+                return el;
+            });
+
+            // Update the scene with modified elements
+            excalidrawApiRef.current.updateScene({
+                elements: updatedElements,
+            });
+
+            console.log(
+                `[Excalidraw] Linked ${selectedIds.length} element(s) to requirement:`,
+                requirementName,
+            );
+
+            // Hide the link panel after linking
+            setShowLinkPanel(false);
+        },
+        [pendingDocumentId],
+    );
+
+    const removeElementRequirementLink = useCallback(() => {
+        if (!excalidrawApiRef.current) return;
+
+        const elements = excalidrawApiRef.current.getSceneElements();
+        const selectedIds = Object.keys(
+            excalidrawApiRef.current.getAppState().selectedElementIds || {},
+        );
+
+        // Remove requirementId and documentId from selected elements
+        const updatedElements = elements.map((el) => {
+            if (selectedIds.includes(el.id)) {
+                // Create a new element without the requirementId and documentId properties
+                const {
+                    requirementId: _requirementId,
+                    documentId: _documentId,
+                    ...rest
+                } = el as ElementWithRequirementProps;
+                return rest as ExcalidrawElement;
+            }
+            return el;
+        });
+
+        // Update the scene with modified elements
+        excalidrawApiRef.current.updateScene({
+            elements: updatedElements,
+        });
+
+        console.log(
+            `[Excalidraw] Unlinked ${selectedIds.length} element(s) from requirements`,
+        );
+
+        // Hide the link panel after unlinking
+        setShowLinkPanel(false);
+    }, []);
+
     // Modify handleChange to update tooltip and position it over all related elements
     const handleChange = useCallback(
         (
@@ -807,8 +892,37 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 return;
             }
 
-            // Determine if a single element with requirementId is selected
+            // Determine if elements are selected
             const selectedIds = Object.keys(appState.selectedElementIds || {});
+
+            // Update selected elements and link panel visibility
+            if (selectedIds.length > 0) {
+                const currentSelectedElements = elements.filter((el) =>
+                    selectedIds.includes(el.id),
+                );
+                setSelectedElements(currentSelectedElements);
+                setShowLinkPanel(true);
+
+                // Calculate panel position based on the first selected element
+                if (currentSelectedElements.length > 0 && excalidrawApiRef.current) {
+                    const firstElement = currentSelectedElements[0];
+                    const zoom = appState.zoom.value;
+                    const { scrollX, scrollY } = appState;
+
+                    // Position panel near top-right of first selected element
+                    const panelX =
+                        (firstElement.x + (firstElement.width || 0) + scrollX) * zoom +
+                        10;
+                    const panelY = (firstElement.y + scrollY) * zoom;
+
+                    setLinkPanelPosition({ x: panelX, y: panelY });
+                }
+            } else {
+                setShowLinkPanel(false);
+                setSelectedElements([]);
+            }
+
+            // Handle existing requirement tooltip logic for already-linked elements
             if (selectedIds.length >= 1 && excalidrawApiRef.current) {
                 const selectedId = selectedIds[0];
                 // Only process if this is a new selection
@@ -1140,6 +1254,18 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                             excalidrawApiRef.current.getAppState().zoom.value,
                         opacity: 0.5,
                     }}
+                />
+            )}
+
+            {/* Requirement Link Panel */}
+            {showLinkPanel && selectedElements.length > 0 && (
+                <RequirementLinkPanel
+                    selectedElements={selectedElements}
+                    projectId={projectId}
+                    documentId={pendingDocumentId || 'unknown'}
+                    onLink={updateElementRequirementLink}
+                    onUnlink={removeElementRequirementLink}
+                    position={linkPanelPosition}
                 />
             )}
         </div>
