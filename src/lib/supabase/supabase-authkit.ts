@@ -15,7 +15,12 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Only validate environment variables at runtime, not during build
-if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+// Skip validation during build time or when environment variables are not available
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
+                   process.env.NODE_ENV !== 'production' ||
+                   !process.env.WORKOS_CLIENT_ID;
+
+if (typeof window === 'undefined' && !isBuildTime) {
     if (!WORKOS_CLIENT_ID) {
         throw new Error('WORKOS_CLIENT_ID is not set');
     }
@@ -40,7 +45,7 @@ const globalForSupabase = globalThis as unknown as {
     supabasePublicClient?: SupabaseClient<Database>;
 };
 
-export const supabaseAuthKit: any =
+export const supabaseAuthKit =
     globalForSupabase.supabaseAuthKitClient ??
     (globalForSupabase.supabaseAuthKitClient = createClient(
         safeSupabaseUrl,
