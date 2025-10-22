@@ -31,7 +31,7 @@ export async function loginWithGoogle() {
             `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
 
         if (!clientId) {
-            throw new Error('WORKOS_CLIENT_ID is required');
+            throw new Error('Authentication service is not properly configured');
         }
 
         const authorizationUrl = workos.userManagement.getAuthorizationUrl({
@@ -59,7 +59,7 @@ export async function loginWithGitHub() {
             `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
 
         if (!clientId) {
-            throw new Error('WORKOS_CLIENT_ID is required');
+            throw new Error('Authentication service is not properly configured');
         }
 
         const authorizationUrl = workos.userManagement.getAuthorizationUrl({

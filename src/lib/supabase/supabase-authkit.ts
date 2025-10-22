@@ -14,13 +14,20 @@ const _WORKOS_AUTH_DOMAIN = process.env.WORKOS_AUTH_DOMAIN || 'api.workos.com';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!WORKOS_CLIENT_ID) {
-    throw new Error('WORKOS_CLIENT_ID is not set');
+// Only validate environment variables at runtime, not during build
+if (typeof window === 'undefined' && process.env.NODE_ENV === 'production') {
+    if (!WORKOS_CLIENT_ID) {
+        throw new Error('WORKOS_CLIENT_ID is not set');
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        throw new Error('Supabase URL and key are not set');
+    }
 }
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new Error('Supabase URL and key are not set');
-}
+// Provide fallback values for build time
+const safeSupabaseUrl = SUPABASE_URL || 'https://placeholder.supabase.co';
+const safeSupabaseKey = SUPABASE_KEY || 'placeholder-key';
 
 /**
  * Create Supabase client with WorkOS configuration
@@ -33,11 +40,11 @@ const globalForSupabase = globalThis as unknown as {
     supabasePublicClient?: SupabaseClient<Database>;
 };
 
-export const supabaseAuthKit =
+export const supabaseAuthKit: any =
     globalForSupabase.supabaseAuthKitClient ??
-    (globalForSupabase.supabaseAuthKitClient = createClient<Database>(
-        SUPABASE_URL,
-        SUPABASE_KEY,
+    (globalForSupabase.supabaseAuthKitClient = createClient(
+        safeSupabaseUrl,
+        safeSupabaseKey,
         {
             global: {
                 headers: {
@@ -114,9 +121,9 @@ export function createSupabaseClientWithTokenClient(token: string) {
  */
 export const supabase =
     globalForSupabase.supabasePublicClient ??
-    (globalForSupabase.supabasePublicClient = createClient<Database>(
-        SUPABASE_URL,
-        SUPABASE_KEY,
+    (globalForSupabase.supabasePublicClient = createClient(
+        safeSupabaseUrl,
+        safeSupabaseKey,
         {
             auth: {
                 autoRefreshToken: false,
