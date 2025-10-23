@@ -1,8 +1,9 @@
 'use client';
 
+import type { User } from '@supabase/supabase-js';
 import { Suspense } from 'react';
+
 import LayoutManager from '@/components/base/LayoutManager';
-import { Button } from '@/components/ui/button';
 import { LiveRegionProvider } from '@/components/ui/live-region';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AccessibilityProvider } from '@/lib/providers/accessibility.provider';
@@ -10,7 +11,6 @@ import { OrganizationProvider } from '@/lib/providers/organization.provider';
 import { UserProvider } from '@/lib/providers/user.provider';
 import type { Profile } from '@/types';
 import type { Organization } from '@/types/base/organizations.types';
-import type { User } from '@supabase/supabase-js';
 
 function SandboxLayoutSkeleton() {
     return (

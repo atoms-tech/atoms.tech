@@ -1,24 +1,30 @@
-"use client";
+'use client';
 
 import {
     Brain,
     Check,
+    CircleAlert,
     FilePlus,
     Pencil,
-    Save,
+    Trash,
     Upload,
     Wand,
     X,
-    Trash,
-    CircleAlert,
 } from 'lucide-react';
 import React, { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { handleAnalyzeAPI } from './handleAnalyzeAPI.sandbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+// import { handleAnalyzeAPI } from './handleAnalyzeAPI.sandbox';
 
 type LocalRegulationFile = {
     name: string;
@@ -46,16 +52,16 @@ export function SandboxRequirementForm({
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [analysisData, setAnalysisData] = useState<unknown>(null);
+    const [_analysisData, _setAnalysisData] = useState<unknown>(null);
 
     const [isUploading, setIsUploading] = useState(false);
     const [editingFile, setEditingFile] = useState<string | null>(null);
     const [editingFileName, setEditingFileName] = useState<string>('');
-    const [selectedFiles, setSelectedFiles] = useState<Record<string, LocalRegulationFile>>(
-        {},
-    );
+    const [selectedFiles, setSelectedFiles] = useState<
+        Record<string, LocalRegulationFile>
+    >({});
 
-    const hasUnsavedChanges = useMemo(() => reqText.trim().length > 0, [reqText]);
+    const _hasUnsavedChanges = useMemo(() => reqText.trim().length > 0, [reqText]);
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
@@ -138,14 +144,16 @@ export function SandboxRequirementForm({
         setExistingDocsValue('');
     };
 
-    const [uploadButtonText, setUploadButtonText] = useState('Upload Regulation Document');
+    const [uploadButtonText, setUploadButtonText] = useState(
+        'Upload Regulation Document',
+    );
 
     React.useEffect(() => {
         if (isUploading) setUploadButtonText('Uploading...');
         else setUploadButtonText('Upload Regulation Document');
     }, [isUploading]);
 
-    const emitFiles = () => {
+    const _emitFiles = () => {
         const sf: { [k: string]: { file?: File } } = Object.fromEntries(
             Object.entries(selectedFiles).map(([k, v]) => [k, { file: v.file }]),
         );
@@ -179,7 +187,11 @@ export function SandboxRequirementForm({
                             <Save className="h-4 w-4" />
                             {hasUnsavedChanges ? 'Save*' : 'Save'}
                         </Button> */}
-                        <Button className="gap-2" onClick={onAnalyze} disabled={isAnalysing}>
+                        <Button
+                            className="gap-2"
+                            onClick={onAnalyze}
+                            disabled={isAnalysing}
+                        >
                             {isAnalysing ? (
                                 <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                             ) : (
@@ -244,15 +256,22 @@ export function SandboxRequirementForm({
                         <h4 className="text-sm font-medium mb-2">Attached Files</h4>
                         <ul className="space-y-1">
                             {Object.entries(selectedFiles).map(([supabaseId, file]) => (
-                                <li key={supabaseId} className="text-sm text-muted-foreground flex items-center justify-between">
+                                <li
+                                    key={supabaseId}
+                                    className="text-sm text-muted-foreground flex items-center justify-between"
+                                >
                                     <div className="flex items-center">
                                         <Check className="h-3 w-3 mr-1" />
                                         {editingFile === supabaseId ? (
                                             <input
                                                 type="text"
                                                 value={editingFileName}
-                                                onChange={(e) => setEditingFileName(e.target.value)}
-                                                onKeyDown={(e) => handleKeyDown(e, supabaseId)}
+                                                onChange={(e) =>
+                                                    setEditingFileName(e.target.value)
+                                                }
+                                                onKeyDown={(e) =>
+                                                    handleKeyDown(e, supabaseId)
+                                                }
                                                 autoFocus
                                                 className="p-1 border rounded-md text-sm"
                                             />
@@ -264,25 +283,34 @@ export function SandboxRequirementForm({
                                         {editingFile === supabaseId ? (
                                             <>
                                                 <button
-                                                    onClick={() => handleSaveFileName(supabaseId)}
+                                                    onClick={() =>
+                                                        handleSaveFileName(supabaseId)
+                                                    }
                                                     className="text-green-500 hover:text-green-700 mr-1"
                                                 >
                                                     <Check className="h-4 w-4" />
                                                 </button>
-                                                <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-700">
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="text-red-500 hover:text-red-700"
+                                                >
                                                     <X className="h-4 w-4" />
                                                 </button>
                                             </>
                                         ) : (
                                             <>
                                                 <button
-                                                    onClick={() => handleEditFile(supabaseId)}
+                                                    onClick={() =>
+                                                        handleEditFile(supabaseId)
+                                                    }
                                                     className="text-gray-500 hover:text-gray-700 mr-1"
                                                 >
                                                     <Pencil className="h-4 w-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleRemoveFile(supabaseId)}
+                                                    onClick={() =>
+                                                        handleRemoveFile(supabaseId)
+                                                    }
                                                     className="text-red-500 hover:text-red-700"
                                                 >
                                                     <Trash className="h-4 w-4" />

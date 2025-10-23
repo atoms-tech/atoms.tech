@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 
 import LayoutManager from '@/components/base/LayoutManager';
+import { Button } from '@/components/ui/button';
 import { LiveRegionProvider } from '@/components/ui/live-region';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { getQueryClient } from '@/lib/constants/queryClient';
@@ -72,7 +73,12 @@ export default async function ProtectedLayout({
         );
     } catch (error) {
         console.error('Error in protected layout:', error);
-        // Handle authentication errors - redirect directly in server component
-        redirect('/login');
+        // Handle authentication errors
+        return (
+            <div className="error-container">
+                <p>Session expired. Please log in again.</p>
+                <Button onClick={() => redirect('/login')}>Login</Button>
+            </div>
+        );
     }
 }
