@@ -21,6 +21,11 @@ env:
     SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example
     NEXT_PUBLIC_CHUNKR_API_KEY: foo
     RESEND_API_KEY: foo
+    RESEND_FROM_EMAIL: foo@gmail.com
+    WORKOS_API_KEY: foo
+    WORKOS_CLIENT_ID: foo
+    WORKOS_COOKIE_PASSWORD: foo
+    WORKOS_PASSWORD_RESET_URL: http://localhost:3000/reset
 
 jobs:
     build:
