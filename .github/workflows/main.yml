@@ -24,7 +24,7 @@ env:
     RESEND_FROM_EMAIL: foo@gmail.com
     WORKOS_API_KEY: foo
     WORKOS_CLIENT_ID: foo
-    WORKOS_COOKIE_PASSWORD: foo
+    WORKOS_COOKIE_PASSWORD: foowithatleast24charactr
     WORKOS_PASSWORD_RESET_URL: http://localhost:3000/reset
 
 jobs:
