@@ -137,6 +137,9 @@ export const useDocumentRealtime = ({
                             .order('position', { ascending: true });
 
                         if (error) {
+                            // Supabase occasionally rejects the relationship join with a 400
+                            // when its cached FK metadata is stale, so fall back to a plain fetch
+                            // and hydrate the property relation manually.
                             console.error(
                                 '❌ Columns fetch error (with embedded property):',
                                 error,
@@ -316,6 +319,8 @@ export const useDocumentRealtime = ({
                     .order('position', { ascending: true });
 
                 if (columnsError) {
+                    // Apply the same fallback strategy used in the full fetch so that
+                    // a stale relationship cache does not break targeted hydration.
                     console.error(
                         '❌ Columns hydration fetch error (with embedded property):',
                         columnsError,
