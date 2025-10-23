@@ -17,10 +17,10 @@ import { Json } from '@/types/base/database.types';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { documentId: string } },
+    context: { params: Promise<{ documentId: string }> },
 ) {
     try {
-        const documentId = params.documentId;
+        const { documentId } = await context.params;
         const { searchParams } = new URL(request.url);
         const blockId = searchParams.get('blockId');
 
@@ -111,10 +111,10 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { documentId: string } },
+    context: { params: Promise<{ documentId: string }> },
 ) {
     try {
-        const documentId = params.documentId;
+        const { documentId } = await context.params;
         const body = (await request.json()) as {
             id: string;
             blockId: string;
@@ -219,10 +219,10 @@ export async function POST(
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { documentId: string } },
+    context: { params: Promise<{ documentId: string }> },
 ) {
     try {
-        const documentId = params.documentId;
+        const { documentId } = await context.params;
         const body = (await request.json()) as {
             id: string;
             position?: number;
@@ -320,10 +320,10 @@ export async function PATCH(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { documentId: string } },
+    context: { params: Promise<{ documentId: string }> },
 ) {
     try {
-        const documentId = params.documentId;
+        const { documentId } = await context.params;
         const body = (await request.json()) as { id: string };
         if (!documentId || !body?.id) {
             return NextResponse.json(

@@ -136,11 +136,10 @@ export const useDocumentRealtime = ({
                     console.error('❌ Columns fetch error:', e);
                     throw e;
                 }
-                console.log(
-                    '✅ Columns fetched:',
-                    columnsWithProperty.length,
-                    columnsWithProperty,
+                const columnsWithProperty: Column[] = normalizeColumns(
+                    (columnsData as unknown as ColumnRowWithEmbeddedProperty[]) || [],
                 );
+                console.log('✅ Columns fetched:', columnsWithProperty.length);
 
                 // Group requirements by block_id
                 const requirementsByBlock = requirementsData.reduce(
@@ -156,7 +155,7 @@ export const useDocumentRealtime = ({
 
                 // Group columns by block_id
                 const columnsByBlock = columnsWithProperty.reduce(
-                    (acc: { [key: string]: Column[] }, col) => {
+                    (acc: { [key: string]: Column[] }, col: Column) => {
                         const blockId = col.block_id;
                         if (blockId && !acc[blockId]) {
                             acc[blockId] = [];
@@ -251,6 +250,9 @@ export const useDocumentRealtime = ({
                     const payload = (await res.json()) as { columns: unknown[] };
                     columnsData = (payload.columns || []) as unknown as ColumnRow[];
                 }
+                const hydratedColumns: Column[] = normalizeColumns(
+                    (columnsData as unknown as ColumnRowWithEmbeddedProperty[]) || [],
+                );
 
                 setBlocks((prev) => {
                     if (!prev) return prev;
@@ -269,7 +271,7 @@ export const useDocumentRealtime = ({
                 console.error('Failed to hydrate block relations:', err);
             }
         },
-        [supabase, authLoading, authError],
+        [documentId, supabase, authLoading, authError],
     );
 
     // Subscribe to changes
