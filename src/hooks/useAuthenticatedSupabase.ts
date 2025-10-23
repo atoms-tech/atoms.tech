@@ -9,6 +9,16 @@ import { Database } from '@/types/base/database.types';
  * This hook fetches the WorkOS session and creates a Supabase client
  * with the proper authorization header for RLS policies.
  */
+// Global cache to dedupe session fetches and reuse a single Supabase client per token
+const globalForWorkOS = globalThis as unknown as {
+    atomsWorkosAccessToken?: string | null;
+    atomsWorkosSupabaseClient?: ReturnType<typeof createClient<Database>> | null;
+    atomsWorkosSessionPromise?: Promise<{ accessToken: string } | null> | null;
+    atomsWorkosClientPromise?: Promise<ReturnType<
+        typeof createClient<Database>
+    > | null> | null;
+};
+
 export function useAuthenticatedSupabase() {
     const [supabase, setSupabase] = useState<ReturnType<
         typeof createClient<Database>
@@ -20,52 +30,73 @@ export function useAuthenticatedSupabase() {
 
     const createAuthenticatedClient = useCallback(async () => {
         try {
-            // Get WorkOS session info from API
-            const response = await fetch('/api/auth/session', {
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error('No active WorkOS session');
+            // Dedupe session fetches across hooks
+            if (!globalForWorkOS.atomsWorkosSessionPromise) {
+                globalForWorkOS.atomsWorkosSessionPromise = (async () => {
+                    const response = await fetch('/api/auth/session', {
+                        credentials: 'include',
+                    });
+                    if (!response.ok) return null;
+                    const sessionData = await response.json();
+                    if (!sessionData?.accessToken) return null;
+                    return { accessToken: sessionData.accessToken as string };
+                })().finally(() => {
+                    // allow future refreshes if needed
+                    globalForWorkOS.atomsWorkosSessionPromise = null;
+                });
             }
 
-            const sessionData = await response.json();
+            const session = await globalForWorkOS.atomsWorkosSessionPromise;
+            if (!session) throw new Error('No active WorkOS session');
 
-            if (!sessionData.accessToken) {
-                throw new Error('No access token in session');
-            }
-
-            if (tokenRef.current === sessionData.accessToken && clientRef.current) {
-                setSupabase(clientRef.current);
+            // Reuse existing client for the same token
+            if (
+                globalForWorkOS.atomsWorkosSupabaseClient &&
+                globalForWorkOS.atomsWorkosAccessToken === session.accessToken
+            ) {
+                clientRef.current = globalForWorkOS.atomsWorkosSupabaseClient;
+                tokenRef.current = session.accessToken;
+                setSupabase(globalForWorkOS.atomsWorkosSupabaseClient);
                 setError(null);
                 return;
             }
 
-            // Create Supabase client with WorkOS token
-            const tokenKey =
-                sessionData.accessToken.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) ||
-                'token';
+            // Dedupe client creation if multiple hooks race here
+            if (!globalForWorkOS.atomsWorkosClientPromise) {
+                globalForWorkOS.atomsWorkosClientPromise = (async () => {
+                    const tokenKey =
+                        session.accessToken.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) ||
+                        'token';
 
-            const authenticatedClient = createClient<Database>(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                {
-                    global: {
-                        headers: {
-                            Authorization: `Bearer ${sessionData.accessToken}`,
+                    const authenticatedClient = createClient<Database>(
+                        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                        {
+                            global: {
+                                headers: {
+                                    Authorization: `Bearer ${session.accessToken}`,
+                                },
+                            },
+                            auth: {
+                                autoRefreshToken: false,
+                                persistSession: false,
+                                storageKey: `atoms-workos-auth-${tokenKey}`,
+                            },
                         },
-                    },
-                    auth: {
-                        autoRefreshToken: false,
-                        persistSession: false,
-                        storageKey: `atoms-workos-auth-${tokenKey}`,
-                    },
-                },
-            );
+                    );
+                    globalForWorkOS.atomsWorkosSupabaseClient = authenticatedClient;
+                    globalForWorkOS.atomsWorkosAccessToken = session.accessToken;
+                    return authenticatedClient;
+                })().finally(() => {
+                    globalForWorkOS.atomsWorkosClientPromise = null;
+                });
+            }
 
-            setSupabase(authenticatedClient);
-            clientRef.current = authenticatedClient;
-            tokenRef.current = sessionData.accessToken;
+            const client = await globalForWorkOS.atomsWorkosClientPromise;
+            if (!client) throw new Error('Failed to initialize Supabase client');
+            clientRef.current = client;
+            tokenRef.current = session.accessToken;
+            setSupabase(client);
             setError(null);
         } catch (err) {
             console.error('Error creating authenticated Supabase client:', err);

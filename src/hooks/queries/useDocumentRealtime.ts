@@ -95,18 +95,22 @@ export const useDocumentRealtime = ({
                     tableBlocks.map((b) => b.id),
                 );
 
-                const { data: columnsData, error: columnsError } = await client
-                    .from('columns')
-                    .select('*, property:properties(*)')
-                    .in(
-                        'block_id',
-                        tableBlocks.map((block) => block.id),
-                    )
-                    .order('position', { ascending: true });
-
-                if (columnsError) {
-                    console.error('❌ Columns fetch error:', columnsError);
-                    throw columnsError;
+                // Fetch columns through API to avoid client-side UUID/type issues and rely on server membership checks
+                let columnsData: ColumnRow[] = [] as unknown as ColumnRow[];
+                try {
+                    const res = await fetch(`/api/documents/${documentId}/columns`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Columns API error: ${res.status} ${errorText}`);
+                    }
+                    const payload = (await res.json()) as { columns: unknown[] };
+                    columnsData = (payload.columns || []) as unknown as ColumnRow[];
+                } catch (e) {
+                    console.error('❌ Columns fetch error:', e);
+                    throw e;
                 }
                 console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
 
@@ -205,14 +209,20 @@ export const useDocumentRealtime = ({
 
                 if (requirementsError) throw requirementsError;
 
-                // Fetch columns for the block including joined property
-                const { data: columnsData, error: columnsError } = await client
-                    .from('columns')
-                    .select('*, property:properties(*)')
-                    .eq('block_id', blockId)
-                    .order('position', { ascending: true });
-
-                if (columnsError) throw columnsError;
+                // Fetch columns for the block via API route
+                let columnsData: ColumnRow[] = [] as unknown as ColumnRow[];
+                {
+                    const res = await fetch(
+                        `/api/documents/${documentId}/columns?blockId=${blockId}`,
+                        { method: 'GET', cache: 'no-store' },
+                    );
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Columns API error: ${res.status} ${errorText}`);
+                    }
+                    const payload = (await res.json()) as { columns: unknown[] };
+                    columnsData = (payload.columns || []) as unknown as ColumnRow[];
+                }
 
                 setBlocks((prev) => {
                     if (!prev) return prev;
