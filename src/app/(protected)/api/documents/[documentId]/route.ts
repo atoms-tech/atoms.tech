@@ -7,10 +7,10 @@ import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-ro
 
 export async function GET(
     _request: Request,
-    { params }: { params: { documentId: string } },
+    context: { params: Promise<{ documentId: string }> },
 ) {
     try {
-        const documentId = params.documentId;
+        const { documentId } = await context.params;
 
         if (!documentId) {
             return NextResponse.json(
