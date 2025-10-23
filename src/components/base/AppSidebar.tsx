@@ -44,7 +44,6 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useUpdateProfile } from '@/hooks/mutations/useProfileMutation';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useProfile } from '@/hooks/queries/useProfile';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
@@ -57,9 +56,7 @@ function AppSidebar() {
     const { user } = useUser();
     const { data: profile } = useProfile(user?.id || '');
     const { mutate: updateProfile } = useUpdateProfile();
-    const { data: organizationsQuery } = useOrganizationsByMembership(user?.id || '');
-    const organizations: Organization[] = organizationsQuery ?? [];
-    const { setCurrentOrganization } = useOrganization();
+    const { organizations, setCurrentOrganization } = useOrganization();
     const { setUserContext } = useAgentStore();
 
     const personalOrganization = organizations.find(

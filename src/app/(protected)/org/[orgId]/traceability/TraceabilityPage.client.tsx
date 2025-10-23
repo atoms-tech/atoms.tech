@@ -31,14 +31,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
-import { useOrganizationProjects } from '@/hooks/queries/useProject';
+import { useAuthenticatedProjectsByMembershipForOrg } from '@/hooks/queries/useAuthenticatedProjects';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
 import {
     useCreateRelationship,
     useDeleteRelationship,
     useRequirementTree,
 } from '@/hooks/queries/useRequirementRelationships';
+import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { Requirement } from '@/types';
 
@@ -67,12 +67,12 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const createRelationshipMutation = useCreateRelationship();
     const deleteRelationshipMutation = useDeleteRelationship();
 
-    // Fetch organization projects
-    const { data: projects, isLoading: projectsLoading } = useOrganizationProjects(orgId);
-    // Fetch organizations for selector (by current user's memberships)
-    const { data: organizations, isLoading: orgsLoading } = useOrganizationsByMembership(
-        user?.id ?? '',
-    );
+    // Fetch organization projects via server API (avoids client-side RLS issues)
+    const { data: projects, isLoading: projectsLoading } =
+        useAuthenticatedProjectsByMembershipForOrg(orgId, user?.id ?? '');
+    // Use organizations from provider (prefetched server-side)
+    const { organizations } = useOrganization();
+    const orgsLoading = false;
 
     // Fetch requirement tree for hierarchy visualization
     const {
