@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
+import {
+    BlockWithRequirements,
+    Column,
+    Property,
+} from '@/components/custom/BlockCanvas/types';
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
@@ -8,6 +12,26 @@ import { Profile } from '@/types/base/profiles.types';
 import { Requirement } from '@/types/base/requirements.types';
 
 type ColumnRow = Database['public']['Tables']['columns']['Row'];
+type ColumnRowWithEmbeddedProperty = ColumnRow & {
+    property?: Property | null;
+};
+
+const normalizeColumns = (
+    rawColumns: ColumnRowWithEmbeddedProperty[],
+    propertyMap?: Map<string, Property>,
+): Column[] =>
+    rawColumns.map((col) => {
+        const propertyFromMap =
+            propertyMap && col.property_id
+                ? (propertyMap.get(col.property_id) ?? undefined)
+                : undefined;
+        const resolvedProperty = col.property ?? propertyFromMap;
+
+        return {
+            ...(col as Column),
+            property: resolvedProperty ?? undefined,
+        } satisfies Column;
+    });
 
 // This interface is currently unused but kept for future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -95,20 +119,98 @@ export const useDocumentRealtime = ({
                     tableBlocks.map((b) => b.id),
                 );
 
-                const { data: columnsData, error: columnsError } = await client
-                    .from('columns')
-                    .select('*, property:properties(*)')
-                    .in(
-                        'block_id',
-                        tableBlocks.map((block) => block.id),
-                    )
-                    .order('position', { ascending: true });
+                let columnsWithProperty: Column[] = [];
+                if (tableBlocks.length > 0) {
+                    const tableBlockIds = tableBlocks
+                        .map((block) => block.id)
+                        .filter((id): id is string => Boolean(id));
 
-                if (columnsError) {
-                    console.error('❌ Columns fetch error:', columnsError);
-                    throw columnsError;
+                    if (tableBlockIds.length === 0) {
+                        console.warn(
+                            '⚠️ Columns fetch skipped: no valid table block IDs found.',
+                        );
+                    } else {
+                        const { data, error } = await client
+                            .from('columns')
+                            .select('*, property:properties(*)')
+                            .in('block_id', tableBlockIds)
+                            .order('position', { ascending: true });
+
+                        if (error) {
+                            console.error(
+                                '❌ Columns fetch error (with embedded property):',
+                                error,
+                            );
+
+                            const { data: fallbackData, error: fallbackError } =
+                                await client
+                                    .from('columns')
+                                    .select('*')
+                                    .in('block_id', tableBlockIds)
+                                    .order('position', { ascending: true });
+
+                            if (fallbackError) {
+                                console.error(
+                                    '❌ Columns fallback fetch error:',
+                                    fallbackError,
+                                );
+                                throw fallbackError;
+                            }
+
+                            const typedFallback = (fallbackData as ColumnRow[]) ?? [];
+                            const propertyIds = Array.from(
+                                new Set(
+                                    typedFallback
+                                        .map((col) => col.property_id)
+                                        .filter(
+                                            (id): id is string => typeof id === 'string',
+                                        ),
+                                ),
+                            );
+
+                            let propertyMap: Map<string, Property> | undefined;
+                            if (propertyIds.length > 0) {
+                                const { data: propertiesData, error: propertiesError } =
+                                    await client
+                                        .from('properties')
+                                        .select('*')
+                                        .in('id', propertyIds);
+
+                                if (propertiesError) {
+                                    console.error(
+                                        '⚠️ Properties fetch error during columns fallback:',
+                                        propertiesError,
+                                    );
+                                } else {
+                                    propertyMap = new Map(
+                                        (propertiesData ?? []).map((prop) => [
+                                            prop.id,
+                                            prop as Property,
+                                        ]),
+                                    );
+                                }
+                            }
+
+                            columnsWithProperty = normalizeColumns(
+                                typedFallback as ColumnRowWithEmbeddedProperty[],
+                                propertyMap,
+                            );
+                        } else {
+                            columnsWithProperty = normalizeColumns(
+                                (data as ColumnRowWithEmbeddedProperty[]) ?? [],
+                            );
+                        }
+                    }
+                } else {
+                    console.log(
+                        'ℹ️ Columns fetch skipped: no table blocks found for document',
+                    );
                 }
-                console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
+                console.log(
+                    '✅ Columns fetched:',
+                    columnsWithProperty.length,
+                    columnsWithProperty,
+                );
 
                 // Group requirements by block_id
                 const requirementsByBlock = requirementsData.reduce(
@@ -123,14 +225,14 @@ export const useDocumentRealtime = ({
                 );
 
                 // Group columns by block_id
-                const columnsByBlock = (columnsData as ColumnRow[]).reduce(
+                const columnsByBlock = columnsWithProperty.reduce(
                     (acc: { [key: string]: Column[] }, col) => {
                         const blockId = col.block_id;
                         if (blockId && !acc[blockId]) {
                             acc[blockId] = [];
                         }
                         if (blockId) {
-                            acc[blockId].push(col as unknown as Column);
+                            acc[blockId].push(col);
                         }
                         return acc;
                     },
@@ -206,13 +308,74 @@ export const useDocumentRealtime = ({
                 if (requirementsError) throw requirementsError;
 
                 // Fetch columns for the block including joined property
+                let hydratedColumns: Column[] = [];
                 const { data: columnsData, error: columnsError } = await client
                     .from('columns')
                     .select('*, property:properties(*)')
                     .eq('block_id', blockId)
                     .order('position', { ascending: true });
 
-                if (columnsError) throw columnsError;
+                if (columnsError) {
+                    console.error(
+                        '❌ Columns hydration fetch error (with embedded property):',
+                        columnsError,
+                    );
+
+                    const { data: fallbackData, error: fallbackError } = await client
+                        .from('columns')
+                        .select('*')
+                        .eq('block_id', blockId)
+                        .order('position', { ascending: true });
+
+                    if (fallbackError) {
+                        console.error(
+                            '❌ Columns hydration fallback fetch error:',
+                            fallbackError,
+                        );
+                        throw fallbackError;
+                    }
+
+                    const typedFallback = (fallbackData as ColumnRow[]) ?? [];
+                    const propertyIds = Array.from(
+                        new Set(
+                            typedFallback
+                                .map((col) => col.property_id)
+                                .filter((id): id is string => typeof id === 'string'),
+                        ),
+                    );
+
+                    let propertyMap: Map<string, Property> | undefined;
+                    if (propertyIds.length > 0) {
+                        const { data: propertiesData, error: propertiesError } =
+                            await client
+                                .from('properties')
+                                .select('*')
+                                .in('id', propertyIds);
+
+                        if (propertiesError) {
+                            console.error(
+                                '⚠️ Properties fetch error during columns hydration fallback:',
+                                propertiesError,
+                            );
+                        } else {
+                            propertyMap = new Map(
+                                (propertiesData ?? []).map((prop) => [
+                                    prop.id,
+                                    prop as Property,
+                                ]),
+                            );
+                        }
+                    }
+
+                    hydratedColumns = normalizeColumns(
+                        typedFallback as ColumnRowWithEmbeddedProperty[],
+                        propertyMap,
+                    );
+                } else {
+                    hydratedColumns = normalizeColumns(
+                        (columnsData as ColumnRowWithEmbeddedProperty[]) ?? [],
+                    );
+                }
 
                 setBlocks((prev) => {
                     if (!prev) return prev;
@@ -221,7 +384,7 @@ export const useDocumentRealtime = ({
                             ? {
                                   ...b,
                                   requirements: (requirementsData || []) as Requirement[],
-                                  columns: (columnsData || []) as unknown as Column[],
+                                  columns: hydratedColumns,
                               }
                             : b,
                     );
@@ -393,13 +556,70 @@ export const useDocumentRealtime = ({
                     // For INSERTs, enrich the column with its joined property so tables can render headers
                     let enrichedNewCol: Column | undefined = newCol;
                     if (payload.eventType === 'INSERT' && newCol?.id) {
-                        const { data: colWithProperty } = await client
-                            .from('columns')
-                            .select('*, property:properties(*)')
-                            .eq('id', newCol.id)
-                            .single();
-                        if (colWithProperty) {
-                            enrichedNewCol = colWithProperty as unknown as Column;
+                        const { data: colWithProperty, error: columnEmbedError } =
+                            await client
+                                .from('columns')
+                                .select('*, property:properties(*)')
+                                .eq('id', newCol.id)
+                                .maybeSingle();
+
+                        if (!columnEmbedError && colWithProperty) {
+                            const normalized = normalizeColumns([
+                                colWithProperty as ColumnRowWithEmbeddedProperty,
+                            ]);
+                            if (normalized.length > 0) {
+                                enrichedNewCol = normalized[0];
+                            }
+                        } else {
+                            if (columnEmbedError) {
+                                console.error(
+                                    '⚠️ Column subscription embed fetch error:',
+                                    columnEmbedError,
+                                );
+                            }
+
+                            const { data: fallbackColumn, error: fallbackColumnError } =
+                                await client
+                                    .from('columns')
+                                    .select('*')
+                                    .eq('id', newCol.id)
+                                    .maybeSingle();
+
+                            if (!fallbackColumnError && fallbackColumn) {
+                                let propertyMap: Map<string, Property> | undefined;
+                                if (fallbackColumn.property_id) {
+                                    const { data: propertyData, error: propertyError } =
+                                        await client
+                                            .from('properties')
+                                            .select('*')
+                                            .eq('id', fallbackColumn.property_id)
+                                            .maybeSingle();
+
+                                    if (!propertyError && propertyData) {
+                                        propertyMap = new Map([
+                                            [propertyData.id, propertyData as Property],
+                                        ]);
+                                    } else if (propertyError) {
+                                        console.error(
+                                            '⚠️ Column subscription property fetch error:',
+                                            propertyError,
+                                        );
+                                    }
+                                }
+
+                                const normalized = normalizeColumns(
+                                    [fallbackColumn as ColumnRowWithEmbeddedProperty],
+                                    propertyMap,
+                                );
+                                if (normalized.length > 0) {
+                                    enrichedNewCol = normalized[0];
+                                }
+                            } else if (fallbackColumnError) {
+                                console.error(
+                                    '❌ Column subscription fallback fetch error:',
+                                    fallbackColumnError,
+                                );
+                            }
                         }
                     }
 
