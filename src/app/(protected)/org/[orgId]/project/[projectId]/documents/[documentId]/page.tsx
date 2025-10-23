@@ -21,8 +21,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import LayoutView from '@/components/views/LayoutView';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useDocumentRequirementScanner } from '@/hooks/useDocumentRequirementScanner';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 export default function DocumentPage() {
     const params = useParams();
@@ -50,6 +50,7 @@ export default function DocumentPage() {
         documentId,
         organizationId,
     });
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     //scroll to requirement if requirementId is in sessionStorage
     useEffect(() => {
@@ -190,7 +191,8 @@ export default function DocumentPage() {
             });
 
             // Get all requirements with external_ids
-            const { data: requirements, error } = await supabase
+            const client = getClientOrThrow();
+            const { data: requirements, error } = await client
                 .from('requirements')
                 .select('id, name, external_id, block_id')
                 .not('external_id', 'is', null)
@@ -256,7 +258,8 @@ export default function DocumentPage() {
             });
 
             // Find requirements with invalid names or missing data
-            const { data: invalidRequirements, error: fetchError } = await supabase
+            const client = getClientOrThrow();
+            const { data: invalidRequirements, error: fetchError } = await client
                 .from('requirements')
                 .select('id, name, external_id, block_id')
                 .or('name.is.null,name.eq.,name.eq.undefined,external_id.eq.undefined')
@@ -285,7 +288,7 @@ export default function DocumentPage() {
             );
 
             // Soft delete invalid requirements
-            const { error: deleteError } = await supabase
+            const { error: deleteError } = await client
                 .from('requirements')
                 .update({ is_deleted: true })
                 .in(

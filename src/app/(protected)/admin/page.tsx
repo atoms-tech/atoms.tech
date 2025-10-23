@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import LayoutView from '@/components/views/LayoutView';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 type User = {
     email: string;
@@ -34,8 +34,23 @@ export default function AdminPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [approveFilter, setApproveFilter] = useState<boolean | null>(null);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     useEffect(() => {
+        if (authLoading || !supabase) {
+            return;
+        }
+
+        if (authError) {
+            console.error('Failed to initialize Supabase client:', authError);
+            return;
+        }
+
         (async () => {
             const { data, error } = await supabase
                 .from('profiles')
@@ -47,7 +62,7 @@ export default function AdminPage() {
             }
             setUsers(data || []);
         })();
-    }, []);
+    }, [authLoading, authError, supabase]);
 
     const filteredUsers = users.filter((user) => {
         return (
@@ -58,7 +73,8 @@ export default function AdminPage() {
     });
 
     const approveUser = async (unapprovedUser: User) => {
-        const { error } = await supabase
+        const client = getClientOrThrow();
+        const { error } = await client
             .from('profiles')
             .update({ is_approved: true })
             .eq('id', unapprovedUser.id);
@@ -84,7 +100,8 @@ export default function AdminPage() {
     };
 
     const unapproveUser = async (approvedUser: User) => {
-        const { error } = await supabase
+        const client = getClientOrThrow();
+        const { error } = await client
             .from('profiles')
             .update({ is_approved: false })
             .eq('id', approvedUser.id);

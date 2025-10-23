@@ -13,6 +13,7 @@ interface FoldingCardProps extends ComponentProps<typeof Card> {
     defaultOpen?: boolean;
     disabled?: boolean;
     contentClassName?: string;
+    children?: React.ReactNode;
 }
 
 export function FoldingCard({

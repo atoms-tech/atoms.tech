@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { TablesInsert } from '@/types/base/database.types';
 import { TraceLink } from '@/types/base/traceability.types';
 
@@ -16,8 +16,28 @@ export type CreateTraceLinkInput = Omit<
     | 'version'
 >;
 
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
+
 export function useCreateTraceLink() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (input: CreateTraceLinkInput) => {
@@ -28,7 +48,8 @@ export function useCreateTraceLink() {
                 version: 1,
             };
 
-            const { data: traceLink, error: traceLinkError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: traceLink, error: traceLinkError } = await client
                 .from('trace_links')
                 .insert(insertData)
                 .select()
@@ -53,6 +74,7 @@ export function useCreateTraceLink() {
 
 export function useCreateTraceLinks() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (inputs: CreateTraceLinkInput[]) => {
@@ -63,7 +85,8 @@ export function useCreateTraceLinks() {
                 version: 1,
             }));
 
-            const { data: traceLinks, error: traceLinkError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: traceLinks, error: traceLinkError } = await client
                 .from('trace_links')
                 .insert(insertData)
                 .select();
@@ -91,12 +114,14 @@ export function useCreateTraceLinks() {
 
 export function useDeleteTraceLink() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting trace link', id);
 
-            const { data: traceLink, error: traceLinkError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: traceLink, error: traceLinkError } = await client
                 .from('trace_links')
                 .update({
                     is_deleted: true,

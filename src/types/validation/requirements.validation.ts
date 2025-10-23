@@ -6,7 +6,6 @@ import {
     ERequirementPriority,
     ERequirementStatus,
     Json,
-    Requirement,
 } from '@/types';
 
 export const RequirementSchema = z.object({
@@ -50,4 +49,6 @@ export const RequirementSchema = z.object({
     position: z.number(),
     data: z.record(z.string(), z.any()).nullable().optional(),
     properties: z.any().nullable() as z.ZodType<Json | null>,
-}) satisfies z.ZodType<Requirement>;
+    embedding: z.string().nullable(),
+    fts_vector: z.unknown().nullish(),
+});

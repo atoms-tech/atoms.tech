@@ -14,6 +14,7 @@ const envSchema = z.object({
     // Supabase Configuration
     NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
 
     // Optional API Keys (can be undefined in development)
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().optional(),
@@ -34,6 +35,12 @@ const envSchema = z.object({
     RESEND_API_KEY: z.string().optional(),
     RESEND_FROM_EMAIL: z.string().email().optional(),
     ADMIN_EMAIL: z.string().email().optional(),
+
+    // WorkOS Configuration (optional in development, required in production)
+    WORKOS_API_KEY: z.string().optional(),
+    WORKOS_CLIENT_ID: z.string().optional(),
+    WORKOS_COOKIE_PASSWORD: z.string().optional(),
+    WORKOS_PASSWORD_RESET_URL: z.string().url().optional(),
 
     // Feature Flags
     NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING: z
@@ -74,10 +81,17 @@ const productionEnvSchema = envSchema.extend({
     // In production, these should be required
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     NEXT_PUBLIC_GUMLOOP_API_KEY: z.string().min(1),
     NEXT_PUBLIC_GUMLOOP_USER_ID: z.string().min(1),
     NEXT_PUBLIC_CHUNKR_API_KEY: z.string().min(1),
     RESEND_API_KEY: z.string().min(1),
+    RESEND_FROM_EMAIL: z.string().email(),
+    // WorkOS required in production
+    WORKOS_API_KEY: z.string().min(1),
+    WORKOS_CLIENT_ID: z.string().min(1),
+    WORKOS_COOKIE_PASSWORD: z.string().min(24),
+    WORKOS_PASSWORD_RESET_URL: z.string().url(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

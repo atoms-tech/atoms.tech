@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { cn } from '@/lib/utils';
 import { Profile } from '@/types/base/profiles.types';
 
@@ -22,10 +22,25 @@ export function OrgMemberAutocomplete({
     const [open, setOpen] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [orgMembers, setOrgMembers] = useState<Profile[]>([]);
+    const {
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     useEffect(() => {
+        if (authLoading) {
+            return;
+        }
+
+        if (authError) {
+            console.error('Failed to initialize Supabase client:', authError);
+            return;
+        }
+
         const fetchMembers = async () => {
-            const { data, error } = await supabase
+            const client = getClientOrThrow();
+            const { data, error } = await client
                 .from('organization_members')
                 .select('user_id')
                 .eq('organization_id', orgId || '');
@@ -37,7 +52,7 @@ export function OrgMemberAutocomplete({
             const orgMembersIds = data.map((member) => member.user_id);
             console.log('orgMembersIds', orgMembersIds);
 
-            const { data: orgMembers, error: profileError } = await supabase
+            const { data: orgMembers, error: profileError } = await client
                 .from('profiles')
                 .select('*')
                 .in('id', orgMembersIds);
@@ -52,7 +67,7 @@ export function OrgMemberAutocomplete({
         };
 
         fetchMembers();
-    }, [orgId]);
+    }, [authError, authLoading, getClientOrThrow, orgId]);
 
     const filteredMembers = useMemo(() => {
         if (!orgMembers) {

@@ -41,11 +41,10 @@ import {
     useDeleteProject,
     useDuplicateProject,
 } from '@/hooks/mutations/useProjectMutations';
-import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types/base/documents.types';
 import { Organization } from '@/types/base/organizations.types';
 import { Project } from '@/types/base/projects.types';
@@ -94,6 +93,12 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const { data: userRoleQuery } = useOrgMemberRole(props.orgId, user?.id || '');
     const userRole: OrganizationRole | null = userRoleQuery ?? null;
     const { toast } = useToast();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Project action mutations
     const { mutateAsync: duplicateProject } = useDuplicateProject();
@@ -111,42 +116,42 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         queryKey: ['documents', selectedProjectId],
         queryFn: async () => {
             if (!selectedProjectId) return [];
-            const { data, error } = await supabase
+            const client = getClientOrThrow();
+            const { data, error } = await client
                 .from('documents')
                 .select('id, name')
                 .eq('project_id', selectedProjectId);
             if (error) throw error;
             return data || [];
         },
-        enabled: !!selectedProjectId,
+        enabled: !!selectedProjectId && !!supabase && !authLoading && !authError,
     });
 
     const { data: requirements } = useQuery({
         queryKey: ['requirements', selectedDocumentId],
         queryFn: async () => {
             if (!selectedDocumentId) return [];
-            const { data, error } = await supabase
+            const client = getClientOrThrow();
+            const { data, error } = await client
                 .from('requirements')
                 .select('id, name')
                 .eq('document_id', selectedDocumentId);
             if (error) throw error;
             return data || [];
         },
-        enabled: !!selectedDocumentId,
+        enabled: !!selectedDocumentId && !!supabase && !authLoading && !authError,
     });
 
-    // Fetch external documents to calculate total usage
-    const { data: externalDocuments } = useExternalDocumentsByOrg(props.orgId || '');
-
+    // Calculate total usage from external documents passed as props
     useEffect(() => {
-        if (externalDocuments) {
-            const usage = externalDocuments.reduce(
+        if (props.externalDocuments) {
+            const usage = props.externalDocuments.reduce(
                 (sum, file) => sum + (file.size || 0),
                 0,
             );
             setTotalUsage(usage);
         }
-    }, [externalDocuments]);
+    }, [props.externalDocuments]);
 
     const handleCreateProject = () => {
         setIsCreatePanelOpen(true);
@@ -222,8 +227,8 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         if (!user?.id || !editingProjectName.trim()) return;
 
         try {
-            // Use Supabase directly for the update
-            const { error } = await supabase
+            const client = getClientOrThrow();
+            const { error } = await client
                 .from('projects')
                 .update({
                     name: editingProjectName.trim(),

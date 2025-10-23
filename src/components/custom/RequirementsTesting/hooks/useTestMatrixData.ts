@@ -4,8 +4,8 @@ import { useCallback } from 'react';
 import { useTestMatrix } from '@/components/custom/RequirementsTesting/TestMatrix/context/TestMatrixContext';
 import { ExecutionStatus } from '@/components/custom/RequirementsTesting/types';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import { useCreateRequirementTest } from './useTestReq';
 
@@ -19,6 +19,7 @@ export function useTestMatrixData() {
         setSelectedRequirementIds,
         setSelectedTestCaseIds,
     } = useTestMatrix();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     const createRequirementTest = useCreateRequirementTest();
 
@@ -155,6 +156,7 @@ export function useTestMatrixData() {
             testId: string;
             status: ExecutionStatus;
         }) => {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('requirement_tests')
                 .update({
@@ -223,6 +225,7 @@ export function useTestMatrixData() {
             requirementId: string;
             testId: string;
         }) => {
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('requirement_tests')
                 .delete()

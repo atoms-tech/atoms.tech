@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Json } from '@/types/base/database.types';
 
 export interface ColumnMetadata {
@@ -34,6 +34,7 @@ export interface BlockTableMetadata {
 
 export const useBlockMetadataActions = () => {
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Replace block level metadata entry. Grab current version and merge passed changes.
     const updateBlockMetadata = useCallback(
@@ -46,6 +47,7 @@ export const useBlockMetadataActions = () => {
             }
 
             try {
+                const supabase = getClientOrThrow();
                 //console.debug('[updateBlockMetadata] Updating metadata for blockId:', blockId);
 
                 // Fetch existing content to preserve other fields
@@ -133,7 +135,7 @@ export const useBlockMetadataActions = () => {
                 throw err;
             }
         },
-        [queryClient],
+        [getClientOrThrow, queryClient],
     );
 
     return {

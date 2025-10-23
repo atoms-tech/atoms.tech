@@ -1,19 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { buildQuery } from '@/lib/utils/queryFactory';
+import { QueryFilters, buildQuery } from '@/lib/utils/queryFactory';
 import type { EEntityType } from '@/types';
-import { QueryFilters } from '@/types/base/filters.types';
 
 export function useTraceLinks(
     sourceId: string,
     sourceType: EEntityType,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'trace_links'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.traceLinks.bySource(sourceId, sourceType),
         queryFn: async () => {
-            const { data } = await buildQuery('trace_links', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'trace_links', {
                 ...queryFilters,
                 filters: [
                     { field: 'source_id', operator: 'eq', value: sourceId },
@@ -23,19 +28,24 @@ export function useTraceLinks(
             });
             return data;
         },
-        enabled: !!sourceId && !!sourceType,
+        enabled: !!sourceId && !!sourceType && !!supabase && !authLoading,
     });
 }
 
 export function useReverseTraceLinks(
     targetId: string,
     targetType: EEntityType,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'trace_links'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.traceLinks.byTarget(targetId, targetType),
         queryFn: async () => {
-            const { data } = await buildQuery('trace_links', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'trace_links', {
                 ...queryFilters,
                 filters: [
                     { field: 'target_id', operator: 'eq', value: targetId },
@@ -45,19 +55,24 @@ export function useReverseTraceLinks(
             });
             return data;
         },
-        enabled: !!targetId && !!targetType,
+        enabled: !!targetId && !!targetType && !!supabase && !authLoading,
     });
 }
 
 export function useAssignments(
     entityId: string,
     entityType: EEntityType,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'assignments'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.assignments.byEntity(entityId, entityType),
         queryFn: async () => {
-            const { data } = await buildQuery('assignments', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'assignments', {
                 ...queryFilters,
                 filters: [
                     { field: 'entity_id', operator: 'eq', value: entityId },
@@ -66,37 +81,47 @@ export function useAssignments(
             });
             return data;
         },
-        enabled: !!entityId && !!entityType,
+        enabled: !!entityId && !!entityType && !!supabase && !authLoading,
     });
 }
 
 export function useUserAssignments(
     userId: string,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'assignments'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.assignments.byUser(userId),
         queryFn: async () => {
-            const { data } = await buildQuery('assignments', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'assignments', {
                 ...queryFilters,
                 filters: [{ field: 'assignee_id', operator: 'eq', value: userId }],
                 sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },
-        enabled: !!userId,
+        enabled: !!userId && !!supabase && !authLoading,
     });
 }
 
 export function useAuditLogs(
     entityId: string,
     entityType: string,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'audit_logs'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.auditLogs.byEntity(entityId, entityType),
         queryFn: async () => {
-            const { data } = await buildQuery('audit_logs', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'audit_logs', {
                 ...queryFilters,
                 filters: [
                     { field: 'entity_id', operator: 'eq', value: entityId },
@@ -106,33 +131,43 @@ export function useAuditLogs(
             });
             return data;
         },
-        enabled: !!entityId && !!entityType,
+        enabled: !!entityId && !!entityType && !!supabase && !authLoading,
     });
 }
 
 export function useNotifications(
     userId: string,
-    queryFilters?: Omit<QueryFilters, 'filters'>,
+    queryFilters?: Omit<QueryFilters<'notifications'>, 'filters'>,
 ) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.notifications.byUser(userId),
         queryFn: async () => {
-            const { data } = await buildQuery('notifications', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { data } = await buildQuery(supabase, 'notifications', {
                 ...queryFilters,
                 filters: [{ field: 'user_id', operator: 'eq', value: userId }],
                 sort: queryFilters?.sort || [{ field: 'created_at', direction: 'desc' }],
             });
             return data;
         },
-        enabled: !!userId,
+        enabled: !!userId && !!supabase && !authLoading,
     });
 }
 
 export function useUnreadNotificationsCount(userId: string) {
+    const { supabase, isLoading: authLoading } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.notifications.unreadCount(userId),
         queryFn: async () => {
-            const { count } = await buildQuery('notifications', {
+            if (!supabase) {
+                throw new Error('Supabase client not available');
+            }
+            const { count } = await buildQuery(supabase, 'notifications', {
                 filters: [
                     { field: 'user_id', operator: 'eq', value: userId },
                     { field: 'unread', operator: 'eq', value: true },
@@ -140,6 +175,6 @@ export function useUnreadNotificationsCount(userId: string) {
             });
             return count || 0;
         },
-        enabled: !!userId,
+        enabled: !!userId && !!supabase && !authLoading,
     });
 }

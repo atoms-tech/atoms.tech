@@ -3,44 +3,75 @@
 import { motion } from 'framer-motion';
 import { Check, Edit2, Lock, Unlock } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import React, { memo } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 function useUserRole(userId: string) {
     const params = useParams();
-    const projectId = params?.projectId || '';
+    const projectId = useMemo(() => {
+        const raw = params?.projectId;
+        if (Array.isArray(raw)) return raw[0];
+        return typeof raw === 'string' ? raw : '';
+    }, [params]);
 
-    if (!projectId) {
-        console.error('Project ID is missing from the URL.');
-        return async () => 'viewer';
-    }
+    const [role, setRole] = useState<'owner' | 'editor' | 'viewer'>('viewer');
+    const [isLoading, setIsLoading] = useState(true);
 
-    const getUserRole = async (): Promise<string> => {
-        try {
-            const { data, error } = await supabase
-                .from('project_members')
-                .select('role')
-                .eq('user_id', userId)
-                .eq('project_id', Array.isArray(projectId) ? projectId[0] : projectId)
-                .single();
+    useEffect(() => {
+        let cancelled = false;
 
-            if (error) {
-                console.error('Error fetching user role:', error);
-                return 'viewer';
+        async function fetchRole() {
+            if (!userId || !projectId) {
+                if (!cancelled) {
+                    setRole('viewer');
+                    setIsLoading(false);
+                }
+                return;
             }
 
-            return data?.role || 'viewer';
-        } catch (err) {
-            console.error('Unexpected error fetching user role:', err);
-            return 'viewer';
-        }
-    };
+            try {
+                const response = await fetch(`/api/projects/${projectId}/role`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
 
-    return () => getUserRole();
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch role: ${response.statusText}`);
+                }
+
+                const data = (await response.json()) as { role?: string };
+                const fetchedRole =
+                    data.role === 'owner' || data.role === 'editor'
+                        ? data.role
+                        : 'viewer';
+
+                if (!cancelled) {
+                    setRole(fetchedRole);
+                }
+            } catch (error) {
+                console.error('Error fetching user role:', error);
+                if (!cancelled) {
+                    setRole('viewer');
+                }
+            } finally {
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        setIsLoading(true);
+        fetchRole();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [projectId, userId]);
+
+    return { role, isLoading };
 }
 
 // Floating action button version
@@ -49,18 +80,14 @@ export const EditModeFloatingToggle = memo(() => {
     const { user } = useUser(); // Fetch user using useUser()
     const userId = user?.id || ''; // Ensure userId is extracted correctly
 
-    const getUserRole = useUserRole(userId);
-
-    const canPerformAction = async () => {
-        const userRole = await getUserRole();
-        return ['owner', 'editor'].includes(userRole);
-    };
+    const { role, isLoading } = useUserRole(userId);
+    const canEdit = role === 'owner' || role === 'editor';
 
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
     };
 
-    if (!canPerformAction()) return null;
+    if (isLoading || !canEdit) return null;
 
     return (
         <motion.div
@@ -89,18 +116,14 @@ export const EditModeToggle = memo(() => {
     const { user } = useUser(); // Fetch user using useUser()
     const userId = user?.id || ''; // Ensure userId is extracted correctly
 
-    const getUserRole = useUserRole(userId);
-
-    const canPerformAction = async () => {
-        const userRole = await getUserRole();
-        return ['owner', 'editor'].includes(userRole);
-    };
+    const { role, isLoading } = useUserRole(userId);
+    const canEdit = role === 'owner' || role === 'editor';
 
     const toggleEditMode = () => {
         setIsEditMode(!isEditMode);
     };
 
-    if (!canPerformAction()) return null;
+    if (isLoading || !canEdit) return null;
 
     return (
         <BaseToggle

@@ -1,14 +1,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { ExternalDocument } from '@/types';
 
 export function useUploadExternalDocument() {
     const queryClient = useQueryClient();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     return useMutation({
         mutationFn: async ({ file, orgId }: { file: File; orgId: string }) => {
+            if (authLoading || !supabase) {
+                throw new Error(authError ?? 'Supabase client not ready');
+            }
+
             // Start a Supabase transaction to ensure atomicity
             const { data: document, error: documentError } = await supabase
                 .from('external_documents')
@@ -54,9 +63,18 @@ export function useUploadExternalDocument() {
 
 export function useDeleteExternalDocument() {
     const queryClient = useQueryClient();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     return useMutation({
         mutationFn: async ({ documentId }: { documentId: string; orgId: string }) => {
+            if (authLoading || !supabase) {
+                throw new Error(authError ?? 'Supabase client not ready');
+            }
+
             // First get the document to ensure it exists
             const { data: document, error: fetchError } = await supabase
                 .from('external_documents')
@@ -101,6 +119,11 @@ export function useDeleteExternalDocument() {
 
 export function useUpdateExternalDocument() {
     const queryClient = useQueryClient();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     return useMutation({
         mutationFn: async ({
@@ -113,6 +136,10 @@ export function useUpdateExternalDocument() {
             name?: string;
             orgId: string;
         }) => {
+            if (authLoading || !supabase) {
+                throw new Error(authError ?? 'Supabase client not ready');
+            }
+
             const updateDict: Partial<ExternalDocument> = {};
             if (gumloopName) updateDict.gumloop_name = gumloopName;
             if (name) updateDict.name = name;

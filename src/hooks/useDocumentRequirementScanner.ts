@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { generateBatchRequirementIds } from '@/lib/utils/requirementIdGenerator';
 
 interface RequirementWithoutId {
@@ -25,11 +25,23 @@ export function useDocumentRequirementScanner({
     documentId,
     organizationId,
 }: UseDocumentRequirementScannerProps) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
     const [isScanning, setIsScanning] = useState(false);
     const [isAssigning, setIsAssigning] = useState(false);
     const [requirementsWithoutIds, setRequirementsWithoutIds] = useState<
         RequirementWithoutId[]
     >([]);
+
+    const ensureClient = useCallback(() => {
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+        return supabase;
+    }, [supabase, authError]);
 
     // Auto-cleanup corrupted requirements
     const cleanupCorruptedRequirements = useCallback(
@@ -48,7 +60,8 @@ export function useDocumentRequirementScanner({
                 );
 
                 try {
-                    const { error } = await supabase
+                    const client = ensureClient();
+                    const { error } = await client
                         .from('requirements')
                         .update({ is_deleted: true })
                         .in(
@@ -71,7 +84,7 @@ export function useDocumentRequirementScanner({
                 }
             }
         },
-        [],
+        [ensureClient],
     );
 
     // Scan all requirements in the document across all tables
@@ -142,8 +155,10 @@ export function useDocumentRequirementScanner({
         try {
             console.log('🔍 Scanning document for requirements without proper IDs...');
 
+            const client = ensureClient();
+
             // First, get all blocks in the document
-            const { data: blocks, error: blocksError } = await supabase
+            const { data: blocks, error: blocksError } = await client
                 .from('blocks')
                 .select('id, name, type')
                 .eq('document_id', documentId)
@@ -163,7 +178,7 @@ export function useDocumentRequirementScanner({
             console.log(`Found ${blocks.length} table blocks in document`);
 
             // Get all requirements from all table blocks
-            const { data: requirements, error: requirementsError } = await supabase
+            const { data: requirements, error: requirementsError } = await client
                 .from('requirements')
                 .select(
                     `
@@ -260,7 +275,7 @@ export function useDocumentRequirementScanner({
         } finally {
             setIsScanning(false);
         }
-    }, [documentId, cleanupCorruptedRequirements]);
+    }, [documentId, cleanupCorruptedRequirements, ensureClient]);
 
     // Assign REQ-IDs to selected requirements
     const assignRequirementIds = useCallback(
@@ -276,10 +291,12 @@ export function useDocumentRequirementScanner({
                 );
 
                 // Generate all IDs in batch to ensure proper incrementing
+                const client = ensureClient();
                 console.log(
                     `🏷️ Generating ${selectedRequirementIds.length} REQ-IDs for organization ${organizationId}...`,
                 );
                 const newExternalIds = await generateBatchRequirementIds(
+                    client,
                     organizationId,
                     selectedRequirementIds.length,
                 );
@@ -295,7 +312,7 @@ export function useDocumentRequirementScanner({
                     async (requirementId, i) => {
                         const newExternalId = newExternalIds[i];
 
-                        const { error } = await supabase
+                        const { error } = await client
                             .from('requirements')
                             .update({ external_id: newExternalId })
                             .eq('id', requirementId);
@@ -341,7 +358,7 @@ export function useDocumentRequirementScanner({
                 setIsAssigning(false);
             }
         },
-        [organizationId],
+        [ensureClient, organizationId],
     );
 
     return {
@@ -351,5 +368,6 @@ export function useDocumentRequirementScanner({
         scanDocumentRequirements,
         assignRequirementIds,
         setRequirementsWithoutIds,
+        authLoading,
     };
 }

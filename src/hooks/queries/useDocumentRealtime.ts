@@ -1,13 +1,37 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { BlockWithRequirements, Column } from '@/components/custom/BlockCanvas/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import {
+    BlockWithRequirements,
+    Column,
+    Property,
+} from '@/components/custom/BlockCanvas/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
 import { Profile } from '@/types/base/profiles.types';
 import { Requirement } from '@/types/base/requirements.types';
 
 type ColumnRow = Database['public']['Tables']['columns']['Row'];
+type ColumnRowWithEmbeddedProperty = ColumnRow & {
+    property?: Property | null;
+};
+
+const normalizeColumns = (
+    rawColumns: ColumnRowWithEmbeddedProperty[],
+    propertyMap?: Map<string, Property>,
+): Column[] =>
+    rawColumns.map((col) => {
+        const propertyFromMap =
+            propertyMap && col.property_id
+                ? (propertyMap.get(col.property_id) ?? undefined)
+                : undefined;
+        const resolvedProperty = col.property ?? propertyFromMap;
+
+        return {
+            ...(col as Column),
+            property: resolvedProperty ?? undefined,
+        } satisfies Column;
+    });
 
 // This interface is currently unused but kept for future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -46,6 +70,11 @@ export const useDocumentRealtime = ({
     const [blocks, setBlocks] = useState<BlockWithRequirements[]>();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     // Initial full fetch of blocks and their requirements
     const fetchBlocks = useCallback(
@@ -53,8 +82,17 @@ export const useDocumentRealtime = ({
             try {
                 if (!opts?.silent) setLoading(true);
 
+                if (!supabase) {
+                    if (authLoading) {
+                        return;
+                    }
+                    throw new Error(authError ?? 'Supabase client not available');
+                }
+
+                const client = supabase;
+
                 // Fetch blocks
-                const { data: blocksData, error: blocksError } = await supabase
+                const { data: blocksData, error: blocksError } = await client
                     .from('blocks')
                     .select('*')
                     .eq('document_id', documentId)
@@ -64,13 +102,12 @@ export const useDocumentRealtime = ({
                 if (blocksError) throw blocksError;
 
                 // Fetch requirements for all blocks
-                const { data: requirementsData, error: requirementsError } =
-                    await supabase
-                        .from('requirements')
-                        .select('*')
-                        .is('is_deleted', false)
-                        .eq('document_id', documentId)
-                        .order('position');
+                const { data: requirementsData, error: requirementsError } = await client
+                    .from('requirements')
+                    .select('*')
+                    .is('is_deleted', false)
+                    .eq('document_id', documentId)
+                    .order('position');
 
                 if (requirementsError) throw requirementsError;
 
@@ -82,20 +119,27 @@ export const useDocumentRealtime = ({
                     tableBlocks.map((b) => b.id),
                 );
 
-                const { data: columnsData, error: columnsError } = await supabase
-                    .from('columns')
-                    .select('*, property:properties(*)')
-                    .in(
-                        'block_id',
-                        tableBlocks.map((block) => block.id),
-                    )
-                    .order('position', { ascending: true });
-
-                if (columnsError) {
-                    console.error('❌ Columns fetch error:', columnsError);
-                    throw columnsError;
+                // Fetch columns through API to avoid client-side UUID/type issues and rely on server membership checks
+                let columnsData: ColumnRow[] = [] as unknown as ColumnRow[];
+                try {
+                    const res = await fetch(`/api/documents/${documentId}/columns`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Columns API error: ${res.status} ${errorText}`);
+                    }
+                    const payload = (await res.json()) as { columns: unknown[] };
+                    columnsData = (payload.columns || []) as unknown as ColumnRow[];
+                } catch (e) {
+                    console.error('❌ Columns fetch error:', e);
+                    throw e;
                 }
-                console.log('✅ Columns fetched:', columnsData?.length || 0, columnsData);
+                const columnsWithProperty: Column[] = normalizeColumns(
+                    (columnsData as unknown as ColumnRowWithEmbeddedProperty[]) || [],
+                );
+                console.log('✅ Columns fetched:', columnsWithProperty.length);
 
                 // Group requirements by block_id
                 const requirementsByBlock = requirementsData.reduce(
@@ -110,14 +154,14 @@ export const useDocumentRealtime = ({
                 );
 
                 // Group columns by block_id
-                const columnsByBlock = (columnsData as ColumnRow[]).reduce(
-                    (acc: { [key: string]: Column[] }, col) => {
+                const columnsByBlock = columnsWithProperty.reduce(
+                    (acc: { [key: string]: Column[] }, col: Column) => {
                         const blockId = col.block_id;
                         if (blockId && !acc[blockId]) {
                             acc[blockId] = [];
                         }
                         if (blockId) {
-                            acc[blockId].push(col as unknown as Column);
+                            acc[blockId].push(col);
                         }
                         return acc;
                     },
@@ -166,58 +210,89 @@ export const useDocumentRealtime = ({
                 if (!opts?.silent) setLoading(false);
             }
         },
-        [documentId],
+        [documentId, supabase, authLoading, authError],
     );
 
     // Hydrate a single block's relations (columns + requirements) without full refetch
-    const hydrateBlockRelations = useCallback(async (blockId: string) => {
-        try {
-            // Fetch requirements for the block
-            const { data: requirementsData, error: requirementsError } = await supabase
-                .from('requirements')
-                .select('*')
-                .is('is_deleted', false)
-                .eq('block_id', blockId)
-                .order('position');
+    const hydrateBlockRelations = useCallback(
+        async (blockId: string) => {
+            try {
+                if (!supabase) {
+                    if (authLoading) {
+                        return;
+                    }
+                    throw new Error(authError ?? 'Supabase client not available');
+                }
 
-            if (requirementsError) throw requirementsError;
+                const client = supabase;
 
-            // Fetch columns for the block including joined property
-            const { data: columnsData, error: columnsError } = await supabase
-                .from('columns')
-                .select('*, property:properties(*)')
-                .eq('block_id', blockId)
-                .order('position', { ascending: true });
+                // Fetch requirements for the block
+                const { data: requirementsData, error: requirementsError } = await client
+                    .from('requirements')
+                    .select('*')
+                    .is('is_deleted', false)
+                    .eq('block_id', blockId)
+                    .order('position');
 
-            if (columnsError) throw columnsError;
+                if (requirementsError) throw requirementsError;
 
-            setBlocks((prev) => {
-                if (!prev) return prev;
-                return prev.map((b) =>
-                    b.id === blockId
-                        ? {
-                              ...b,
-                              requirements: (requirementsData || []) as Requirement[],
-                              columns: (columnsData || []) as unknown as Column[],
-                          }
-                        : b,
+                // Fetch columns for the block via API route
+                let columnsData: ColumnRow[] = [] as unknown as ColumnRow[];
+                {
+                    const res = await fetch(
+                        `/api/documents/${documentId}/columns?blockId=${blockId}`,
+                        { method: 'GET', cache: 'no-store' },
+                    );
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Columns API error: ${res.status} ${errorText}`);
+                    }
+                    const payload = (await res.json()) as { columns: unknown[] };
+                    columnsData = (payload.columns || []) as unknown as ColumnRow[];
+                }
+                const hydratedColumns: Column[] = normalizeColumns(
+                    (columnsData as unknown as ColumnRowWithEmbeddedProperty[]) || [],
                 );
-            });
-        } catch (err) {
-            // Do not surface as hook error; this is a targeted hydration
-            console.error('Failed to hydrate block relations:', err);
-        }
-    }, []);
+
+                setBlocks((prev) => {
+                    if (!prev) return prev;
+                    return prev.map((b) =>
+                        b.id === blockId
+                            ? {
+                                  ...b,
+                                  requirements: (requirementsData || []) as Requirement[],
+                                  columns: hydratedColumns,
+                              }
+                            : b,
+                    );
+                });
+            } catch (err) {
+                // Do not surface as hook error; this is a targeted hydration
+                console.error('Failed to hydrate block relations:', err);
+            }
+        },
+        [documentId, supabase, authLoading, authError],
+    );
 
     // Subscribe to changes
     useEffect(() => {
-        if (!documentId) return;
+        if (!documentId || authLoading) return;
+
+        if (!supabase) {
+            if (authError) {
+                setError(new Error(authError ?? 'Supabase client not available'));
+                setLoading(false);
+            }
+            return;
+        }
+
+        const client = supabase;
 
         // Initial fetch
         fetchBlocks({ silent: false });
 
         // Subscribe to blocks changes
-        const blocksSubscription = supabase
+        const blocksSubscription = client
             .channel(`blocks:${documentId}`)
             .on(
                 'postgres_changes',
@@ -274,7 +349,7 @@ export const useDocumentRealtime = ({
             .subscribe();
 
         // Subscribe to requirements changes
-        const requirementsSubscription = supabase
+        const requirementsSubscription = client
             .channel(`requirements:${documentId}`)
             .on(
                 'postgres_changes',
@@ -342,7 +417,7 @@ export const useDocumentRealtime = ({
             .subscribe();
 
         // Subscribe to columns changes
-        const columnsSubscription = supabase
+        const columnsSubscription = client
             .channel(`columns:${documentId}`)
             .on(
                 'postgres_changes',
@@ -358,13 +433,70 @@ export const useDocumentRealtime = ({
                     // For INSERTs, enrich the column with its joined property so tables can render headers
                     let enrichedNewCol: Column | undefined = newCol;
                     if (payload.eventType === 'INSERT' && newCol?.id) {
-                        const { data: colWithProperty } = await supabase
-                            .from('columns')
-                            .select('*, property:properties(*)')
-                            .eq('id', newCol.id)
-                            .single();
-                        if (colWithProperty) {
-                            enrichedNewCol = colWithProperty as unknown as Column;
+                        const { data: colWithProperty, error: columnEmbedError } =
+                            await client
+                                .from('columns')
+                                .select('*, property:properties(*)')
+                                .eq('id', newCol.id)
+                                .maybeSingle();
+
+                        if (!columnEmbedError && colWithProperty) {
+                            const normalized = normalizeColumns([
+                                colWithProperty as ColumnRowWithEmbeddedProperty,
+                            ]);
+                            if (normalized.length > 0) {
+                                enrichedNewCol = normalized[0];
+                            }
+                        } else {
+                            if (columnEmbedError) {
+                                console.error(
+                                    '⚠️ Column subscription embed fetch error:',
+                                    columnEmbedError,
+                                );
+                            }
+
+                            const { data: fallbackColumn, error: fallbackColumnError } =
+                                await client
+                                    .from('columns')
+                                    .select('*')
+                                    .eq('id', newCol.id)
+                                    .maybeSingle();
+
+                            if (!fallbackColumnError && fallbackColumn) {
+                                let propertyMap: Map<string, Property> | undefined;
+                                if (fallbackColumn.property_id) {
+                                    const { data: propertyData, error: propertyError } =
+                                        await client
+                                            .from('properties')
+                                            .select('*')
+                                            .eq('id', fallbackColumn.property_id)
+                                            .maybeSingle();
+
+                                    if (!propertyError && propertyData) {
+                                        propertyMap = new Map([
+                                            [propertyData.id, propertyData as Property],
+                                        ]);
+                                    } else if (propertyError) {
+                                        console.error(
+                                            '⚠️ Column subscription property fetch error:',
+                                            propertyError,
+                                        );
+                                    }
+                                }
+
+                                const normalized = normalizeColumns(
+                                    [fallbackColumn as ColumnRowWithEmbeddedProperty],
+                                    propertyMap,
+                                );
+                                if (normalized.length > 0) {
+                                    enrichedNewCol = normalized[0];
+                                }
+                            } else if (fallbackColumnError) {
+                                console.error(
+                                    '❌ Column subscription fallback fetch error:',
+                                    fallbackColumnError,
+                                );
+                            }
                         }
                     }
 
@@ -441,7 +573,7 @@ export const useDocumentRealtime = ({
             requirementsSubscription.unsubscribe();
             columnsSubscription.unsubscribe();
         };
-    }, [documentId, fetchBlocks]);
+    }, [documentId, fetchBlocks, supabase, authLoading, authError]);
 
     const refetchDocument = useCallback(
         async (options?: { silent?: boolean }) => {

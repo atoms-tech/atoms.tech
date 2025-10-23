@@ -1,16 +1,21 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export async function useEntitySlugs(params: {
-    orgId?: string;
-    projectId?: string;
-    documentId?: string;
-}) {
+import { Database } from '@/types/base/database.types';
+
+export async function useEntitySlugs(
+    client: SupabaseClient<Database>,
+    params: {
+        orgId?: string;
+        projectId?: string;
+        documentId?: string;
+    },
+) {
     const { orgId, projectId, documentId } = params;
 
     const slugs: { org?: string; project?: string; document?: string } = {};
 
     if (orgId) {
-        const { data: org } = await supabase
+        const { data: org } = await client
             .from('organizations')
             .select('slug')
             .eq('id', orgId)
@@ -19,7 +24,7 @@ export async function useEntitySlugs(params: {
     }
 
     if (projectId) {
-        const { data: project } = await supabase
+        const { data: project } = await client
             .from('projects')
             .select('slug')
             .eq('id', projectId)
@@ -28,7 +33,7 @@ export async function useEntitySlugs(params: {
     }
 
     if (documentId) {
-        const { data: document } = await supabase
+        const { data: document } = await client
             .from('documents')
             .select('slug')
             .eq('id', documentId)

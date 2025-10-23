@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useGumloop } from '@/hooks/useGumloop';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 const ExcalidrawWithClientOnly = dynamic(
     async () =>
@@ -66,6 +66,7 @@ export default function Draw() {
 
     // Add state for pending documentId
     const [pendingDocumentId, setPendingDocumentId] = useState<string | null>(null);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // On mount, check sessionStorage for pending diagram prompt and requirementId
     useEffect(() => {
@@ -324,7 +325,8 @@ export default function Draw() {
         if (!selectedDiagramId || !newDiagramName.trim()) return;
 
         try {
-            const { error } = await supabase
+            const client = getClientOrThrow();
+            const { error } = await client
                 .from('excalidraw_diagrams')
                 .update({ name: newDiagramName.trim() })
                 .eq('id', selectedDiagramId);

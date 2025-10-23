@@ -11,7 +11,6 @@ import {
     getProjectByIdServer,
     getProjectDocumentsServer,
     getUserOrganizationsServer,
-    getUserProfileServer,
     getUserProjectsServer,
 } from '@/lib/db/server';
 
@@ -20,14 +19,10 @@ export const prefetchUserDashboard = cache(async (queryClient?: QueryClient) => 
     const client = queryClient || getQueryClient();
 
     // Fetch user data in parallel
-    const userResult = await getAuthUserServer();
-    const user = userResult.user;
+    const { user, profile } = await getAuthUserServer();
 
-    // Now fetch profile and organizations with the user ID
-    const [profile, organizations] = await Promise.all([
-        getUserProfileServer(user.id),
-        getUserOrganizationsServer(user.id),
-    ]);
+    // Now fetch organizations with the user ID
+    const organizations = await getUserOrganizationsServer(user.id);
 
     // Cache all fetched data
     if (queryClient) {

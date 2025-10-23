@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { RequirementTest, TestReq } from '@/components/custom/RequirementsTesting/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 
 interface TestFilters {
@@ -25,9 +25,17 @@ export function useProjectTestCases(
         orderDirection: 'desc' as 'asc' | 'desc',
     },
 ) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: [...queryKeys.testReq.list, projectId, filters, pagination],
         queryFn: async () => {
+            const supabase = getClientOrThrow();
             let query = supabase
                 .from('test_req')
                 .select('*', { count: 'exact' })
@@ -74,7 +82,7 @@ export function useProjectTestCases(
                 count: count || 0,
             };
         },
-        enabled: !!projectId,
+        enabled: !!projectId && !!supabase && !authLoading && !authError,
     });
 }
 
@@ -91,11 +99,19 @@ function getResultFromStatus(status: string): string {
  * Hook to get number of linked requirements for a test case
  */
 export function useLinkedRequirementsCount(testId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: [...queryKeys.testReq.detail(testId), 'linkedCount'],
         queryFn: async () => {
             if (!testId) return 0;
 
+            const supabase = getClientOrThrow();
             const { data, error, count } = await supabase
                 .from('requirement_tests')
                 .select('*', { count: 'exact' })
@@ -104,7 +120,7 @@ export function useLinkedRequirementsCount(testId: string) {
             if (error || !data) throw error;
             return count || 0;
         },
-        enabled: !!testId,
+        enabled: !!testId && !!supabase && !authLoading && !authError,
     });
 }
 
@@ -112,11 +128,19 @@ export function useLinkedRequirementsCount(testId: string) {
  * Hook to fetch requirements linked to a test case
  */
 export function useTestRequirements(testId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: [...queryKeys.testReq.detail(testId), 'requirements'],
         queryFn: async () => {
             if (!testId) return [];
 
+            const supabase = getClientOrThrow();
             const { data: relationData, error: relationError } = await supabase
                 .from('requirement_tests')
                 .select('requirement_id')
@@ -136,7 +160,7 @@ export function useTestRequirements(testId: string) {
             if (error) throw error;
             return data;
         },
-        enabled: !!testId,
+        enabled: !!testId && !!supabase && !authLoading && !authError,
     });
 }
 
@@ -144,11 +168,19 @@ export function useTestRequirements(testId: string) {
  * Hook to fetch test cases linked to a requirement
  */
 export function useRequirementTestCases(requirementId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: [...queryKeys.requirements.detail(requirementId), 'testCases'],
         queryFn: async () => {
             if (!requirementId) return [];
 
+            const supabase = getClientOrThrow();
             const { data: relationData, error: relationError } = await supabase
                 .from('requirement_tests')
                 .select('test_id, execution_status')
@@ -179,7 +211,7 @@ export function useRequirementTestCases(requirementId: string) {
                 };
             });
         },
-        enabled: !!requirementId,
+        enabled: !!requirementId && !!supabase && !authLoading && !authError,
     });
 }
 
@@ -198,10 +230,18 @@ function mapExecutionStatusToResult(status?: string): string {
  * Hook to fetch all requirement-test relationships for a project
  */
 export function useProjectRequirementTests(projectId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: [...queryKeys.requirementTests.list, projectId],
         queryFn: async () => {
             // First get all tests for this project
+            const supabase = getClientOrThrow();
             const { data: tests, error: testsError } = await supabase
                 .from('test_req')
                 .select('id')
@@ -229,7 +269,7 @@ export function useProjectRequirementTests(projectId: string) {
                 status: mapExecutionStatusToMatrixStatus(rt.execution_status),
             }));
         },
-        enabled: !!projectId,
+        enabled: !!projectId && !!supabase && !authLoading && !authError,
     });
 }
 
@@ -250,6 +290,7 @@ function mapExecutionStatusToMatrixStatus(status?: string): string {
  */
 export function useCreateTestReq() {
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     return useMutation({
         mutationFn: async (newTestReq: {
@@ -285,6 +326,7 @@ export function useCreateTestReq() {
                 updated_at: new Date().toISOString(),
             };
 
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_req')
                 .insert(testData)
@@ -318,6 +360,7 @@ export function useCreateTestReq() {
  */
 export function useCreateRequirementTest() {
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     return useMutation({
         mutationFn: async (newRelation: {
@@ -339,6 +382,7 @@ export function useCreateRequirementTest() {
                 updated_at: new Date().toISOString(),
             };
 
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('requirement_tests')
                 .insert(relationData)

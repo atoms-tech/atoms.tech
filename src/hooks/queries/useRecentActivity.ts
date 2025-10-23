@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 // Database response types
 interface DocumentResponse extends Record<string, unknown> {
@@ -116,6 +116,11 @@ export interface RecentItem {
 export function useRecentDocuments() {
     const { organizations } = useOrganization();
     const { user } = useUser();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
@@ -123,6 +128,10 @@ export function useRecentDocuments() {
         queryKey: [...queryKeys.documents.root, 'recent', user?.id, orgIds],
         queryFn: async () => {
             if (!user?.id || orgIds.length === 0) return [];
+
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
 
             // Get recent documents from projects in user's organizations
             const { data, error } = await supabase
@@ -189,7 +198,7 @@ export function useRecentDocuments() {
                     }),
                 );
         },
-        enabled: !!user?.id && orgIds.length > 0,
+        enabled: !!user?.id && orgIds.length > 0 && !authLoading && !!supabase,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }
@@ -200,6 +209,11 @@ export function useRecentDocuments() {
 export function useRecentProjects() {
     const { organizations } = useOrganization();
     const { user } = useUser();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
@@ -207,6 +221,10 @@ export function useRecentProjects() {
         queryKey: [...queryKeys.projects.root, 'recent', user?.id, orgIds],
         queryFn: async () => {
             if (!user?.id || orgIds.length === 0) return [];
+
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
 
             const { data, error } = await supabase
                 .from('projects')
@@ -263,7 +281,7 @@ export function useRecentProjects() {
                     }),
                 );
         },
-        enabled: !!user?.id && orgIds.length > 0,
+        enabled: !!user?.id && orgIds.length > 0 && !authLoading && !!supabase,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }
@@ -274,6 +292,11 @@ export function useRecentProjects() {
 export function useRecentRequirements() {
     const { organizations } = useOrganization();
     const { user } = useUser();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     const orgIds = useMemo(() => organizations.map((org) => org.id), [organizations]);
 
@@ -281,6 +304,10 @@ export function useRecentRequirements() {
         queryKey: [...queryKeys.requirements.root, 'recent', user?.id, orgIds],
         queryFn: async () => {
             if (!user?.id || orgIds.length === 0) return [];
+
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
 
             const { data, error } = await supabase
                 .from('requirements')
@@ -358,7 +385,7 @@ export function useRecentRequirements() {
                     }),
                 );
         },
-        enabled: !!user?.id && orgIds.length > 0,
+        enabled: !!user?.id && orgIds.length > 0 && !authLoading && !!supabase,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }

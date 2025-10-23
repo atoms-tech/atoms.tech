@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import {
     ORGANIZATION_ROLE_ARRAY,
     OrganizationRole,
@@ -30,7 +31,6 @@ import {
 } from '@/lib/auth/permissions';
 import { getOrganizationMembers } from '@/lib/db/client';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface OrgMembersProps {
     className?: string;
@@ -43,6 +43,11 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<OrganizationRole[]>([]);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     const { data: userRoleQuery } = useOrgMemberRole(params.orgId, user?.id || '');
     const userRole: OrganizationRole | null = userRoleQuery ?? null;
@@ -54,8 +59,10 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     } = useQuery({
         queryKey: ['organization-members', params?.orgId || ''],
         queryFn: () =>
-            params ? getOrganizationMembers(params.orgId) : Promise.resolve([]),
-        enabled: params?.orgId ? true : false,
+            params && supabase
+                ? getOrganizationMembers(supabase, params.orgId)
+                : Promise.resolve([]),
+        enabled: !!params?.orgId && !!supabase && !authLoading,
     });
 
     const handleRemoveMember = async (memberId: string) => {
@@ -78,6 +85,9 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
             const { error } = await supabase
                 .from('organization_members')
                 .delete()
@@ -128,6 +138,9 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
             const { error } = await supabase
                 .from('organization_members')
                 .update({ role: selectedRole })

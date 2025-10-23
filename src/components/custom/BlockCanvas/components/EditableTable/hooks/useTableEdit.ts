@@ -209,7 +209,10 @@ export function useTableEdit<T extends Record<string, CellValue> & { id: string 
                     )?.projects?.organization_id;
 
                     if (organizationId) {
-                        const reqId = await generateNextRequirementId(organizationId);
+                        const reqId = await generateNextRequirementId(
+                            supabase,
+                            organizationId,
+                        );
                         newItem[externalIdColumn.accessor as keyof T] =
                             reqId as T[keyof T];
                     }

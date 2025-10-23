@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Block, EProjectStatus, EVisibility, Json, Project } from '@/types';
+import { Block, EProjectStatus, EVisibility, Json } from '@/types';
 
 export const ProjectSchema = z.object({
     id: z.string(),
@@ -33,7 +33,9 @@ export const ProjectSchema = z.object({
         'organization',
         'public',
     ]) as z.ZodType<EVisibility>,
-}) satisfies z.ZodType<Project>;
+    embedding: z.string().nullable(),
+    fts_vector: z.unknown().nullish(),
+});
 
 export const BlockSchema = z.object({
     id: z.string(),

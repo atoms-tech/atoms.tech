@@ -7,7 +7,7 @@ import {
     useCreateRequirement,
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Json, TablesInsert, TablesUpdate } from '@/types/base/database.types';
 import {
@@ -49,6 +49,7 @@ export const useRequirementActions = ({
     const _createRequirementMutation = useCreateRequirement();
     const _updateRequirementMutation = useUpdateRequirement();
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Function to refresh requirements from the database
     const refreshRequirements = useCallback(async () => {
@@ -63,6 +64,7 @@ export const useRequirementActions = ({
                 blockId,
                 documentId,
             });
+            const supabase = getClientOrThrow();
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('*')
@@ -90,7 +92,7 @@ export const useRequirementActions = ({
         } catch (error) {
             console.error('❌ STEP 6: Error refreshing requirements:', error);
         }
-    }, [blockId, documentId, setLocalRequirements]);
+    }, [blockId, documentId, getClientOrThrow, setLocalRequirements]);
 
     // Natural field keys present as top-level DB columns
     const NATURAL_FIELD_KEYS = new Set([
@@ -108,6 +110,7 @@ export const useRequirementActions = ({
         if (!properties) return { propertiesObj: {}, naturalFields: {} };
 
         // Fetch block columns to get position information
+        const supabase = getClientOrThrow();
         const { data: blockColumns } = await supabase
             .from('columns')
             .select('*')
@@ -294,6 +297,7 @@ export const useRequirementActions = ({
 
     const getLastPosition = async (): Promise<number> => {
         try {
+            const supabase = getClientOrThrow();
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('position')
@@ -328,6 +332,7 @@ export const useRequirementActions = ({
         });
 
         try {
+            const supabase = getClientOrThrow();
             console.log(
                 '🎯 STEP 5a: Creating properties object from dynamic requirement',
             );
@@ -446,8 +451,10 @@ export const useRequirementActions = ({
                                 }
                             )?.projects?.organization_id;
                             if (organizationId) {
-                                externalId =
-                                    await generateNextRequirementId(organizationId);
+                                externalId = await generateNextRequirementId(
+                                    supabase,
+                                    organizationId,
+                                );
                             }
                         }
                     } catch (error) {
@@ -567,6 +574,7 @@ export const useRequirementActions = ({
         try {
             deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
 
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('requirements')
                 .delete()
