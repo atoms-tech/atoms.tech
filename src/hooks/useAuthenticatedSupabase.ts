@@ -38,7 +38,17 @@ export function useAuthenticatedSupabase() {
         try {
             const parts = token.split('.');
             if (parts.length !== 3) return null;
-            const payload = JSON.parse(atob(parts[1]));
+            const base64Url = parts[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const padded = base64.padEnd(
+                base64.length + ((4 - (base64.length % 4)) % 4),
+                '=',
+            );
+            const json =
+                typeof window !== 'undefined'
+                    ? atob(padded)
+                    : Buffer.from(padded, 'base64').toString('utf-8');
+            const payload = JSON.parse(json) as { exp?: number };
             if (!payload?.exp) return null;
             return payload.exp * 1000;
         } catch {
@@ -180,8 +190,19 @@ export function useAuthenticatedSupabase() {
                     const customFetch: typeof fetch = async (input, init) => {
                         const newInit: RequestInit = { ...init };
                         const headers = new Headers(init?.headers || {});
-                        const activeToken =
+                        let activeToken =
                             tokenRef.current || globalForWorkOS.atomsWorkosAccessToken;
+
+                        // Preemptive refresh if token is missing/near expiry (<30s)
+                        const expMs = activeToken ? getTokenExpiryMs(activeToken) : null;
+                        if (
+                            !activeToken ||
+                            (expMs !== null && expMs - Date.now() < 30_000)
+                        ) {
+                            const refreshed = await refreshSession();
+                            if (refreshed) activeToken = refreshed;
+                        }
+
                         if (activeToken)
                             headers.set('Authorization', `Bearer ${activeToken}`);
                         newInit.headers = headers;
