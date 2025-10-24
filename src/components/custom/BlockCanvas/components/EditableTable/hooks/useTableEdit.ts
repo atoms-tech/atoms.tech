@@ -4,6 +4,7 @@ import {
     CellValue,
     EditableColumn,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 export function useTableEdit<T extends Record<string, CellValue> & { id: string }>(
     data: T[],
@@ -22,6 +23,7 @@ export function useTableEdit<T extends Record<string, CellValue> & { id: string 
     >({});
     const [localIsEditMode, setLocalIsEditMode] = useState(isEditMode);
     const previousDataRef = useRef<T[]>([]);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Update local edit mode when prop changes
     useEffect(() => {
@@ -177,7 +179,7 @@ export function useTableEdit<T extends Record<string, CellValue> & { id: string 
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
+                const supabase = getClientOrThrow();
 
                 // Get organization ID from the current document
                 const urlParts = window.location.pathname.split('/');
