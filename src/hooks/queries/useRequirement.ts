@@ -61,44 +61,29 @@ export function useRequirements(queryFilters?: GenericQueryFilters<'requirements
 
 /**
  * Hook to fetch requirements by project ID.
- * This will first get all document IDs for the project, then fetch all requirements for those documents.
+ * Migrated to API route to be compatible with WorkOS auth + GoTrue client.
  */
 export function useProjectRequirements(projectId: string) {
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: authError,
-    } = useAuthenticatedSupabase();
-
     return useQuery({
         queryKey: [...queryKeys.requirements.root, 'byProject', projectId],
         queryFn: async () => {
-            if (!projectId) return [];
+            if (!projectId) return [] as Requirement[];
 
-            if (!supabase) {
-                throw new Error(authError ?? 'Supabase client not available');
+            const response = await fetch(`/api/projects/${projectId}/requirements`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                const message = `Error fetching project requirements: ${response.statusText}`;
+                console.error(message);
+                throw new Error(message);
             }
 
-            // Get all requirements that belong to documents in this project
-            const { data, error } = await supabase
-                .from('requirements')
-                .select(
-                    `
-                    *,
-                    documents!inner (
-                        id,
-                        project_id
-                    )
-                `,
-                )
-                .eq('documents.project_id', projectId)
-                .eq('is_deleted', false)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            return data as Requirement[];
+            const payload = (await response.json()) as { requirements: Requirement[] };
+            return payload.requirements;
         },
-        enabled: !!projectId && !authLoading && !!supabase,
+        enabled: !!projectId,
     });
 }
 
@@ -115,7 +100,7 @@ export function useRequirementsByIds(requirementIds: string[]) {
     return useQuery({
         queryKey: [...queryKeys.requirements.root, 'byIds', requirementIds],
         queryFn: async () => {
-            if (!requirementIds.length) return [];
+            if (!requirementIds.length) return [] as Requirement[];
 
             if (!supabase) {
                 throw new Error(authError ?? 'Supabase client not available');

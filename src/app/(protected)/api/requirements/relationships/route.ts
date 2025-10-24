@@ -178,3 +178,109 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
     }
 }
+
+// GET: Fetch requirement relationships data
+export async function GET(request: NextRequest) {
+    try {
+        // Authenticate via WorkOS
+        const { user } = await withAuth();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Ensure a Supabase profile exists; we don't use the id here but keep parity
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json(
+                { error: 'Profile not provisioned' },
+                { status: 409 },
+            );
+        }
+
+        const supabase = (await createClient()) as unknown as SupabaseMinimal;
+
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get('type');
+
+        if (type === 'tree') {
+            const projectId = searchParams.get('projectId');
+            if (!projectId) {
+                return NextResponse.json(
+                    { error: 'projectId is required for type=tree' },
+                    { status: 400 },
+                );
+            }
+
+            const { data, error } = await supabase.rpc('get_requirement_tree', {
+                p_project_id: projectId,
+            });
+
+            if (error) {
+                console.error('Database error (get_requirement_tree):', error);
+                return NextResponse.json(
+                    { error: 'Failed to fetch requirement tree' },
+                    { status: 500 },
+                );
+            }
+
+            return NextResponse.json({ data });
+        }
+
+        if (type === 'descendants') {
+            const requirementId = searchParams.get('requirementId');
+            const maxDepth = searchParams.get('maxDepth');
+            if (!requirementId) {
+                return NextResponse.json(
+                    { error: 'requirementId is required for type=descendants' },
+                    { status: 400 },
+                );
+            }
+
+            const { data, error } = await supabase.rpc('get_requirement_descendants', {
+                p_ancestor_id: requirementId,
+                p_max_depth: maxDepth ? Number(maxDepth) : null,
+            });
+
+            if (error) {
+                console.error('Database error (get_requirement_descendants):', error);
+                return NextResponse.json(
+                    { error: 'Failed to fetch descendants' },
+                    { status: 500 },
+                );
+            }
+
+            return NextResponse.json({ data });
+        }
+
+        if (type === 'ancestors') {
+            const requirementId = searchParams.get('requirementId');
+            const maxDepth = searchParams.get('maxDepth');
+            if (!requirementId) {
+                return NextResponse.json(
+                    { error: 'requirementId is required for type=ancestors' },
+                    { status: 400 },
+                );
+            }
+
+            const { data, error } = await supabase.rpc('get_requirement_ancestors', {
+                p_descendant_id: requirementId,
+                p_max_depth: maxDepth ? Number(maxDepth) : null,
+            });
+
+            if (error) {
+                console.error('Database error (get_requirement_ancestors):', error);
+                return NextResponse.json(
+                    { error: 'Failed to fetch ancestors' },
+                    { status: 500 },
+                );
+            }
+
+            return NextResponse.json({ data });
+        }
+
+        return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
+    } catch (error) {
+        console.error('GET /api/requirements/relationships error:', error);
+        return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
+    }
+}
