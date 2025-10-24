@@ -74,6 +74,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
                     toggleSidebar();
                 }
             }}
+            className="bg-background"
         >
             {/* Sidebar */}
             <AppSidebar />
@@ -82,7 +83,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             {/* Content wrapper */}
             <div
                 className={cn(
-                    'flex-1 md:pl-6 lg:pl-8 pt-16 transition-all duration-300 ease-out',
+                    'flex-1 md:pl-6 lg:pl-8 pt-16 transition-all duration-300 ease-out bg-background',
                     showHorizontalToolbar && 'pt-16', // Extra padding when horizontal toolbar is active
                 )}
                 style={{
