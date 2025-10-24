@@ -36,7 +36,17 @@ export function useAuthenticatedSupabase() {
                     const response = await fetch('/api/auth/session', {
                         credentials: 'include',
                     });
-                    if (!response.ok) return null;
+                    if (!response.ok) {
+                        // If session is expired, try to refresh
+                        if (response.status === 401) {
+                            console.log('Session expired, attempting to refresh...');
+                            // Clear any cached session data
+                            globalForWorkOS.atomsWorkosSupabaseClient = null;
+                            globalForWorkOS.atomsWorkosAccessToken = null;
+                            return null;
+                        }
+                        return null;
+                    }
                     const sessionData = await response.json();
                     if (!sessionData?.accessToken) return null;
                     return { accessToken: sessionData.accessToken as string };

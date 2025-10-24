@@ -41,6 +41,8 @@ const envSchema = z.object({
     WORKOS_CLIENT_ID: z.string().optional(),
     WORKOS_COOKIE_PASSWORD: z.string().optional(),
     WORKOS_PASSWORD_RESET_URL: z.string().url().optional(),
+    NEXT_PUBLIC_WORKOS_REDIRECT_URI: z.string().url().optional(),
+    WORKOS_LOGOUT_REDIRECT_URI: z.string().url().optional(),
 
     // Feature Flags
     NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING: z
@@ -92,6 +94,8 @@ const productionEnvSchema = envSchema.extend({
     WORKOS_CLIENT_ID: z.string().min(1),
     WORKOS_COOKIE_PASSWORD: z.string().min(24),
     WORKOS_PASSWORD_RESET_URL: z.string().url(),
+    NEXT_PUBLIC_WORKOS_REDIRECT_URI: z.string().url(),
+    WORKOS_LOGOUT_REDIRECT_URI: z.string().url(),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
