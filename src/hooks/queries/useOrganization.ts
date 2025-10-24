@@ -4,11 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserOrganizations } from '@/lib/db/client';
-import { OrganizationType } from '@/types';
+import { Organization, OrganizationType } from '@/types';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useOrganization(orgId: string) {
-    return useQuery({
+    return useQuery<Organization | null>({
         queryKey: queryKeys.organizations.detail(orgId),
         queryFn: async () => {
             // Handle empty or invalid orgId more gracefully
@@ -47,8 +47,10 @@ export function useOrganization(orgId: string) {
                 return null;
             }
 
-            const payload = (await response.json()) as { organization: unknown };
-            return payload.organization ?? null;
+            const payload = (await response.json()) as {
+                organization: Organization | null;
+            };
+            return (payload.organization as Organization | null) ?? null;
         },
         enabled: !!orgId && orgId !== 'user' && orgId !== 'project',
     });
