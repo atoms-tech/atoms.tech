@@ -53,6 +53,7 @@ next-env.d.ts
 .cursor/
 
 
+supabase
 .kiro
 .vscode
 
