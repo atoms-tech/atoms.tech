@@ -128,7 +128,11 @@ export const useColumnActions = ({
                         `Create column from property failed: ${res.status} ${text}`,
                     );
                 }
-                const payload = (await res.json()) as { column: Column };
+                const payload = (await res.json()) as {
+                    property?: Property;
+                    column: Column;
+                };
+                const property = payload.property as Property | undefined;
                 const column = payload.column as Column;
 
                 // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
@@ -144,7 +148,7 @@ export const useColumnActions = ({
                     queryKey: queryKeys.properties.byOrg(orgId),
                 });
 
-                return { column };
+                return property ? { property, column } : { column };
             } catch (error) {
                 console.error('Error in createColumnFromProperty:', error);
                 throw error;

@@ -594,7 +594,23 @@ export async function POST(
                     { status: 500 },
                 );
             }
-            return NextResponse.json({ column, createdAtMs: Date.now() - startedAt });
+            // also fetch property to return for table-level creation expectations
+            const { data: property, error: propErr } = await supabase
+                .from('properties')
+                .select('*')
+                .eq('id', body.propertyId)
+                .maybeSingle();
+            if (propErr) {
+                return NextResponse.json(
+                    { error: 'Failed to fetch property', details: propErr.message },
+                    { status: 500 },
+                );
+            }
+            return NextResponse.json({
+                property,
+                column,
+                createdAtMs: Date.now() - startedAt,
+            });
         }
 
         return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
