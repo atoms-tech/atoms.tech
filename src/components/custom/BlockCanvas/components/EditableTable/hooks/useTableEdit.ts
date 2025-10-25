@@ -181,42 +181,28 @@ export function useTableEdit<T extends Record<string, CellValue> & { id: string 
                 );
                 const supabase = getClientOrThrow();
 
-                // Get organization ID from the current document
+                // Get organization ID from the current document via API
                 const urlParts = window.location.pathname.split('/');
-                const orgIndex = urlParts.indexOf('org');
                 const docIndex = urlParts.indexOf('documents');
-
-                if (
-                    orgIndex !== -1 &&
-                    docIndex !== -1 &&
-                    urlParts[orgIndex + 1] &&
-                    urlParts[docIndex + 1]
-                ) {
+                if (docIndex !== -1 && urlParts[docIndex + 1]) {
                     const documentId = urlParts[docIndex + 1];
-
-                    // Get organization ID from document
-                    const { data: document } = await supabase
-                        .from('documents')
-                        .select(
-                            `
-                            project_id,
-                            projects!inner(organization_id)
-                        `,
-                        )
-                        .eq('id', documentId)
-                        .single();
-
-                    const organizationId = (
-                        document as { projects?: { organization_id?: string } }
-                    )?.projects?.organization_id;
-
-                    if (organizationId) {
-                        const reqId = await generateNextRequirementId(
-                            supabase,
-                            organizationId,
-                        );
-                        newItem[externalIdColumn.accessor as keyof T] =
-                            reqId as T[keyof T];
+                    const resp = await fetch(`/api/documents/${documentId}`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                    if (resp.ok) {
+                        const payload = (await resp.json()) as {
+                            organizationId?: string | null;
+                        };
+                        const organizationId = payload.organizationId ?? null;
+                        if (organizationId) {
+                            const reqId = await generateNextRequirementId(
+                                supabase,
+                                organizationId,
+                            );
+                            newItem[externalIdColumn.accessor as keyof T] =
+                                reqId as T[keyof T];
+                        }
                     }
                 }
             } catch (error) {
@@ -231,7 +217,7 @@ export function useTableEdit<T extends Record<string, CellValue> & { id: string 
             new: newItem,
         }));
         setIsAddingNew(true);
-    }, [columns]);
+    }, [columns, getClientOrThrow]);
 
     const handleSaveRow = useCallback(async () => {
         console.log('🎯 STEP 2: handleSaveRow called in useTableEdit');

@@ -430,73 +430,28 @@ export const useDocumentRealtime = ({
                     const newCol = payload.new as Column | undefined;
                     const oldCol = payload.old as Column | undefined;
 
-                    // For INSERTs, enrich the column with its joined property so tables can render headers
+                    // For INSERTs, enrich the column with its joined property via server API
                     let enrichedNewCol: Column | undefined = newCol;
                     if (payload.eventType === 'INSERT' && newCol?.id) {
-                        const { data: colWithProperty, error: columnEmbedError } =
-                            await client
-                                .from('columns')
-                                .select('*, property:properties(*)')
-                                .eq('id', newCol.id)
-                                .maybeSingle();
-
-                        if (!columnEmbedError && colWithProperty) {
-                            const normalized = normalizeColumns([
-                                colWithProperty as ColumnRowWithEmbeddedProperty,
-                            ]);
-                            if (normalized.length > 0) {
-                                enrichedNewCol = normalized[0];
-                            }
-                        } else {
-                            if (columnEmbedError) {
-                                console.error(
-                                    '⚠️ Column subscription embed fetch error:',
-                                    columnEmbedError,
-                                );
-                            }
-
-                            const { data: fallbackColumn, error: fallbackColumnError } =
-                                await client
-                                    .from('columns')
-                                    .select('*')
-                                    .eq('id', newCol.id)
-                                    .maybeSingle();
-
-                            if (!fallbackColumnError && fallbackColumn) {
-                                let propertyMap: Map<string, Property> | undefined;
-                                if (fallbackColumn.property_id) {
-                                    const { data: propertyData, error: propertyError } =
-                                        await client
-                                            .from('properties')
-                                            .select('*')
-                                            .eq('id', fallbackColumn.property_id)
-                                            .maybeSingle();
-
-                                    if (!propertyError && propertyData) {
-                                        propertyMap = new Map([
-                                            [propertyData.id, propertyData as Property],
-                                        ]);
-                                    } else if (propertyError) {
-                                        console.error(
-                                            '⚠️ Column subscription property fetch error:',
-                                            propertyError,
-                                        );
-                                    }
+                        try {
+                            const res = await fetch(
+                                `/api/documents/${documentId}/columns?blockId=${newCol.block_id}`,
+                                { method: 'GET', cache: 'no-store' },
+                            );
+                            if (res.ok) {
+                                const payload = (await res.json()) as {
+                                    columns: unknown[];
+                                };
+                                const candidates = (payload.columns ||
+                                    []) as unknown as ColumnRowWithEmbeddedProperty[];
+                                const normalized = normalizeColumns(candidates);
+                                const found = normalized.find((c) => c.id === newCol.id);
+                                if (found) {
+                                    enrichedNewCol = found;
                                 }
-
-                                const normalized = normalizeColumns(
-                                    [fallbackColumn as ColumnRowWithEmbeddedProperty],
-                                    propertyMap,
-                                );
-                                if (normalized.length > 0) {
-                                    enrichedNewCol = normalized[0];
-                                }
-                            } else if (fallbackColumnError) {
-                                console.error(
-                                    '❌ Column subscription fallback fetch error:',
-                                    fallbackColumnError,
-                                );
                             }
+                        } catch (e) {
+                            console.error('⚠️ Column subscription API enrich failed:', e);
                         }
                     }
 

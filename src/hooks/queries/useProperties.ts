@@ -8,29 +8,23 @@ import { queryKeys } from '@/lib/constants/queryKeys';
  * Hook to fetch and cache properties for an organization
  */
 export function useOrganizationProperties(orgId: string, enabled = true) {
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: authError,
-    } = useAuthenticatedSupabase();
+    // Note: No direct Supabase usage here; routed via API
 
     return useQuery({
         queryKey: queryKeys.properties.byOrg(orgId),
         queryFn: async () => {
-            if (!supabase) {
-                throw new Error(authError ?? 'Supabase client not available');
+            const res = await fetch(`/api/organizations/${orgId}/properties`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Failed to fetch properties: ${res.status} ${text}`);
             }
-
-            const { data, error } = await supabase
-                .from('properties')
-                .select('*')
-                .eq('org_id', orgId)
-                .order('name');
-
-            if (error) throw error;
-            return data as Property[];
+            const payload = (await res.json()) as { properties: Property[] };
+            return payload.properties || [];
         },
-        enabled: !!orgId && enabled && !authLoading && !!supabase,
+        enabled: !!orgId && enabled,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 }

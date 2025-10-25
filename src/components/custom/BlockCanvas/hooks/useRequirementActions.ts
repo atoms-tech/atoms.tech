@@ -432,24 +432,16 @@ export const useRequirementActions = ({
                     externalId === 'GENERATING...'
                 ) {
                     try {
-                        // Get organization ID from document
-                        const { data: document, error: docError } = await supabase
-                            .from('documents')
-                            .select(
-                                `
-                                project_id,
-                                projects!inner(organization_id)
-                            `,
-                            )
-                            .eq('id', documentId)
-                            .single();
-
-                        if (!docError && document) {
-                            const organizationId = (
-                                document as {
-                                    projects?: { organization_id?: string };
-                                }
-                            )?.projects?.organization_id;
+                        // Resolve organizationId via API route instead of client-side join
+                        const resp = await fetch(`/api/documents/${documentId}`, {
+                            method: 'GET',
+                            cache: 'no-store',
+                        });
+                        if (resp.ok) {
+                            const payload = (await resp.json()) as {
+                                organizationId?: string | null;
+                            };
+                            const organizationId = payload.organizationId ?? null;
                             if (organizationId) {
                                 externalId = await generateNextRequirementId(
                                     supabase,

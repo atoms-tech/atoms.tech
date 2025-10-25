@@ -1,32 +1,35 @@
 import { withAuth } from '@workos-inc/authkit-nextjs';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { getDocumentDataServer } from '@/lib/db/server/documents.server';
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
 
+/**
+ * GET /api/organizations/[orgId]/properties
+ *
+ * Returns organization-level properties (org-scoped), ordered by name.
+ * Uses service role with membership check against organization_members.
+ */
 export async function GET(
-    _request: Request,
-    context: { params: Promise<{ documentId: string }> },
+    _request: NextRequest,
+    context: { params: Promise<{ orgId: string }> },
 ) {
     try {
-        const { documentId } = await context.params;
+        const { orgId } = await context.params;
 
-        if (!documentId) {
+        if (!orgId) {
             return NextResponse.json(
-                { error: 'Document ID is required' },
+                { error: 'Organization ID is required' },
                 { status: 400 },
             );
         }
 
         const { user } = await withAuth();
-
         if (!user) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
 
         const profile = await getOrCreateProfileForWorkOSUser(user);
-
         if (!profile) {
             return NextResponse.json(
                 { error: 'Profile not provisioned' },
@@ -35,7 +38,6 @@ export async function GET(
         }
 
         const supabase = getSupabaseServiceRoleClient();
-
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -43,61 +45,45 @@ export async function GET(
             );
         }
 
-        const documents = await getDocumentDataServer(documentId);
-
-        if (!documents || documents.length === 0) {
-            return NextResponse.json({ error: 'Document not found' }, { status: 404 });
-        }
-
-        const document = documents[0];
-
+        // Check that user is a member of the organization
         const { data: membership, error: membershipError } = await supabase
-            .from('project_members')
+            .from('organization_members')
             .select('role')
-            .eq('project_id', document.project_id)
+            .eq('organization_id', orgId)
             .eq('user_id', profile.id)
             .eq('status', 'active')
             .maybeSingle();
-
         if (membershipError) {
             return NextResponse.json(
                 {
-                    error: 'Failed to verify project membership',
+                    error: 'Failed to verify organization membership',
                     details: membershipError.message,
                 },
                 { status: 500 },
             );
         }
-
         if (!membership) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Also resolve organization_id for consumers that need org context (e.g., requirement ID gen)
-        const { data: projectRow, error: projectErr } = await supabase
-            .from('projects')
-            .select('organization_id')
-            .eq('id', document.project_id)
-            .maybeSingle();
-
-        if (projectErr) {
+        const { data: properties, error: propsError } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('org_id', orgId)
+            .order('name', { ascending: true });
+        if (propsError) {
             return NextResponse.json(
-                {
-                    error: 'Failed to resolve project',
-                    details: projectErr.message,
-                },
+                { error: 'Failed to fetch properties', details: propsError.message },
                 { status: 500 },
             );
         }
 
-        const organizationId = projectRow?.organization_id ?? null;
-
-        return NextResponse.json({ document, organizationId });
+        return NextResponse.json({ properties: properties ?? [] });
     } catch (error) {
-        console.error('Document API error:', error);
+        console.error('Organization properties API error:', error);
         return NextResponse.json(
             {
-                error: 'Failed to fetch document',
+                error: 'Failed to fetch properties',
                 details: error instanceof Error ? error.message : 'Unknown error',
             },
             { status: 500 },

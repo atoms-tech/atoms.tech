@@ -40,7 +40,7 @@ export interface UseColumnActionsProps {
 
 export const useColumnActions = ({
     orgId,
-    projectId,
+    projectId: _projectId,
     documentId,
 }: UseColumnActionsProps) => {
     const queryClient = useQueryClient();
@@ -53,85 +53,34 @@ export const useColumnActions = ({
             propertyConfig: PropertyConfig,
             defaultValue: string,
             blockId: string,
-            userId: string,
+            _userId: string,
         ) => {
             try {
-                const supabase = getClientOrThrow();
-                // Step 1: Create the property
-                const { data: propertyData, error: propertyError } = await supabase
-                    .from('properties')
-                    .insert({
+                // Route through API to enforce membership and use service role
+                const res = await fetch(`/api/documents/${documentId}/columns`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'new',
+                        blockId,
                         name,
-                        property_type: columnTypeToPropertyType(type),
-                        org_id: orgId,
-                        project_id: propertyConfig.scope.includes('project')
-                            ? projectId
-                            : null,
-                        document_id: propertyConfig.scope.includes('document')
-                            ? documentId
-                            : null,
-                        is_base: propertyConfig.is_base,
-                        options:
-                            type === 'people'
-                                ? ({
-                                      values: propertyConfig.options ?? [],
-                                      format: 'people',
-                                  } as unknown as Json)
-                                : propertyConfig.options
-                                  ? ({
-                                        values: propertyConfig.options,
-                                    } as unknown as Json)
-                                  : null,
-                        scope: propertyConfig.scope.join(','),
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        created_by: userId,
-                        updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (propertyError) {
-                    throw propertyError;
+                        propertyType: columnTypeToPropertyType(type),
+                        propertyConfig,
+                        defaultValue,
+                    }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(
+                        `Create property+column failed: ${res.status} ${text}`,
+                    );
                 }
-
-                const property = propertyData as Property;
-
-                // step 2: get the max position of existing columns for this block
-                const { data: existingColumns } = await supabase
-                    .from('columns')
-                    .select('position')
-                    .eq('block_id', blockId);
-
-                const maxPosition =
-                    existingColumns && existingColumns.length > 0
-                        ? Math.max(...existingColumns.map((c) => c.position ?? 0))
-                        : -1;
-
-                // step 3: create the column at the end
-                const { data: columnData, error: columnError } = await supabase
-                    .from('columns')
-                    .insert({
-                        block_id: blockId,
-                        property_id: property.id,
-                        position: maxPosition + 1, // place at the end, not at 0
-                        width: null,
-                        is_hidden: false,
-                        is_pinned: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        default_value: defaultValue,
-                        created_by: userId,
-                        updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (columnError) {
-                    throw columnError;
-                }
-
-                const column = columnData as Column;
+                const payload = (await res.json()) as {
+                    property: Property;
+                    column: Column;
+                };
+                const property = payload.property as Property;
+                const column = payload.column as Column;
 
                 // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
@@ -152,7 +101,7 @@ export const useColumnActions = ({
                 throw error;
             }
         },
-        [documentId, getClientOrThrow, orgId, projectId, queryClient],
+        [documentId, orgId, queryClient],
     );
 
     const createColumnFromProperty = useCallback(
@@ -160,58 +109,27 @@ export const useColumnActions = ({
             propertyId: string,
             defaultValue: string,
             blockId: string,
-            userId: string,
+            _userId: string,
         ) => {
             try {
-                const supabase = getClientOrThrow();
-                // Step 1: Get the property details
-                const { data: propertyData, error: propertyError } = await supabase
-                    .from('properties')
-                    .select('*')
-                    .eq('id', propertyId)
-                    .single();
-
-                if (propertyError) {
-                    throw propertyError;
+                const res = await fetch(`/api/documents/${documentId}/columns`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'fromProperty',
+                        blockId,
+                        propertyId,
+                        defaultValue,
+                    }),
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(
+                        `Create column from property failed: ${res.status} ${text}`,
+                    );
                 }
-
-                const property = propertyData as Property;
-
-                // step 2: get the max position of existing columns for this block
-                const { data: existingColumns } = await supabase
-                    .from('columns')
-                    .select('position')
-                    .eq('block_id', blockId);
-
-                const maxPosition =
-                    existingColumns && existingColumns.length > 0
-                        ? Math.max(...existingColumns.map((c) => c.position ?? 0))
-                        : -1;
-
-                // step 3: create the column at the end
-                const { data: columnData, error: columnError } = await supabase
-                    .from('columns')
-                    .insert({
-                        block_id: blockId,
-                        property_id: property.id,
-                        position: maxPosition + 1, // place at the end
-                        width: null,
-                        is_hidden: false,
-                        is_pinned: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                        default_value: defaultValue,
-                        created_by: userId,
-                        updated_by: userId,
-                    })
-                    .select()
-                    .single();
-
-                if (columnError) {
-                    throw columnError;
-                }
-
-                const column = columnData as Column;
+                const payload = (await res.json()) as { column: Column };
+                const column = payload.column as Column;
 
                 // Step 3 Removed: TL;DR Adds clutter and useless db calls. Can safely skip, req saving handles.
 
@@ -226,13 +144,13 @@ export const useColumnActions = ({
                     queryKey: queryKeys.properties.byOrg(orgId),
                 });
 
-                return { property, column };
+                return { column };
             } catch (error) {
                 console.error('Error in createColumnFromProperty:', error);
                 throw error;
             }
         },
-        [getClientOrThrow, orgId, queryClient],
+        [documentId, orgId, queryClient],
     );
 
     // Append options to a property's options.values list
@@ -322,7 +240,7 @@ export const useColumnActions = ({
                             typeof entry === 'object' &&
                             entry !== null &&
                             'column_id' in entry &&
-                            entry.column_id === columnId
+                            (entry as Record<string, unknown>).column_id === columnId
                         ) {
                             console.log(
                                 `[ColumnActions] Deleting key "${key}" from requirement ${req.id}`,
@@ -330,7 +248,7 @@ export const useColumnActions = ({
                             delete currentProps[key];
                         }
                     }
-                    delete currentProps[columnId]; // Clean up legacy bug. Should be remedied when editing a req but meh.
+                    delete (currentProps as Record<string, unknown>)[columnId]; // Clean up legacy bug.
 
                     return supabase
                         .from('requirements')
@@ -368,7 +286,7 @@ export const useColumnActions = ({
                     .single();
 
                 if (fetchError) throw fetchError;
-                const oldName = oldProperty.name;
+                const oldName = (oldProperty as { name: string }).name;
 
                 // Update the property name
                 const { data, error } = await supabase
@@ -403,7 +321,10 @@ export const useColumnActions = ({
                                 return false;
                             }
                             // Check if old name exists in properties
-                            return oldName in (req.properties as Record<string, any>);
+                            return (
+                                (oldName as string) in
+                                (req.properties as Record<string, any>)
+                            );
                         })
                         .map((req) => {
                             // We know properties is an object here due to the filter above
@@ -450,98 +371,6 @@ export const useColumnActions = ({
         },
         [getClientOrThrow, queryClient],
     );
-
-    // Not needed as we manage metadata at the block level.
-    // const updateColumnsMetadata = useCallback(
-    //     async (
-    //         blockId: string,
-    //         updates: { propertyName: string; width?: number; position: number }[],
-    //     ) => {
-    //         if (!blockId) {
-    //             throw new Error(
-    //                 '[updateColumnsMetadata] blockId is required but was undefined.',
-    //             );
-    //         }
-
-    //         // 1. Load all columns for this block (including their associated properties)
-    //         const { data: columnsData, error: fetchError } = await supabase
-    //             .from('columns')
-    //             .select('id, width, position, property:properties(name)')
-    //             .eq('block_id', blockId);
-
-    //         if (fetchError) {
-    //             console.error(
-    //                 '[updateColumnsMetadata] Failed to fetch columns:',
-    //                 fetchError,
-    //             );
-    //             throw fetchError;
-    //         }
-
-    //         const dbColumns = columnsData as {
-    //             id: string;
-    //             position: number;
-    //             width: number | null;
-    //             property: { name: string };
-    //         }[];
-
-    //         // 2. Match and prepare update payloads
-    //         const updatesToApply = updates
-    //             .map((col) => {
-    //                 const match = dbColumns.find(
-    //                     (c) => c.property?.name === col.propertyName,
-    //                 );
-    //                 if (!match) return null;
-
-    //                 return {
-    //                     id: match.id,
-    //                     position: col.position,
-    //                     width: col.width ?? match.width ?? 150,
-    //                     updated_at: new Date().toISOString(),
-    //                 };
-    //             })
-    //             .filter(
-    //                 (
-    //                     colFormat,
-    //                 ): colFormat is {
-    //                     id: string;
-    //                     position: number;
-    //                     width: number;
-    //                     updated_at: string;
-    //                 } => colFormat !== null,
-    //             );
-
-    //         if (updatesToApply.length === 0) {
-    //             console.warn('[updateColumnsMetadata] No matching columns to update.');
-    //             return;
-    //         }
-
-    //         // 3. Perform batch update
-    //         for (const update of updatesToApply) {
-    //             const { error: updateError } = await supabase
-    //                 .from('columns')
-    //                 .update({
-    //                     position: update.position,
-    //                     width: update.width,
-    //                     updated_at: update.updated_at,
-    //                 })
-    //                 .eq('id', update.id);
-
-    //             if (updateError) {
-    //                 console.error(
-    //                     `[updateColumnsMetadata] Failed to update column ${update.id}:`,
-    //                     updateError,
-    //                 );
-    //                 throw updateError;
-    //             }
-    //         }
-
-    //         // 4. Invalidate cache
-    //         await queryClient.invalidateQueries({
-    //             queryKey: queryKeys.blocks.detail(blockId),
-    //         });
-    //     },
-    //     [queryClient],
-    // );
 
     return {
         createPropertyAndColumn,

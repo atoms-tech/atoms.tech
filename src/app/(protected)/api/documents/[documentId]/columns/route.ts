@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getDocumentDataServer } from '@/lib/db/server/documents.server';
+import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
 import { isFeatureEnabled } from '@/lib/utils/env-validation';
+import { Json, TablesInsert } from '@/types/base/database.types';
 
 /**
  * GET /api/documents/[documentId]/columns
@@ -58,7 +60,7 @@ export async function GET(
             );
         }
 
-        const { user } = await withAuth();
+        const { user, accessToken: _accessToken } = await withAuth();
 
         if (!user) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -323,6 +325,285 @@ export async function GET(
                 ...(process.env.NODE_ENV !== 'production'
                     ? { __debug: [`[error] ${String(error)}`] }
                     : {}),
+            },
+            { status: 500 },
+        );
+    }
+}
+
+/**
+ * POST /api/documents/[documentId]/columns
+ *
+ * Creates a column, with two modes:
+ * - Create new property and then a column for the provided block
+ * - Create column from an existing property for the provided block
+ *
+ * Body for new property:
+ * {
+ *   mode: 'new',
+ *   blockId: string,
+ *   name: string,
+ *   propertyType: string, // DB enum string
+ *   propertyConfig: { scope: string[]; is_base?: boolean; options?: string[] },
+ *   defaultValue?: string
+ * }
+ *
+ * Body for from property:
+ * {
+ *   mode: 'fromProperty',
+ *   blockId: string,
+ *   propertyId: string,
+ *   defaultValue?: string
+ * }
+ */
+export async function POST(
+    request: NextRequest,
+    context: { params: Promise<{ documentId: string }> },
+) {
+    const startedAt = Date.now();
+    try {
+        const { documentId } = await context.params;
+
+        if (!documentId) {
+            return NextResponse.json(
+                { error: 'Document ID is required' },
+                { status: 400 },
+            );
+        }
+
+        const { user, accessToken } = await withAuth();
+        if (!user) {
+            return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json(
+                { error: 'Profile not provisioned' },
+                { status: 409 },
+            );
+        }
+
+        const body = (await request.json()) as
+            | {
+                  mode: 'new';
+                  blockId: string;
+                  name: string;
+                  propertyType: string;
+                  propertyConfig: {
+                      scope: string[];
+                      is_base?: boolean;
+                      options?: string[];
+                  };
+                  defaultValue?: string;
+              }
+            | {
+                  mode: 'fromProperty';
+                  blockId: string;
+                  propertyId: string;
+                  defaultValue?: string;
+              };
+
+        const supabase = getSupabaseServiceRoleClient();
+        if (!supabase) {
+            return NextResponse.json(
+                { error: 'Supabase service client unavailable' },
+                { status: 500 },
+            );
+        }
+
+        // Ensure document exists and collect project id for membership/org scope
+        const documents = await getDocumentDataServer(documentId);
+        if (!documents || documents.length === 0) {
+            return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+        }
+        const document = documents[0];
+
+        // Membership enforcement
+        const { data: membership, error: membershipError } = await supabase
+            .from('project_members')
+            .select('role')
+            .eq('project_id', document.project_id)
+            .eq('user_id', profile.id)
+            .eq('status', 'active')
+            .maybeSingle();
+        if (membershipError) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to verify project membership',
+                    details: membershipError.message,
+                },
+                { status: 500 },
+            );
+        }
+        if (!membership) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Fetch project to derive organization id
+        const { data: projectRow, error: projectErr } = await supabase
+            .from('projects')
+            .select('id, organization_id')
+            .eq('id', document.project_id)
+            .maybeSingle();
+        if (projectErr) {
+            return NextResponse.json(
+                { error: 'Failed to resolve project', details: projectErr.message },
+                { status: 500 },
+            );
+        }
+        const organizationId = projectRow?.organization_id ?? null;
+        if (!organizationId) {
+            return NextResponse.json(
+                { error: 'Project missing organization_id' },
+                { status: 500 },
+            );
+        }
+
+        // Helper: compute max position for block columns
+        const getNextPosition = async (blockId: string) => {
+            const { data: existing } = await supabase
+                .from('columns')
+                .select('position')
+                .eq('block_id', blockId);
+            const max = (existing || [])
+                .map((r) => (typeof r.position === 'number' ? r.position : 0))
+                .reduce((m, v) => (v > m ? v : m), -1);
+            return max + 1;
+        };
+
+        if (body.mode === 'new') {
+            const position = await getNextPosition(body.blockId);
+
+            const optionsJson = (() => {
+                const values = body.propertyConfig?.options || [];
+                if (Array.isArray(values) && values.length > 0) {
+                    // People type flagging via format
+                    return body.propertyType === 'multi_select' && values
+                        ? ({ values, format: 'people' } as unknown as Json)
+                        : ({ values } as unknown as Json);
+                }
+                return null;
+            })();
+
+            const propertyInsert: TablesInsert<'properties'> = {
+                name: body.name,
+                property_type: body.propertyType,
+                org_id: organizationId,
+                project_id: body.propertyConfig.scope?.includes('project')
+                    ? document.project_id
+                    : undefined,
+                document_id: body.propertyConfig.scope?.includes('document')
+                    ? documentId
+                    : undefined,
+                is_base: !!body.propertyConfig.is_base,
+                options: optionsJson as Json | null,
+                scope: Array.isArray(body.propertyConfig.scope)
+                    ? body.propertyConfig.scope.join(',')
+                    : undefined,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                created_by: profile.id,
+                updated_by: profile.id,
+            };
+
+            const { data: property, error: propertyErr } = await supabase
+                .from('properties')
+                .insert(propertyInsert)
+                .select('*')
+                .single();
+            if (propertyErr) {
+                return NextResponse.json(
+                    { error: 'Failed to create property', details: propertyErr.message },
+                    { status: 500 },
+                );
+            }
+
+            // Insert column using user-scoped client to align with table grants
+            const userClient = accessToken
+                ? createSupabaseClientWithToken(accessToken)
+                : null;
+            const { data: column, error: columnErr } = await (userClient ?? supabase)
+                .from('columns')
+                .insert({
+                    block_id: body.blockId,
+                    property_id: property.id,
+                    position,
+                    width: 150,
+                    is_hidden: false,
+                    is_pinned: false,
+                    default_value:
+                        typeof body.defaultValue === 'string' &&
+                        body.defaultValue.trim() === ''
+                            ? null
+                            : (body.defaultValue ?? null),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    created_by: profile.id,
+                    updated_by: profile.id,
+                })
+                .select('*')
+                .single();
+            if (columnErr) {
+                return NextResponse.json(
+                    { error: 'Failed to create column', details: columnErr.message },
+                    { status: 500 },
+                );
+            }
+
+            return NextResponse.json({
+                property,
+                column,
+                createdAtMs: Date.now() - startedAt,
+            });
+        }
+
+        if (body.mode === 'fromProperty') {
+            const position = await getNextPosition(body.blockId);
+
+            const userClient2 = accessToken
+                ? createSupabaseClientWithToken(accessToken)
+                : null;
+            const { data: column, error: columnErr } = await (userClient2 ?? supabase)
+                .from('columns')
+                .insert({
+                    block_id: body.blockId,
+                    property_id: body.propertyId,
+                    position,
+                    width: 200,
+                    is_hidden: false,
+                    is_pinned: false,
+                    default_value:
+                        typeof body.defaultValue === 'string' &&
+                        body.defaultValue.trim() === ''
+                            ? null
+                            : (body.defaultValue ?? null),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    created_by: profile.id,
+                    updated_by: profile.id,
+                })
+                .select('*')
+                .single();
+            if (columnErr) {
+                return NextResponse.json(
+                    {
+                        error: 'Failed to create column from property',
+                        details: columnErr.message,
+                    },
+                    { status: 500 },
+                );
+            }
+            return NextResponse.json({ column, createdAtMs: Date.now() - startedAt });
+        }
+
+        return NextResponse.json({ error: 'Invalid mode' }, { status: 400 });
+    } catch (error) {
+        console.error('Columns API POST error:', error);
+        return NextResponse.json(
+            {
+                error: 'Failed to create column/property',
+                details: error instanceof Error ? error.message : 'Unknown error',
             },
             { status: 500 },
         );
