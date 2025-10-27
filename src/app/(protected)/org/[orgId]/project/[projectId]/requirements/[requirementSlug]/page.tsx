@@ -160,46 +160,7 @@ export default function RequirementPage() {
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
     const { mutateAsync: updateRequirement } = useUpdateRequirement();
 
-    const handleAnalyze = async () => {
-        if (!requirement) {
-            setMissingReqError("Requirement hasn't loaded yet");
-            return;
-        }
-
-        setAnalysisData(null);
-        await updateRequirementWithHistory(reqText);
-
-        // check if the requirement is empty
-        if (!reqText) {
-            setMissingReqError('Requirement text is required');
-            return;
-        }
-        console.log('Starting analysis pipeline...');
-        setMissingReqError('');
-        setIsAnalysing(true);
-
-        try {
-            const { run_id } = await startPipeline({
-                pipelineType: isReasoning
-                    ? 'requirement-analysis-reasoning'
-                    : 'requirement-analysis',
-                requirement: reqText,
-                systemName: systemName,
-                objective: objective,
-                fileNames: Object.values(selectedFiles).map((file) => file.gumloopName),
-                model_preference: isReasoning ? 'o1' : 'gemini-2.0-flash-001',
-                temperature: isReasoning ? 1 : 0.1,
-            });
-            setAnalysisPipelineRunId(run_id);
-        } catch (error) {
-            console.error('Failed to start analysis pipeline:', error);
-        }
-    };
-<<<<<<< HEAD
-=======
-    */
-
-    //new handleAnalyzeAPI logic without gumloop pipeline
+    // New handleAnalyze logic without Gumloop pipeline
     const handleAnalyze = async () => {
         await handleAnalyzeAPI({
             reqText,
@@ -209,7 +170,6 @@ export default function RequirementPage() {
             apiUrl: '/api/ai',
         });
     };
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
 
     useEffect(() => {
         switch (analysisResponse?.state) {
@@ -342,15 +302,12 @@ export default function RequirementPage() {
                             missingReqError={missingReqError}
                             missingFilesError={''}
                             setMissingFilesError={() => {}}
-<<<<<<< HEAD
                             // isUploading={isUploading}
                             // uploadButtonText={uploadButtonText}
                             // handleFileUpload={handleFileUpload}
                             // existingDocs={existingDocs}
                             // existingDocsValue={existingDocsValue}
                             // handleExistingDocSelect={handleExistingDocSelect}
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                             selectedFiles={selectedFiles}
                             setSelectedFiles={setSelectedFiles}
                         />
@@ -359,45 +316,25 @@ export default function RequirementPage() {
                     {/* Right Column - Analysis Blocks */}
                     <div className="space-y-4">
                         <h2 className="text-2xl font-bold mb-4">AI Analysis</h2>
-<<<<<<< HEAD
-
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                         <OriginalRequirementCard
                             reqId={analysisData?.reqId}
                             originalRequirement={analysisData?.originalRequirement}
                         />
-<<<<<<< HEAD
-
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                         <EarsCard
                             earsPattern={analysisData?.earsPattern}
                             earsRequirement={analysisData?.earsRequirement}
                             earsTemplate={analysisData?.earsTemplate}
                             onAccept={handleAcceptChange}
                         />
-<<<<<<< HEAD
-
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                         <IncoseCard
                             incoseFormat={analysisData?.incoseFormat}
                             incoseFeedback={analysisData?.incoseFeedback}
                             onAccept={handleAcceptChange}
                         />
-<<<<<<< HEAD
-
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                         <ComplianceCard
                             complianceFeedback={analysisData?.complianceFeedback}
                             relevantRegulations={analysisData?.relevantRegulations}
                         />
-<<<<<<< HEAD
-
-=======
->>>>>>> ce25d26 ( ignore venv and format code and display the result to chatbot)
                         <EnhancedCard
                             enhancedReqEars={analysisData?.enhancedReqEars}
                             enhancedReqIncose={analysisData?.enhancedReqIncose}

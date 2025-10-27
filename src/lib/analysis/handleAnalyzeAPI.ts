@@ -23,12 +23,22 @@ export async function handleAnalyzeAPI({
     setIsAnalysing(true);
     setAnalysisData(null);
     try {
-        // Open left agent panel immediately to show results without changing existing UI
+        // Open right agent panel
         try {
             const { setIsOpen } = (
-                await import('@/components/custom/AgentChat/left/useLeftAgentStore')
-            ).useLeftAgentStore.getState();
+                await import('@/components/custom/AgentChat/hooks/useAgentStore')
+            ).useAgentStore.getState();
             setIsOpen(true);
+        } catch {}
+        // Ensure a pinned org exists for demo/sandbox so threads/messages can be stored
+        try {
+            const { currentPinnedOrganizationId, setUserContext, currentOrgId } = (
+                await import('@/components/custom/AgentChat/hooks/useAgentStore')
+            ).useAgentStore.getState();
+            if (!currentPinnedOrganizationId) {
+                const sandboxId = currentOrgId || 'sandbox-org';
+                setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
+            }
         } catch {}
         let attempt = 0;
         while (attempt <= maxRetries) {
@@ -116,13 +126,55 @@ export async function handleAnalyzeAPI({
                 };
                 setAnalysisData(normalized);
 
-                //display message into the left agent panel
+                // Display a summary message into the agent panel as a new chat thread
                 try {
-                    const { addMessage } = (
+                    const {
+                        addMessage,
+                        newThread,
+                        setActiveThread,
+                        getActiveThreadId,
+                        getMessagesForCurrentOrg,
+                        organizationThreads,
+                        renameThread,
+                        currentPinnedOrganizationId,
+                        setUserContext,
+                        currentOrgId,
+                    } = (
                         await import(
-                            '@/components/custom/AgentChat/left/useLeftAgentStore'
+                            '@/components/custom/AgentChat/hooks/useAgentStore'
                         )
-                    ).useLeftAgentStore.getState();
+                    ).useAgentStore.getState();
+                    // Ensure pinned org (again) in case it wasn't set yet when panel opened
+                    if (!currentPinnedOrganizationId) {
+                        const sandboxId = currentOrgId || 'sandbox-org';
+                        setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
+                    }
+                    // Snapshot/label the current active thread if it has no meaningful title
+                    try {
+                        const currentId = getActiveThreadId?.();
+                        if (currentId) {
+                            const orgId = currentPinnedOrganizationId || '';
+                            const meta = organizationThreads?.[orgId]?.[currentId];
+                            const hasGenericTitle = !meta || !meta.title || /^\s*$/.test(meta.title) || meta.title === 'New chat';
+                            if (hasGenericTitle) {
+                                const msgs = getMessagesForCurrentOrg?.() || [];
+                                const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && m.threadId === currentId);
+                                if (lastUser?.content) {
+                                    const clean = lastUser.content.replace(/\s+/g, ' ').trim();
+                                    const newTitle = clean.length > 40 ? clean.slice(0, 40) + '…' : clean;
+                                    if (newTitle) renameThread?.(currentId, newTitle);
+                                }
+                            }
+                        }
+                    } catch {}
+                    // Create a new chat thread for this analysis
+                    const titleBase = (reqText || 'Analysis').trim().replace(/\s+/g, ' ');
+                    const title =
+                        titleBase.length > 40
+                            ? `Analysis: ${titleBase.slice(0, 40)}…`
+                            : `Analysis: ${titleBase}`;
+                    const threadId = newThread(title) || undefined;
+                    if (threadId) setActiveThread(threadId);
                     const md =
                         `**Analysis Result**\n\n` +
                         `- Original: ${normalized.originalRequirement || 'N/A'}\n` +
@@ -137,7 +189,15 @@ export async function handleAnalyzeAPI({
                         content: md,
                         role: 'assistant',
                         timestamp: new Date(),
+                        category: 'chat',
+                        threadId,
                     });
+                    // Nudge selection in case UI hasn't updated selection yet
+                    if (threadId) {
+                        try {
+                            setTimeout(() => setActiveThread(threadId), 30);
+                        } catch {}
+                    }
                 } catch {}
                 // success
                 break;

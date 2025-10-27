@@ -23,11 +23,11 @@ export async function handleAnalyzeAPI({
     setIsAnalysing(true);
     setAnalysisData(null);
     try {
-        // Open left agent panel immediately to show results without changing existing UI
+        // Open right agent panel and switch to the Analysis tab
         try {
             const { setIsOpen } = (
-                await import('@/components/custom/AgentChat/left/useLeftAgentStore')
-            ).useLeftAgentStore.getState();
+                await import('@/components/custom/AgentChat/hooks/useAgentStore')
+            ).useAgentStore.getState();
             setIsOpen(true);
         } catch {}
         let attempt = 0;
@@ -116,13 +116,13 @@ export async function handleAnalyzeAPI({
                 };
                 setAnalysisData(normalized);
 
-                //display message into the left agent panel
+                // Display a summary message into the agent panel
                 try {
                     const { addMessage } = (
                         await import(
-                            '@/components/custom/AgentChat/left/useLeftAgentStore'
+                            '@/components/custom/AgentChat/hooks/useAgentStore'
                         )
-                    ).useLeftAgentStore.getState();
+                    ).useAgentStore.getState();
                     const md =
                         `**Analysis Result**\n\n` +
                         `- Original: ${normalized.originalRequirement || 'N/A'}\n` +
@@ -137,6 +137,7 @@ export async function handleAnalyzeAPI({
                         content: md,
                         role: 'assistant',
                         timestamp: new Date(),
+                        category: 'analysis',
                     });
                 } catch {}
                 // success

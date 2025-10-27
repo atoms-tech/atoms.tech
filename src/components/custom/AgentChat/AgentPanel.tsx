@@ -31,6 +31,8 @@ interface Message {
     role: 'user' | 'assistant';
     timestamp: Date;
     type?: 'text' | 'voice';
+    category?: 'chat' | 'analysis' | 'system'; // [New Added]
+    threadId?: string; // [New Added]
 }
 
 interface AgentPanelProps {
@@ -51,6 +53,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(false);
     const [showPinGuide, setShowPinGuide] = useState(false);
+    // Tabs removed; unified chat view
 
     // Resizable panel state
     const [isResizing, setIsResizing] = useState(false);
@@ -86,6 +89,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         popFromQueue,
         getQueueForCurrentOrg,
         removeFromQueue,
+    // threads [New Added]
+        listThreadsForCurrentOrg,
+        newThread,
+        setActiveThread,
+        getActiveThreadId,
     } = useAgentStore();
 
     // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
@@ -98,8 +106,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         console.log(
             `AgentPanel - Loading ${orgMessages.length} messages for organization ${currentPinnedOrganizationId}`,
         );
-        return orgMessages;
-    }, [currentPinnedOrganizationId, organizationMessages]);
+        // Unified view: use active thread; include undefined or 'chat' categories
+        const activeThreadId = getActiveThreadId();
+        return orgMessages.filter(
+            (m) => (!m.category || m.category === 'chat') && m.threadId === activeThreadId,
+        );
+    }, [currentPinnedOrganizationId, organizationMessages, getActiveThreadId]);
 
     // Debug: Log when pinned organization changes
     useEffect(() => {
@@ -130,6 +142,8 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             }
         }
     }, [messages, isLoading]);
+
+    // Tabs removed; no need to listen for tab-switch events
 
     const { user, profile } = useUser();
 
@@ -356,6 +370,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             role: 'user',
             timestamp: new Date(),
             type: 'text',
+            category: 'chat',
         };
         addMessage(userMessage);
         if (!messageToSend) setMessage(''); // Only clear if user sent the message
@@ -462,6 +477,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 role: 'assistant',
                 timestamp: new Date(),
                 type: 'text',
+                category: 'chat',
             };
             console.log(
                 'AgentPanel - Adding assistant message:',
@@ -711,6 +727,7 @@ ${'='.repeat(50)}
                             <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg tracking-wide">
                                 ATOMS
                             </h2>
+                            {/* Tabs removed */}
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -755,8 +772,56 @@ ${'='.repeat(50)}
                     </div>
                 </div>
 
-                {/* Messages */}
-                <ScrollArea className="flex-1 bg-zinc-50 dark:bg-zinc-900/50">
+                {/* Body with sidebar (threads) + main chat [New Added] */}
+                <div className="flex flex-1 min-h-0 bg-zinc-50 dark:bg-zinc-900/50">
+                    {/* Sidebar - chat history [New Added] */}
+                    <div className="hidden md:flex md:flex-col w-60 border-r border-zinc-200 dark:border-zinc-800 p-3 gap-3">
+                        <Button
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() => {
+                                const id = newThread('New chat');
+                                if (id) setActiveThread(id);
+                                setTimeout(() => textareaRef.current?.focus(), 50);
+                            }}
+                        >
+                            + New chat
+                        </Button>
+                        <div className="text-xs text-zinc-500">Chats</div>
+                        <div className="flex-1 overflow-auto">
+                            <ul className="space-y-1">
+                                {listThreadsForCurrentOrg().map((t) => {
+                                    const isActive = getActiveThreadId() === t.id;
+                                    return (
+                                        <li key={t.id}>
+                                            <button
+                                                className={cn(
+                                                    'w-full text-left px-2 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 break-words',
+                                                    isActive && 'bg-zinc-200 dark:bg-zinc-700',
+                                                )}
+                                                onClick={() => {
+                                                    setActiveThread(t.id);
+                                                }}
+                                                title={new Date(t.updatedAt).toLocaleString()}
+                                            >
+                                                <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                                                    {t.title || 'Untitled'}
+                                                </div>
+                                                <div className="text-[10px] text-zinc-500">
+                                                    {new Date(t.updatedAt).toLocaleDateString()}
+                                                </div>
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Main column: messages + input [New Added] */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                        {/* Messages */}
+                        <ScrollArea className="flex-1">
                     <ScrollAreaPrimitive.Viewport
                         ref={scrollAreaRef}
                         className="h-full w-full rounded-[inherit]"
@@ -978,11 +1043,11 @@ ${'='.repeat(50)}
                                 </div>
                             )}
                         </div>
-                    </ScrollAreaPrimitive.Viewport>
-                </ScrollArea>
+                            </ScrollAreaPrimitive.Viewport>
+                        </ScrollArea>
 
-                {/* Input Area */}
-                <div className="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                        {/* Input Area */}
+                        <div className="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                     <div className="flex gap-2 items-stretch">
                         <div className="flex-1 relative">
                             <Textarea
@@ -1029,42 +1094,44 @@ ${'='.repeat(50)}
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                         {isListening
                             ? 'Listening...'
                             : 'Press Enter to send, Shift+Enter for new line'}
-                    </p>
-                </div>
-                {/* Add minimal UI for queued messages */}
-                {queue.length > 0 && (
-                    <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded">
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-                            Queued Messages ({queue.length}/5):
                         </p>
-                        <ul className="text-xs text-zinc-700 dark:text-zinc-200 space-y-1">
-                            {queue.map((q, i) => (
-                                <li
-                                    key={i}
-                                    className="flex items-center justify-between group"
-                                >
-                                    <span className="flex-1 truncate">
-                                        {i + 1}. {q}
-                                    </span>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 w-6 p-0 ml-2 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
-                                        onClick={() => removeFromQueue(i)}
-                                        title="Cancel this message"
-                                    >
-                                        <X className="h-3 w-3" />
-                                    </Button>
-                                </li>
-                            ))}
-                        </ul>
+                        </div>
+                        {/* Add minimal UI for queued messages */}
+                        {queue.length > 0 && (
+                            <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded">
+                                <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
+                                    Queued Messages ({queue.length}/5):
+                                </p>
+                                <ul className="text-xs text-zinc-700 dark:text-zinc-200 space-y-1">
+                                    {queue.map((q, i) => (
+                                        <li
+                                            key={i}
+                                            className="flex items-center justify-between group"
+                                        >
+                                            <span className="flex-1 truncate">
+                                                {i + 1}. {q}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 ml-2 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                                                onClick={() => removeFromQueue(i)}
+                                                title="Cancel this message"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </>
     );

@@ -9,6 +9,11 @@ interface Message {
     role: 'user' | 'assistant';
     timestamp: Date;
     type?: 'text' | 'voice';
+    // Optional category to separate chat vs analysis/system
+    category?: 'chat' | 'analysis' | 'system'; // [New-Added]
+    // Thread identifier for chat conversations (not used for analysis)
+    threadId?: string; // [New-Added]
+
 }
 
 // Organization-specific messages structure
@@ -24,6 +29,20 @@ interface AgentStore {
 
     // Messages - now organized by organization
     organizationMessages: OrganizationMessages;
+
+    // Threads per organization (metadata only) [New Added]
+    organizationThreads: {
+        [orgId: string]: {
+            [threadId: string]: {
+                id: string;
+                title: string;
+                createdAt: string; // ISO
+                updatedAt: string; // ISO
+            };
+        };
+    };
+        // Active thread per organization [New Added]
+        currentThreadIdByOrg: { [orgId: string]: string | undefined };
 
     // Hydration state - critical for preventing data loss on refresh
     _hasHydrated: boolean;
@@ -51,6 +70,19 @@ interface AgentStore {
     clearAllOrganizationMessages: () => void;
     getMessagesForCurrentOrg: () => Message[];
     getMessagesForOrg: (orgId: string) => Message[];
+
+    // Thread methods [ATOMS-ADDED]
+    newThread: (initialTitle?: string) => string | undefined; // returns threadId
+    setActiveThread: (threadId: string) => void;
+    getActiveThreadId: () => string | undefined;
+    listThreadsForCurrentOrg: () => Array<{
+        id: string;
+        title: string;
+        createdAt: string;
+        updatedAt: string;
+    }>;
+    renameThread: (threadId: string, title: string) => void;
+    deleteThread: (threadId: string) => void;
 
     // Hydration actions
     setHasHydrated: (hydrated: boolean) => void;
@@ -137,6 +169,8 @@ export const useAgentStore = create<AgentStore>()(
             isMinimized: false,
             panelWidth: 400,
             organizationMessages: {},
+            organizationThreads: {}, // [ATOMS-ADDED]
+            currentThreadIdByOrg: {}, // [ATOMS-ADDED]
             _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
@@ -155,17 +189,38 @@ export const useAgentStore = create<AgentStore>()(
                     console.warn('No pinned organization ID available for message');
                     return;
                 }
-
-                set((state) => ({
-                    organizationMessages: {
-                        ...state.organizationMessages,
-                        [currentPinnedOrganizationId]: [
-                            ...(state.organizationMessages[currentPinnedOrganizationId] ||
-                                []),
-                            message,
-                        ],
-                    },
-                }));
+                // For chat messages, ensure they are associated with an active thread [New Added]
+                set((state) => {
+                    const orgId = currentPinnedOrganizationId;
+                    const isAnalysis = message.category === 'analysis';
+                    let threadId = message.threadId;
+                    if (!isAnalysis) {
+                        const currentThreadId =
+                            state.currentThreadIdByOrg[orgId] ||
+                            createDefaultThreadForOrg(state, orgId);
+                        threadId = threadId || currentThreadId;
+                        // Set title from first user message if missing [New Added]
+                        const meta = state.organizationThreads[orgId]?.[threadId!];
+                        if (meta) {
+                            if (!meta.title && message.role === 'user' && message.content) {
+                                meta.title = deriveTitle(message.content);
+                            }
+                            meta.updatedAt = new Date().toISOString();
+                        }
+                    }
+                    const newMsg: Message = { ...message, threadId };
+                    return {
+                        organizationMessages: {
+                            ...state.organizationMessages,
+                            [orgId]: [
+                                ...(state.organizationMessages[orgId] || []),
+                                newMsg,
+                            ],
+                        },
+                        organizationThreads: { ...state.organizationThreads },
+                        currentThreadIdByOrg: { ...state.currentThreadIdByOrg },
+                    };
+                });
             },
 
             clearMessages: () => {
@@ -176,13 +231,20 @@ export const useAgentStore = create<AgentStore>()(
                     );
                     return;
                 }
-
-                set((state) => ({
-                    organizationMessages: {
-                        ...state.organizationMessages,
-                        [currentPinnedOrganizationId]: [],
-                    },
-                }));
+                set((state) => {
+                    const orgId = currentPinnedOrganizationId;
+                    const currentThreadId = state.currentThreadIdByOrg[orgId];
+                    const msgs = state.organizationMessages[orgId] || [];
+                    const filtered = msgs.filter(
+                        (m) => m.category === 'analysis' || m.threadId !== currentThreadId, // [New Added]
+                    );
+                    return {
+                        organizationMessages: {
+                            ...state.organizationMessages,
+                            [orgId]: filtered,
+                        },
+                    };
+                });
             },
 
             clearAllOrganizationMessages: () => set({ organizationMessages: {} }),
@@ -366,6 +428,100 @@ export const useAgentStore = create<AgentStore>()(
                 if (!currentPinnedOrganizationId) return [];
                 return organizationQueues[currentPinnedOrganizationId] || [];
             },
+
+            // Thread management [New Added]
+            newThread: (initialTitle?: string) => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) return undefined;
+                const orgId = currentPinnedOrganizationId;
+                const id = cryptoId();
+                const now = new Date().toISOString();
+                set((state) => ({
+                    organizationThreads: {
+                        ...state.organizationThreads,
+                        [orgId]: {
+                            ...(state.organizationThreads[orgId] || {}),
+                            [id]: {
+                                id,
+                                title: initialTitle || 'New chat',
+                                createdAt: now,
+                                updatedAt: now,
+                            },
+                        },
+                    },
+                    currentThreadIdByOrg: {
+                        ...state.currentThreadIdByOrg,
+                        [orgId]: id,
+                    },
+                }));
+                return id;
+            },
+            setActiveThread: (threadId: string) => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) return;
+                const orgId = currentPinnedOrganizationId;
+                set((state) => ({
+                    currentThreadIdByOrg: { ...state.currentThreadIdByOrg, [orgId]: threadId },
+                }));
+            },
+            getActiveThreadId: () => {
+                const { currentPinnedOrganizationId, currentThreadIdByOrg } = get();
+                if (!currentPinnedOrganizationId) return undefined;
+                return currentThreadIdByOrg[currentPinnedOrganizationId];
+            },
+            listThreadsForCurrentOrg: () => {
+                const { currentPinnedOrganizationId, organizationThreads } = get();
+                if (!currentPinnedOrganizationId) return [];
+                const orgThreads = organizationThreads[currentPinnedOrganizationId] || {};
+                return Object.values(orgThreads).sort(
+                    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+                );
+            },
+            renameThread: (threadId: string, title: string) => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) return;
+                const orgId = currentPinnedOrganizationId;
+                set((state) => {
+                    const meta = state.organizationThreads[orgId]?.[threadId];
+                    if (meta) {
+                        meta.title = title;
+                        meta.updatedAt = new Date().toISOString();
+                    }
+                    return {
+                        organizationThreads: { ...state.organizationThreads },
+                    };
+                });
+            },
+            deleteThread: (threadId: string) => {
+                const { currentPinnedOrganizationId } = get();
+                if (!currentPinnedOrganizationId) return;
+                const orgId = currentPinnedOrganizationId;
+                set((state) => {
+                    const threads = { ...(state.organizationThreads[orgId] || {}) };
+                    delete threads[threadId];
+                    const msgs = state.organizationMessages[orgId] || [];
+                    const filtered = msgs.filter((m) => m.threadId !== threadId);
+                    // pick a new active thread
+                    const newActive = Object.keys(threads)[0] || createDefaultThreadForOrg({
+                        ...state,
+                        organizationThreads: { ...state.organizationThreads, [orgId]: threads },
+                    } as any, orgId);
+                    return {
+                        organizationThreads: {
+                            ...state.organizationThreads,
+                            [orgId]: threads,
+                        },
+                        organizationMessages: {
+                            ...state.organizationMessages,
+                            [orgId]: filtered,
+                        },
+                        currentThreadIdByOrg: {
+                            ...state.currentThreadIdByOrg,
+                            [orgId]: newActive,
+                        },
+                    };
+                });
+            },
         }),
         {
             // Persist the store to the browser's localStorage
@@ -382,6 +538,8 @@ export const useAgentStore = create<AgentStore>()(
                         ],
                     ),
                 ),
+                organizationThreads: state.organizationThreads, // [ATOMS-ADDED]
+                currentThreadIdByOrg: state.currentThreadIdByOrg, // [ATOMS-ADDED]
                 n8nWebhookUrl: state.n8nWebhookUrl,
                 isMinimized: state.isMinimized,
                 panelWidth: state.panelWidth,
@@ -464,6 +622,29 @@ export const useAgentStore = create<AgentStore>()(
                         'AgentStore - No organization messages found in localStorage',
                     );
                 }
+
+                // Migration: Initialize threads per org if missing [ATOMS-ADDED]
+                if (state) {
+                    if (!state.organizationThreads) state.organizationThreads = {} as any;
+                    if (!state.currentThreadIdByOrg) state.currentThreadIdByOrg = {} as any;
+                    const orgIds = Object.keys(state.organizationMessages || {});
+                    for (const orgId of orgIds) {
+                        const hasThreads = state.organizationThreads[orgId] &&
+                            Object.keys(state.organizationThreads[orgId]).length > 0;
+                        let currentId = state.currentThreadIdByOrg[orgId];
+                        if (!hasThreads || !currentId) {
+                            currentId = createDefaultThreadForOrg(state, orgId);
+                            state.currentThreadIdByOrg[orgId] = currentId;
+                        }
+                        // Assign threadId to existing chat messages (non-analysis) if missing
+                        const msgs = state.organizationMessages[orgId] || [];
+                        msgs.forEach((m) => {
+                            if (m.category !== 'analysis' && !m.threadId) {
+                                m.threadId = currentId;
+                            }
+                        });
+                    }
+                }
                 // Set hydration flag after localStorage data is restored
                 state?.setHasHydrated(true);
                 console.log('AgentStore - Hydration completed');
@@ -471,3 +652,35 @@ export const useAgentStore = create<AgentStore>()(
         },
     ),
 );
+
+// Helpers [New Added]
+function cryptoId() {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (crypto as any).randomUUID();
+    }
+    return Math.random().toString(36).slice(2);
+}
+
+function deriveTitle(content: string) {
+    const clean = content.replace(/\s+/g, ' ').trim();
+    return clean.length > 40 ? clean.slice(0, 40) + '…' : clean || 'New chat';
+}
+
+// Creates a default thread for an organization if none exists
+// Mutates state in-place and returns the new thread id
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function createDefaultThreadForOrg(state: any, orgId: string): string {
+    const id = cryptoId();
+    const now = new Date().toISOString();
+    if (!state.organizationThreads[orgId]) state.organizationThreads[orgId] = {};
+    state.organizationThreads[orgId][id] = {
+        id,
+        title: 'General',
+        createdAt: now,
+        updatedAt: now,
+    };
+    if (!state.currentThreadIdByOrg) state.currentThreadIdByOrg = {};
+    state.currentThreadIdByOrg[orgId] = id;
+    return id;
+}

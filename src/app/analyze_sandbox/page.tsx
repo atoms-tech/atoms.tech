@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 
 import LayoutView from '@/components/views/LayoutView';
-import { useLeftAgentStore } from '@/components/custom/AgentChat/left/useLeftAgentStore';
-import { handleAnalyzeAPI } from './handleAnalyzeAPI.sandbox';
 import { SandboxRequirementForm } from './SandboxRequirementForm';
 import {
     ComplianceCard,
@@ -13,6 +11,7 @@ import {
     IncoseCard,
     OriginalRequirementCard,
 } from '@/app/(protected)/org/[orgId]/project/[projectId]/requirements/[requirementSlug]/components';
+import { handleAnalyzeAPI } from './handleAnalyzeAPI.sandbox';
 
 interface AnalysisData {
     reqId: string;
@@ -33,31 +32,13 @@ export default function AnalyzeSandboxPage() {
     // Mirror the protected page state shape
     const [reqText, setReqText] = useState<string>('The system shall authenticate users in under 500ms using email and password.');
     const [isReasoning, setIsReasoning] = useState(false);
-    const [isAnalysing, setIsAnalysing] = useState(false);
     const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
     const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: { file?: File } }>({});
-
-    // Ensure left panel works unauthenticated
-    const { setUserContext, setIsOpen } = useLeftAgentStore();
+    const [isAnalysing, setIsAnalysing] = useState(false);
     useEffect(() => {
-        setUserContext({
-            userId: 'demo-user',
-            orgId: 'demo-org',
-            pinnedOrganizationId: 'demo-org',
-            username: 'Demo User',
-        });
-    }, [setUserContext]);
-
-    const onAnalyze = async () => {
-        await handleAnalyzeAPI({
-            reqText,
-            selectedFiles,
-            setAnalysisData,
-            setIsAnalysing,
-            apiUrl: '/analyze_sandbox/api/ai',
-        });
-        setIsOpen(true);
-    };
+        // keep local analysisData in sync with hook result
+        // we avoid double state by using onResult below
+    }, []);
 
     return (
         <LayoutView>
@@ -71,7 +52,15 @@ export default function AnalyzeSandboxPage() {
                             isReasoning={isReasoning}
                             setIsReasoning={setIsReasoning}
                             isAnalysing={isAnalysing}
-                            onAnalyze={onAnalyze}
+                            onAnalyze={async () => {
+                                await handleAnalyzeAPI({
+                                    reqText,
+                                    selectedFiles,
+                                    setAnalysisData,
+                                    setIsAnalysing,
+                                    apiUrl: '/analyze_sandbox/api/ai',
+                                });
+                            }}
                             onFilesChanged={setSelectedFiles}
                         />
                     </div>
