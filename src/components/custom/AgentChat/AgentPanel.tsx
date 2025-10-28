@@ -681,7 +681,7 @@ ${'='.repeat(50)}
             <div
                 ref={panelRef}
                 className={cn(
-                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 shadow-xl transition-all duration-300 ease-out flex flex-col',
+                    'fixed right-0 top-0 h-full bg-white dark:bg-zinc-900 shadow-xl transition-all duration-200 ease-linear flex flex-col',
                     // Mobile/tablet: overlay with high z-index
                     'z-50 md:z-30',
                     // Transform based on open state
@@ -696,7 +696,7 @@ ${'='.repeat(50)}
                 />
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-zinc-900">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 flex items-center justify-center">
                             <Image
@@ -982,7 +982,7 @@ ${'='.repeat(50)}
                 </ScrollArea>
 
                 {/* Input Area */}
-                <div className="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="px-8 py-4 border-t bg-white dark:bg-zinc-900">
                     <div className="flex gap-2 items-stretch">
                         <div className="flex-1 relative">
                             <Textarea
@@ -994,8 +994,7 @@ ${'='.repeat(50)}
                                 }
                                 onKeyDown={handleKeyPress}
                                 placeholder="Type your message..."
-                                // Thicker border for more visible input box
-                                className="min-h-[40px] max-h-[120px] resize-none border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
+                                className="min-h-[40px] max-h-[120px] resize-none border bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
                                 disabled={queue.length >= 5}
                             />
                             {speechSupported && (
@@ -1024,7 +1023,7 @@ ${'='.repeat(50)}
                             onClick={() => handleSendMessage()}
                             disabled={!message.trim() || queue.length >= 5}
                             // Make button height match Textarea exactly
-                            className="h-auto py-2 border-2 border-zinc-200 dark:border-zinc-700 bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg flex items-center justify-center"
+                            className="h-auto py-2 border bg-zinc-600 text-white hover:bg-zinc-700 dark:bg-purple-600 dark:text-white dark:hover:bg-purple-700 rounded-lg flex items-center justify-center"
                         >
                             <Send className="h-4 w-4" />
                         </Button>

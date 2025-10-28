@@ -3269,7 +3269,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                           backgroundColor: '#7C3AED',
                                                           color: 'white',
                                                           border: 'none',
-                                                          borderRadius: 10, // moderate rounded
                                                           fontWeight: 600,
                                                           fontSize: 14,
                                                           cursor: 'pointer',
@@ -3500,7 +3499,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             resolvedTheme === 'dark'
                                                 ? '1px solid #444'
                                                 : '1px solid #ccc', // border
-                                        borderRadius: 5,
                                         // dropdown shadows
                                         boxShadow:
                                             resolvedTheme === 'dark'

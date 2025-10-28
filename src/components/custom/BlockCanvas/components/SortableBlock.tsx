@@ -55,7 +55,7 @@ export const SortableBlock: React.FC<BlockProps> = ({
                     'shadow-lg shadow-accent/10',
                     'scale-[1.01]',
                     'cursor-grabbing',
-                    'border-accent/20',
+                    'border-border',
                     'backdrop-blur-[2px]',
                 ],
                 !isDragging && 'cursor-default',

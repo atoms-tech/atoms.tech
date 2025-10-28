@@ -8,7 +8,7 @@ import BaseToggle from '@/components/custom/toggles/BaseToggle';
 
 export const ThemeToggle = memo(() => {
     const [mounted, setMounted] = useState(false);
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
 
     useEffect(() => {
         setMounted(true);
@@ -16,7 +16,7 @@ export const ThemeToggle = memo(() => {
 
     // Handle theme toggle
     const toggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark');
+        setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
     };
 
     // For SSR, show a placeholder until mounted
@@ -39,9 +39,11 @@ export const ThemeToggle = memo(() => {
     return (
         <BaseToggle
             icon={themeIcon}
-            tooltip={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            tooltip={
+                resolvedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'
+            }
             onClick={toggleTheme}
-            isActive={theme === 'dark'}
+            isActive={resolvedTheme === 'dark'}
         />
     );
 });

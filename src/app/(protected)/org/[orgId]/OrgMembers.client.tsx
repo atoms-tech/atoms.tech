@@ -32,11 +32,7 @@ import {
 import { getOrganizationMembers } from '@/lib/db/client';
 import { useUser } from '@/lib/providers/user.provider';
 
-interface OrgMembersProps {
-    className?: string;
-}
-
-export default function OrgMembers({ className }: OrgMembersProps) {
+export default function OrgMembers() {
     const params = useParams<{ orgId: string }>();
     const { user } = useUser();
     const { toast } = useToast();
@@ -190,7 +186,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     });
 
     return (
-        <Card className={className}>
+        <Card>
             <CardHeader className="flex flex-col gap-4 pb-2">
                 <div>
                     <CardTitle className="text-xl">Members</CardTitle>
@@ -245,7 +241,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 key={i}
                                 className="flex items-center justify-between animate-pulse"
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mr-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
                                     <div className="space-y-1">
                                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
@@ -263,7 +259,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 key={member.id}
                                 className="flex items-center justify-between"
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mr-3">
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                                         <Users className="h-4 w-4 text-primary" />
                                     </div>

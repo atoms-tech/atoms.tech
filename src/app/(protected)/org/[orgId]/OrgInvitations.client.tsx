@@ -245,10 +245,7 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                                         >
                                             <div className="flex items-center space-x-2">
                                                 <span>{invitation.email}</span>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="border-gray-300 text-gray-500"
-                                                >
+                                                <Badge variant="outline">
                                                     {invitation.status}
                                                 </Badge>
                                             </div>

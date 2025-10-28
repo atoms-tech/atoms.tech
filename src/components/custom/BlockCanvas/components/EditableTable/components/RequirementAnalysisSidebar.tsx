@@ -63,7 +63,7 @@ export const RequirementAnalysisSidebar: React.FC<Props> = ({
                 className="font-mono p-0 gap-0 bg-background/90 border-l shadow-none overflow-scroll"
                 data-overlay-disabled
             >
-                <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b border-muted">
+                <div className="sticky top-0 bg-background/80 backdrop-blur-sm border-b">
                     <div className="px-6 py-4">
                         <SheetHeader className="space-y-1.5">
                             <div className="flex items-center gap-3">
