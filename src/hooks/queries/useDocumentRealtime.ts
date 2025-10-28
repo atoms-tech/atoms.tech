@@ -238,6 +238,10 @@ export const useDocumentRealtime = ({
                 // Combine blocks with their requirements and columns
                 // centralized natural field config from utils
 
+                const synthesizedForPersist: Array<{
+                    blockId: string;
+                    columns: Column[];
+                }> = [];
                 const blocksWithRequirements: BlockWithRequirements[] = blocksData.map(
                     (block: Block) => {
                         let blockColumns = columnsByBlock[block.id] || [];
@@ -254,18 +258,118 @@ export const useDocumentRealtime = ({
                         try {
                             const contentAny = block.content as unknown as {
                                 tableKind?: string;
+                                columns?: Array<{
+                                    name?: string;
+                                    columnId?: string;
+                                    position?: number;
+                                    width?: number;
+                                }>;
                             };
                             const tableKind = contentAny?.tableKind;
-                            if (
-                                block.type === 'table' &&
-                                tableKind === 'requirements' &&
-                                blockColumns.length === 0
-                            ) {
-                                const virtual: Column[] = synthesizeNaturalColumns(
+                            const metadataColumns = Array.isArray(contentAny?.columns)
+                                ? (contentAny?.columns as Array<{
+                                      name?: string;
+                                      columnId?: string;
+                                      position?: number;
+                                      width?: number;
+                                  }>)
+                                : [];
+
+                            const hasVirtualPlaceholders = metadataColumns.some(
+                                (mc) =>
+                                    (mc.columnId || '').startsWith('virtual-') ||
+                                    [
+                                        'external_id',
+                                        'name',
+                                        'description',
+                                        'status',
+                                        'priority',
+                                    ].includes((mc.name || '').toLowerCase()),
+                            );
+
+                            const isReqTable =
+                                block.type === 'table' && tableKind === 'requirements';
+
+                            if (isReqTable && hasVirtualPlaceholders) {
+                                // Always ensure natural fields are present by merging synthesized with existing
+                                const synthesized: Column[] = synthesizeNaturalColumns(
                                     block.id,
                                     orgProperties,
                                 );
-                                blockColumns = virtual;
+
+                                // Build a case-insensitive set of existing column names
+                                const existingNames = new Set(
+                                    (blockColumns || []).map((c) =>
+                                        (
+                                            (c.property?.name ||
+                                                (c as unknown as { name?: string })
+                                                    .name ||
+                                                '') as string
+                                        ).toLowerCase(),
+                                    ),
+                                );
+
+                                // Attempt to carry over positions from metadata for virtuals
+                                const nameToMeta = new Map<
+                                    string,
+                                    { position?: number; width?: number }
+                                >();
+                                for (const mc of metadataColumns) {
+                                    const key = (mc.name || '').toLowerCase();
+                                    if (key)
+                                        nameToMeta.set(key, {
+                                            position: mc.position,
+                                            width: mc.width,
+                                        });
+                                }
+
+                                const toAdd: Column[] = [];
+                                for (const s of synthesized) {
+                                    const sName = (
+                                        s.property?.name ||
+                                        (s as unknown as { name?: string }).name ||
+                                        ''
+                                    )
+                                        .toString()
+                                        .toLowerCase();
+                                    if (!existingNames.has(sName)) {
+                                        const meta = nameToMeta.get(sName);
+                                        toAdd.push({
+                                            ...s,
+                                            position:
+                                                typeof meta?.position === 'number'
+                                                    ? meta?.position
+                                                    : s.position,
+                                            width:
+                                                typeof meta?.width === 'number'
+                                                    ? meta?.width
+                                                    : s.width,
+                                        });
+                                    }
+                                }
+
+                                if (
+                                    blockColumns.length === 0 ||
+                                    hasVirtualPlaceholders ||
+                                    toAdd.length > 0
+                                ) {
+                                    blockColumns = [...blockColumns, ...toAdd].sort(
+                                        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                                    );
+
+                                    if (
+                                        blockColumns.length === 0 ||
+                                        hasVirtualPlaceholders
+                                    ) {
+                                        // Queue a non-blocking metadata persist so virtuals are durable
+                                        const persistColumns =
+                                            toAdd.length > 0 ? toAdd : synthesized;
+                                        synthesizedForPersist.push({
+                                            blockId: block.id,
+                                            columns: persistColumns,
+                                        });
+                                    }
+                                }
                             }
                         } catch {
                             // no-op on fallback creation errors
@@ -294,6 +398,61 @@ export const useDocumentRealtime = ({
                 });
 
                 setError(null);
+
+                // Persist synthesized virtual columns into block metadata (best-effort, non-blocking)
+                if (synthesizedForPersist.length > 0) {
+                    (async () => {
+                        try {
+                            for (const entry of synthesizedForPersist) {
+                                const { blockId, columns } = entry;
+                                // Read existing content
+                                const { data: blk, error: readErr } = await client
+                                    .from('blocks')
+                                    .select('content')
+                                    .eq('id', blockId)
+                                    .single();
+                                if (readErr) continue;
+
+                                const content: unknown = blk?.content ?? {};
+                                const isObj =
+                                    typeof content === 'object' && content !== null;
+                                const current = (isObj ? content : {}) as {
+                                    columns?: unknown[];
+                                    requirements?: unknown[];
+                                    rows?: unknown[];
+                                    tableKind?: string;
+                                };
+
+                                const columnMetadata = columns.map((c, idx) => ({
+                                    columnId: c.id,
+                                    position:
+                                        typeof c.position === 'number' ? c.position : idx,
+                                    width: c.width ?? 200,
+                                    // include name for legacy readers
+                                    name: (c.property?.name ||
+                                        (c as unknown as { name?: string }).name ||
+                                        '') as string,
+                                }));
+
+                                const updated = {
+                                    ...current,
+                                    tableKind: current.tableKind ?? 'requirements',
+                                    columns: columnMetadata,
+                                } as Record<string, unknown>;
+
+                                await client
+                                    .from('blocks')
+                                    .update({
+                                        content:
+                                            updated as unknown as Database['public']['Tables']['blocks']['Row']['content'],
+                                    })
+                                    .eq('id', blockId);
+                            }
+                        } catch {
+                            // best-effort only
+                        }
+                    })();
+                }
             } catch (err) {
                 setError(err as Error);
             } finally {
@@ -547,6 +706,51 @@ export const useDocumentRealtime = ({
                 const tableKind = contentAny?.tableKind;
                 if (newBlock.type === 'table' && tableKind === 'requirements') {
                     setTimeout(() => _maybeHydrateInsertedBlock(newBlock.id), 200);
+                    // Also persist initial virtual columns metadata best-effort
+                    setTimeout(async () => {
+                        try {
+                            const cachedOrgId = getCachedDocumentOrg(documentId);
+                            const props = getCachedOrgProperties(cachedOrgId);
+                            const virtual = synthesizeNaturalColumns(newBlock.id, props);
+                            // Read and update block content
+                            const { data: blk } = await client
+                                .from('blocks')
+                                .select('content')
+                                .eq('id', newBlock.id)
+                                .single();
+                            const content: unknown = blk?.content ?? {};
+                            const isObj = typeof content === 'object' && content !== null;
+                            const current = (isObj ? content : {}) as {
+                                columns?: unknown[];
+                                requirements?: unknown[];
+                                rows?: unknown[];
+                                tableKind?: string;
+                            };
+                            const columnMetadata = virtual.map((c, idx) => ({
+                                columnId: c.id,
+                                position:
+                                    typeof c.position === 'number' ? c.position : idx,
+                                width: c.width ?? 200,
+                                name: (c.property?.name ||
+                                    (c as unknown as { name?: string }).name ||
+                                    '') as string,
+                            }));
+                            const updated = {
+                                ...current,
+                                tableKind: current.tableKind ?? 'requirements',
+                                columns: columnMetadata,
+                            } as Record<string, unknown>;
+                            await client
+                                .from('blocks')
+                                .update({
+                                    content:
+                                        updated as unknown as Database['public']['Tables']['blocks']['Row']['content'],
+                                })
+                                .eq('id', newBlock.id);
+                        } catch {
+                            // best-effort only
+                        }
+                    }, 250);
                 }
             } catch {
                 // no-op
