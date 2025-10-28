@@ -109,7 +109,8 @@ export const useRequirementActions = ({
     ) => {
         if (!properties) return { propertiesObj: {}, naturalFields: {} };
 
-        // Fetch block columns to get position information
+        // Fetch block columns to get position information; if none exist (new requirements table),
+        // synthesize natural field "virtual" positions to avoid blocking saves.
         const supabase = getClientOrThrow();
         const { data: blockColumns } = await supabase
             .from('columns')
@@ -123,7 +124,34 @@ export const useRequirementActions = ({
         // Process each property
         properties.forEach((prop) => {
             const value = dynamicReq[prop.name];
-            const column = blockColumns?.find((col) => col.property_id === prop.id);
+            // Support both real and virtual columns: match by real property_id, then by property name
+            const propNameLc = (prop.name || '').toLowerCase();
+            const column =
+                blockColumns?.find((col) => col.property_id === prop.id) ||
+                (blockColumns || []).find((c) => {
+                    const cNameLc = (
+                        (c as unknown as { property?: { name?: string } })?.property?.name
+                            ? ((c as unknown as { property?: { name?: string } })
+                                  ?.property?.name as string)
+                            : ''
+                    ).toLowerCase();
+                    if (!cNameLc) return false;
+                    // Deduplicate case-insensitively against both UI names and DB keys
+                    if (
+                        c.id?.startsWith('virtual-') ||
+                        c.property_id?.startsWith('virtual-')
+                    ) {
+                        return (
+                            cNameLc === propNameLc ||
+                            cNameLc === 'external_id' ||
+                            cNameLc === 'name' ||
+                            cNameLc === 'description' ||
+                            cNameLc === 'status' ||
+                            cNameLc === 'priority'
+                        );
+                    }
+                    return cNameLc === propNameLc;
+                });
             const lowerCaseName = prop.name.toLowerCase();
 
             // Check if this property maps to a natural field
