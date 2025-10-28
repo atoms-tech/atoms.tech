@@ -164,7 +164,6 @@ const FixedMultiSelectEditor: React.FC<{
         multiValue: (styles: any, { data }: any) => ({
             ...styles,
             backgroundColor: data.color ?? (theme as any).bgBubble,
-            borderRadius: `${(theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2}px`,
         }),
         multiValueLabel: (styles: any, { data, isDisabled }: any) => ({
             ...styles,
@@ -184,7 +183,7 @@ const FixedMultiSelectEditor: React.FC<{
             display: 'flex',
             height: BUBBLE_HEIGHT,
         }),
-        multiValueRemove: (styles: any, { data, isDisabled, isFocused }: any) => {
+        multiValueRemove: (styles: any, { data, isDisabled }: any) => {
             if (isDisabled) return { display: 'none' };
             return {
                 ...styles,
@@ -194,9 +193,6 @@ const FixedMultiSelectEditor: React.FC<{
                         : 'white'
                     : (theme as any).textBubble,
                 backgroundColor: undefined,
-                borderRadius: isFocused
-                    ? `${(theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2}px`
-                    : undefined,
                 ':hover': { cursor: 'pointer' },
             };
         },
@@ -353,14 +349,7 @@ const renderer: CustomRenderer<MultiSelectCell> = {
 
             (ctx as CanvasRenderingContext2D).fillStyle = color as string;
             (ctx as CanvasRenderingContext2D).beginPath();
-            roundedRect(
-                ctx as any,
-                x,
-                y,
-                width,
-                BUBBLE_HEIGHT,
-                (theme as any).roundingRadius ?? BUBBLE_HEIGHT / 2,
-            );
+            roundedRect(ctx as any, x, y, width, BUBBLE_HEIGHT, 0);
             (ctx as CanvasRenderingContext2D).fill();
 
             // text color: black/white based on bubble color luminance, else theme textBubble

@@ -6,15 +6,15 @@ import {
     Building,
     Copy,
     FileBox,
-    Folder,
     FolderArchive,
+    GitBranch,
     ListTodo,
     MoreVertical,
-    PenTool,
     Pencil,
+    Plus,
     Trash2,
 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import OrgMembers from '@/app/(protected)/org/[orgId]/OrgMembers.client';
@@ -67,7 +67,7 @@ interface OrgDashboardProps {
 }
 
 export default function OrgDashboard(props: OrgDashboardProps) {
-    // const router = useRouter();
+    const router = useRouter();
     const searchParams = useSearchParams();
 
     // Get current tab from URL params, default to 'projects' if not present
@@ -84,11 +84,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
         null,
     );
 
-    const [isCanvasDialogOpen, setIsCanvasDialogOpen] = useState(false);
-
-    const [selectedCanvasProjectId, setSelectedCanvasProjectId] = useState<string | null>(
-        null,
-    );
     const { user } = useUser();
     const { data: userRoleQuery } = useOrgMemberRole(props.orgId, user?.id || '');
     const userRole: OrganizationRole | null = userRoleQuery ?? null;
@@ -155,16 +150,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
 
     const handleCreateProject = () => {
         setIsCreatePanelOpen(true);
-    };
-
-    const handleGoToCanvas = () => {
-        setIsCanvasDialogOpen(true);
-    };
-
-    const handleStartCanvas = () => {
-        if (selectedCanvasProjectId) {
-            window.location.href = `/org/${props.orgId}/project/${selectedCanvasProjectId}/canvas`;
-        }
     };
 
     const handleGoToAiAnalysis = () => {
@@ -524,44 +509,41 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                 {/* Projects Tab */}
                 <TabsContent value="projects" className="space-y-6">
                     <div className="flex items-center justify-between space-x-2">
-                        <div className="flex w-full md:w-auto space-x-2">
-                            <Input
-                                type="text"
-                                placeholder="Search projects..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full md:w-64"
-                            />
-                        </div>
+                        <Input
+                            type="text"
+                            placeholder="Search projects..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full max-w-xs"
+                        />
                         <div className="flex items-center space-x-2">
                             {hasOrganizationPermission(userRole, 'createProjects') && (
                                 <Button
-                                    className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium"
+                                    variant="outline"
+                                    className="transition-colors hover:bg-primary hover:text-primary-foreground"
                                     onClick={handleCreateProject}
                                 >
+                                    <Plus className="h-4 w-4" />
                                     Create Project
-                                    <Folder className="w-4 h-4" />
                                 </Button>
                             )}
-                            {hasOrganizationPermission(userRole, 'goToCanvas') && (
-                                <Button
-                                    variant="outline"
-                                    className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
-                                    onClick={handleGoToCanvas}
-                                >
-                                    Canvas
-                                    <PenTool className="w-4 h-4" />
-                                </Button>
-                            )}
+                            <Button
+                                variant="default"
+                                onClick={() =>
+                                    router.push(`/org/${props?.orgId}/traceability`)
+                                }
+                            >
+                                <GitBranch className="h-4 w-4" />
+                                Traceability
+                            </Button>
                             {props.organization?.type !== 'personal' &&
                                 hasOrganizationPermission(userRole, 'goToAiAnalysis') && (
                                     <Button
-                                        variant="outline"
-                                        className="bg-primary text-primary-foreground text-sm hover:bg-primary/90"
+                                        variant="default"
                                         onClick={handleGoToAiAnalysis}
                                     >
-                                        AI Analysis
                                         <Brain className="w-4 h-4" />
+                                        AI Analysis
                                     </Button>
                                 )}
                             {props.organization?.type === 'personal' && (
@@ -590,7 +572,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                             ))}
                         </div>
                     ) : props.projects && props.projects.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 3xl:grid-cols-4 gap-6">
                             {props.projects
                                 .filter((project) =>
                                     project.name
@@ -600,146 +582,136 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 .map((project) => (
                                     <Card
                                         key={project.id}
-                                        className="group relative hover:shadow-md transition-shadow"
+                                        className="transition-colors hover:bg-card-hover cursor-pointer"
+                                        onClick={() => props.onProjectClick(project)}
                                     >
-                                        <div
-                                            className="cursor-pointer"
-                                            onClick={() => props.onProjectClick(project)}
-                                        >
-                                            <CardHeader className="relative">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        {isEditingProject ===
-                                                        project.id ? (
-                                                            <div className="space-y-2">
-                                                                <Input
-                                                                    value={
-                                                                        editingProjectName
+                                        <CardHeader>
+                                            <div className="grid grid-cols-12 items-center ">
+                                                <div className="col-span-10 pr-2.5">
+                                                    {isEditingProject === project.id ? (
+                                                        <div className="space-y-2">
+                                                            <Input
+                                                                value={editingProjectName}
+                                                                onChange={(e) =>
+                                                                    setEditingProjectName(
+                                                                        e.target.value,
+                                                                    )
+                                                                }
+                                                                onKeyDown={(e) => {
+                                                                    if (
+                                                                        e.key === 'Enter'
+                                                                    ) {
+                                                                        handleSaveProjectEdit(
+                                                                            project,
+                                                                        );
+                                                                    } else if (
+                                                                        e.key === 'Escape'
+                                                                    ) {
+                                                                        handleCancelProjectEdit();
                                                                     }
-                                                                    onChange={(e) =>
-                                                                        setEditingProjectName(
-                                                                            e.target
-                                                                                .value,
-                                                                        )
-                                                                    }
-                                                                    onKeyDown={(e) => {
-                                                                        if (
-                                                                            e.key ===
-                                                                            'Enter'
-                                                                        ) {
-                                                                            handleSaveProjectEdit(
-                                                                                project,
-                                                                            );
-                                                                        } else if (
-                                                                            e.key ===
-                                                                            'Escape'
-                                                                        ) {
-                                                                            handleCancelProjectEdit();
-                                                                        }
-                                                                    }}
-                                                                    className="text-lg font-semibold"
-                                                                    autoFocus
-                                                                    onClick={(e) =>
-                                                                        e.stopPropagation()
-                                                                    }
-                                                                />
-                                                                <div className="flex gap-2">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleSaveProjectEdit(
-                                                                                project,
-                                                                            );
-                                                                        }}
-                                                                    >
-                                                                        Save
-                                                                    </Button>
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleCancelProjectEdit();
-                                                                        }}
-                                                                    >
-                                                                        Cancel
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        ) : (
-                                                            <CardTitle>
-                                                                {project.name}
-                                                            </CardTitle>
-                                                        )}
-                                                    </div>
-
-                                                    {/* 3-dot menu */}
-                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
+                                                                }}
+                                                                className="text-lg font-semibold"
+                                                                autoFocus
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                            />
+                                                            <div className="flex gap-2">
                                                                 <Button
-                                                                    variant="ghost"
                                                                     size="sm"
-                                                                    className="h-8 w-8 p-0"
-                                                                    onClick={(e) =>
-                                                                        e.stopPropagation()
-                                                                    }
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleSaveProjectEdit(
+                                                                            project,
+                                                                        );
+                                                                    }}
                                                                 >
-                                                                    <MoreVertical className="h-4 w-4" />
+                                                                    Save
                                                                 </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleDuplicateProject(
-                                                                            project,
-                                                                        );
+                                                                        handleCancelProjectEdit();
                                                                     }}
                                                                 >
-                                                                    <Copy className="h-4 w-4 mr-2" />
-                                                                    Duplicate
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleEditProject(
-                                                                            project,
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <Pencil className="h-4 w-4 mr-2" />
-                                                                    Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDeleteProject(
-                                                                            project,
-                                                                        );
-                                                                    }}
-                                                                    className="text-destructive"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
+                                                                    Cancel
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <CardTitle className="text-md font-semibold truncate">
+                                                            {project.name}
+                                                        </CardTitle>
+                                                    )}
                                                 </div>
-                                            </CardHeader>
 
-                                            {isEditingProject !== project.id && (
-                                                <CardContent>
-                                                    <p className="text-sm text-muted-foreground line-clamp-3">
-                                                        {project.description ||
-                                                            'No description provided'}
-                                                    </p>
-                                                </CardContent>
-                                            )}
-                                        </div>
+                                                {/* 3-dot menu */}
+                                                <div className="col-span-2 self-start justify-self-end">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-9 w-9"
+                                                                onClick={(e) =>
+                                                                    e.stopPropagation()
+                                                                }
+                                                            >
+                                                                <MoreVertical className="h-5 w-5" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDuplicateProject(
+                                                                        project,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Copy className="h-4 w-4 mr-2" />
+                                                                Duplicate
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEditProject(
+                                                                        project,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <Pencil className="h-4 w-4 mr-2" />
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteProject(
+                                                                        project,
+                                                                    );
+                                                                }}
+                                                                className="text-destructive"
+                                                            >
+                                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+
+                                        {isEditingProject !== project.id && (
+                                            <CardContent>
+                                                <p className="text-sm line-clamp-3 break-words h-[3.75rem]">
+                                                    {project.description ||
+                                                        'No description provided'}
+                                                </p>
+                                            </CardContent>
+                                        )}
                                     </Card>
                                 ))}
                         </div>
@@ -778,7 +750,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
             {/* AI Analysis Dialog */}
             {isAiAnalysisDialogOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border border-gray-300 dark:border-gray-700 rounded-lg">
+                    <div className="bg-white dark:bg-gray-800 shadow-lg p-6 w-96 border rounded-lg">
                         <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
                             Select Project, Document, and Requirement
                         </h3>
@@ -877,7 +849,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                         <div className="flex justify-end mt-4 space-x-2">
                             <Button
                                 variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
+                                className="hover:bg-gray-100 dark:hover:bg-muted"
                                 onClick={() => {
                                     setIsAiAnalysisDialogOpen(false);
                                     setSelectedProjectId(null);
@@ -893,61 +865,6 @@ export default function OrgDashboard(props: OrgDashboardProps) {
                                 disabled={!selectedProjectId || !selectedRequirementId}
                             >
                                 Start Analysis
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Canvas Dialog */}
-            {isCanvasDialogOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white dark:bg-black shadow-lg p-6 w-96 border border-gray-300 dark:border-muted rounded-lg">
-                        <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">
-                            Select a Project for Canvas
-                        </h3>
-                        <div className="space-y-4">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        {selectedCanvasProjectId
-                                            ? props.projects?.find(
-                                                  (p) => p.id === selectedCanvasProjectId,
-                                              )?.name
-                                            : 'Choose a project'}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    {props.projects?.map((project) => (
-                                        <DropdownMenuItem
-                                            key={project.id}
-                                            onClick={() =>
-                                                setSelectedCanvasProjectId(project.id)
-                                            }
-                                        >
-                                            {project.name}
-                                        </DropdownMenuItem>
-                                    ))}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <div className="flex justify-end mt-4 space-x-2">
-                            <Button
-                                variant="outline"
-                                className="border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-muted"
-                                onClick={() => {
-                                    setIsCanvasDialogOpen(false);
-                                    setSelectedCanvasProjectId(null);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/80"
-                                onClick={handleStartCanvas}
-                                disabled={!selectedCanvasProjectId}
-                            >
-                                Go to Canvas
                             </Button>
                         </div>
                     </div>

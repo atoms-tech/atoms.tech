@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
+import { EditModeFloatingToggle } from '@/components/custom/BlockCanvas/components/EditModeToggle';
 import { AssignRequirementIdsModal } from '@/components/custom/BlockCanvas/components/EditableTable/components/AssignRequirementIdsModal';
 import {
     BlockCanvas,
@@ -389,6 +390,9 @@ export default function DocumentPage() {
                 requirementsWithoutIds={requirementsWithoutIds}
                 isLoading={isAssigning}
             />
+
+            {/* Toggle used to change between editing and viewing */}
+            <EditModeFloatingToggle />
         </LayoutView>
     );
 }

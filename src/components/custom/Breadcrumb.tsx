@@ -1,114 +1,98 @@
 'use client';
 
-import { ChevronLeft } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, usePathname } from 'next/navigation';
 import type { FC } from 'react';
 import { Fragment } from 'react';
 
-import { Button } from '@/components/ui/button';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
 import { useDocument } from '@/hooks/queries/useDocument';
 import { useOrganization } from '@/hooks/queries/useOrganization';
 import { useProject } from '@/hooks/queries/useProject';
-import { cn } from '@/lib/utils';
 
 interface BreadcrumbProps {
     className?: string;
 }
 
-const Breadcrumb: FC<BreadcrumbProps> = ({ className }) => {
-    const router = useRouter();
+// Custom BreadCrumb component. It's capitalized in order to avoid name conflict with shadcn/ui component.
+const BreadCrumb: FC<BreadcrumbProps> = () => {
     const pathSegments = usePathname().split('/').filter(Boolean);
 
-    const breadcrumbs: string[] = [];
+    const params = useParams<{ orgId: string; projectId: string; documentId: string }>();
 
-    let orgId = '';
-    let projectId = '';
-    let documentId = '';
-
-    for (let i = 0; i < pathSegments.length; i++) {
-        switch (pathSegments[i]) {
-            case 'org':
-                i++;
-                orgId = i < pathSegments.length ? pathSegments[i] : '';
-                break;
-            case 'project':
-                i++;
-                projectId = i < pathSegments.length ? pathSegments[i] : '';
-                break;
-            case 'documents':
-                i++;
-                documentId = i < pathSegments.length ? pathSegments[i] : '';
-                break;
-        }
-    }
+    const orgId = params?.orgId;
+    const projectId = params?.projectId;
+    const documentId = params?.documentId;
 
     const orgName = useOrganization(orgId).data?.name || 'Undefined Organization Name';
     const projectName = useProject(projectId).data?.name || 'Undefined Project Name';
     const documentName = useDocument(documentId).data?.name || 'Undefined Document Name';
 
+    const breadcrumbs: { label: string; link: string }[] = [];
+
+    // Handle edge cases to route correctly
     for (let i = 0; i < pathSegments.length; i++) {
         switch (pathSegments[i]) {
             case 'org':
                 i++;
-                breadcrumbs.push(orgName);
+                breadcrumbs.push({
+                    label: orgName,
+                    link: '/' + pathSegments.slice(0, i + 1).join('/'),
+                });
                 break;
             case 'project':
                 i++;
-                breadcrumbs.push(projectName);
+                breadcrumbs.push({
+                    label: projectName,
+                    link: '/' + pathSegments.slice(0, i + 1).join('/'),
+                });
                 break;
             case 'documents':
                 i++;
-                breadcrumbs.push(documentName);
+                breadcrumbs.push({
+                    label: documentName,
+                    link: '/' + pathSegments.slice(0, i + 1).join('/'),
+                });
+                break;
+            case 'requirements':
                 break;
             default:
-                breadcrumbs.push(
-                    pathSegments[i].charAt(0).toUpperCase() + pathSegments[i].slice(1),
-                );
+                breadcrumbs.push({
+                    label:
+                        pathSegments[i].charAt(0).toUpperCase() +
+                        pathSegments[i].slice(1),
+                    link: '/' + pathSegments.slice(0, i + 1).join('/'),
+                });
         }
     }
 
-    const goToParentPage = (pathSegments: string[]) => {
-        pathSegments.pop();
-        // Handles when the parent path cannot be routed to normally
-        switch (pathSegments[pathSegments.length - 1]) {
-            case 'org':
-                pathSegments = ['home', 'user'];
-                break;
-            case 'project':
-            case 'documents':
-            case 'requirements':
-                pathSegments.pop();
-                break;
-        }
-
-        router.push('/' + pathSegments.join('/'));
-    };
-
     return (
-        <div
-            className={cn(
-                'flex items-center h-6 gap-1 px-2 bg-muted/50 rounded font-mono text-[10px] text-muted-foreground',
-                className,
-            )}
-        >
-            <Button
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 hover:bg-transparent"
-                onClick={() => goToParentPage(pathSegments)}
-            >
-                <ChevronLeft className="h-3 w-3" />
-            </Button>
-            {breadcrumbs.map((segment, index) => (
-                <Fragment key={index}>
-                    {index > 0 && <span className="opacity-40">/</span>}
-                    <span className="hover:text-foreground cursor-default transition-colors">
-                        {segment}
-                    </span>
-                </Fragment>
-            ))}
-        </div>
+        <Breadcrumb>
+            <BreadcrumbList>
+                {breadcrumbs.map((segment, index, array) => (
+                    <Fragment key={segment.label}>
+                        <BreadcrumbItem>
+                            {index !== array.length - 1 ? (
+                                <BreadcrumbLink asChild>
+                                    <Link href={segment.link}>{segment.label}</Link>
+                                </BreadcrumbLink>
+                            ) : (
+                                <BreadcrumbPage>{segment.label}</BreadcrumbPage>
+                            )}
+                        </BreadcrumbItem>
+                        {index !== array.length - 1 && <BreadcrumbSeparator />}
+                    </Fragment>
+                ))}
+            </BreadcrumbList>
+        </Breadcrumb>
     );
 };
 
-export default Breadcrumb;
+export default BreadCrumb;

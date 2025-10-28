@@ -274,7 +274,7 @@ export default function ExternalDocsPage({
                         </label>
                     )}
                 </div>
-                <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden">
+                <div className="relative flex space-x-0 border rounded-md overflow-hidden">
                     <motion.div
                         className="absolute inset-0 bg-primary"
                         layout
@@ -345,7 +345,7 @@ export default function ExternalDocsPage({
                             {sortedFiles.map((file) => (
                                 <div
                                     key={file.id}
-                                    className={`border border-gray-300 ${
+                                    className={`border ${
                                         theme === 'dark'
                                             ? 'hover:bg-accent'
                                             : 'hover:bg-gray-200'

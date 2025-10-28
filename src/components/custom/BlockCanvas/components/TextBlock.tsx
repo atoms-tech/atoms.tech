@@ -319,7 +319,7 @@ export const TextBlock: React.FC<BlockProps> = ({ block, onUpdate }) => {
     return (
         <div
             ref={editorRef}
-            className={cn('relative w-full')}
+            className={cn('relative w-full cursor-text')}
             onClick={(e) => {
                 e.stopPropagation();
                 if (isEditMode && editor && editor.state.selection.empty) {

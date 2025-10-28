@@ -8,6 +8,8 @@
         --foreground: 220 8% 20%; /* deep neutral gray */
 
         --card: 0 0% 100%; /* white */
+        --card-hover: 0 0% 90%;
+        --card-item: 0 0% 85%;
         --card-foreground: 220 8% 20%;
 
         --popover: 0 0% 100%;
@@ -41,7 +43,8 @@
         --chart-4: 220 13% 95%; /* very light gray */
         --chart-5: 0 0% 100%; /* white */
 
-        --radius: 0.5rem;
+        /* radius is set to zero to disable rounded corners*/
+        --radius: 0rem;
 
         --grid-size: 40px;
         --grid-color: rgba(0, 0, 0, 0.03);
@@ -104,6 +107,8 @@
         --foreground: 0 0% 100%; /* Pure white */
 
         --card: 240 10% 3.9%;
+        --card-hover: 240 10% 13.9%;
+        --card-item: 240 10% 18.9%;
         --card-foreground: 0 0% 100%;
 
         --popover: 240 10% 3.9%;

@@ -6,9 +6,12 @@ import {
     Copy,
     FolderOpen,
     MoreVertical,
+    PenTool,
     Pencil,
+    Plus,
     PlusCircle,
     Trash,
+    Users,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -362,13 +365,24 @@ export default function ProjectPage() {
                             {hasProjectPermission(userRole, 'addDocument') && (
                                 <Button
                                     variant="outline"
+                                    className="transition-colors hover:bg-primary hover:text-primary-foreground"
                                     onClick={() => setShowCreateDocumentPanel(true)}
-                                    className="gap-2 transition-colors hover:bg-primary hover:text-primary-foreground"
                                 >
-                                    <PlusCircle className="h-4 w-4" />
-                                    New Requirement Document
+                                    <Plus className="h-4 w-4" />
+                                    Create Requirement Document
                                 </Button>
                             )}
+                            <Button
+                                variant="default"
+                                onClick={() =>
+                                    router.push(
+                                        `/org/${params?.orgId}/project/${params?.projectId}/canvas`,
+                                    )
+                                }
+                            >
+                                <PenTool className="w-4 h-4" />
+                                Canvas
+                            </Button>
                             <Button
                                 variant="default"
                                 onClick={() =>
@@ -376,10 +390,9 @@ export default function ProjectPage() {
                                         `/org/${params?.orgId}/project/${params?.projectId}/testbed`,
                                     )
                                 }
-                                className="gap-2"
                             >
                                 <Beaker className="h-4 w-4" />
-                                Access Testbed
+                                Testbed
                             </Button>
                         </div>
                     </div>
@@ -389,7 +402,7 @@ export default function ProjectPage() {
                             {filteredDocuments?.map((doc) => (
                                 <div
                                     key={doc.id}
-                                    className="group bg-card border border-border rounded-lg hover:border-primary hover:shadow-lg transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
+                                    className="group bg-card border border-border rounded-lg hover:bg-card-hover transition-all duration-300 overflow-hidden relative aspect-square flex flex-col"
                                     style={{
                                         boxShadow:
                                             '0 2px 8px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.1)',
@@ -405,7 +418,7 @@ export default function ProjectPage() {
                                         {/* Header with Title and Actions */}
                                         <div className="flex items-start justify-between mb-3">
                                             {/* Document Title - Top Left */}
-                                            <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight flex-1 pr-2">
+                                            <h3 className="text-sm font-semibold text-foreground transition-colors line-clamp-2 leading-tight flex-1 pr-2">
                                                 {doc.name}
                                             </h3>
 
@@ -549,7 +562,7 @@ export default function ProjectPage() {
                             <div className="text-center py-16">
                                 <div className="relative mx-auto mb-6">
                                     {/* Stacked empty documents */}
-                                    <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center mx-auto">
+                                    <div className="w-20 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 border border-dashed rounded-lg flex items-center justify-center mx-auto">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="40"
@@ -569,7 +582,7 @@ export default function ProjectPage() {
                                             <path d="M16 17H8" />
                                         </svg>
                                     </div>
-                                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border-2 border-dashed border-gray-200 dark:border-gray-500 rounded-lg -z-10 opacity-50"></div>
+                                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-18 h-22 bg-gradient-to-br from-gray-50 to-gray-150 dark:from-gray-700 dark:to-gray-600 border border-dashed rounded-lg -z-10 opacity-50"></div>
                                 </div>
                                 <h3 className="text-xl font-semibold text-foreground mb-2">
                                     No documents found

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Edit2, Lock, Unlock } from 'lucide-react';
+import { Check, Edit2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 
@@ -74,7 +74,6 @@ function useUserRole(userId: string) {
     return { role, isLoading };
 }
 
-// Floating action button version
 export const EditModeFloatingToggle = memo(() => {
     const { isEditMode, setIsEditMode } = useLayout();
     const { user } = useUser(); // Fetch user using useUser()
@@ -110,39 +109,5 @@ export const EditModeFloatingToggle = memo(() => {
     );
 });
 
-// Toolbar version
-export const EditModeToggle = memo(() => {
-    const { isEditMode, setIsEditMode } = useLayout();
-    const { user } = useUser(); // Fetch user using useUser()
-    const userId = user?.id || ''; // Ensure userId is extracted correctly
-
-    const { role, isLoading } = useUserRole(userId);
-    const canEdit = role === 'owner' || role === 'editor';
-
-    const toggleEditMode = () => {
-        setIsEditMode(!isEditMode);
-    };
-
-    if (isLoading || !canEdit) return null;
-
-    return (
-        <BaseToggle
-            icon={<Lock className="h-5 w-5" />}
-            activeIcon={<Unlock className="h-5 w-5" />}
-            tooltip={isEditMode ? 'Exit Edit Mode' : 'Enter Edit Mode'}
-            isActive={isEditMode}
-            onClick={toggleEditMode}
-            className={
-                isEditMode
-                    ? 'text-destructive-foreground bg-destructive/80 hover:bg-destructive/90'
-                    : ''
-            }
-        />
-    );
-});
-
 // Display names for debugging
 EditModeFloatingToggle.displayName = 'EditModeFloatingToggle';
-EditModeToggle.displayName = 'EditModeToggle';
-
-export default EditModeToggle;
