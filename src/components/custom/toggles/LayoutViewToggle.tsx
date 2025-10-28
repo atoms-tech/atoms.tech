@@ -4,7 +4,7 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import { memo, useEffect, useState } from 'react';
 
 import BaseToggle from '@/components/custom/toggles/BaseToggle';
-import { LayoutViewMode, useLayout } from '@/lib/providers/layout.provider';
+import { useLayout } from '@/lib/providers/layout.provider';
 
 export const LayoutViewToggle = memo(() => {
     const [mounted, setMounted] = useState(false);
@@ -17,7 +17,7 @@ export const LayoutViewToggle = memo(() => {
         // Load initial state from localStorage
         const savedMode = localStorage.getItem('layoutViewMode');
         if (savedMode === 'wide' || savedMode === 'standard') {
-            setLayoutViewMode(savedMode as LayoutViewMode);
+            setLayoutViewMode(savedMode);
         }
     }, [setLayoutViewMode]);
 
