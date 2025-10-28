@@ -23,7 +23,6 @@ export const BREAKPOINTS = {
 };
 
 // Comprehensive layout state type
-export type LayoutViewMode = 'standard' | 'wide';
 export type SidebarState = 'expanded' | 'collapsed';
 
 export interface LayoutState {
@@ -41,8 +40,8 @@ export interface LayoutState {
     currentBreakpoint: keyof typeof BREAKPOINTS;
 
     // Layout view (width)
-    layoutViewMode: LayoutViewMode;
-    setLayoutViewMode: (mode: LayoutViewMode) => void;
+    layoutViewMode: string;
+    setLayoutViewMode: (mode: string) => void;
 
     // Edit mode
     isEditMode: boolean;
@@ -79,7 +78,7 @@ export const LayoutProvider = ({ children }: LayoutProviderProps) => {
         useState<keyof typeof BREAKPOINTS>('lg');
 
     // Layout view (width)
-    const [layoutViewMode, setLayoutViewMode] = useState<LayoutViewMode>('standard');
+    const [layoutViewMode, setLayoutViewMode] = useState<string>('standard');
 
     // Get edit mode from document store
     const { isEditMode, setIsEditMode } = useDocumentStore();

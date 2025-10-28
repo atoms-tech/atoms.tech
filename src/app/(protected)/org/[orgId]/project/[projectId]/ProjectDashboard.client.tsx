@@ -11,7 +11,6 @@ import {
     Plus,
     PlusCircle,
     Trash,
-    Users,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
