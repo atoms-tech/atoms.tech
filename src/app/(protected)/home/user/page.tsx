@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Building, Folder, Pin, Plus, Users } from 'lucide-react'; // Import Pin icon
+import { Folder, Pin, Plus } from 'lucide-react'; // Import Pin icon
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -14,7 +14,6 @@ import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -250,7 +249,7 @@ export default function UserDashboard() {
                             placeholder="Search organizations..."
                             value={searchTerm || ''}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full md:w-64 border border-gray-400"
+                            className="w-full md:w-64"
                         />
                     </div>
                 </div>
@@ -267,7 +266,7 @@ export default function UserDashboard() {
                         variants={containerVariants}
                         initial={false}
                         animate="show"
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-fr gap-6"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6"
                     >
                         {filteredOrganizations.length > 0 ? (
                             filteredOrganizations.map((org: Organization) => (
@@ -277,60 +276,42 @@ export default function UserDashboard() {
                                     initial={false}
                                 >
                                     <Card
-                                        className={`h-full hover:shadow-md transition-all duration-300 cursor-pointer`}
+                                        className={`transition-colors hover:bg-card-hover cursor-pointer`}
                                         onClick={() => handleOrganizationClick(org)}
                                     >
-                                        <CardHeader className="pb-3">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center space-x-2">
+                                        <CardHeader>
+                                            <div className="flex items-center">
+                                                <CardTitle className="w-full text-lg font-semibold truncate mr-2">
+                                                    {org.name}
+                                                </CardTitle>
+                                                <div className="h-6 w-6 aspect-square transition-colors hover:bg-card-item flex items-center justify-center">
                                                     <Pin
-                                                        className="h-5 w-5 cursor-pointer"
+                                                        className="h-5 w-5"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handlePinOrganization(org.id);
                                                         }}
-                                                        style={{
-                                                            fill:
-                                                                org.id ===
-                                                                profile?.pinned_organization_id
-                                                                    ? 'hsl(var(--border))'
-                                                                    : 'none',
-                                                            stroke:
-                                                                org.id ===
-                                                                profile?.pinned_organization_id
-                                                                    ? 'hsl(var(--border))'
-                                                                    : 'hsl(var(--muted-foreground))',
-                                                            strokeWidth: 2,
-                                                        }}
+                                                        fill={`${org.id === profile?.pinned_organization_id ? 'grey' : 'none'}`}
+                                                        stroke="grey"
+                                                        strokeWidth={2}
                                                     />
-                                                    <CardTitle className="text-lg font-semibold line-clamp-2">
-                                                        {org.name}
-                                                    </CardTitle>
                                                 </div>
-                                                {org.type ===
-                                                OrganizationType.enterprise ? (
-                                                    <Building className="h-5 w-5 text-muted-foreground" />
-                                                ) : (
-                                                    <Users className="h-5 w-5 text-green-500" />
-                                                )}
                                             </div>
-                                            <CardDescription className="text-sm text-muted-foreground line-clamp-2">
-                                                {org.slug}
+                                            <CardDescription>
+                                                <Badge variant="secondary">
+                                                    {org.type ===
+                                                    OrganizationType.enterprise
+                                                        ? 'Enterprise'
+                                                        : 'Team'}
+                                                </Badge>
                                             </CardDescription>
                                         </CardHeader>
-                                        <CardContent className="pb-3">
-                                            <p className="text-sm line-clamp-3">
+                                        <CardContent>
+                                            <p className="text-sm line-clamp-3 break-words h-[3.75rem]">
                                                 {org.description ||
                                                     'No description provided'}
                                             </p>
                                         </CardContent>
-                                        <CardFooter className="flex justify-between pt-0">
-                                            <Badge variant="secondary">
-                                                {org.type === OrganizationType.enterprise
-                                                    ? 'Enterprise'
-                                                    : 'Team'}
-                                            </Badge>
-                                        </CardFooter>
                                     </Card>
                                 </motion.div>
                             ))

@@ -13,8 +13,8 @@ import * as React from 'react';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
 import { Table, TableBody } from '@/components/ui/table';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import {
     AddRowPlaceholder,
@@ -77,6 +77,11 @@ export function EditableTable<T extends BaseRow>({
     const userId = user?.id || ''; // Ensure userId is extracted correctly
     const params = useParams();
     const projectId = params?.projectId || ''; // Ensure projectId is extracted correctly
+    const {
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
@@ -164,6 +169,7 @@ export function EditableTable<T extends BaseRow>({
         async (action: string) => {
             const getUserRole = async (): Promise<keyof typeof rolePermissions> => {
                 try {
+                    const supabase = getClientOrThrow();
                     const { data, error } = await supabase
                         .from('project_members')
                         .select('role')
@@ -179,18 +185,35 @@ export function EditableTable<T extends BaseRow>({
                         return 'viewer'; // Default to 'viewer' if there's an error
                     }
 
-                    return data?.role || 'viewer'; // Default to 'viewer' if role is undefined
+                    // Map database roles to expected roles
+                    const role = data?.role;
+                    if (role === 'admin' || role === 'maintainer') {
+                        return 'owner';
+                    }
+                    if (role === 'owner' || role === 'editor' || role === 'viewer') {
+                        return role;
+                    }
+                    return 'viewer'; // Default to 'viewer' for any other role
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';
                 }
             };
 
+            if (authLoading) {
+                return false;
+            }
+
+            if (authError) {
+                console.error('Failed to initialize Supabase client:', authError);
+                return false;
+            }
+
             const userRole = await getUserRole();
             console.log('User role:', userRole);
             return rolePermissions[userRole].includes(action);
         },
-        [userId, projectId, rolePermissions], // Updated dependencies
+        [authError, authLoading, getClientOrThrow, projectId, rolePermissions, userId],
     );
 
     // Effect to init edit data when entering edit mode
@@ -365,41 +388,30 @@ export function EditableTable<T extends BaseRow>({
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
+                const supabase = getClientOrThrow();
 
-                // Get organization ID from the current document
+                // Get organization ID from the current document via API
                 const urlParts = window.location.pathname.split('/');
-                const orgIndex = urlParts.indexOf('org');
                 const docIndex = urlParts.indexOf('documents');
-
-                if (
-                    orgIndex !== -1 &&
-                    docIndex !== -1 &&
-                    urlParts[orgIndex + 1] &&
-                    urlParts[docIndex + 1]
-                ) {
+                if (docIndex !== -1 && urlParts[docIndex + 1]) {
                     const documentId = urlParts[docIndex + 1];
-
-                    // Get organization ID from document
-                    const { data: document } = await supabase
-                        .from('documents')
-                        .select(
-                            `
-                            project_id,
-                            projects!inner(organization_id)
-                        `,
-                        )
-                        .eq('id', documentId)
-                        .single();
-
-                    const organizationId = (
-                        document as { projects?: { organization_id?: string } }
-                    )?.projects?.organization_id;
-
-                    if (organizationId) {
-                        const reqId = await generateNextRequirementId(organizationId);
-                        newItem[externalIdColumn.accessor as keyof T] =
-                            reqId as T[keyof T];
+                    const resp = await fetch(`/api/documents/${documentId}`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                    if (resp.ok) {
+                        const payload = (await resp.json()) as {
+                            organizationId?: string | null;
+                        };
+                        const organizationId = payload.organizationId ?? null;
+                        if (organizationId) {
+                            const reqId = await generateNextRequirementId(
+                                supabase,
+                                organizationId,
+                            );
+                            newItem[externalIdColumn.accessor as keyof T] =
+                                reqId as T[keyof T];
+                        }
                     }
                 }
             } catch (error) {
@@ -414,7 +426,7 @@ export function EditableTable<T extends BaseRow>({
             payload: { ...editingData, new: newItem },
         });
         dispatch({ type: 'START_ADD_ROW' });
-    }, [canPerformAction, columns, editingData]);
+    }, [canPerformAction, columns, editingData, getClientOrThrow]);
 
     const handleSaveNewRow = useCallback(async () => {
         console.log('🎯 STEP 2: handleSaveNewRow called in EditableTable');

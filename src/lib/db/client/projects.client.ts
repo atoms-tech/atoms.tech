@@ -1,6 +1,11 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const getProjectBySlug = async (slug: string) => {
+import { Database } from '@/types/base/database.types';
+
+export const getProjectBySlug = async (
+    supabase: SupabaseClient<Database>,
+    slug: string,
+) => {
     const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -11,7 +16,11 @@ export const getProjectBySlug = async (slug: string) => {
     return data;
 };
 
-export const getUserProjects = async (userId: string, orgId: string) => {
+export const getUserProjects = async (
+    supabase: SupabaseClient<Database>,
+    userId: string,
+    orgId: string,
+) => {
     const { data: projectMemberData, error: memberError } = await supabase
         .from('project_members')
         .select('project_id')
@@ -34,7 +43,10 @@ export const getUserProjects = async (userId: string, orgId: string) => {
     return projectData;
 };
 
-export const getProjectMembers = async (projectId: string) => {
+export const getProjectMembers = async (
+    supabase: SupabaseClient<Database>,
+    projectId: string,
+) => {
     // Fetch all members of the project along with their roles
     const { data: members, error: membersError } = await supabase
         .from('project_members')

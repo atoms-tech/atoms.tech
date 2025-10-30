@@ -21,10 +21,10 @@ import {
 } from '@/hooks/mutations/useExternalDocumentsMutations';
 import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
 import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { OrganizationRole, hasOrganizationPermission } from '@/lib/auth/permissions';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface ExternalDocsPageProps {
     onTotalUsageUpdate?: (totalUsage: number) => void;
@@ -43,6 +43,11 @@ export default function ExternalDocsPage({
     const { theme } = useTheme();
     const uploadDocument = useUploadExternalDocument();
     const deleteDocument = useDeleteExternalDocument();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
     const organizationContext = useOrganization();
     const organization = organizationContext?.currentOrganization || null;
     const pathname = usePathname();
@@ -168,17 +173,32 @@ export default function ExternalDocsPage({
             return;
         }
 
+        if (authLoading || !supabase) {
+            toast({
+                title: 'Authentication not ready',
+                description: authError ?? 'Please try again in a moment.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         const filePath = `${currentOrgId}/${documentId}`;
 
         const { data: publicUrl } = supabase.storage
             .from('external_documents')
             .getPublicUrl(filePath);
 
-        if (publicUrl) {
-            window.open(publicUrl.publicUrl, '_blank');
-        } else {
-            alert('Failed to get file URL. Please try again.');
+        if (!publicUrl) {
+            console.error('Failed to get file URL');
+            toast({
+                title: 'Error',
+                description: 'Failed to get file URL. Please try again.',
+                variant: 'destructive',
+            });
+            return;
         }
+
+        window.open(publicUrl.publicUrl, '_blank');
     };
 
     return (
@@ -254,7 +274,7 @@ export default function ExternalDocsPage({
                         </label>
                     )}
                 </div>
-                <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden">
+                <div className="relative flex space-x-0 border rounded-md overflow-hidden">
                     <motion.div
                         className="absolute inset-0 bg-primary"
                         layout
@@ -325,7 +345,7 @@ export default function ExternalDocsPage({
                             {sortedFiles.map((file) => (
                                 <div
                                     key={file.id}
-                                    className={`border border-gray-300 ${
+                                    className={`border ${
                                         theme === 'dark'
                                             ? 'hover:bg-accent'
                                             : 'hover:bg-gray-200'

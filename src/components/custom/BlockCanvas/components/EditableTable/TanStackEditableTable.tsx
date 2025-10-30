@@ -27,8 +27,8 @@ import {
     TanStackDataTableRow,
 } from '@/components/custom/BlockCanvas/components/EditableTable/components';
 import { Table, TableBody } from '@/components/ui/table';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 // import { RequirementAiAnalysis } from '@/types/base/requirements.types';
 
@@ -67,6 +67,11 @@ export function TanStackEditableTable<T extends BaseRow>({
     const userId = user?.id || '';
     const params = useParams();
     const projectId = params?.projectId || '';
+    const {
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Create a ref to track the table wrapper
     const tableRef = React.useRef<HTMLDivElement>(null);
@@ -147,6 +152,7 @@ export function TanStackEditableTable<T extends BaseRow>({
         async (action: string) => {
             const getUserRole = async () => {
                 try {
+                    const supabase = getClientOrThrow();
                     const { data, error } = await supabase
                         .from('project_members')
                         .select('role')
@@ -162,17 +168,34 @@ export function TanStackEditableTable<T extends BaseRow>({
                         return 'viewer';
                     }
 
-                    return data?.role || 'viewer';
+                    // Map database roles to expected roles
+                    const role = data?.role;
+                    if (role === 'admin' || role === 'maintainer') {
+                        return 'owner';
+                    }
+                    if (role === 'owner' || role === 'editor' || role === 'viewer') {
+                        return role;
+                    }
+                    return 'viewer'; // Default to 'viewer' for any other role
                 } catch (err) {
                     console.error('Unexpected error fetching user role:', err);
                     return 'viewer';
                 }
             };
 
+            if (authLoading) {
+                return false;
+            }
+
+            if (authError) {
+                console.error('Failed to initialize Supabase client:', authError);
+                return false;
+            }
+
             const userRole = await getUserRole();
             return rolePermissions[userRole].includes(action);
         },
-        [userId, projectId, rolePermissions],
+        [authError, authLoading, getClientOrThrow, projectId, rolePermissions, userId],
     );
 
     // Modified handleCellChange to update state without triggering save
@@ -510,41 +533,30 @@ export function TanStackEditableTable<T extends BaseRow>({
                 const { generateNextRequirementId } = await import(
                     '@/lib/utils/requirementIdGenerator'
                 );
-                const { supabase } = await import('@/lib/supabase/supabaseBrowser');
+                const supabase = getClientOrThrow();
 
-                // Get organization ID from the current document
+                // Get organization ID from the current document via API
                 const urlParts = window.location.pathname.split('/');
-                const orgIndex = urlParts.indexOf('org');
                 const docIndex = urlParts.indexOf('documents');
-
-                if (
-                    orgIndex !== -1 &&
-                    docIndex !== -1 &&
-                    urlParts[orgIndex + 1] &&
-                    urlParts[docIndex + 1]
-                ) {
+                if (docIndex !== -1 && urlParts[docIndex + 1]) {
                     const documentId = urlParts[docIndex + 1];
-
-                    // Get organization ID from document
-                    const { data: document } = await supabase
-                        .from('documents')
-                        .select(
-                            `
-                            project_id,
-                            projects!inner(organization_id)
-                        `,
-                        )
-                        .eq('id', documentId)
-                        .single();
-
-                    const organizationId = (
-                        document as { projects?: { organization_id?: string } }
-                    )?.projects?.organization_id;
-
-                    if (organizationId) {
-                        const reqId = await generateNextRequirementId(organizationId);
-                        newItem[externalIdColumn.accessor as keyof T] =
-                            reqId as T[keyof T];
+                    const resp = await fetch(`/api/documents/${documentId}`, {
+                        method: 'GET',
+                        cache: 'no-store',
+                    });
+                    if (resp.ok) {
+                        const payload = (await resp.json()) as {
+                            organizationId?: string | null;
+                        };
+                        const organizationId = payload.organizationId ?? null;
+                        if (organizationId) {
+                            const reqId = await generateNextRequirementId(
+                                supabase,
+                                organizationId,
+                            );
+                            newItem[externalIdColumn.accessor as keyof T] =
+                                reqId as T[keyof T];
+                        }
                     }
                 }
             } catch (error) {
@@ -559,7 +571,7 @@ export function TanStackEditableTable<T extends BaseRow>({
             new: newItem,
         }));
         setIsAddingNew(true);
-    }, [canPerformAction, columns]);
+    }, [canPerformAction, columns, getClientOrThrow]);
 
     const handleSaveNewRow = useCallback(async () => {
         console.log('🎯 STEP 2: handleSaveNewRow called in TanStackEditableTable');

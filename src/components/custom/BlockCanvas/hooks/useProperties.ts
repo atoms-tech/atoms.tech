@@ -2,8 +2,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import { Property, PropertyType } from '@/components/custom/BlockCanvas/types';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { Database } from '@/types/base/database.types';
 
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
@@ -44,11 +44,13 @@ export const useProperties = (documentId: string) => {
     const [isLoading, setIsLoading] = useState(true);
     const [properties, setProperties] = useState<ExtendedProperty[]>([]);
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Fetch properties for a document or specific block
     const fetchProperties = useCallback(async () => {
         setIsLoading(true);
         try {
+            const supabase = getClientOrThrow();
             const query = supabase
                 .from('properties')
                 .select('*')
@@ -78,50 +80,55 @@ export const useProperties = (documentId: string) => {
         } finally {
             setIsLoading(false);
         }
-    }, [documentId, queryClient]);
+    }, [documentId, getClientOrThrow, queryClient]);
 
     // Create a new property
-    const createProperty = useCallback(async (propertyData: ExtendedProperty) => {
-        try {
-            const standardPropertyData = {
-                project_id: propertyData.project_id,
-                document_id: propertyData.document_id,
-                org_id: propertyData.org_id,
-                name: propertyData.name,
-                property_type: propertyData.type || PropertyType.text,
-                created_by: propertyData.created_by,
-                updated_by: propertyData.updated_by,
-                options: propertyData.options,
-            };
+    const createProperty = useCallback(
+        async (propertyData: ExtendedProperty) => {
+            try {
+                const supabase = getClientOrThrow();
+                const standardPropertyData = {
+                    project_id: propertyData.project_id,
+                    document_id: propertyData.document_id,
+                    org_id: propertyData.org_id,
+                    name: propertyData.name,
+                    property_type: propertyData.type || PropertyType.text,
+                    created_by: propertyData.created_by,
+                    updated_by: propertyData.updated_by,
+                    options: propertyData.options,
+                };
 
-            const insertData: PropertyInsert = {
-                ...standardPropertyData,
-                name:
-                    propertyData.key ||
-                    propertyData.name.toLowerCase().replace(/\s+/g, '_'),
-                options: standardPropertyData.options
-                    ? JSON.stringify(standardPropertyData.options)
-                    : null,
-            };
+                const insertData: PropertyInsert = {
+                    ...standardPropertyData,
+                    name:
+                        propertyData.key ||
+                        propertyData.name.toLowerCase().replace(/\s+/g, '_'),
+                    options: standardPropertyData.options
+                        ? JSON.stringify(standardPropertyData.options)
+                        : null,
+                };
 
-            const { data, error } = await supabase
-                .from('properties')
-                .insert(insertData)
-                .select()
-                .single();
+                const { data, error } = await supabase
+                    .from('properties')
+                    .insert(insertData)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            return data;
-        } catch (error) {
-            console.error('Error creating property:', error);
-            throw error;
-        }
-    }, []);
+                if (error) throw error;
+                return data;
+            } catch (error) {
+                console.error('Error creating property:', error);
+                throw error;
+            }
+        },
+        [getClientOrThrow],
+    );
 
     // Update a property
     const updateProperty = useCallback(
         async (propertyId: string, updates: Partial<ExtendedProperty>) => {
             try {
+                const supabase = getClientOrThrow();
                 // Convert updates to match the database schema
                 const updateData: PropertyUpdate = {
                     ...updates,
@@ -158,13 +165,14 @@ export const useProperties = (documentId: string) => {
                 throw error;
             }
         },
-        [documentId, queryClient],
+        [documentId, getClientOrThrow, queryClient],
     );
 
     // Delete a property (soft delete)
     const deleteProperty = useCallback(
         async (propertyId: string, userId: string) => {
             try {
+                const supabase = getClientOrThrow();
                 const updateData: PropertyUpdate = {
                     is_deleted: true,
                     deleted_by: userId,
@@ -195,7 +203,7 @@ export const useProperties = (documentId: string) => {
                 throw error;
             }
         },
-        [documentId, queryClient],
+        [documentId, getClientOrThrow, queryClient],
     );
 
     // Create default properties for a block
@@ -212,6 +220,7 @@ export const useProperties = (documentId: string) => {
             userId: string;
         }) => {
             try {
+                const supabase = getClientOrThrow();
                 const defaultProperties = [
                     {
                         project_id: projectId,
@@ -257,13 +266,14 @@ export const useProperties = (documentId: string) => {
                 throw error;
             }
         },
-        [],
+        [getClientOrThrow],
     );
 
     // Reorder properties
     const reorderProperties = useCallback(
         async (reorderedProperties: ExtendedProperty[], userId: string) => {
             try {
+                const supabase = getClientOrThrow();
                 // Update all positions in parallel for better performance
                 await Promise.all(
                     reorderedProperties.map((property, index) =>
@@ -297,7 +307,7 @@ export const useProperties = (documentId: string) => {
                 throw error;
             }
         },
-        [documentId, queryClient],
+        [documentId, getClientOrThrow, queryClient],
     );
 
     return {

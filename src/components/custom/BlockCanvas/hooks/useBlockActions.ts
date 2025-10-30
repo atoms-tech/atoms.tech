@@ -11,9 +11,9 @@ import {
     useDeleteBlock,
     useUpdateBlock,
 } from '@/hooks/mutations/useBlockMutations';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { BLOCK_TEXT_DEFAULT_HEIGHT } from '@/lib/constants/blocks';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { useDocumentStore } from '@/store/document.store';
 import { Json } from '@/types/base/database.types';
 
@@ -29,6 +29,7 @@ export const useBlockActions = ({
     const deleteBlockMutation = useDeleteBlock();
     const { addBlock } = useDocumentStore();
     const queryClient = useQueryClient();
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Add null check for blocks
     const getNewBlockOrder = () => {
@@ -123,6 +124,7 @@ export const useBlockActions = ({
         console.log('Creating default columns for block', blockId);
 
         try {
+            const supabase = getClientOrThrow();
             // Fetch base properties for the organization
             const { data: baseProperties, error: basePropertiesError } = await supabase
                 .from('properties')

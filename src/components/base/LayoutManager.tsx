@@ -7,12 +7,11 @@ import React, { useEffect } from 'react';
 import AppSidebar from '@/components/base/AppSidebar';
 import { AgentDemo } from '@/components/custom/AgentChat';
 import { useAgentStore } from '@/components/custom/AgentChat/hooks/useAgentStore';
-import { EditModeFloatingToggle } from '@/components/custom/BlockCanvas/components/EditModeToggle';
 import HorizontalToolbar from '@/components/custom/HorizontalToolbar';
-import VerticalToolbar from '@/components/custom/VerticalToolbar';
+import LayoutViewToggle from '@/components/custom/toggles/LayoutViewToggle';
+import ThemeToggle from '@/components/custom/toggles/ThemeToggle';
 import { Sidebar } from '@/components/ui/sidebar';
 import { LayoutProvider, useLayout } from '@/lib/providers/layout.provider';
-import { cn } from '@/lib/utils';
 
 interface LayoutManagerProps {
     children: React.ReactNode;
@@ -28,7 +27,6 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
         sidebarState,
         isMobile,
         isTablet,
-        isDocumentPage,
         setCurrentPath,
         toggleSidebar,
     } = useLayout();
@@ -45,12 +43,6 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             setCurrentPath(pathname);
         }
     }, [pathname, setCurrentPath]);
-
-    // Show vertical toolbar only when sidebar is collapsed and on desktop
-    const showVerticalToolbar = !isMobile && !isTablet;
-
-    // Show horizontal toolbar on mobile and tablet
-    const showHorizontalToolbar = isMobile || isTablet;
 
     // Calculate right margin for main content when agent panel is open
     // Only apply on desktop (md and above) - mobile/tablet keep overlay behavior
@@ -78,28 +70,28 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
             {/* Sidebar */}
             <AppSidebar />
 
-            {/* Main content area with animation and right margin for agent panel */}
-            {/* Content wrapper */}
+            {/* Top Bar for sidebar trigger, breadcrumbs, and avatar */}
+            <HorizontalToolbar />
+
+            {/* Main Content Area */}
             <div
-                className={cn(
-                    'flex-1 md:pl-6 lg:pl-8 pt-16 transition-all duration-300 ease-out',
-                    showHorizontalToolbar && 'pt-16', // Extra padding when horizontal toolbar is active
-                )}
+                className="flex-1 transition-all duration-200 ease-linear pt-16"
                 style={{
                     marginRight: `${rightMargin}px`,
                 }}
             >
-                {children}
+                {/* Toggles for Theme and Layout */}
+                <div className="fixed z-30 flex flex-col gap-2 m-1 bg-background">
+                    <ThemeToggle />
+                    <LayoutViewToggle />
+                </div>
+                <div className="flex flex-row">
+                    {/* Hidden div used to allocate space for toggles*/}
+                    <div className="w-10" />
+                    {/* Actual Page Content */}
+                    {children}
+                </div>
             </div>
-
-            {/* Floating edit button for document pages */}
-            {isDocumentPage && !isMobile && <EditModeFloatingToggle />}
-
-            {/* Vertical toolbar - only on desktop when sidebar is collapsed */}
-            {showVerticalToolbar && <VerticalToolbar />}
-
-            {/* Horizontal toolbar - only on mobile/tablet */}
-            {showHorizontalToolbar && <HorizontalToolbar />}
 
             {/* Agent Demo - positioned on the right side */}
             <AgentDemo autoInit={false} />

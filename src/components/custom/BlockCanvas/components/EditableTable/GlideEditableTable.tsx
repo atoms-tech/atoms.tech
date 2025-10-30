@@ -3269,7 +3269,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                           backgroundColor: '#7C3AED',
                                                           color: 'white',
                                                           border: 'none',
-                                                          borderRadius: 10, // moderate rounded
                                                           fontWeight: 600,
                                                           fontSize: 14,
                                                           cursor: 'pointer',
@@ -3366,7 +3365,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             title: property.name,
                                             accessor: property.name as keyof T,
                                             type,
-                                            width: column.width ?? 150,
+                                            width: column.width ?? 200,
                                             position: pendingInsertIndex,
                                             required: false,
                                             isSortable: true,
@@ -3411,13 +3410,27 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     if (pendingInsertIndex == null) return;
                                     try {
                                         if (!blockId || !userId) return;
-                                        const { property, column } =
-                                            await createColumnFromProperty(
-                                                propertyId,
-                                                defaultValue,
-                                                blockId,
-                                                userId,
+                                        const result = await createColumnFromProperty(
+                                            propertyId,
+                                            defaultValue,
+                                            blockId,
+                                            userId,
+                                        );
+                                        const column = result.column;
+                                        const property = result.property as
+                                            | {
+                                                  name: string;
+                                                  property_type: any;
+                                                  options?: unknown;
+                                              }
+                                            | undefined;
+
+                                        if (!property) {
+                                            console.error(
+                                                '[GlideEditableTable] Missing property payload from createColumnFromProperty',
                                             );
+                                            return;
+                                        }
 
                                         const mappedType = propertyTypeToColumnType(
                                             property.property_type,
@@ -3486,7 +3499,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             resolvedTheme === 'dark'
                                                 ? '1px solid #444'
                                                 : '1px solid #ccc', // border
-                                        borderRadius: 5,
                                         // dropdown shadows
                                         boxShadow:
                                             resolvedTheme === 'dark'

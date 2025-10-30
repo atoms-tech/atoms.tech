@@ -40,7 +40,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     return (
         <div
             className={cn(
-                'fixed right-6 bottom-20 z-40 transition-all duration-300 ease-out',
+                'fixed right-6 bottom-20 z-40 transition-all duration-200 ease-linear',
                 className,
             )}
         >
@@ -49,8 +49,8 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                 onClick={onClick}
                 className={cn(
                     'group cursor-pointer',
-                    'bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700',
-                    'rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-out',
+                    'bg-white dark:bg-zinc-800 border',
+                    'rounded-lg shadow-md hover:shadow-lg transition-all duration-200 ease-linear',
                     'hover:bg-zinc-50 dark:hover:bg-zinc-750',
                     'min-w-[120px] max-w-[160px] overflow-hidden',
                     'flex flex-col items-center',

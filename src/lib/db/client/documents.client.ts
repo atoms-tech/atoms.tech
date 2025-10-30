@@ -1,6 +1,11 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const getProjectDocuments = async (projectId: string) => {
+import { Database } from '@/types/base/database.types';
+
+export const getProjectDocuments = async (
+    supabase: SupabaseClient<Database>,
+    projectId: string,
+) => {
     const { data, error } = await supabase
         .from('documents')
         .select('*')
@@ -11,7 +16,10 @@ export const getProjectDocuments = async (projectId: string) => {
     return data;
 };
 
-export const getDocumentBlocksAndRequirements = async (documentId: string) => {
+export const getDocumentBlocksAndRequirements = async (
+    supabase: SupabaseClient<Database>,
+    documentId: string,
+) => {
     const { data, error } = await supabase
         .from('blocks')
         .select(
@@ -29,7 +37,10 @@ export const getDocumentBlocksAndRequirements = async (documentId: string) => {
     return data;
 };
 
-export const getDocumentData = async (documentId: string) => {
+export const getDocumentData = async (
+    supabase: SupabaseClient<Database>,
+    documentId: string,
+) => {
     const { data, error } = await supabase
         .from('documents')
         .select('*')

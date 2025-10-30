@@ -1,3 +1,4 @@
+import { AuthKitProvider } from '@workos-inc/authkit-nextjs/components';
 import type { Metadata } from 'next';
 import { CookiesProvider } from 'next-client-cookies/server';
 import { Geist, Geist_Mono } from 'next/font/google';
@@ -42,19 +43,21 @@ export default function RootLayout({
                 <body
                     className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
                 >
-                    <CookiesProvider>
-                        <ThemeProvider
-                            attribute="class"
-                            defaultTheme="system"
-                            enableSystem
-                            disableTransitionOnChange
-                        >
-                            <QueryProvider>
-                                {children}
-                                <Toaster position="bottom-right" />
-                            </QueryProvider>
-                        </ThemeProvider>
-                    </CookiesProvider>
+                    <AuthKitProvider>
+                        <CookiesProvider>
+                            <ThemeProvider
+                                attribute="class"
+                                defaultTheme="system"
+                                enableSystem
+                                disableTransitionOnChange
+                            >
+                                <QueryProvider>
+                                    {children}
+                                    <Toaster position="bottom-right" />
+                                </QueryProvider>
+                            </ThemeProvider>
+                        </CookiesProvider>
+                    </AuthKitProvider>
                     {/* Below Required for Glide overlays (e.g., dropdown editors) */}
                     <div
                         id="portal"

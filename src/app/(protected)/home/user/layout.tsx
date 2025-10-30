@@ -11,14 +11,14 @@ export default async function UserDashboardLayout({
     children: React.ReactNode;
 }) {
     const queryClient = new QueryClient();
-    const user = await getAuthUserServer();
+    const { user } = await getAuthUserServer();
 
     // Fetch organizations on the server side
-    const organizations = await getUserOrganizationsServer(user.user.id);
+    const organizations = await getUserOrganizationsServer(user.id);
 
     // Prefetch organizations for client components
     await queryClient.prefetchQuery({
-        queryKey: queryKeys.organizations.byMembership(user.user.id),
+        queryKey: queryKeys.organizations.byMembership(user.id),
         queryFn: async () => {
             return organizations;
         },

@@ -1,15 +1,6 @@
 'use client';
 
-import {
-    ChevronDown,
-    GitBranch,
-    Hammer,
-    Home,
-    Pin,
-    Sparkles,
-    User,
-    Users,
-} from 'lucide-react';
+import { ChevronDown, GitBranch, Hammer, Home, Pin, Sparkles, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,15 +14,8 @@ import {
     CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
     SidebarContainer,
     SidebarContent,
-    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarHeader,
@@ -44,22 +28,17 @@ import {
     SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useUpdateProfile } from '@/hooks/mutations/useProfileMutation';
-import { useOrganizationsByMembership } from '@/hooks/queries/useOrganization';
 import { useProfile } from '@/hooks/queries/useProfile';
-import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { Organization, OrganizationType } from '@/types';
 
 function AppSidebar() {
     const router = useRouter();
-    const { signOut, isLoading: isSigningOut } = useSignOut();
     const { user } = useUser();
     const { data: profile } = useProfile(user?.id || '');
     const { mutate: updateProfile } = useUpdateProfile();
-    const { data: organizationsQuery } = useOrganizationsByMembership(user?.id || '');
-    const organizations: Organization[] = organizationsQuery ?? [];
-    const { setCurrentOrganization } = useOrganization();
+    const { organizations, setCurrentOrganization } = useOrganization();
     const { setUserContext } = useAgentStore();
 
     const personalOrganization = organizations.find(
@@ -259,8 +238,8 @@ function AppSidebar() {
                                                             }
                                                         >
                                                             <Pin
-                                                                fill={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : 'none'}`}
-                                                                stroke={`${org.id === profile?.pinned_organization_id ? 'hsl(var(--border))' : 'hsl(var(--muted-foreground))'}`}
+                                                                fill={`${org.id === profile?.pinned_organization_id ? 'grey' : 'none'}`}
+                                                                stroke="grey"
                                                                 strokeWidth={2}
                                                             />
                                                         </SidebarMenuSubAction>
@@ -338,43 +317,6 @@ function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter className="px-3 py-1.5">
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <SidebarMenuButton>
-                                    <div className="flex items-center gap-2 px-2 py-1.5 rounded-md">
-                                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <span className="text-xs font-medium">
-                                            {profile?.full_name || user?.email}
-                                        </span>
-                                    </div>
-                                </SidebarMenuButton>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                                side="top"
-                                className="w-[--radix-popper-anchor-width] text-xs"
-                            >
-                                <DropdownMenuItem asChild>
-                                    <Link href="/home/user/account">Account</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link href="/billing">Billing</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onSelect={() => signOut()}
-                                    disabled={isSigningOut}
-                                >
-                                    <span>
-                                        {isSigningOut ? 'Signing out...' : 'Sign out'}
-                                    </span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
         </SidebarContainer>
     );
 }

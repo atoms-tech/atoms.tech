@@ -3,7 +3,15 @@ import { cookies } from 'next/headers';
 
 import { Database } from '@/types/base/database.types';
 
+import { getSupabaseServiceRoleClient } from './supabase-service-role';
+
 export async function createClient() {
+    const serviceClient = getSupabaseServiceRoleClient();
+
+    if (serviceClient) {
+        return serviceClient;
+    }
+
     const cookieStore = await cookies();
 
     return createServerClient<Database>(

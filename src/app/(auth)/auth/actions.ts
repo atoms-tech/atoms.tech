@@ -1,219 +1,412 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
+import { saveSession } from '@workos-inc/authkit-nextjs';
+import { WorkOS } from '@workos-inc/node';
 import { redirect } from 'next/navigation';
+import { Resend } from 'resend';
 
-import { getUserOrganizationsServer } from '@/lib/db/server';
-import { createClient } from '@/lib/supabase/supabaseServer';
-import { COOKIE_NAME } from '@/lib/utils/cookieUtils';
-import { OrganizationType } from '@/types';
+// Helper function to get WorkOS client
+function getWorkOSClient() {
+    const apiKey = process.env.WORKOS_API_KEY;
+    const clientId = process.env.WORKOS_CLIENT_ID;
 
-export async function login(formData: FormData) {
-    const supabase = await createClient();
-    const cookieStore = await cookies();
+    if (!apiKey) {
+        throw new Error('WORKOS_API_KEY environment variable is required');
+    }
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    };
-    const externalAuthId = (formData.get('external_auth_id') as string) || null;
+    return new WorkOS(apiKey, {
+        clientId,
+    });
+}
 
+/**
+ * Initiate OAuth login with Google
+ */
+export async function loginWithGoogle() {
     try {
-        const { error, data: authData } = await supabase.auth.signInWithPassword(data);
+        const workos = getWorkOSClient();
+        const clientId = process.env.WORKOS_CLIENT_ID;
+        const redirectUri =
+            process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ||
+            `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
 
-        if (error || !authData.user) {
+        if (!clientId) {
+            throw new Error('Authentication service is not properly configured');
+        }
+
+        const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+            provider: 'GoogleOAuth',
+            redirectUri,
+            clientId,
+        });
+
+        redirect(authorizationUrl);
+    } catch (error) {
+        console.error('Google OAuth error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Initiate OAuth login with GitHub
+ */
+export async function loginWithGitHub() {
+    try {
+        const workos = getWorkOSClient();
+        const clientId = process.env.WORKOS_CLIENT_ID;
+        const redirectUri =
+            process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ||
+            `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`;
+
+        if (!clientId) {
+            throw new Error('Authentication service is not properly configured');
+        }
+
+        const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+            provider: 'GitHubOAuth',
+            redirectUri,
+            clientId,
+        });
+
+        redirect(authorizationUrl);
+    } catch (error) {
+        console.error('GitHub OAuth error:', error);
+        throw error;
+    }
+}
+
+/**
+ * Authenticate user with email and password using WorkOS
+ */
+export async function login(formData: FormData) {
+    try {
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        if (!email || !password) {
             return {
-                error: error?.message || 'Invalid credentials',
+                error: 'Email and password are required',
                 success: false,
             };
         }
 
-        // If this login was initiated by AuthKit (Standalone Connect), complete the flow
-        if (externalAuthId) {
-            try {
-                // Call WorkOS API to complete AuthKit OAuth
-                const workosApiKey = process.env.WORKOS_API_KEY;
-                if (!workosApiKey) {
-                    return { success: false, error: 'WORKOS_API_KEY not configured' };
-                }
-
-                const resp = await fetch(
-                    'https://api.workos.com/authkit/oauth2/complete',
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            Authorization: `Bearer ${workosApiKey}`,
-                        },
-                        body: JSON.stringify({
-                            external_auth_id: externalAuthId,
-                            user: {
-                                id: authData.user.id,
-                                email: authData.user.email,
-                                first_name: authData.user.user_metadata?.first_name,
-                                last_name: authData.user.user_metadata?.last_name,
-                            },
-                        }),
-                    },
-                );
-
-                if (!resp.ok) {
-                    const errText = await resp.text();
-                    return {
-                        success: false,
-                        error: `WorkOS API error (${resp.status}): ${errText}`,
-                    };
-                }
-
-                const { redirect_uri } = await resp.json();
-
-                if (!redirect_uri) {
-                    return { success: false, error: 'No redirect_uri from WorkOS' };
-                }
-
-                // Return the redirect URI for the client to navigate to
-                return {
-                    success: true,
-                    authkitRedirect: redirect_uri,
-                };
-            } catch (e: unknown) {
-                const errorMessage = e instanceof Error ? e.message : String(e);
-                return {
-                    success: false,
-                    error: `AuthKit completion failed: ${errorMessage}`,
-                };
-            }
-        }
-
-        const organizations = await getUserOrganizationsServer(authData.user.id);
-
-        let redirectUrl = '/home'; // Default fallback - route to /home by default
-
-        // Find enterprise organization first
-        const enterpriseOrg = organizations.find(
-            (org) => org.type === OrganizationType.enterprise,
+        // Use WorkOS User Management API for password authentication
+        const response = await fetch(
+            'https://api.workos.com/user_management/authenticate',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${process.env.WORKOS_API_KEY}`,
+                },
+                body: JSON.stringify({
+                    client_id: process.env.WORKOS_CLIENT_ID,
+                    client_secret: process.env.WORKOS_API_KEY,
+                    grant_type: 'password',
+                    email,
+                    password,
+                    ip_address: '127.0.0.1',
+                    user_agent: 'Custom Login UI',
+                }),
+            },
         );
 
-        // Only set cookie if enterprise org exists or if no preferred_org_id is set yet
-        const existingPreferredOrgId = cookieStore.get('preferred_org_id')?.value;
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('WorkOS authentication error:', errorData);
 
-        if (enterpriseOrg) {
-            // If enterprise org exists, always set it as preferred and redirect there
-            redirectUrl = `/org/${enterpriseOrg.id}`;
-            cookieStore.set('preferred_org_id', enterpriseOrg.id);
-        } else if (!existingPreferredOrgId && organizations.length > 0) {
-            // Only set a new preferred org if none exists and we have orgs
-            const personalOrg = organizations.find(
-                (org) => org.type === OrganizationType.personal,
-            );
-
-            if (personalOrg) {
-                redirectUrl = `/org/${personalOrg.id}`;
-                cookieStore.set('preferred_org_id', personalOrg.id);
+            if (response.status === 401) {
+                return {
+                    error: 'Invalid email or password',
+                    success: false,
+                };
             }
-        }
 
-        cookieStore.set('user_id', authData.user.id);
-
-        revalidatePath('/', 'layout');
-        return {
-            success: true,
-            redirectTo: redirectUrl,
-        };
-    } catch (error) {
-        console.error('Error logging in:', error);
-        return {
-            error: 'An unexpected error occurred. Please try again.',
-            success: false,
-            data: error,
-        };
-    }
-}
-
-export async function signup(formData: FormData) {
-    const supabase = await createClient();
-
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    };
-
-    const name = formData.get('name') as string;
-
-    try {
-        //Clear the session if it exists
-        await supabase.auth.signOut();
-
-        const { data: authData, error } = await supabase.auth.signUp({
-            ...data,
-            options: {
-                data: {
-                    full_name: name,
-                },
-                emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/home`,
-            },
-        });
-
-        if (error) {
             return {
-                error: error.message,
+                error: 'Authentication failed',
                 success: false,
             };
         }
 
-        if (!authData.session) {
+        const authData = await response.json();
+
+        // Persist the WorkOS session cookie so withAuth() can access it on subsequent requests.
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await saveSession(
+            {
+                accessToken: authData.access_token,
+                refreshToken: authData.refresh_token,
+                user: authData.user,
+                impersonator: authData.impersonator,
+            },
+            appUrl,
+        );
+
+        return {
+            success: true,
+            user: authData.user,
+        };
+    } catch (error) {
+        const errorString = String(error);
+        console.error('Auth action error:', errorString);
+
+        if (
+            errorString.includes('invalid_credentials') ||
+            errorString.includes('Invalid')
+        ) {
             return {
-                message: 'Check your email to confirm your account',
-                success: true,
+                error: 'Invalid email or password',
+                success: false,
             };
         }
 
-        // Prefetch user data to make subsequent page loads faster
-        if (authData.user) {
-            await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authData.user.id)
-                .single();
-        }
-
-        revalidatePath('/', 'layout');
-        redirect('/home');
-    } catch (error) {
         return {
-            error: 'An unexpected error occurred',
+            error: 'An error occurred. Please try again.',
             success: false,
-            data: error,
         };
     }
 }
 
-export async function signOut() {
-    const supabase = await createClient();
-
+/**
+ * Reset password using token
+ */
+export async function resetPassword(token: string, password: string) {
     try {
-        const { error } = await supabase.auth.signOut();
-
-        if (error) {
-            throw error;
+        if (!token || !password) {
+            return {
+                error: 'Password reset token and new password are required',
+                success: false,
+            };
         }
 
-        // Clear auth cookies on server side
-        const cookieStore = await cookies();
-        Object.values(COOKIE_NAME).forEach((name) => {
-            cookieStore.set(name, '', {
-                expires: new Date(0),
-                path: '/',
-            });
+        // Reset the password using WorkOS API
+        const workos = getWorkOSClient();
+        const _response = await workos.userManagement.resetPassword({
+            token,
+            newPassword: password,
         });
 
-        revalidatePath('/', 'layout');
+        return {
+            success: true,
+            message:
+                'Password has been reset successfully. You can now log in with your new password.',
+        };
+    } catch (error: unknown) {
+        const errorString = String(error);
+        console.error('Auth action error (password reset completion):', errorString);
 
-        // Send a properly formatted JSON response
-        return Response.json({ success: true });
+        return {
+            error:
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to reset password. The link may have expired.',
+            success: false,
+        };
+    }
+}
+
+/**
+ * Accept invitation and create account
+ */
+export async function acceptInvitation(data: {
+    invitationToken: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+}) {
+    try {
+        const { invitationToken, password, firstName, lastName } = data;
+
+        if (!invitationToken || !password || !firstName || !lastName) {
+            return {
+                error: 'All fields are required',
+                success: false,
+            };
+        }
+
+        // Authenticate with invitation via WorkOS API
+        // This creates the user account and authenticates them in one step
+        const workos = getWorkOSClient();
+        const response = await workos.userManagement.authenticateWithCode({
+            clientId: process.env.WORKOS_CLIENT_ID!,
+            code: invitationToken,
+            codeVerifier: invitationToken, // For invitation flow
+        });
+
+        if (!response) {
+            return {
+                error: 'Failed to accept invitation. The link may have expired.',
+                success: false,
+            };
+        }
+
+        // Update user profile with name
+        try {
+            const workos = getWorkOSClient();
+            await workos.userManagement.updateUser({
+                userId: response.user.id,
+                firstName,
+                lastName,
+            });
+        } catch (updateError) {
+            console.error('Failed to update user profile:', updateError);
+            // Continue even if profile update fails
+        }
+
+        // Set password for the new user
+        try {
+            const workos = getWorkOSClient();
+            await workos.userManagement.updateUser({
+                userId: response.user.id,
+                password,
+            });
+        } catch (passwordError) {
+            console.error('Failed to set password:', passwordError);
+            // Continue - user can reset password later
+        }
+
+        // Save the session
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await saveSession(
+            {
+                accessToken: response.accessToken,
+                refreshToken: response.refreshToken,
+                user: response.user,
+            },
+            appUrl,
+        );
+
+        // Redirect to home page
+        redirect('/home/user');
+    } catch (error: unknown) {
+        const errorString = String(error);
+        console.error('Auth action error (accept invitation):', errorString);
+
+        return {
+            error:
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to accept invitation. The link may have expired.',
+            success: false,
+        };
+    }
+}
+
+/**
+ * Request password reset via email
+ */
+export async function requestPasswordReset(email: string) {
+    try {
+        if (!email) {
+            return {
+                error: 'Email is required',
+                success: false,
+            };
+        }
+
+        console.log('Requesting password reset for email:', email);
+
+        // Create password reset token via WorkOS
+        const workos = getWorkOSClient();
+        let passwordResetData;
+
+        try {
+            passwordResetData = await workos.userManagement.createPasswordReset({
+                email,
+            });
+            console.log('WorkOS password reset created:', {
+                id: passwordResetData.id,
+                email: passwordResetData.email,
+            });
+        } catch (workosError) {
+            console.error('WorkOS password reset creation failed:', {
+                error: workosError,
+                message:
+                    workosError instanceof Error ? workosError.message : 'Unknown error',
+                email,
+            });
+
+            // If WorkOS email sending is not configured, try fallback with Resend
+            const resendApiKey = process.env.RESEND_API_KEY;
+            const resendFromEmail = process.env.RESEND_FROM_EMAIL;
+            const resetUrl = process.env.WORKOS_PASSWORD_RESET_URL;
+
+            if (resendApiKey && resendFromEmail && resetUrl) {
+                console.log('Attempting fallback email sending via Resend');
+
+                try {
+                    // Re-create the password reset to get a token
+                    passwordResetData = await workos.userManagement.createPasswordReset({
+                        email,
+                    });
+
+                    const resend = new Resend(resendApiKey);
+                    const resetLink = `${resetUrl}?token=${passwordResetData.passwordResetToken}`;
+
+                    const emailResult = await resend.emails.send({
+                        from: resendFromEmail,
+                        to: email,
+                        subject: 'Reset Your Password - Atoms.Tech',
+                        html: `
+                            <h2>Reset Your Password</h2>
+                            <p>You requested to reset your password for your Atoms.Tech account.</p>
+                            <p>Click the link below to create a new password:</p>
+                            <p><a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background-color: #0070f3; color: white; text-decoration: none; border-radius: 6px;">Reset Password</a></p>
+                            <p>Or copy and paste this link into your browser:</p>
+                            <p style="word-break: break-all;">${resetLink}</p>
+                            <p>This link will expire in 24 hours.</p>
+                            <p>If you didn't request a password reset, you can safely ignore this email.</p>
+                            <hr />
+                            <p style="color: #666; font-size: 12px;">Atoms.Tech Password Reset</p>
+                        `,
+                    });
+
+                    console.log('Fallback password reset email sent via Resend:', {
+                        emailId: emailResult.data?.id,
+                        to: email,
+                    });
+
+                    return {
+                        success: true,
+                        message: `Password reset link has been sent to ${email}. Please check your email.`,
+                    };
+                } catch (fallbackError) {
+                    console.error('Fallback email sending failed:', {
+                        error: fallbackError,
+                        message:
+                            fallbackError instanceof Error
+                                ? fallbackError.message
+                                : 'Unknown error',
+                        email,
+                    });
+                    throw workosError; // Throw the original WorkOS error
+                }
+            } else {
+                console.error('Cannot send fallback email: Missing configuration', {
+                    hasResendKey: !!resendApiKey,
+                    hasFromEmail: !!resendFromEmail,
+                    hasResetUrl: !!resetUrl,
+                });
+                throw workosError; // Throw the original WorkOS error
+            }
+        }
+
+        // WorkOS successfully sent the email
+        return {
+            success: true,
+            message: `Password reset link has been sent to ${email}. Please check your email.`,
+        };
     } catch (error) {
-        console.error('Error signing out:', error);
-        return Response.json({ success: false, error: 'Failed to sign out' });
+        const errorString = String(error);
+        console.error('Auth action error (password reset):', {
+            error,
+            errorString,
+            message: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        return {
+            error: 'Failed to send password reset email. Please try again or contact support.',
+            success: false,
+        };
     }
 }

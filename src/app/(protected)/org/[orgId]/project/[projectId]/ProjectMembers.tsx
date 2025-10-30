@@ -22,6 +22,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { OrgMemberAutocomplete } from '@/components/ui/orgMemberAutocomplete';
 import { toast } from '@/components/ui/use-toast';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import {
     PROJECT_ROLE_ARRAY,
     ProjectRole,
@@ -29,7 +30,6 @@ import {
 } from '@/lib/auth/permissions';
 import { getProjectMembers } from '@/lib/db/client/projects.client';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 interface ProjectMembersProps {
     projectId: string;
@@ -58,12 +58,20 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
     const [roleFilters, setRoleFilters] = useState<ProjectRole[]>([]);
 
     const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    const {
         data: members = [],
         isLoading,
         refetch,
     } = useQuery({
         queryKey: ['project-members', projectId],
-        queryFn: () => getProjectMembers(projectId),
+        queryFn: () =>
+            supabase ? getProjectMembers(supabase, projectId) : Promise.resolve([]),
+        enabled: !!projectId && !!supabase && !authLoading,
     });
 
     const userRole = (members.find((member) => member.id === user?.id)?.role ||
@@ -97,6 +105,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
             return;
         }
 
+        if (!supabase) {
+            setErrorMessage(authError ?? 'Supabase client not available');
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('project_members')
@@ -125,6 +138,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
         if (!memberId || !selectedRole) {
             setErrorMessage('Invalid operation. Please select a role.');
+            return;
+        }
+
+        if (!supabase) {
+            setErrorMessage(authError ?? 'Supabase client not available');
             return;
         }
 
@@ -160,6 +178,11 @@ export default function ProjectMembers({ projectId }: ProjectMembersProps) {
 
         if (!memberEmail || !selectedRole) {
             setErrorMessage('Please input email and/or role.');
+            return;
+        }
+
+        if (!supabase) {
+            setErrorMessage(authError ?? 'Supabase client not available');
             return;
         }
 

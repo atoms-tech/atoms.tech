@@ -1,3 +1,5 @@
+'use client';
+
 import type { HTMLAttributes, RefObject } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -11,10 +13,7 @@ const Card = ({
 }) => (
     <div
         ref={ref}
-        className={cn(
-            'border rounded-md bg-card text-card-foreground shadow dark:bg-black dark:border-muted dark:text-white',
-            className,
-        )}
+        className={cn('border rounded-md bg-card text-card-foreground shadow', className)}
         {...props}
     />
 );
@@ -27,11 +26,7 @@ const CardHeader = ({
 }: HTMLAttributes<HTMLDivElement> & {
     ref?: RefObject<HTMLDivElement>;
 }) => (
-    <div
-        ref={ref}
-        className={cn('flex flex-col space-y-1.5 p-6', className)}
-        {...props}
-    />
+    <div ref={ref} className={cn('flex flex-col space-y-2 p-6', className)} {...props} />
 );
 CardHeader.displayName = 'CardHeader';
 

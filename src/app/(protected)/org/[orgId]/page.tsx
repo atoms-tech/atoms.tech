@@ -7,9 +7,9 @@ import { Suspense, useEffect } from 'react';
 import OrgDashboard from '@/app/(protected)/org/[orgId]/OrgDashboard.client';
 import { OrgDashboardSkeleton } from '@/components/custom/skeletons/OrgDashboardSkeleton';
 import LayoutView from '@/components/views/LayoutView';
-import { useExternalDocumentsByOrg } from '@/hooks/queries/useExternalDocuments';
-import { useOrganization as useOrgQuery } from '@/hooks/queries/useOrganization';
-import { useProjectsByMembershipForOrg } from '@/hooks/queries/useProject';
+import { useAuthenticatedExternalDocumentsByOrg } from '@/hooks/queries/useAuthenticatedExternalDocuments';
+import { useAuthenticatedOrganization as useOrgQuery } from '@/hooks/queries/useAuthenticatedOrganization';
+import { useAuthenticatedProjectsByMembershipForOrg } from '@/hooks/queries/useAuthenticatedProjects';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/store/context.store';
@@ -28,7 +28,11 @@ export default function OrgPage() {
     const orgId = params?.orgId && params.orgId !== 'user' ? params.orgId : '';
 
     // Fetch organization data
-    const { data: organization, isLoading: orgLoading } = useOrgQuery(orgId);
+    const {
+        data: organization,
+        isLoading: orgLoading,
+        error: orgError,
+    } = useOrgQuery(orgId);
 
     // Use useEffect to set the organization when it changes
     useEffect(() => {
@@ -40,12 +44,29 @@ export default function OrgPage() {
     }, [organization, setCurrentOrganization]);
 
     // Fetch projects data
-    const { data: projects, isLoading: projectsLoading } = useProjectsByMembershipForOrg(
-        orgId,
-        user?.id || '',
-    );
-    const { data: externalDocuments, isLoading: documentsLoading } =
-        useExternalDocumentsByOrg(params?.orgId || '');
+    const {
+        data: projects,
+        isLoading: projectsLoading,
+        error: projectsError,
+    } = useAuthenticatedProjectsByMembershipForOrg(orgId, user?.id || '');
+    const {
+        data: externalDocuments,
+        isLoading: documentsLoading,
+        error: documentsError,
+    } = useAuthenticatedExternalDocumentsByOrg(params?.orgId || '');
+
+    // Log errors for debugging
+    useEffect(() => {
+        if (orgError) {
+            console.error('Organization query error:', orgError);
+        }
+        if (projectsError) {
+            console.error('Projects query error:', projectsError);
+        }
+        if (documentsError) {
+            console.error('External documents query error:', documentsError);
+        }
+    }, [orgError, projectsError, documentsError]);
 
     const handleProjectClick = (project: Project) => {
         setCurrentProjectId(project.id);
@@ -66,9 +87,9 @@ export default function OrgPage() {
                 <OrgDashboard
                     organization={organization}
                     orgLoading={orgLoading}
-                    projects={projects}
+                    projects={projectsError ? [] : projects}
                     projectsLoading={projectsLoading}
-                    externalDocuments={externalDocuments}
+                    externalDocuments={documentsError ? [] : externalDocuments}
                     documentsLoading={documentsLoading}
                     theme={theme}
                     onProjectClick={handleProjectClick}

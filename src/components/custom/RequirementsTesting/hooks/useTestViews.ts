@@ -8,7 +8,7 @@ import {
     TestMatrixViewConfiguration,
     TestMatrixViewState,
 } from '@/components/custom/RequirementsTesting/types';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 // We'll need to add these queryKeys
 const QUERY_KEYS = {
@@ -44,6 +44,12 @@ const mapSupabaseError = (error: PostgrestError): ErrorResponse => ({
 
 export function useTestMatrixViews(projectId: string) {
     const queryClient = useQueryClient();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Fetch all views for a project
     const {
@@ -53,6 +59,7 @@ export function useTestMatrixViews(projectId: string) {
     } = useQuery({
         queryKey: QUERY_KEYS.testMatrixViews.list(projectId),
         queryFn: async () => {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_matrix_views')
                 .select('*')
@@ -73,7 +80,7 @@ export function useTestMatrixViews(projectId: string) {
                 updatedAt: view.updated_at,
             })) as TestMatrixViewState[];
         },
-        enabled: !!projectId,
+        enabled: !!projectId && !!supabase && !authLoading && !authError,
     });
 
     // Create a new view
@@ -85,6 +92,7 @@ export function useTestMatrixViews(projectId: string) {
         mutationFn: async (newView: Omit<TestMatrixViewState, 'id'>) => {
             // If setting as default, unset any existing defaults
             if (newView.isDefault) {
+                const supabase = getClientOrThrow();
                 await supabase
                     .from('test_matrix_views')
                     .update({ is_default: false })
@@ -92,14 +100,18 @@ export function useTestMatrixViews(projectId: string) {
                     .eq('is_default', true);
             }
 
+            const supabase = getClientOrThrow();
+            const currentUser = (await supabase.auth.getUser()).data.user;
+            const currentUserId = currentUser?.id || '';
+
             const { data, error } = await supabase
                 .from('test_matrix_views')
                 .insert({
                     name: newView.name,
                     project_id: newView.projectId,
                     configuration: newView.configuration as unknown as Json,
-                    created_by: (await supabase.auth.getUser()).data.user?.id || '',
-                    updated_by: (await supabase.auth.getUser()).data.user?.id || '',
+                    created_by: currentUserId,
+                    updated_by: currentUserId,
                     is_default: newView.isDefault || false,
                 })
                 .select()
@@ -136,6 +148,7 @@ export function useTestMatrixViews(projectId: string) {
 
             // If setting as default, unset any existing defaults
             if (updatedView.isDefault) {
+                const supabase = getClientOrThrow();
                 await supabase
                     .from('test_matrix_views')
                     .update({ is_default: false })
@@ -144,6 +157,7 @@ export function useTestMatrixViews(projectId: string) {
                     .neq('id', updatedView.id);
             }
 
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_matrix_views')
                 .update({
@@ -182,6 +196,7 @@ export function useTestMatrixViews(projectId: string) {
     // Delete a view (soft delete by setting is_active to false)
     const deleteView = useMutation<void, ErrorResponse, { id: string }>({
         mutationFn: async ({ id }) => {
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('test_matrix_views')
                 .update({ is_active: false })
@@ -202,6 +217,7 @@ export function useTestMatrixViews(projectId: string) {
 
     // Get a view by ID
     const getViewById = async (viewId: string) => {
+        const supabase = getClientOrThrow();
         const { data, error } = await supabase
             .from('test_matrix_views')
             .select('*')
@@ -225,6 +241,7 @@ export function useTestMatrixViews(projectId: string) {
     // Get the default view
     const getDefaultView = async () => {
         try {
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('test_matrix_views')
                 .select('*')

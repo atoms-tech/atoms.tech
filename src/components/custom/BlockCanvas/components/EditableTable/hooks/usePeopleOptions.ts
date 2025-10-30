@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import type { Database } from '@/types/base/database.types';
 
 export function usePeopleOptions(orgId?: string, projectId?: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: ['people-options', orgId ?? null, projectId ?? null],
         queryFn: async () => {
+            const supabase = getClientOrThrow();
             // Prefer project members; fallback to org members
             if (projectId) {
                 type MemberRow = Pick<
@@ -64,7 +72,7 @@ export function usePeopleOptions(orgId?: string, projectId?: string) {
 
             return [] as string[];
         },
-        enabled: Boolean(orgId || projectId),
+        enabled: Boolean((orgId || projectId) && supabase && !authLoading && !authError),
         staleTime: 600_000,
     });
 }

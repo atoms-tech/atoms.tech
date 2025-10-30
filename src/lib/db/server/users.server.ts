@@ -1,3 +1,6 @@
+import { withAuth } from '@workos-inc/authkit-nextjs';
+
+import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { createClient } from '@/lib/supabase/supabaseServer';
 
 export const getUserProfileServer = async (userId: string) => {
@@ -13,8 +16,27 @@ export const getUserProfileServer = async (userId: string) => {
 };
 
 export const getAuthUserServer = async () => {
-    const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (error) throw error;
-    return data;
+    const { user } = await withAuth();
+
+    if (!user) {
+        throw new Error('Not authenticated');
+    }
+
+    const profile = await getOrCreateProfileForWorkOSUser(user);
+
+    if (!profile) {
+        throw new Error('Supabase profile not found for authenticated user');
+    }
+
+    return {
+        user: {
+            id: profile.id,
+            email: user.email ?? '',
+            workosId: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        },
+        profile,
+        workosUser: user,
+    };
 };

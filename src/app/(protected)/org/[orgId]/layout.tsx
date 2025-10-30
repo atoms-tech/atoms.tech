@@ -21,11 +21,9 @@ export default async function OrgLayout({ children, params }: OrgLayoutProps) {
     const userId = cookieStore.get('user_id')?.value;
 
     try {
-        await prefetchOrgPageData(
-            orgId,
-            userId ?? (await getAuthUserServer()).user.id,
-            queryClient,
-        );
+        const authContext = await getAuthUserServer();
+
+        await prefetchOrgPageData(orgId, userId ?? authContext.user.id, queryClient);
 
         return (
             <div className="relative flex-1">

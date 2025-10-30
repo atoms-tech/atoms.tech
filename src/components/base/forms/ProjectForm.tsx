@@ -96,6 +96,8 @@ export default function ProjectForm({ onSuccess, organizationId }: ProjectFormPr
                 slug: slug,
                 created_by: userProfile.id,
                 updated_by: userProfile.id,
+                embedding: null,
+                fts_vector: null,
             });
 
             toast({

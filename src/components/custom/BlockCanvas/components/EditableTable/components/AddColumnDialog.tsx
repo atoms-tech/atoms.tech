@@ -79,20 +79,27 @@ export function AddColumnDialog({
     const defaultIsBase = false;
     const defaultValue = '';
 
-    // Reset form when dialog opens
+    // Reset form only when dialog opens (do not react to properties loading)
     useEffect(() => {
         if (isOpen) {
             setColumnName('');
             setColumnType('text');
             setOptions('');
             setActiveTab('new');
+        }
+    }, [isOpen]);
 
-            // Set the first property as selected if there are any
-            if (availableProperties.length > 0) {
+    // When on the "Use Existing Property" tab and properties load, set a default selection if needed
+    useEffect(() => {
+        if (isOpen && activeTab === 'existing' && availableProperties.length > 0) {
+            const hasSelection =
+                !!selectedPropertyId &&
+                availableProperties.some((p) => p.id === selectedPropertyId);
+            if (!hasSelection) {
                 setSelectedPropertyId(availableProperties[0].id);
             }
         }
-    }, [isOpen, availableProperties]);
+    }, [isOpen, activeTab, availableProperties, selectedPropertyId]);
 
     const handleSaveNewProperty = () => {
         const propertyConfig: PropertyConfig = {

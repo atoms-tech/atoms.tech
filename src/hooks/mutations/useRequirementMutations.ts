@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Requirement } from '@/types';
 import { TablesInsert } from '@/types/base/database.types';
@@ -18,15 +18,36 @@ export type CreateRequirementInput = Omit<
     | 'version'
 >;
 
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
+
 export function useCreateRequirement() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async (input: CreateRequirementInput) => {
             console.log('Creating requirement', input);
 
             // Get the organization ID from the document
-            const { data: document, error: docError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: document, error: docError } = await client
                 .from('documents')
                 .select(
                     `
@@ -50,7 +71,7 @@ export function useCreateRequirement() {
 
             if (organizationId) {
                 try {
-                    externalId = await generateNextRequirementId(organizationId);
+                    externalId = await generateNextRequirementId(client, organizationId);
                 } catch (error) {
                     console.error('Error generating requirement ID:', error);
                     // Use fallback ID with timestamp
@@ -81,7 +102,7 @@ export function useCreateRequirement() {
                 type: input.type || null,
             };
 
-            const { data: requirement, error: requirementError } = await supabase
+            const { data: requirement, error: requirementError } = await client
                 .from('requirements')
                 .insert(insertData)
                 .select()
@@ -96,7 +117,7 @@ export function useCreateRequirement() {
                 throw new Error('Failed to create requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -106,12 +127,14 @@ export function useCreateRequirement() {
 
 export function useUpdateRequirement() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({ id, ...input }: Partial<Requirement> & { id: string }) => {
             console.log('Updating requirement', id, input);
 
-            const { data: requirement, error: requirementError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: requirement, error: requirementError } = await client
                 .from('requirements')
                 .update({
                     ...input,
@@ -130,7 +153,7 @@ export function useUpdateRequirement() {
                 throw new Error('Failed to update requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);
@@ -140,12 +163,14 @@ export function useUpdateRequirement() {
 
 export function useDeleteRequirement() {
     const queryClient = useQueryClient();
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
 
     return useMutation({
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting requirement', id);
 
-            const { data: requirement, error: requirementError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: requirement, error: requirementError } = await client
                 .from('requirements')
                 .update({
                     is_deleted: true,
@@ -165,7 +190,7 @@ export function useDeleteRequirement() {
                 throw new Error('Failed to delete requirement');
             }
 
-            return RequirementSchema.parse(requirement);
+            return RequirementSchema.parse(requirement) as Requirement;
         },
         onSuccess: (data) => {
             invalidateRequirementQueries(queryClient, data);

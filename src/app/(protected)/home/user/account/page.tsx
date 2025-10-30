@@ -1,17 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Maximize2, Minimize2, Moon, Pencil, Sun, User } from 'lucide-react';
+import { Maximize2, Minimize2, Moon, Pencil, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useLayout } from '@/lib/providers/layout.provider';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import SettingsSection from './SettingsSection';
 
@@ -24,6 +24,7 @@ export default function AccountPage() {
     const [loading, setLoading] = useState(false);
     const { layoutViewMode: layout, setLayoutViewMode: setLayout } = useLayout();
     const [mounted, setMounted] = useState(false);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     useEffect(() => {
         setMounted(true);
@@ -47,22 +48,29 @@ export default function AccountPage() {
         }
 
         setLoading(true);
-        const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-                full_name: newName,
-                pinned_organization_id: profile?.pinned_organization_id || null,
-            })
-            .eq('id', user?.id || '');
+        try {
+            const client = getClientOrThrow();
+            const { error: updateError } = await client
+                .from('profiles')
+                .update({
+                    full_name: newName,
+                    pinned_organization_id: profile?.pinned_organization_id || null,
+                })
+                .eq('id', user?.id || '');
 
-        if (updateError) {
-            setError('Failed to update name. Please try again.');
-        } else {
-            setError('');
-            setEditingName(false);
-            await refreshUser();
+            if (updateError) {
+                setError('Failed to update name. Please try again.');
+            } else {
+                setError('');
+                setEditingName(false);
+                await refreshUser();
+            }
+        } catch (clientError) {
+            console.error('Failed to obtain Supabase client', clientError);
+            setError('Unable to update profile at this time. Please try again.');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const toggleTheme = () => {
@@ -83,9 +91,15 @@ export default function AccountPage() {
                     <div className="flex flex-col items-center">
                         <h2 className="text-3xl font-bold mb-4">Account</h2>
                         <div className="relative flex flex-col items-center p-6">
-                            <div className="rounded-full border-2 border-gray-300 flex items-center justify-center w-24 h-24">
-                                <User className="h-12 w-12 text-gray-600" />
-                            </div>
+                            <Avatar className="cursor-pointer w-24 h-24">
+                                <AvatarImage
+                                    src={profile?.avatar_url || undefined}
+                                    alt="avatar"
+                                />
+                                <AvatarFallback className="bg-primary text-white">
+                                    {profile?.full_name ? profile?.full_name[0] : ''}
+                                </AvatarFallback>
+                            </Avatar>
                         </div>
                     </div>
                 </div>
@@ -99,19 +113,15 @@ export default function AccountPage() {
                 <div className="flex flex-col items-center">
                     <h2 className="text-3xl font-bold mb-4">Account</h2>
                     <div className="relative flex flex-col items-center p-6">
-                        {profile?.avatar_url ? (
-                            <Image
-                                src={profile.avatar_url}
-                                alt="Profile Picture"
-                                width={100}
-                                height={100}
-                                className="rounded-full"
+                        <Avatar className="cursor-pointer w-24 h-24">
+                            <AvatarImage
+                                src={profile?.avatar_url || undefined}
+                                alt="avatar"
                             />
-                        ) : (
-                            <div className="rounded-full border-2 border-gray-300 flex items-center justify-center w-24 h-24">
-                                <User className="h-12 w-12 text-gray-600" />
-                            </div>
-                        )}
+                            <AvatarFallback className="bg-primary text-white text-5xl">
+                                {profile?.full_name ? profile?.full_name[0] : ''}
+                            </AvatarFallback>
+                        </Avatar>
                     </div>
                     <div className="flex items-center mt-4">
                         {editingName ? (
@@ -174,7 +184,7 @@ export default function AccountPage() {
                                     <span className="text-sm text-gray-600">
                                         Switch between light and dark modes.
                                     </span>
-                                    <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden w-21 ml-6">
+                                    <div className="relative flex space-x-0 border rounded-md overflow-hidden w-21 ml-6">
                                         <motion.div
                                             className="absolute inset-0 bg-primary"
                                             layout
@@ -216,7 +226,7 @@ export default function AccountPage() {
                                     <span className="text-sm text-gray-600">
                                         Switch between standard and wide layouts.
                                     </span>
-                                    <div className="relative flex space-x-0 border border-secondary rounded-md overflow-hidden w-21 ml-6">
+                                    <div className="relative flex space-x-0 border rounded-md overflow-hidden w-21 ml-6">
                                         <motion.div
                                             className="absolute inset-0 bg-primary"
                                             layout

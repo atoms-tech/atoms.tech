@@ -1,12 +1,14 @@
 import { RealtimeChannel } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useDocumentStore } from '@/store/document.store';
 import { Block } from '@/types';
+import { Database } from '@/types/base/database.types';
 
-const fetchBlocks = async (documentId: string) => {
-    const { data: blocks, error } = await supabase
+const fetchBlocks = async (client: SupabaseClient<Database>, documentId: string) => {
+    const { data: blocks, error } = await client
         .from('blocks')
         .select('*')
         .eq('document_id', documentId)
@@ -25,12 +27,31 @@ export function useBlockSubscription(documentId: string) {
     const { addBlock, updateBlock, deleteBlock, setBlocks } = useDocumentStore();
     const [blocks, setLocalBlocks] = useState<Block[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     // Initial fetch and subscription setup
     useEffect(() => {
+        if (authLoading) {
+            return;
+        }
+
+        if (!supabase) {
+            if (authError) {
+                console.error('Supabase client not available:', authError);
+                setIsLoading(false);
+            }
+            return;
+        }
+
         let channel: RealtimeChannel;
+        let isMounted = true;
 
         const loadInitialBlocksAndSubscribe = async () => {
+            setIsLoading(true);
             try {
                 // First set up the subscription to not miss any events
                 channel = supabase
@@ -105,24 +126,37 @@ export function useBlockSubscription(documentId: string) {
                 await channel.subscribe();
 
                 // Then fetch initial data
-                const initialBlocks = await fetchBlocks(documentId);
+                const initialBlocks = await fetchBlocks(supabase, documentId);
+                if (!isMounted) return;
                 setLocalBlocks(initialBlocks);
                 setBlocks(initialBlocks);
             } catch (error) {
                 console.error('Error in initial setup:', error);
             } finally {
-                setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false);
+                }
             }
         };
 
         loadInitialBlocksAndSubscribe();
 
         return () => {
+            isMounted = false;
             if (channel) {
                 channel.unsubscribe();
             }
         };
-    }, [documentId, addBlock, updateBlock, deleteBlock, setBlocks]);
+    }, [
+        documentId,
+        addBlock,
+        updateBlock,
+        deleteBlock,
+        setBlocks,
+        supabase,
+        authLoading,
+        authError,
+    ]);
 
     return { blocks, isLoading, setLocalBlocks };
 }

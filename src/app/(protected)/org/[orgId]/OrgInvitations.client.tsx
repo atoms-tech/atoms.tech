@@ -9,10 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useCreateOrgInvitation } from '@/hooks/mutations/useOrgInvitationMutations';
 import { useOrgInvitationsByOrgId } from '@/hooks/queries/useOrganization';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { getOrganizationMembers } from '@/lib/db/client';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { Tables } from '@/types/base/database.types';
 import { InvitationStatus } from '@/types/base/enums.types';
+
+type OrganizationInvitation = Tables<'organization_invitations'>;
 
 interface OrgInvitationsProps {
     orgId: string;
@@ -23,6 +26,7 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
     const [, setUserExists] = useState<boolean | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null); // Track error messages
     const { user } = useUser();
+    const { supabase, error: authError } = useAuthenticatedSupabase();
     const { mutateAsync: createInvitation, isPending } = useCreateOrgInvitation();
     const {
         data: allInvitations,
@@ -31,8 +35,9 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
     } = useOrgInvitationsByOrgId(orgId);
 
     // Filter invitations to only include pending ones
-    const outgoingInvitations = allInvitations?.filter(
-        (invitation) => invitation.status === InvitationStatus.pending,
+    const outgoingInvitations = (allInvitations ?? []).filter(
+        (invitation: OrganizationInvitation) =>
+            invitation.status === InvitationStatus.pending,
     );
 
     const handleInvite = async () => {
@@ -44,6 +49,11 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
         }
         if (!user?.id) {
             setErrorMessage('User not authenticated.');
+            return;
+        }
+
+        if (!supabase) {
+            setErrorMessage(authError ?? 'Authentication not ready. Please try again.');
             return;
         }
 
@@ -60,7 +70,7 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
 
         try {
             // Check if the user is already a member of the organization
-            const members = await getOrganizationMembers(orgId);
+            const members = await getOrganizationMembers(supabase, orgId);
             const isAlreadyMember = members.some(
                 (member) => member.email === inviteEmail.trim(),
             );
@@ -149,6 +159,11 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
             return;
         }
 
+        if (!supabase) {
+            setErrorMessage(authError ?? 'Authentication not ready. Please try again.');
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('organization_invitations')
@@ -222,31 +237,30 @@ export default function OrgInvitations({ orgId }: OrgInvitationsProps) {
                             <p>Loading outgoing invitations...</p>
                         ) : outgoingInvitations?.length ? (
                             <ul className="space-y-2">
-                                {outgoingInvitations.map((invitation) => (
-                                    <li
-                                        key={invitation.id}
-                                        className="flex justify-between items-center rounded-md p-3"
-                                    >
-                                        <div className="flex items-center space-x-2">
-                                            <span>{invitation.email}</span>
-                                            <Badge
-                                                variant="outline"
-                                                className="border-gray-300 text-gray-500"
-                                            >
-                                                {invitation.status}
-                                            </Badge>
-                                        </div>
-                                        {invitation.status ===
-                                            InvitationStatus.pending && (
-                                            <X
-                                                className="h-5 w-5 text-accent cursor-pointer"
-                                                onClick={() =>
-                                                    handleRevoke(invitation.id)
-                                                }
-                                            />
-                                        )}
-                                    </li>
-                                ))}
+                                {outgoingInvitations.map(
+                                    (invitation: OrganizationInvitation) => (
+                                        <li
+                                            key={invitation.id}
+                                            className="flex justify-between items-center rounded-md p-3"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <span>{invitation.email}</span>
+                                                <Badge variant="outline">
+                                                    {invitation.status}
+                                                </Badge>
+                                            </div>
+                                            {invitation.status ===
+                                                InvitationStatus.pending && (
+                                                <X
+                                                    className="h-5 w-5 text-accent cursor-pointer"
+                                                    onClick={() =>
+                                                        handleRevoke(invitation.id)
+                                                    }
+                                                />
+                                            )}
+                                        </li>
+                                    ),
+                                )}
                             </ul>
                         ) : (
                             <p className="text-primary font-small ml-2">

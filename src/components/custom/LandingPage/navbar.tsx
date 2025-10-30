@@ -15,8 +15,8 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { useSignOut } from '@/hooks/useSignOut';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
 import { GridBackground } from './grid-background';
 
@@ -34,6 +34,7 @@ export function Navbar() {
     });
     const [, setPreferredOrgId] = useState<string | null>(null);
     const [_showLoadingSkeleton, _setShowLoadingSkeleton] = useState(false);
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     useEffect(() => {
         const cookieOrgId = cookies.get('preferred_org_id');
@@ -87,6 +88,7 @@ export function Navbar() {
         setLoading('dashboard', true);
 
         try {
+            const supabase = getClientOrThrow();
             // Fetch the user's profile to get pinned_organization_id and personal_organization_id
             const { data, error } = await supabase
                 .from('profiles')
@@ -134,7 +136,7 @@ export function Navbar() {
         } finally {
             setLoading('dashboard', false);
         }
-    }, [router, userProfile?.id, setLoading]);
+    }, [getClientOrThrow, router, setLoading, userProfile?.id]);
 
     const handleBilling = () => {
         setLoading('billing', true);

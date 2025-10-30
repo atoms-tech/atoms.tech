@@ -14,7 +14,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 // Define the interface for the diagram item based on the actual database schema
 interface DiagramItem {
@@ -66,14 +66,26 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
     const pathname = usePathname();
     const projectId = pathname.split('/')[4];
+    const {
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Fetch all diagrams for the current project
     const fetchDiagrams = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            if (!projectId) return;
+            if (!projectId || authLoading) return;
 
+            if (authError) {
+                console.error('Failed to initialize Supabase client:', authError);
+                setError('Unable to load diagrams right now. Please try again.');
+                return;
+            }
+
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('excalidraw_diagrams')
                 .select('id, name, thumbnail_url, updated_at, created_by')
@@ -102,7 +114,7 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [projectId]);
+    }, [authError, authLoading, getClientOrThrow, projectId]);
 
     // Fetch diagrams when component mounts or projectId changes
     useEffect(() => {
@@ -125,6 +137,7 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         if (!newName.trim()) return;
 
         try {
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('excalidraw_diagrams')
                 .update({ name: newName.trim() })
@@ -151,6 +164,7 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
     const handleDeleteDiagram = async (diagramId: string) => {
         try {
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('excalidraw_diagrams')
                 .delete()

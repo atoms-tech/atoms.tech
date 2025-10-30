@@ -13,10 +13,10 @@ import {
 } from '@/hooks/mutations/useOrgMemberMutation';
 // Import useCreateOrgMember and useSetOrgMemberCount
 import { useOrgInvitation } from '@/hooks/queries/useOrganization';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 import { InvitationStatus } from '@/types/base/enums.types';
 import { Invitation } from '@/types/base/invitations.types';
 
@@ -32,6 +32,12 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
     const { mutateAsync: addOrgMember } = useCreateOrgMember();
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount(); // Initialize useSetOrgMemberCount
     const { toast } = useToast();
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Filter invitations to only include pending ones
     const invitations = allInvitations?.filter(
@@ -44,7 +50,8 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
     const { data: organizations } = useQuery({
         queryKey: queryKeys.organizations.list(),
         queryFn: async () => {
-            const { data, error } = await supabase
+            const client = getClientOrThrow();
+            const { data, error } = await client
                 .from('organizations')
                 .select('id, name')
                 .in('id', organizationIds);
@@ -62,7 +69,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
                 {} as Record<string, string>,
             );
         },
-        enabled: organizationIds.length > 0,
+        enabled: organizationIds.length > 0 && !!supabase && !authLoading && !authError,
     });
 
     const handleAccept = async (invitation: Invitation) => {
@@ -76,6 +83,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
         }
 
         try {
+            const client = getClientOrThrow();
             // Add the user to the organization_members table
             await addOrgMember({
                 organization_id: invitation.organization_id,
@@ -86,7 +94,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             });
 
             // Update the invitation status to accepted
-            const { error } = await supabase
+            const { error } = await client
                 .from('organization_invitations')
                 .update({
                     status: InvitationStatus.accepted,
@@ -146,7 +154,8 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
         }
 
         try {
-            const { error } = await supabase
+            const client = getClientOrThrow();
+            const { error } = await client
                 .from('organization_invitations')
                 .update({
                     status: InvitationStatus.rejected,

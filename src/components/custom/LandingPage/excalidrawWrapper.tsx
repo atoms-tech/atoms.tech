@@ -11,7 +11,7 @@ import type {
 import { Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 import '@excalidraw/excalidraw/index.css';
 
@@ -128,6 +128,11 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
     const organizationId = usePathname().split('/')[2];
     const projectId = usePathname().split('/')[4];
     const router = useRouter();
+    const {
+        isLoading: supabaseLoading,
+        error: supabaseError,
+        getClientOrThrow,
+    } = useAuthenticatedSupabase();
 
     // Tooltip state for selected requirement-linked element
     const [linkTooltip, setLinkTooltip] = useState<{
@@ -196,6 +201,16 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             setAuthError(null);
 
             try {
+                if (supabaseLoading) {
+                    return false;
+                }
+
+                if (supabaseError) {
+                    setAuthError('Authentication error: ' + supabaseError);
+                    return false;
+                }
+
+                const supabase = getClientOrThrow();
                 // Fetch existing diagram data with authorization check
                 const { data, error } = await supabase
                     .from('excalidraw_diagrams')
@@ -291,7 +306,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 setIsLoading(false);
             }
         },
-        [projectId, isDarkMode],
+        [getClientOrThrow, isDarkMode, projectId, supabaseError, supabaseLoading],
     );
 
     // Function to refresh just the diagram name from the database
@@ -299,6 +314,13 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         if (!diagramId) return;
 
         try {
+            if (supabaseLoading) return;
+            if (supabaseError) {
+                console.error('Authentication error:', supabaseError);
+                return;
+            }
+
+            const supabase = getClientOrThrow();
             const { data, error } = await supabase
                 .from('excalidraw_diagrams')
                 .select('name')
@@ -317,7 +339,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         } catch (err) {
             console.error('Error in refreshDiagramName:', err);
         }
-    }, [diagramId, diagramName]);
+    }, [diagramId, diagramName, getClientOrThrow, supabaseError, supabaseLoading]);
 
     // Periodically check for name updates in the database
     useEffect(() => {
@@ -646,6 +668,17 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             }
 
             try {
+                if (supabaseLoading) {
+                    console.warn('Supabase client still initializing; skipping save');
+                    return;
+                }
+
+                if (supabaseError) {
+                    setAuthError('Authentication error: ' + supabaseError);
+                    return;
+                }
+
+                const supabase = getClientOrThrow();
                 setIsAutoSaving(true);
 
                 const diagramData = {
@@ -729,14 +762,17 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         [
             diagramId,
             diagramName,
+            generateThumbnail,
+            getClientOrThrow,
+            hasChanges,
             isAutoSaving,
             isExistingDiagram,
-            hasChanges,
+            onDiagramSaved,
             organizationId,
             projectId,
+            supabaseError,
+            supabaseLoading,
             user?.id,
-            onDiagramSaved,
-            generateThumbnail,
         ],
     );
 

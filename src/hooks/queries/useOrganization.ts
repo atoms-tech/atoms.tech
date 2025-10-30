@@ -1,14 +1,14 @@
 // import { supabase } from '@/lib/supabase/supabaseClient'
 import { useQuery } from '@tanstack/react-query';
 
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { getUserOrganizations } from '@/lib/db/client';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
-import { OrganizationType } from '@/types';
+import { Organization, OrganizationType } from '@/types';
 import { QueryFilters } from '@/types/base/filters.types';
 
 export function useOrganization(orgId: string) {
-    return useQuery({
+    return useQuery<Organization | null>({
         queryKey: queryKeys.organizations.detail(orgId),
         queryFn: async () => {
             // Handle empty or invalid orgId more gracefully
@@ -34,27 +34,42 @@ export function useOrganization(orgId: string) {
                 return null; // Return null instead of throwing to prevent UI errors
             }
 
-            const { data, error } = await supabase
-                .from('organizations')
-                .select('*')
-                .eq('id', orgId)
-                .eq('is_deleted', false)
-                .single();
+            const response = await fetch(`/api/organizations/${orgId}`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            if (error) {
-                console.error('Error fetching organization:', error);
-                return null; // Return null instead of throwing to prevent UI errors
+            if (!response.ok) {
+                console.error(
+                    'Error fetching organization via API:',
+                    response.statusText,
+                );
+                return null;
             }
-            return data;
+
+            const payload = (await response.json()) as {
+                organization: Organization | null;
+            };
+            return (payload.organization as Organization | null) ?? null;
         },
         enabled: !!orgId && orgId !== 'user' && orgId !== 'project',
     });
 }
 
 export function useOrganizationsWithFilters(filters?: QueryFilters) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizations.list(filters || {}),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             let query = supabase
                 .from('organizations')
                 .select('*')
@@ -72,13 +87,24 @@ export function useOrganizationsWithFilters(filters?: QueryFilters) {
             if (error) throw error;
             return data;
         },
+        enabled: !authLoading && !!supabase,
     });
 }
 
 export function useOrganizationsByMembership(userId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizations.byMembership(userId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             // Validate userId
             if (
                 !userId ||
@@ -95,7 +121,7 @@ export function useOrganizationsByMembership(userId: string) {
             }
 
             try {
-                const orgs = await getUserOrganizations(userId);
+                const orgs = await getUserOrganizations(supabase, userId);
                 console.log(`Retrieved ${orgs.length} organizations for user ${userId}`);
                 return orgs;
             } catch (error) {
@@ -103,14 +129,25 @@ export function useOrganizationsByMembership(userId: string) {
                 throw error;
             }
         },
-        enabled: !!userId && userId !== '' && userId !== 'user', // Only run the query if userId is valid
+        enabled:
+            !!userId && userId !== '' && userId !== 'user' && !authLoading && !!supabase, // Only run the query if userId is valid
     });
 }
 
 export function useOrgsByUser(userId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizations.byUser(userId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             // Validate userId
             if (
                 !userId ||
@@ -136,14 +173,24 @@ export function useOrgsByUser(userId: string) {
 
             return data;
         },
-        enabled: !!userId && userId !== 'user',
+        enabled: !!userId && userId !== 'user' && !authLoading && !!supabase,
     });
 }
 
 export function usePersonalOrg(userId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizations.createdBy(userId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             // Validate userId
             if (
                 !userId ||
@@ -170,14 +217,24 @@ export function usePersonalOrg(userId: string) {
 
             return organization;
         },
-        enabled: !!userId && userId !== 'user',
+        enabled: !!userId && userId !== 'user' && !authLoading && !!supabase,
     });
 }
 
 export function useOrgInvitation(email: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizationInvitations.byEmail(email),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             // Validate email
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 console.error('Invalid email format:', email);
@@ -197,14 +254,24 @@ export function useOrgInvitation(email: string) {
 
             return data;
         },
-        enabled: !!email,
+        enabled: !!email && !authLoading && !!supabase,
     });
 }
 
 export function useUserSentOrgInvitations(userId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizationInvitations.byCreator(userId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             // Validate userId
             if (
                 !userId ||
@@ -228,14 +295,24 @@ export function useUserSentOrgInvitations(userId: string) {
 
             return data;
         },
-        enabled: !!userId,
+        enabled: !!userId && !authLoading && !!supabase,
     });
 }
 
 export function useOrgInvitationsByOrgId(orgId: string) {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
     return useQuery({
         queryKey: queryKeys.organizationInvitations.byOrganization(orgId),
         queryFn: async () => {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
+
             const { data, error } = await supabase
                 .from('organization_invitations')
                 .select('*')
@@ -248,7 +325,7 @@ export function useOrgInvitationsByOrgId(orgId: string) {
 
             return data;
         },
-        enabled: !!orgId,
+        enabled: !!orgId && !authLoading && !!supabase,
     });
 }
 //             return organizations;

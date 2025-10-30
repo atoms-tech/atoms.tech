@@ -1,6 +1,11 @@
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-export const getUserProfile = async (userId: string) => {
+import { Database } from '@/types/base/database.types';
+
+export const getUserProfile = async (
+    supabase: SupabaseClient<Database>,
+    userId: string,
+) => {
     const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -11,7 +16,7 @@ export const getUserProfile = async (userId: string) => {
     return data;
 };
 
-export const getAuthUser = async () => {
+export const getAuthUser = async (supabase: SupabaseClient<Database>) => {
     const { data, error } = await supabase.auth.getUser();
     if (error) throw error;
     return data;

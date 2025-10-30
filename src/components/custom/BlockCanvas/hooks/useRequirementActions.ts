@@ -7,7 +7,7 @@ import {
     useCreateRequirement,
     useUpdateRequirement,
 } from '@/hooks/mutations/useRequirementMutations';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { generateNextRequirementId } from '@/lib/utils/requirementIdGenerator';
 import { Json, TablesInsert, TablesUpdate } from '@/types/base/database.types';
 import {
@@ -49,6 +49,7 @@ export const useRequirementActions = ({
     const _createRequirementMutation = useCreateRequirement();
     const _updateRequirementMutation = useUpdateRequirement();
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
+    const { getClientOrThrow } = useAuthenticatedSupabase();
 
     // Function to refresh requirements from the database
     const refreshRequirements = useCallback(async () => {
@@ -63,6 +64,7 @@ export const useRequirementActions = ({
                 blockId,
                 documentId,
             });
+            const supabase = getClientOrThrow();
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('*')
@@ -90,7 +92,7 @@ export const useRequirementActions = ({
         } catch (error) {
             console.error('❌ STEP 6: Error refreshing requirements:', error);
         }
-    }, [blockId, documentId, setLocalRequirements]);
+    }, [blockId, documentId, getClientOrThrow, setLocalRequirements]);
 
     // Natural field keys present as top-level DB columns
     const NATURAL_FIELD_KEYS = new Set([
@@ -107,7 +109,9 @@ export const useRequirementActions = ({
     ) => {
         if (!properties) return { propertiesObj: {}, naturalFields: {} };
 
-        // Fetch block columns to get position information
+        // Fetch block columns to get position information; if none exist (new requirements table),
+        // synthesize natural field "virtual" positions to avoid blocking saves.
+        const supabase = getClientOrThrow();
         const { data: blockColumns } = await supabase
             .from('columns')
             .select('*')
@@ -120,7 +124,34 @@ export const useRequirementActions = ({
         // Process each property
         properties.forEach((prop) => {
             const value = dynamicReq[prop.name];
-            const column = blockColumns?.find((col) => col.property_id === prop.id);
+            // Support both real and virtual columns: match by real property_id, then by property name
+            const propNameLc = (prop.name || '').toLowerCase();
+            const column =
+                blockColumns?.find((col) => col.property_id === prop.id) ||
+                (blockColumns || []).find((c) => {
+                    const cNameLc = (
+                        (c as unknown as { property?: { name?: string } })?.property?.name
+                            ? ((c as unknown as { property?: { name?: string } })
+                                  ?.property?.name as string)
+                            : ''
+                    ).toLowerCase();
+                    if (!cNameLc) return false;
+                    // Deduplicate case-insensitively against both UI names and DB keys
+                    if (
+                        c.id?.startsWith('virtual-') ||
+                        c.property_id?.startsWith('virtual-')
+                    ) {
+                        return (
+                            cNameLc === propNameLc ||
+                            cNameLc === 'external_id' ||
+                            cNameLc === 'name' ||
+                            cNameLc === 'description' ||
+                            cNameLc === 'status' ||
+                            cNameLc === 'priority'
+                        );
+                    }
+                    return cNameLc === propNameLc;
+                });
             const lowerCaseName = prop.name.toLowerCase();
 
             // Check if this property maps to a natural field
@@ -294,6 +325,7 @@ export const useRequirementActions = ({
 
     const getLastPosition = async (): Promise<number> => {
         try {
+            const supabase = getClientOrThrow();
             const { data: requirements, error } = await supabase
                 .from('requirements')
                 .select('position')
@@ -328,6 +360,7 @@ export const useRequirementActions = ({
         });
 
         try {
+            const supabase = getClientOrThrow();
             console.log(
                 '🎯 STEP 5a: Creating properties object from dynamic requirement',
             );
@@ -427,27 +460,21 @@ export const useRequirementActions = ({
                     externalId === 'GENERATING...'
                 ) {
                     try {
-                        // Get organization ID from document
-                        const { data: document, error: docError } = await supabase
-                            .from('documents')
-                            .select(
-                                `
-                                project_id,
-                                projects!inner(organization_id)
-                            `,
-                            )
-                            .eq('id', documentId)
-                            .single();
-
-                        if (!docError && document) {
-                            const organizationId = (
-                                document as {
-                                    projects?: { organization_id?: string };
-                                }
-                            )?.projects?.organization_id;
+                        // Resolve organizationId via API route instead of client-side join
+                        const resp = await fetch(`/api/documents/${documentId}`, {
+                            method: 'GET',
+                            cache: 'no-store',
+                        });
+                        if (resp.ok) {
+                            const payload = (await resp.json()) as {
+                                organizationId?: string | null;
+                            };
+                            const organizationId = payload.organizationId ?? null;
                             if (organizationId) {
-                                externalId =
-                                    await generateNextRequirementId(organizationId);
+                                externalId = await generateNextRequirementId(
+                                    supabase,
+                                    organizationId,
+                                );
                             }
                         }
                     } catch (error) {
@@ -567,6 +594,7 @@ export const useRequirementActions = ({
         try {
             deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
 
+            const supabase = getClientOrThrow();
             const { error } = await supabase
                 .from('requirements')
                 .delete()

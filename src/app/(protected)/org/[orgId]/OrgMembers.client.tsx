@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import {
     ORGANIZATION_ROLE_ARRAY,
     OrganizationRole,
@@ -30,19 +31,19 @@ import {
 } from '@/lib/auth/permissions';
 import { getOrganizationMembers } from '@/lib/db/client';
 import { useUser } from '@/lib/providers/user.provider';
-import { supabase } from '@/lib/supabase/supabaseBrowser';
 
-interface OrgMembersProps {
-    className?: string;
-}
-
-export default function OrgMembers({ className }: OrgMembersProps) {
+export default function OrgMembers() {
     const params = useParams<{ orgId: string }>();
     const { user } = useUser();
     const { toast } = useToast();
     const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<OrganizationRole[]>([]);
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
 
     const { data: userRoleQuery } = useOrgMemberRole(params.orgId, user?.id || '');
     const userRole: OrganizationRole | null = userRoleQuery ?? null;
@@ -54,8 +55,10 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     } = useQuery({
         queryKey: ['organization-members', params?.orgId || ''],
         queryFn: () =>
-            params ? getOrganizationMembers(params.orgId) : Promise.resolve([]),
-        enabled: params?.orgId ? true : false,
+            params && supabase
+                ? getOrganizationMembers(supabase, params.orgId)
+                : Promise.resolve([]),
+        enabled: !!params?.orgId && !!supabase && !authLoading,
     });
 
     const handleRemoveMember = async (memberId: string) => {
@@ -78,6 +81,9 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
             const { error } = await supabase
                 .from('organization_members')
                 .delete()
@@ -128,6 +134,9 @@ export default function OrgMembers({ className }: OrgMembersProps) {
         }
 
         try {
+            if (!supabase) {
+                throw new Error(authError ?? 'Supabase client not available');
+            }
             const { error } = await supabase
                 .from('organization_members')
                 .update({ role: selectedRole })
@@ -177,7 +186,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
     });
 
     return (
-        <Card className={className}>
+        <Card>
             <CardHeader className="flex flex-col gap-4 pb-2">
                 <div>
                     <CardTitle className="text-xl">Members</CardTitle>
@@ -232,7 +241,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 key={i}
                                 className="flex items-center justify-between animate-pulse"
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mr-3">
                                     <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"></div>
                                     <div className="space-y-1">
                                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
@@ -250,7 +259,7 @@ export default function OrgMembers({ className }: OrgMembersProps) {
                                 key={member.id}
                                 className="flex items-center justify-between"
                             >
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 mr-3">
                                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                                         <Users className="h-4 w-4 text-primary" />
                                     </div>

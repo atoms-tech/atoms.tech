@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { Suspense, useEffect, useState, useTransition } from 'react';
 
-import { login } from '@/app/(auth)/auth/actions';
+import { login, loginWithGitHub, loginWithGoogle } from '@/app/(auth)/auth/actions';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -58,8 +58,8 @@ function LoginForm() {
                 }
 
                 // Handle normal login redirect
-                if (result.success && result.redirectTo) {
-                    router.push(result.redirectTo);
+                if (result.success) {
+                    router.push('/home/user');
                 } else {
                     setError(result.error || 'An unexpected error occurred');
                 }
@@ -68,6 +68,24 @@ function LoginForm() {
                 setError('An unexpected error occurred');
             }
         });
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            await loginWithGoogle();
+        } catch (error) {
+            console.error('Google login error:', error);
+            setError('Failed to sign in with Google');
+        }
+    };
+
+    const handleGitHubLogin = async () => {
+        try {
+            await loginWithGitHub();
+        } catch (error) {
+            console.error('GitHub login error:', error);
+            setError('Failed to sign in with GitHub');
+        }
     };
 
     return (
@@ -127,6 +145,15 @@ function LoginForm() {
                         </Button>
                     </form>
 
+                    <div className="text-center">
+                        <Link
+                            href="/forgot-password"
+                            className="text-sm text-primary hover:text-primary/80"
+                        >
+                            Forgot your password?
+                        </Link>
+                    </div>
+
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
                             <Separator className="w-full bg-gray-200 dark:bg-muted" />
@@ -141,18 +168,16 @@ function LoginForm() {
                     <div className="grid grid-cols-2 gap-3">
                         <Button
                             variant="outline"
-                            onClick={() => {
-                                window.location.href = '/auth/google';
-                            }}
+                            onClick={handleGoogleLogin}
+                            disabled={isPending}
                         >
                             <Mail className="mr-2 h-4 w-4" />
                             Google
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={() => {
-                                window.location.href = '/auth/github';
-                            }}
+                            onClick={handleGitHubLogin}
+                            disabled={isPending}
                         >
                             <SiGithub className="mr-2 h-4 w-4" />
                             GitHub
@@ -163,10 +188,10 @@ function LoginForm() {
                     <p className="text-center w-full text-sm text-gray-600 dark:text-gray-300">
                         Don&apos;t have an account?{' '}
                         <Link
-                            href="/signup"
+                            href="/signup-request"
                             className="font-medium text-primary hover:text-primary/80"
                         >
-                            Sign up
+                            Request access
                         </Link>
                     </p>
                 </CardFooter>

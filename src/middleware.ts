@@ -1,20 +1,18 @@
-import { type NextRequest } from 'next/server';
+import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
 
-import { updateSession } from '@/lib/supabase/middleware';
-
-export async function middleware(request: NextRequest) {
-    return await updateSession(request);
-}
+/**
+ * Middleware to handle WorkOS AuthKit session management.
+ * This must run on all routes that call withAuth() so that
+ * the user context is available.
+ */
+export const middleware = authkitMiddleware({
+    debug: false,
+    // Enable eager auth to ensure session is available on all routes
+    eagerAuth: true,
+});
 
 export const config = {
-    matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
-         */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|mov)$).*)',
-    ],
+    // Match all routes EXCEPT static assets and Next.js internals.
+    // Includes API routes so withAuth() can access the session context on protected API routes.
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

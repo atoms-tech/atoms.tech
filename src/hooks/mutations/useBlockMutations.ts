@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { supabase } from '@/lib/supabase/supabaseBrowser';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { Block } from '@/types';
-import { Json, TablesInsert } from '@/types/base/database.types';
+import { Json } from '@/types/base/database.types';
 
 export type BlockContent = {
     columns?: Json | null;
@@ -26,50 +26,65 @@ export type UpdateBlockContent = {
     content?: BlockContent;
 } & Partial<Block>;
 
+const useSupabaseClientOrThrow = () => {
+    const {
+        supabase,
+        isLoading: authLoading,
+        error: authError,
+    } = useAuthenticatedSupabase();
+
+    return () => {
+        if (authLoading) {
+            throw new Error('Supabase client is still initializing');
+        }
+        if (!supabase) {
+            throw new Error(authError ?? 'Supabase client not available');
+        }
+
+        return supabase;
+    };
+};
+
 export function useCreateBlock() {
     return useMutation({
         mutationFn: async (input: CreateBlockInput) => {
-            console.log('Creating block', input);
+            console.log('Creating block via API', input);
 
-            const insertPayload: TablesInsert<'blocks'> = {
-                content: (input as { content?: Json | null })?.content ?? ({} as Json),
-                document_id: input.document_id,
-                position: input.position,
+            const body = {
                 type: input.type,
-                created_by: input.created_by ?? null,
-                updated_by: input.updated_by ?? null,
+                position: input.position,
+                content: (input as { content?: Json | null })?.content ?? ({} as Json),
+                name: (input as { name?: string | null }).name ?? null,
+                orgId: (input as { org_id?: string | null }).org_id ?? null,
+            } as {
+                type: string;
+                position?: number | null;
+                content?: Json | null;
+                name?: string | null;
+                orgId?: string | null;
             };
 
-            const maybeOrgId = (input as { org_id?: string | null }).org_id;
-            if (maybeOrgId !== undefined) {
-                insertPayload.org_id = maybeOrgId ?? null;
+            const res = await fetch(`/api/documents/${input.document_id}/blocks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`Failed to create block: ${res.status} ${text}`);
             }
-            const maybeName = (input as { name?: string | null }).name;
-            if (typeof maybeName === 'string' && maybeName.trim().length > 0) {
-                insertPayload.name = maybeName;
-            }
-
-            const { data: block, error: blockError } = await supabase
-                .from('blocks')
-                .insert(insertPayload)
-                .select()
-                .single();
-
-            if (blockError) {
-                console.error('Failed to create block', blockError);
-                throw blockError;
-            }
-
-            if (!block) {
-                throw new Error('Failed to create block');
-            }
-
-            return block;
+            const payload = (await res.json()) as {
+                block: Block;
+                columns?: unknown[];
+            };
+            return payload.block;
         },
     });
 }
 
 export function useUpdateBlock() {
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
+
     return useMutation({
         mutationFn: async (input: Partial<Block> & { id: string }) => {
             console.log('Updating block', input.id, input);
@@ -86,7 +101,8 @@ export function useUpdateBlock() {
                 updatePayload.content = (content as Json) ?? null;
             }
 
-            const { data: block, error: blockError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: block, error: blockError } = await client
                 .from('blocks')
                 .update(updatePayload)
                 .eq('id', id)
@@ -108,11 +124,14 @@ export function useUpdateBlock() {
 }
 
 export function useDeleteBlock() {
+    const ensureSupabaseClient = useSupabaseClientOrThrow();
+
     return useMutation({
         mutationFn: async ({ id, deletedBy }: { id: string; deletedBy: string }) => {
             console.log('Deleting block', id);
 
-            const { data: block, error: blockError } = await supabase
+            const client = ensureSupabaseClient();
+            const { data: block, error: blockError } = await client
                 .from('blocks')
                 .update({
                     is_deleted: true,
