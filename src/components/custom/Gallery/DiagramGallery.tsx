@@ -14,7 +14,6 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 
 // Define the interface for the diagram item based on the actual database schema
 interface DiagramItem {
@@ -66,37 +65,26 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
     const pathname = usePathname();
     const projectId = pathname.split('/')[4];
-    const {
-        isLoading: authLoading,
-        error: authError,
-        getClientOrThrow,
-    } = useAuthenticatedSupabase();
 
     // Fetch all diagrams for the current project
     const fetchDiagrams = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            if (!projectId || authLoading) return;
+            if (!projectId) return;
 
-            if (authError) {
-                console.error('Failed to initialize Supabase client:', authError);
-                setError('Unable to load diagrams right now. Please try again.');
-                return;
-            }
+            const response = await fetch(`/api/projects/${projectId}/diagrams`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            const supabase = getClientOrThrow();
-            const { data, error } = await supabase
-                .from('excalidraw_diagrams')
-                .select('id, name, thumbnail_url, updated_at, created_by')
-                .eq('project_id', projectId)
-                .order('updated_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching diagrams:', error);
+            if (!response.ok) {
+                console.error('Error fetching diagrams:', response.statusText);
                 setError('Failed to load diagrams. Please try again.');
                 return;
             }
+
+            const { diagrams: data } = await response.json();
 
             // Map data to DiagramItem interface with optional fields
             const mappedData: DiagramItem[] = data.map((item: DiagramDatabaseRow) => ({
@@ -114,7 +102,7 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [authError, authLoading, getClientOrThrow, projectId]);
+    }, [projectId]);
 
     // Fetch diagrams when component mounts or projectId changes
     useEffect(() => {
@@ -137,14 +125,16 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
         if (!newName.trim()) return;
 
         try {
-            const supabase = getClientOrThrow();
-            const { error } = await supabase
-                .from('excalidraw_diagrams')
-                .update({ name: newName.trim() })
-                .eq('id', diagramId);
+            const response = await fetch(`/api/diagrams/${diagramId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newName.trim() }),
+            });
 
-            if (error) {
-                console.error('Error renaming diagram:', error);
+            if (!response.ok) {
+                console.error('Error renaming diagram:', response.statusText);
                 setError('Failed to rename diagram');
                 return;
             }
@@ -164,14 +154,12 @@ const DiagramGallery: React.FC<DiagramGalleryProps> = ({
 
     const handleDeleteDiagram = async (diagramId: string) => {
         try {
-            const supabase = getClientOrThrow();
-            const { error } = await supabase
-                .from('excalidraw_diagrams')
-                .delete()
-                .eq('id', diagramId);
+            const response = await fetch(`/api/diagrams/${diagramId}`, {
+                method: 'DELETE',
+            });
 
-            if (error) {
-                console.error('Error deleting diagram:', error);
+            if (!response.ok) {
+                console.error('Error deleting diagram:', response.statusText);
                 setError('Failed to delete diagram');
                 return;
             }
