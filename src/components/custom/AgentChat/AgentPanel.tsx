@@ -380,6 +380,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     body: JSON.stringify({
                         message: msg,
                         conversation_history: llmFriendlyHistory,
+                        // User context for Supabase queries
+                        user_id: currentUserId,
+                        organization_id: currentOrgId,
+                        pinned_organization_id: currentPinnedOrganizationId,
+                        project_id: currentProjectId,
+                        document_id: currentDocumentId,
                     }),
                 });
 

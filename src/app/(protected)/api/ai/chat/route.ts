@@ -1,7 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const genAI = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API! });
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API!);
 
 interface ChatMessage {
     id: string;
