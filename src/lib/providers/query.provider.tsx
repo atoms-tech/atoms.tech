@@ -13,14 +13,37 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
                     queries: {
                         staleTime: 1000 * 60, // 1 minute
                         gcTime: 1000 * 60 * 5, // 5 minutes
-                        retry: (failureCount, error) => {
+                        // Adds error handling to refresh the session on 401 responses.
+                        retry: (failureCount, error: unknown) => {
+                            // Check if it's a JWT expiration error (PGRST301)
+                            if (
+                                (error as Error)?.message?.includes('PGRST301') ||
+                                (error as Error)?.message?.includes('JWT expired')
+                            ) {
+                                // Retry once to allow token refresh
+                                return failureCount < 1;
+                            }
+                            // Don't retry other auth errors
+                            // End of first error handling change
                             if (error instanceof AuthError) return false;
                             return failureCount < 3;
                         },
                         refetchOnWindowFocus: false,
                     },
                     mutations: {
-                        retry: false,
+                        // Beginning of second error handling change
+                        retry: (failureCount, error: unknown) => {
+                            // Check if it's a JWT expiration error (PGRST301)
+                            if (
+                                (error as Error)?.message?.includes('PGRST301') ||
+                                (error as Error)?.message?.includes('JWT expired')
+                            ) {
+                                // Retry once to allow token refresh
+                                return failureCount < 1;
+                            }
+                            return false;
+                        },
+                        // End of second error handling change
                     },
                 },
             }),

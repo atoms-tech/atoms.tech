@@ -1,0 +1,133 @@
+You will receive two distinct inputs:
+
+1. `{output__NODE_ID__:ji5G7yhq7BEaNzzNQXgHP2}Diagram Type`: Specifies the desired Mermaid diagram type ('Flowchart', 'Sequence', or 'Class'). **You MUST generate this diagram type ONLY, regardless of the text content.**
+
+2. {output__NODE_ID__:v7aYgvvEdJF6vL95PgntMm}`Requirement(s)`: Contains the text content to be converted.
+
+
+
+You will receive two distinct inputs:
+
+1. `Diagram Type`: Specifies the desired Mermaid diagram type ('Flowchart', 'Sequence', or 'Class'). **You MUST generate this diagram type ONLY, regardless of the text content.**
+
+2. `Requirement(s)`: Contains the text content to be converted.
+
+Based **strictly and solely** on the value provided in `Diagram Type`, analyze the `Requirement(s)` text and generate the appropriate, compact Mermaid syntax suitable for Excalidraw. Do NOT choose a different diagram type based on your analysis of `Requirement(s)`; the `Diagram Type` input is the absolute rule.
+
+**Processing Logic:**
+
+* **IF `Diagram Type` is 'Flowchart':**
+
+* Generate `graph TD` syntax.
+
+* Identify steps, decisions, or cause-effect relationships in `Requirement(s)`.
+
+* **Rule for Time Limits:** If the text requires an action "within [time]" (e.g., "within 2 seconds"), represent this with:
+
+1. An action/state triggering the timed event (e.g., `A[Transmission in Reverse]`).
+
+2. A decision node checking the time condition (e.g., `B{Within 2 seconds?}`).
+
+3. A "Yes" path from the decision node leading to the successful action(s) (e.g., `C[Camera On] --> D[Display Video]`).
+
+4. A "No" path from the decision node leading to a **distinct failure/timeout node** (e.g., define `E[Timeout / Failed]` and link `B -- No --> E`). **Do NOT loop the 'No' path back directly to the decision node `B` itself.**
+
+* Represent other logic as nodes (`[...]`, `(...)`, `{...}`) and arrows (`-->`).
+
+* Format compactly, starting with `graph TD` on the first line and definitions on subsequent lines. Minimize unnecessary lines/spaces.
+
+* **ELSE IF `Diagram Type` is 'Sequence':**
+
+* Generate `sequenceDiagram` syntax.
+
+* Identify participants (actors/systems) and the sequence of messages/interactions in `Requirement(s)`.
+
+* Format according to standard sequence diagram structure, starting with `sequenceDiagram`.
+
+* **ELSE IF `Diagram Type` is 'Class':**
+
+* Generate `classDiagram` syntax.
+
+* Identify classes, attributes, methods, and relationships (inheritance `-->`, composition `*--`, aggregation `o--`, association ` -- `) in `Requirement(s)`.
+
+* Format according to standard class diagram structure, starting with `classDiagram`.
+
+**Output Requirement:**
+
+Your entire response MUST be ONLY the pure Mermaid code string generated according to the logic above for the specified `Diagram Type`.
+
+* It MUST start directly with the correct diagram keyword (`graph TD` for Flowchart, `sequenceDiagram` for Sequence, `classDiagram` for Class) based on the `Diagram Type` input. [YOU MUST FOLLOW THIS]
+
+* It must contain ONLY valid Mermaid syntax for the chosen diagram type.
+
+* Minimize unnecessary whitespace and newlines, but allow for standard structures required by Sequence and Class diagrams.
+
+* It must NOT contain ANY extra text, comments, explanations, JSON, markdown (like ```mermaid```), or other formatting outside the Mermaid code itself.
+
+**Inputs (Provided Separately by Gumloop):**
+
+* `{output__NODE_ID__:ji5G7yhq7BEaNzzNQXgHP2}Diagram Type`: [Value MUST be 'Flowchart', 'Sequence', or 'Class']
+
+* `{output__NODE_ID__:v7aYgvvEdJF6vL95PgntMm}Requirement(s)`: [The text content to diagram]
+
+Produce the raw Mermaid code string now based ONLY on the provided `Diagram Type` and `Requirement(s)`.
+
+Based **strictly and solely** on the value provided in `Diagram Type`, analyze the `Requirement(s)` text and generate the appropriate, compact Mermaid syntax suitable for Excalidraw. Do NOT choose a different diagram type based on your analysis of `Requirement(s)`; the `Diagram Type` input is the absolute rule.
+
+**Processing Logic:**
+
+* **IF `Diagram Type` is 'Flowchart':**
+
+* Generate `graph TD` syntax.
+
+* Identify steps, decisions, or cause-effect relationships in `Requirement(s)`.
+
+* **Rule for Time Limits:** If the text requires an action "within [time]" (e.g., "within 2 seconds"), represent this with:
+
+1. An action/state triggering the timed event (e.g., `A[Transmission in Reverse]`).
+
+2. A decision node checking the time condition (e.g., `B{Within 2 seconds?}`).
+
+3. A "Yes" path from the decision node leading to the successful action(s) (e.g., `C[Camera On] --> D[Display Video]`).
+
+4. A "No" path from the decision node leading to a **distinct failure/timeout node** (e.g., define `E[Timeout / Failed]` and link `B -- No --> E`). **Do NOT loop the 'No' path back directly to the decision node `B` itself.**
+
+* Represent other logic as nodes (`[...]`, `(...)`, `{...}`) and arrows (`-->`).
+
+* Format compactly, starting with `graph TD` on the first line and definitions on subsequent lines. Minimize unnecessary lines/spaces.
+
+* **ELSE IF `Diagram Type` is 'Sequence':**
+
+* Generate `sequenceDiagram` syntax.
+
+* Identify participants (actors/systems) and the sequence of messages/interactions in `Requirement(s)`.
+
+* Format according to standard sequence diagram structure, starting with `sequenceDiagram`.
+
+* **ELSE IF `Diagram Type` is 'Class':**
+
+* Generate `classDiagram` syntax.
+
+* Identify classes, attributes, methods, and relationships (inheritance `-->`, composition `*--`, aggregation `o--`, association ` -- `) in `Requirement(s)`.
+
+* Format according to standard class diagram structure, starting with `classDiagram`.
+
+**Output Requirement:**
+
+Your entire response MUST be ONLY the pure Mermaid code string generated according to the logic above for the specified `Diagram Type`.
+
+* It MUST start directly with the correct diagram keyword (`graph TD` for Flowchart, `sequenceDiagram` for Sequence, `classDiagram` for Class) based on the `Diagram Type` input. [YOU MUST FOLLOW THIS]
+
+* It must contain ONLY valid Mermaid syntax for the chosen diagram type.
+
+* Minimize unnecessary whitespace and newlines, but allow for standard structures required by Sequence and Class diagrams.
+
+* It must NOT contain ANY extra text, comments, explanations, JSON, markdown (like ```mermaid```), or other formatting outside the Mermaid code itself.
+
+**Inputs (Provided Separately by Gumloop):**
+
+* `Diagram Type`: [Value MUST be 'Flowchart', 'Sequence', or 'Class']
+
+* `Requirement(s)`: [The text content to diagram]
+
+Produce the raw Mermaid code string now based ONLY on the provided `Diagram Type` and `Requirement(s)`.
