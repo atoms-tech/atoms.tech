@@ -55,6 +55,11 @@ async function createRelationship(
 async function deleteRelationship(
     request: CreateRelationshipRequest,
 ): Promise<RelationshipResult> {
+    // Debug: log outgoing request body
+    try {
+        console.log('[Relationships] DELETE request', request);
+    } catch {}
+
     const response = await fetch('/api/requirements/relationships', {
         method: 'DELETE',
         headers: {
@@ -68,7 +73,17 @@ async function deleteRelationship(
         throw new Error(error.message || 'Failed to delete relationship');
     }
 
-    return response.json();
+    const json = (await response.json()) as RelationshipResult & {
+        relationshipsDeleted?: number | null;
+        message?: string;
+    };
+
+    // Debug: log response payload
+    try {
+        console.log('[Relationships] DELETE response', json);
+    } catch {}
+
+    return json;
 }
 
 async function getRequirementDescendants(
