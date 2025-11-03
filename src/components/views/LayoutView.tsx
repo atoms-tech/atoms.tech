@@ -40,8 +40,7 @@ const LayoutView = memo(({ children, className }: LayoutViewProps) => {
                 ease: 'easeInOut', // More natural feeling easing
             }}
             className={cn(
-                'flex flex-col bg-background text-foreground mx-auto ',
-
+                'flex flex-col bg-background text-foreground mx-auto',
                 className,
             )}
         >
