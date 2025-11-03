@@ -66,6 +66,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
                     toggleSidebar();
                 }
             }}
+            className="bg-background"
         >
             {/* Sidebar */}
             <AppSidebar />
@@ -75,7 +76,7 @@ const LayoutManagerInternal = ({ children }: LayoutManagerProps) => {
 
             {/* Main Content Area */}
             <div
-                className="flex-1 transition-all duration-200 ease-linear pt-16"
+                className="flex-1 transition-all duration-200 ease-linear pt-16 bg-background"
                 style={{
                     marginRight: `${rightMargin}px`,
                 }}
