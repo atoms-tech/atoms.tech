@@ -67,8 +67,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const {
         addMessage,
         clearMessages: _clearMessages,
-        sendToN8n,
-        n8nWebhookUrl,
         currentUserId,
         currentOrgId,
         currentProjectId,
@@ -293,48 +291,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         }
     };
 
-    const sendToN8nWithRetry = async (
-        data: Record<string, unknown>,
-        maxRetries = 3,
-        delayMs = 800,
-    ): Promise<Record<string, unknown>> => {
-        let attempt = 0;
-        while (attempt < maxRetries) {
-            try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const n8nResponse = await sendToN8n(data as any);
-                // If response contains error code 500, throw to trigger retry
-                if (
-                    n8nResponse &&
-                    (n8nResponse as Record<string, unknown>).status === 500
-                ) {
-                    throw new Error('500');
-                }
-                return n8nResponse;
-            } catch (err: unknown) {
-                attempt++;
-                // Only retry on 500 error
-                if (
-                    (err as Error)?.message === '500' ||
-                    ((err as Record<string, unknown>)?.response &&
-                        (
-                            (err as Record<string, unknown>).response as Record<
-                                string,
-                                unknown
-                            >
-                        )?.status === 500)
-                ) {
-                    if (attempt < maxRetries) {
-                        await new Promise((res) => setTimeout(res, delayMs * attempt));
-                        continue;
-                    }
-                }
-                throw err;
-            }
-        }
-        throw new Error('N8N request failed after retries');
-    };
-
     const handleSendMessage = async (messageToSend?: string) => {
         if (!currentPinnedOrganizationId) {
             setShowPinGuide(true);
@@ -363,145 +319,39 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             setIsLoading(true);
             let reply: string;
 
-            // Priority: atoms_ai server > N8N > local AI
+            // Use atoms_ai server only
             const atomsAiUrl =
                 process.env.NEXT_PUBLIC_ATOMS_AI_URL || 'http://localhost:8000';
 
-            // Try atoms_ai server first
-            try {
-                const llmFriendlyHistory = messages.slice(-5).map((msg) => ({
-                    role: msg.role,
-                    content: msg.content,
-                }));
+            const llmFriendlyHistory = messages.slice(-5).map((msg) => ({
+                role: msg.role,
+                content: msg.content,
+            }));
 
-                const atomsAiResponse = await fetch(`${atomsAiUrl}/api/chat/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: msg,
-                        conversation_history: llmFriendlyHistory,
-                        // User context for Supabase queries
-                        user_id: currentUserId,
-                        organization_id: currentOrgId,
-                        pinned_organization_id: currentPinnedOrganizationId,
-                        project_id: currentProjectId,
-                        document_id: currentDocumentId,
-                    }),
-                });
+            const atomsAiResponse = await fetch(`${atomsAiUrl}/api/chat/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: msg,
+                    conversation_history: llmFriendlyHistory,
+                    // User context for Supabase queries
+                    user_id: currentUserId,
+                    organization_id: currentOrgId,
+                    pinned_organization_id: currentPinnedOrganizationId,
+                    project_id: currentProjectId,
+                    document_id: currentDocumentId,
+                }),
+            });
 
-                if (atomsAiResponse.ok) {
-                    const data = await atomsAiResponse.json();
-                    reply = data.response || 'No response from atoms_ai server.';
-                } else {
-                    throw new Error('atoms_ai server failed');
-                }
-            } catch (atomsAiError) {
-                console.log(
-                    'atoms_ai server not available, trying N8N or local AI...',
-                    atomsAiError,
-                );
-                // Fall back to N8N if configured, otherwise use local AI
-                if (n8nWebhookUrl) {
-                    try {
-                        // Convert messages to LLM-friendly format (role and content only)
-                        const llmFriendlyHistory = messages.slice(-5).map((msg) => ({
-                            role: msg.role === 'assistant' ? 'you' : msg.role,
-                            content: msg.content,
-                        }));
-
-                        const n8nResponse = await sendToN8nWithRetry({
-                            type: 'chat',
-                            message: msg,
-                            conversationHistory: llmFriendlyHistory,
-                            timestamp: new Date().toISOString(),
-                        });
-                        // Try different possible response fields from N8N
-                        const response = n8nResponse as Record<string, unknown>;
-                        console.log(
-                            'AgentPanel - N8N Response received:',
-                            JSON.stringify(response, null, 2),
-                        );
-
-                        // Check each possible field and log what we find
-                        console.log(
-                            'AgentPanel - response.reply:',
-                            `"${response.reply}"`,
-                        );
-                        console.log(
-                            'AgentPanel - response.message:',
-                            `"${response.message}"`,
-                        );
-                        console.log(
-                            'AgentPanel - response.output:',
-                            `"${response.output}"`,
-                        );
-
-                        reply = ((response.reply && (response.reply as string).trim()) ||
-                            (response.message && (response.message as string).trim()) ||
-                            (response.output && (response.output as string).trim()) ||
-                            (response.response && (response.response as string).trim()) ||
-                            (response.data &&
-                                (response.data as Record<string, unknown>).output &&
-                                (
-                                    (response.data as Record<string, unknown>)
-                                        .output as string
-                                ).trim()) ||
-                            (response.data &&
-                                (response.data as Record<string, unknown>).reply &&
-                                (
-                                    (response.data as Record<string, unknown>)
-                                        .reply as string
-                                ).trim()) ||
-                            (response.data &&
-                                (response.data as Record<string, unknown>).message &&
-                                (
-                                    (response.data as Record<string, unknown>)
-                                        .message as string
-                                ).trim()) ||
-                            (() => {
-                                console.log(
-                                    'AgentPanel - No valid reply found, using fallback',
-                                );
-                                return 'N8N workflow completed but returned an empty response. Please check your N8N workflow configuration.';
-                            })()) as string;
-                    } catch (n8nError) {
-                        console.error('N8N error:', n8nError);
-                        // If N8N fails, fall back to local AI
-                        const response = await fetch('/api/ai/chat', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                message: msg,
-                                conversationHistory: messages.slice(-10),
-                                context: {
-                                    userId: currentUserId,
-                                    orgId: currentOrgId,
-                                    projectId: currentProjectId,
-                                    documentId: currentDocumentId,
-                                },
-                            }),
-                        });
-                        const data = await response.json();
-                        reply = data.reply as string;
-                    }
-                } else {
-                    // Use local AI if N8N is not configured
-                    const response = await fetch('/api/ai/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            message: msg,
-                            conversationHistory: messages.slice(-10),
-                        }),
-                    });
-                    if (response.ok) {
-                        const data = await response.json();
-                        reply = data.reply as string;
-                    } else {
-                        throw new Error('API request failed');
-                    }
-                }
+            if (atomsAiResponse.ok) {
+                const data = await atomsAiResponse.json();
+                reply = data.response || 'No response from server.';
+            } else {
+                const errorData = await atomsAiResponse.json().catch(() => ({}));
+                console.error('atoms_ai server error:', errorData);
+                reply = `Error: ${errorData.detail || 'Server unavailable. Please try again.'}`;
             }
+
             const assistantMessage: Message = {
                 id: (Date.now() + 1).toString(),
                 content: reply,
