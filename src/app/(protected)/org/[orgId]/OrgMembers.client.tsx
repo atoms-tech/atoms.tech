@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { useSetOrgMemberCount } from '@/hooks/mutations/useOrgMemberMutation';
 import { useOrgMemberRole } from '@/hooks/queries/useOrgMember';
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import {
@@ -36,7 +35,6 @@ export default function OrgMembers() {
     const params = useParams<{ orgId: string }>();
     const { user } = useUser();
     const { toast } = useToast();
-    const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount();
     const [searchQuery, setSearchQuery] = useState('');
     const [roleFilters, setRoleFilters] = useState<OrganizationRole[]>([]);
     const {
@@ -95,7 +93,11 @@ export default function OrgMembers() {
                 throw error;
             }
 
-            await setOrgMemberCount(params?.orgId || '');
+            // Update member count via API
+            await fetch(`/api/organizations/${params?.orgId}/update-member-count`, {
+                method: 'POST',
+                cache: 'no-store',
+            });
 
             toast({
                 title: 'Success',

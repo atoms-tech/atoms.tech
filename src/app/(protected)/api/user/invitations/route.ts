@@ -14,10 +14,7 @@ export async function GET() {
     // Get or create Supabase profile
     const profile = await getOrCreateProfileForWorkOSUser(user);
     if (!profile) {
-        return NextResponse.json(
-            { error: 'Profile not provisioned' },
-            { status: 409 },
-        );
+        return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
     }
 
     // Verify email matches user

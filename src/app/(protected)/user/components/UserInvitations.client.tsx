@@ -1,7 +1,6 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-
 import { Check, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -41,13 +40,10 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
 
         try {
             // Call the new API route to accept invitation
-            const response = await fetch(
-                `/api/invitations/${invitation.id}/accept`,
-                {
-                    method: 'POST',
-                    cache: 'no-store',
-                },
-            );
+            const response = await fetch(`/api/invitations/${invitation.id}/accept`, {
+                method: 'POST',
+                cache: 'no-store',
+            });
 
             if (!response.ok) {
                 const errorData = await response.json();

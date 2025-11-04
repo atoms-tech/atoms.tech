@@ -15,10 +15,7 @@ export async function GET() {
     // Get or create Supabase profile for WorkOS user
     const profile = await getOrCreateProfileForWorkOSUser(user);
     if (!profile) {
-        return NextResponse.json(
-            { error: 'Profile not provisioned' },
-            { status: 409 },
-        );
+        return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
     }
 
     const supabase = getSupabaseServiceRoleClient();

@@ -20,10 +20,7 @@ export async function POST(
     // Get or create Supabase profile
     const profile = await getOrCreateProfileForWorkOSUser(user);
     if (!profile) {
-        return NextResponse.json(
-            { error: 'Profile not provisioned' },
-            { status: 409 },
-        );
+        return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
     }
 
     const supabase = getSupabaseServiceRoleClient();
@@ -42,10 +39,7 @@ export async function POST(
         }
 
         if (!invitation) {
-            return NextResponse.json(
-                { error: 'Invitation not found' },
-                { status: 404 },
-            );
+            return NextResponse.json({ error: 'Invitation not found' }, { status: 404 });
         }
 
         // Verify invitation is for this user's email
