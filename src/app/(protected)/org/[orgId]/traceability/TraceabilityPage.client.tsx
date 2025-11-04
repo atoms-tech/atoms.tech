@@ -175,8 +175,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             const results = await Promise.all(promises);
 
-            // Check for any failures
-            const failedResults = results.filter((result) => !result.success);
+            // Check for any failures - results is an array of success responses
+            const failedResults = results.filter((result) => result.success === false);
 
             if (failedResults.length > 0) {
                 // Show error for failed relationships
@@ -184,9 +184,12 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     .map((result) => result.message || result.error)
                     .join('\n');
                 alert(`Some relationships failed to create:\n${errorMessages}`);
-            } else {
-                // All successful
-                const totalCreated = results.reduce(
+            }
+
+            // Show success message for successful ones
+            const successfulResults = results.filter((result) => result.success === true);
+            if (successfulResults.length > 0) {
+                const totalCreated = successfulResults.reduce(
                     (sum, result) => sum + (result.relationshipsCreated || 0),
                     0,
                 );

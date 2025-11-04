@@ -3,8 +3,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { Check, Network, Plus, Search, Trash2, Trash } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { useMemo, useState, useCallback } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -49,7 +49,6 @@ import {
     useRequirement,
     useRequirementsByIds,
 } from '@/hooks/queries/useRequirement';
-
 // import relationship hooks
 import {
     useCreateRelationship,
@@ -60,7 +59,6 @@ import {
 } from '@/hooks/queries/useRequirementRelationships';
 import type { RequirementTreeNode } from '@/hooks/queries/useRequirementRelationships';
 import { useReverseTraceLinks, useTraceLinks } from '@/hooks/queries/useTraceability';
-
 import { useUser } from '@/lib/providers/user.provider';
 
 type TraceRelationship = 'parent_of' | 'child_of';
@@ -88,24 +86,33 @@ export default function TracePage() {
     const [isDeleteMode, setIsDeleteMode] = useState(false);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-    const requirementId = params.requirementSlug as string; 
-    const projectId = params.projectId as string; 
+    const requirementId = params.requirementSlug as string;
+    const projectId = params.projectId as string;
 
     // Get documentId from URL query parameter
     const documentId = searchParams.get('documentId') || '';
-    
+
     const { data: requirements, isLoading: isLoadingRequirements } =
         useDocumentRequirements(documentId);
     const { data: outgoingLinks } = useTraceLinks(requirementId, 'requirement');
     const { data: incomingLinks } = useReverseTraceLinks(requirementId, 'requirement');
 
     // Main requirement hooks
-    const { data: currentRequirement, isLoading: isLoadingCurrentRequirement, refetch: refetchCurrentRequirement } =
-        useRequirement(requirementId);
-    const { data: requirementAncestors, isLoading: isLoadingAncestors, refetch: refetchAncestors } =
-        useRequirementAncestors(requirementId);
-    const { data: requirementDescendants, isLoading: isLoadingDescendants, refetch: refetchDescendants } =
-        useRequirementDescendants(requirementId);
+    const {
+        data: currentRequirement,
+        isLoading: isLoadingCurrentRequirement,
+        refetch: refetchCurrentRequirement,
+    } = useRequirement(requirementId);
+    const {
+        data: requirementAncestors,
+        isLoading: isLoadingAncestors,
+        refetch: refetchAncestors,
+    } = useRequirementAncestors(requirementId);
+    const {
+        data: requirementDescendants,
+        isLoading: isLoadingDescendants,
+        refetch: refetchDescendants,
+    } = useRequirementDescendants(requirementId);
     const { data: requirementTree, isLoading: isLoadingTree } =
         useRequirementTree(projectId);
 
@@ -261,8 +268,8 @@ export default function TracePage() {
         try {
             // ancestorId = parent UUID, descendantId = current requirement UUID
             await createRelationshipMutation.mutateAsync({
-                ancestorId: selectedParentRequirement.id, 
-                descendantId: requirementId, 
+                ancestorId: selectedParentRequirement.id,
+                descendantId: requirementId,
             });
 
             // Refetch data to update the hierarchy immediately
@@ -411,10 +418,9 @@ export default function TracePage() {
         direction: 'incoming' | 'outgoing' | 'test';
     };
 
-    
     // Real test cases from trace links (when test case entity type is supported)
     const realTestCases = useMemo(() => {
-        // Filter trace links that are test cases 
+        // Filter trace links that are test cases
         // MOCK DATA: Currently placeholder - replace with real test case data when available
         return [
             {
@@ -492,20 +498,24 @@ export default function TracePage() {
     }, [requirementDescendants]);
 
     // Fetch full requirement data for ancestors and descendants to get external_id
-    const { data: ancestorRequirements, refetch: refetchAncestorRequirements } = useRequirementsByIds(ancestorIds);
-    const { data: descendantRequirements, refetch: refetchDescendantRequirements } = useRequirementsByIds(descendantIds);
+    const { data: ancestorRequirements, refetch: refetchAncestorRequirements } =
+        useRequirementsByIds(ancestorIds);
+    const { data: descendantRequirements, refetch: refetchDescendantRequirements } =
+        useRequirementsByIds(descendantIds);
 
     const realParentRequirements = useMemo(() => {
         if (!requirementAncestors) return [];
         // Maps RequirementNode[] from API to UI format with full requirement data
         return requirementAncestors.map((ancestor) => {
-            const fullReq = ancestorRequirements?.find((r) => r.id === ancestor.requirementId);
+            const fullReq = ancestorRequirements?.find(
+                (r) => r.id === ancestor.requirementId,
+            );
             return {
-                id: ancestor.requirementId, 
+                id: ancestor.requirementId,
                 name: ancestor.title,
                 external_id: fullReq?.external_id || null,
-                description: fullReq?.description || '', 
-                type: fullReq?.type || 'Requirement', 
+                description: fullReq?.description || '',
+                type: fullReq?.type || 'Requirement',
             };
         });
     }, [requirementAncestors, ancestorRequirements]);
@@ -517,21 +527,24 @@ export default function TracePage() {
         const directChildren = requirementDescendants.filter(
             (desc) => desc.depth === 1 && desc.directParent,
         );
-        
+
         // Fallback: if no direct children with directParent flag, try all at depth 1
-        const filteredDescendants = directChildren.length > 0 
-            ? directChildren 
-            : requirementDescendants.filter((desc) => desc.depth === 1);
-        
+        const filteredDescendants =
+            directChildren.length > 0
+                ? directChildren
+                : requirementDescendants.filter((desc) => desc.depth === 1);
+
         // Maps RequirementNode[] from API to UI format with full requirement data
         return filteredDescendants.map((descendant) => {
-            const fullReq = descendantRequirements?.find((r) => r.id === descendant.requirementId);
+            const fullReq = descendantRequirements?.find(
+                (r) => r.id === descendant.requirementId,
+            );
             return {
                 id: descendant.requirementId,
                 name: descendant.title,
                 external_id: fullReq?.external_id || null,
-                description: fullReq?.description || '', 
-                type: fullReq?.type || 'Requirement', 
+                description: fullReq?.description || '',
+                type: fullReq?.type || 'Requirement',
             };
         });
     }, [requirementDescendants, descendantRequirements]);
@@ -545,22 +558,32 @@ export default function TracePage() {
 
         // Build recursive tree based ONLY on parent_id relationships
         // ensures each requirement appears only under its immediate parent
-        const buildChildTree = (parentId: string, allTreeNodes: RequirementTreeNode[], allRequirements: any[]): any[] => {
+        const buildChildTree = (
+            parentId: string,
+            allTreeNodes: RequirementTreeNode[],
+            allRequirements: any[],
+        ): any[] => {
             // Find all nodes where parent_id matches the current parentId
-            const childNodes = allTreeNodes.filter(
-                (node) => node.parent_id === parentId,
-            );
-            
+            const childNodes = allTreeNodes.filter((node) => node.parent_id === parentId);
+
             return childNodes.map((treeNode) => {
                 // Find full requirement data for this child
-                const fullReq = allRequirements.find((r) => r.id === treeNode.requirement_id);
+                const fullReq = allRequirements.find(
+                    (r) => r.id === treeNode.requirement_id,
+                );
                 const externalId = fullReq?.external_id || '';
-                const displayName = externalId ? `${externalId} ${treeNode.title}` : treeNode.title;
-                
+                const displayName = externalId
+                    ? `${externalId} ${treeNode.title}`
+                    : treeNode.title;
+
                 // Recursively find children of this child (grandchildren)
                 // This ensures grandchildren only appear under their direct parent
-                const grandchildren = buildChildTree(treeNode.requirement_id, allTreeNodes, allRequirements);
-                
+                const grandchildren = buildChildTree(
+                    treeNode.requirement_id,
+                    allTreeNodes,
+                    allRequirements,
+                );
+
                 return {
                     id: treeNode.requirement_id,
                     name: displayName,
@@ -574,9 +597,13 @@ export default function TracePage() {
 
         // Build parent hierarchy (ancestors) with external_id
         const parents = (requirementAncestors || []).map((ancestor) => {
-            const fullReq = ancestorRequirements?.find((r) => r.id === ancestor.requirementId);
+            const fullReq = ancestorRequirements?.find(
+                (r) => r.id === ancestor.requirementId,
+            );
             const externalId = fullReq?.external_id || '';
-            const displayName = externalId ? `${externalId} ${ancestor.title}` : ancestor.title;
+            const displayName = externalId
+                ? `${externalId} ${ancestor.title}`
+                : ancestor.title;
             return {
                 id: ancestor.requirementId,
                 name: displayName,
@@ -596,34 +623,43 @@ export default function TracePage() {
         // Build children tree using parent_id from requirementTree
         // ensures accurate parent-child relationships based on parentId
         let children: any[] = [];
-        
+
         // Combine all requirement data sources for lookup
         const allReqs = [
             ...(descendantRequirements || []),
             ...(ancestorRequirements || []),
             currentRequirement,
         ];
-        
+
         if (requirementTree && requirementTree.length > 0) {
             // Find all direct children of current requirement using parent_id
             const directChildNodes = requirementTree.filter(
                 (node) => node.parent_id === currentRequirement.id,
             );
-            
+
             console.log('[Hierarchy] Using requirementTree to find children');
-            console.log('[Hierarchy] requirementTree total nodes:', requirementTree.length);
+            console.log(
+                '[Hierarchy] requirementTree total nodes:',
+                requirementTree.length,
+            );
             console.log('[Hierarchy] directChildNodes found:', directChildNodes.length);
             console.log('[Hierarchy] directChildNodes:', directChildNodes);
-            
+
             // Build children tree recursively based on parent_id
             children = directChildNodes.map((childNode) => {
                 const fullReq = allReqs.find((r) => r.id === childNode.requirement_id);
                 const externalId = fullReq?.external_id || '';
-                const displayName = externalId ? `${externalId} ${childNode.title}` : childNode.title;
-                
+                const displayName = externalId
+                    ? `${externalId} ${childNode.title}`
+                    : childNode.title;
+
                 // Recursively find grandchildren using parent_id
-                const grandchildren = buildChildTree(childNode.requirement_id, requirementTree, allReqs);
-                
+                const grandchildren = buildChildTree(
+                    childNode.requirement_id,
+                    requirementTree,
+                    allReqs,
+                );
+
                 return {
                     id: childNode.requirement_id,
                     name: displayName,
@@ -634,43 +670,60 @@ export default function TracePage() {
                 };
             });
         }
-        
+
         // if requirementTree doesn't have the relationships
-        if (children.length === 0 && requirementDescendants && requirementDescendants.length > 0) {
+        if (
+            children.length === 0 &&
+            requirementDescendants &&
+            requirementDescendants.length > 0
+        ) {
             console.log('[Hierarchy] Falling back to requirementDescendants');
             console.log('[Hierarchy] requirementDescendants:', requirementDescendants);
-            
+
             // Filter for direct children (depth === 1, directParent === true)
             let directChildren = (requirementDescendants || []).filter(
                 (desc) => desc.depth === 1 && desc.directParent === true,
             );
-            
+
             if (directChildren.length === 0) {
                 directChildren = (requirementDescendants || []).filter(
                     (desc) => desc.depth === 1,
                 );
             }
-            
+
             if (directChildren.length === 0 && requirementDescendants.length > 0) {
-                console.warn('[Hierarchy] No direct children found, using all descendants as fallback');
+                console.warn(
+                    '[Hierarchy] No direct children found, using all descendants as fallback',
+                );
                 directChildren = requirementDescendants;
             }
-            
-            console.log('[Hierarchy] directChildren from descendants:', directChildren.length);
+
+            console.log(
+                '[Hierarchy] directChildren from descendants:',
+                directChildren.length,
+            );
             console.log('[Hierarchy] directChildren:', directChildren);
-            
+
             // Build children from descendants
             children = directChildren.map((child) => {
-                const fullReq = descendantRequirements?.find((r) => r.id === child.requirementId);
+                const fullReq = descendantRequirements?.find(
+                    (r) => r.id === child.requirementId,
+                );
                 const externalId = fullReq?.external_id || '';
-                const displayName = externalId ? `${externalId} ${child.title}` : child.title;
-                
+                const displayName = externalId
+                    ? `${externalId} ${child.title}`
+                    : child.title;
+
                 // Try to build grandchildren if we have requirementTree
                 let grandchildren: any[] = [];
                 if (requirementTree && requirementTree.length > 0) {
-                    grandchildren = buildChildTree(child.requirementId, requirementTree, allReqs);
+                    grandchildren = buildChildTree(
+                        child.requirementId,
+                        requirementTree,
+                        allReqs,
+                    );
                 }
-                
+
                 return {
                     id: child.requirementId,
                     name: displayName,
@@ -690,21 +743,26 @@ export default function TracePage() {
             isCurrent: true,
             children: children,
         };
-        
+
         // Check if we have relationships (parents OR children)
         const hasRelationships = parents.length > 0 || current.children.length > 0;
-        
+
         // if we have requirementDescendants or requirementAncestors
         const hasAncestors = requirementAncestors && requirementAncestors.length > 0;
-        const hasDescendants = requirementDescendants && requirementDescendants.length > 0;
-        
+        const hasDescendants =
+            requirementDescendants && requirementDescendants.length > 0;
+
         // If hasRelationships is false but we have ancestors/descendants data, force hasRelationships to true
         // handles cases where the tree structure might not match the actual relationships
         const finalHasRelationships = hasRelationships || hasAncestors || hasDescendants;
-        
+
         if (!hasRelationships && (hasAncestors || hasDescendants)) {
-            console.warn('[Hierarchy] WARNING: hasRelationships was false but we have ancestors/descendants data!');
-            console.warn('[Hierarchy] Forcing hasRelationships to true based on actual data.');
+            console.warn(
+                '[Hierarchy] WARNING: hasRelationships was false but we have ancestors/descendants data!',
+            );
+            console.warn(
+                '[Hierarchy] Forcing hasRelationships to true based on actual data.',
+            );
         }
 
         // Always return consistent structure
@@ -713,7 +771,14 @@ export default function TracePage() {
             current,
             hasRelationships: finalHasRelationships,
         };
-    }, [currentRequirement, requirementAncestors, requirementDescendants, ancestorRequirements, descendantRequirements, requirementTree]);
+    }, [
+        currentRequirement,
+        requirementAncestors,
+        requirementDescendants,
+        ancestorRequirements,
+        descendantRequirements,
+        requirementTree,
+    ]);
 
     const renderHierarchyNode = (node: any, level: number = 0) => {
         const hasChildren = node.children && node.children.length > 0;
@@ -1112,10 +1177,16 @@ export default function TracePage() {
                             </h2>
                         </div>
                         <div className="mt-4">
-                            {isLoadingAncestors || isLoadingDescendants || isLoadingCurrentRequirement ? (
-                                <p className="text-muted-foreground text-center py-4">Loading...</p>
+                            {isLoadingAncestors ||
+                            isLoadingDescendants ||
+                            isLoadingCurrentRequirement ? (
+                                <p className="text-muted-foreground text-center py-4">
+                                    Loading...
+                                </p>
                             ) : !realHierarchy ? (
-                                <p className="text-muted-foreground text-center py-4">Loading requirement...</p>
+                                <p className="text-muted-foreground text-center py-4">
+                                    Loading requirement...
+                                </p>
                             ) : !realHierarchy.hasRelationships ? (
                                 // Show only current requirement if no relationships
                                 <div>
@@ -1126,8 +1197,10 @@ export default function TracePage() {
                                     {/* Debug info */}
                                     {process.env.NODE_ENV === 'development' && (
                                         <div className="mt-2 text-xs text-muted-foreground">
-                                            Debug: Ancestors: {requirementAncestors?.length || 0}, 
-                                            Descendants: {requirementDescendants?.length || 0}
+                                            Debug: Ancestors:{' '}
+                                            {requirementAncestors?.length || 0},
+                                            Descendants:{' '}
+                                            {requirementDescendants?.length || 0}
                                         </div>
                                     )}
                                 </div>
@@ -1170,9 +1243,10 @@ export default function TracePage() {
                                 className={`px-3 py-1 text-xs font-medium border ${
                                     currentRequirement?.status === 'approved'
                                         ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
-                                        : currentRequirement?.status === 'rejected' || currentRequirement?.status === 'deleted'
-                                        ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
-                                        : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
+                                        : currentRequirement?.status === 'rejected' ||
+                                            currentRequirement?.status === 'deleted'
+                                          ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
+                                          : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
                                 }`}
                             >
                                 {currentRequirement?.status
@@ -1204,7 +1278,8 @@ export default function TracePage() {
                                     <div className="space-y-1 text-sm">
                                         <p className="text-foreground">
                                             Type:{' '}
-                                            {currentRequirement?.type && String(currentRequirement.type).trim()
+                                            {currentRequirement?.type &&
+                                            String(currentRequirement.type).trim()
                                                 ? String(currentRequirement.type).trim()
                                                 : '-'}
                                         </p>
@@ -1213,7 +1288,9 @@ export default function TracePage() {
                                             {currentRequirement?.status
                                                 ? String(currentRequirement.status)
                                                       .replaceAll('_', ' ')
-                                                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                                                      .replace(/\b\w/g, (c) =>
+                                                          c.toUpperCase(),
+                                                      )
                                                 : '-'}
                                         </p>
                                         <p className="text-foreground">
@@ -1221,7 +1298,8 @@ export default function TracePage() {
                                             {currentRequirement?.priority || '-'}
                                         </p>
                                         <p className="text-foreground">
-                                            Source: {currentRequirement?.external_id || '-'}
+                                            Source:{' '}
+                                            {currentRequirement?.external_id || '-'}
                                         </p>
                                         <p className="text-foreground">
                                             Created:{' '}
@@ -1249,28 +1327,41 @@ export default function TracePage() {
                                     </h3>
                                     <p className="text-foreground text-sm">
                                         {(() => {
-                                            const props: any = (currentRequirement as any)?.properties || {};
-                                            const raw = props.Rationale ?? props.rationale;
+                                            const props: any =
+                                                (currentRequirement as any)?.properties ||
+                                                {};
+                                            const raw =
+                                                props.Rationale ?? props.rationale;
                                             if (!raw) return '-';
                                             if (typeof raw === 'string') return raw;
-                                            if (typeof (raw as any)?.value === 'string') return (raw as any).value;
+                                            if (typeof (raw as any)?.value === 'string')
+                                                return (raw as any).value;
                                             if (Array.isArray(raw)) {
                                                 const parts = raw
                                                     .map((r) =>
                                                         typeof r === 'string'
                                                             ? r
-                                                            : typeof (r as any)?.value === 'string'
-                                                            ? (r as any).value
-                                                            : '',
+                                                            : typeof (r as any)?.value ===
+                                                                'string'
+                                                              ? (r as any).value
+                                                              : '',
                                                     )
                                                     .filter(Boolean);
-                                                return parts.length ? parts.join(', ') : '-';
+                                                return parts.length
+                                                    ? parts.join(', ')
+                                                    : '-';
                                             }
                                             if (Array.isArray((raw as any)?.value)) {
                                                 const parts = (raw as any).value
-                                                    .map((r: any) => (typeof r === 'string' ? r : String(r)))
+                                                    .map((r: any) =>
+                                                        typeof r === 'string'
+                                                            ? r
+                                                            : String(r),
+                                                    )
                                                     .filter(Boolean);
-                                                return parts.length ? parts.join(', ') : '-';
+                                                return parts.length
+                                                    ? parts.join(', ')
+                                                    : '-';
                                             }
                                             try {
                                                 return String(raw);
@@ -1286,21 +1377,35 @@ export default function TracePage() {
                                     </h3>
                                     <div className="flex gap-2 flex-wrap">
                                         {(() => {
-                                            const normalizeToStrings = (input: any): string[] => {
+                                            const normalizeToStrings = (
+                                                input: any,
+                                            ): string[] => {
                                                 if (!input) return [];
                                                 if (Array.isArray(input)) {
                                                     return input
                                                         .flatMap((item) => {
-                                                            if (typeof item === 'string') return item.split(/[;,]/);
-                                                            if (typeof (item as any)?.value === 'string')
-                                                                return ((item as any).value as string).split(/[;,]/);
-                                                            return String(item).split(/[;,]/);
+                                                            if (typeof item === 'string')
+                                                                return item.split(/[;,]/);
+                                                            if (
+                                                                typeof (item as any)
+                                                                    ?.value === 'string'
+                                                            )
+                                                                return (
+                                                                    (item as any)
+                                                                        .value as string
+                                                                ).split(/[;,]/);
+                                                            return String(item).split(
+                                                                /[;,]/,
+                                                            );
                                                         })
                                                         .map((s) => s.trim())
                                                         .filter(Boolean);
                                                 }
                                                 if (typeof input === 'string')
-                                                    return input.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
+                                                    return input
+                                                        .split(/[;,]/)
+                                                        .map((s) => s.trim())
+                                                        .filter(Boolean);
                                                 if (typeof input?.value === 'string')
                                                     return (input.value as string)
                                                         .split(/[;,]/)
@@ -1309,8 +1414,11 @@ export default function TracePage() {
                                                 return [String(input)].filter(Boolean);
                                             };
 
-                                            const rawTagsCol = (currentRequirement as any)?.tags;
-                                            const props: any = (currentRequirement as any)?.properties || {};
+                                            const rawTagsCol = (currentRequirement as any)
+                                                ?.tags;
+                                            const props: any =
+                                                (currentRequirement as any)?.properties ||
+                                                {};
                                             const rawTagsProp = props.Tags ?? props.tags;
                                             const tagsArray = [
                                                 ...normalizeToStrings(rawTagsCol),
@@ -1318,16 +1426,20 @@ export default function TracePage() {
                                             ];
                                             const unique = Array.from(new Set(tagsArray));
                                             return unique.length > 0 ? (
-                                                unique.map((tag: string, index: number) => (
-                                                    <span
-                                                        key={index}
-                                                        className="px-2 py-1 bg-muted text-muted-foreground text-xs"
-                                                    >
-                                                        {tag}
-                                                    </span>
-                                                ))
+                                                unique.map(
+                                                    (tag: string, index: number) => (
+                                                        <span
+                                                            key={index}
+                                                            className="px-2 py-1 bg-muted text-muted-foreground text-xs"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ),
+                                                )
                                             ) : (
-                                                <span className="text-muted-foreground text-sm">-</span>
+                                                <span className="text-muted-foreground text-sm">
+                                                    -
+                                                </span>
                                             );
                                         })()}
                                     </div>
@@ -1386,7 +1498,9 @@ export default function TracePage() {
                                                     placeholder="Search requirements..."
                                                     value={parentSearchQuery}
                                                     onChange={(e) =>
-                                                        setParentSearchQuery(e.target.value)
+                                                        setParentSearchQuery(
+                                                            e.target.value,
+                                                        )
                                                     }
                                                     className="bg-background border-border"
                                                 />
@@ -1394,8 +1508,10 @@ export default function TracePage() {
                                                     {requirements
                                                         ?.filter(
                                                             (req) =>
-                                                                req.id !== requirementId &&
-                                                                (parentSearchQuery === '' ||
+                                                                req.id !==
+                                                                    requirementId &&
+                                                                (parentSearchQuery ===
+                                                                    '' ||
                                                                     req.name
                                                                         .toLowerCase()
                                                                         .includes(
@@ -1448,8 +1564,10 @@ export default function TracePage() {
                                                     {requirements &&
                                                         requirements.filter(
                                                             (req) =>
-                                                                req.id !== requirementId &&
-                                                                (parentSearchQuery === '' ||
+                                                                req.id !==
+                                                                    requirementId &&
+                                                                (parentSearchQuery ===
+                                                                    '' ||
                                                                     req.name
                                                                         .toLowerCase()
                                                                         .includes(
@@ -1501,7 +1619,9 @@ export default function TracePage() {
                             </div>
                             <div className="mt-4">
                                 {isLoadingAncestors ? (
-                                    <p className="text-muted-foreground text-center">Loading...</p>
+                                    <p className="text-muted-foreground text-center">
+                                        Loading...
+                                    </p>
                                 ) : realParentRequirements.length > 0 ? (
                                     <div className="space-y-3">
                                         {realParentRequirements.map((req) => (
@@ -1530,7 +1650,8 @@ export default function TracePage() {
                                                         if (!req.id || !requirementId) {
                                                             toast({
                                                                 title: 'Error',
-                                                                description: 'Missing requirement IDs',
+                                                                description:
+                                                                    'Missing requirement IDs',
                                                                 variant: 'destructive',
                                                             });
                                                             return;
@@ -1538,7 +1659,8 @@ export default function TracePage() {
                                                         deleteRelationshipMutation.mutate(
                                                             {
                                                                 ancestorId: req.id,
-                                                                descendantId: requirementId,
+                                                                descendantId:
+                                                                    requirementId,
                                                             },
                                                             {
                                                                 onSuccess: async () => {
@@ -1549,31 +1671,43 @@ export default function TracePage() {
                                                                         refetchCurrentRequirement(),
                                                                     ]);
                                                                     // Refetch full requirement data after a short delay
-                                                                    setTimeout(async () => {
-                                                                        await Promise.all([
-                                                                            refetchAncestors(),
-                                                                            refetchDescendants(),
-                                                                            refetchAncestorRequirements(),
-                                                                            refetchDescendantRequirements(),
-                                                                        ]);
-                                                                    }, 100);
+                                                                    setTimeout(
+                                                                        async () => {
+                                                                            await Promise.all(
+                                                                                [
+                                                                                    refetchAncestors(),
+                                                                                    refetchDescendants(),
+                                                                                    refetchAncestorRequirements(),
+                                                                                    refetchDescendantRequirements(),
+                                                                                ],
+                                                                            );
+                                                                        },
+                                                                        100,
+                                                                    );
                                                                     toast({
                                                                         title: 'Success',
-                                                                        description: 'Parent relationship deleted',
-                                                                        variant: 'default',
+                                                                        description:
+                                                                            'Parent relationship deleted',
+                                                                        variant:
+                                                                            'default',
                                                                     });
                                                                 },
                                                                 onError: (error) => {
                                                                     toast({
                                                                         title: 'Error',
-                                                                        description: error.message || 'Failed to delete relationship',
-                                                                        variant: 'destructive',
+                                                                        description:
+                                                                            error.message ||
+                                                                            'Failed to delete relationship',
+                                                                        variant:
+                                                                            'destructive',
                                                                     });
                                                                 },
                                                             },
                                                         );
                                                     }}
-                                                    disabled={deleteRelationshipMutation.isPending}
+                                                    disabled={
+                                                        deleteRelationshipMutation.isPending
+                                                    }
                                                     className="text-muted-foreground hover:bg-primary hover:text-primary-foreground"
                                                     style={{ borderRadius: 0 }}
                                                 >
@@ -1638,7 +1772,9 @@ export default function TracePage() {
                                                     placeholder="Search requirements..."
                                                     value={childSearchQuery}
                                                     onChange={(e) =>
-                                                        setChildSearchQuery(e.target.value)
+                                                        setChildSearchQuery(
+                                                            e.target.value,
+                                                        )
                                                     }
                                                     className="bg-background border-border"
                                                 />
@@ -1646,8 +1782,10 @@ export default function TracePage() {
                                                     {requirements
                                                         ?.filter(
                                                             (req) =>
-                                                                req.id !== requirementId &&
-                                                                (childSearchQuery === '' ||
+                                                                req.id !==
+                                                                    requirementId &&
+                                                                (childSearchQuery ===
+                                                                    '' ||
                                                                     req.name
                                                                         .toLowerCase()
                                                                         .includes(
@@ -1700,8 +1838,10 @@ export default function TracePage() {
                                                     {requirements &&
                                                         requirements.filter(
                                                             (req) =>
-                                                                req.id !== requirementId &&
-                                                                (childSearchQuery === '' ||
+                                                                req.id !==
+                                                                    requirementId &&
+                                                                (childSearchQuery ===
+                                                                    '' ||
                                                                     req.name
                                                                         .toLowerCase()
                                                                         .includes(
@@ -1753,7 +1893,9 @@ export default function TracePage() {
                             </div>
                             <div className="mt-4">
                                 {isLoadingDescendants ? (
-                                    <p className="text-muted-foreground text-center">Loading...</p>
+                                    <p className="text-muted-foreground text-center">
+                                        Loading...
+                                    </p>
                                 ) : realChildRequirements.length > 0 ? (
                                     <div className="space-y-3">
                                         {realChildRequirements.map((req) => (
@@ -1782,7 +1924,8 @@ export default function TracePage() {
                                                         if (!requirementId || !req.id) {
                                                             toast({
                                                                 title: 'Error',
-                                                                description: 'Missing requirement IDs',
+                                                                description:
+                                                                    'Missing requirement IDs',
                                                                 variant: 'destructive',
                                                             });
                                                             return;
@@ -1802,21 +1945,28 @@ export default function TracePage() {
                                                                     ]);
                                                                     toast({
                                                                         title: 'Success',
-                                                                        description: 'Child relationship deleted',
-                                                                        variant: 'default',
+                                                                        description:
+                                                                            'Child relationship deleted',
+                                                                        variant:
+                                                                            'default',
                                                                     });
                                                                 },
                                                                 onError: (error) => {
                                                                     toast({
                                                                         title: 'Error',
-                                                                        description: error.message || 'Failed to delete relationship',
-                                                                        variant: 'destructive',
+                                                                        description:
+                                                                            error.message ||
+                                                                            'Failed to delete relationship',
+                                                                        variant:
+                                                                            'destructive',
                                                                     });
                                                                 },
                                                             },
                                                         );
                                                     }}
-                                                    disabled={deleteRelationshipMutation.isPending}
+                                                    disabled={
+                                                        deleteRelationshipMutation.isPending
+                                                    }
                                                     className="text-muted-foreground hover:bg-primary hover:text-primary-foreground"
                                                     style={{ borderRadius: 0 }}
                                                 >
