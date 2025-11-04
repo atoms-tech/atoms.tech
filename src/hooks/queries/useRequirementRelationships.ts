@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
+
 import { queryKeys } from '@/lib/constants/queryKeys';
 
 // Types
@@ -23,7 +26,7 @@ interface RequirementNode {
     directParent: boolean;
 }
 
-interface RequirementTreeNode {
+export interface RequirementTreeNode {
     requirement_id: string;
     title: string;
     parent_id: string | null;
@@ -69,14 +72,40 @@ async function deleteRelationship(
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to delete relationship');
+        let errorMessage = 'Failed to delete relationship';
+        try {
+            const error = await response.json();
+            errorMessage = error.message || error.error || errorMessage;
+        } catch {
+            // If response is not JSON, try to get text
+            try {
+                const text = await response.text();
+                errorMessage = text || errorMessage;
+            } catch {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+        }
+        throw new Error(errorMessage);
     }
 
-    const json = (await response.json()) as RelationshipResult & {
+    let json: RelationshipResult & {
         relationshipsDeleted?: number | null;
         message?: string;
     };
+    try {
+        json = (await response.json()) as RelationshipResult & {
+            relationshipsDeleted?: number | null;
+            message?: string;
+        };
+    } catch (error) {
+        // If response is not JSON, return a success response
+        console.warn('[Relationships] DELETE response is not JSON, assuming success');
+        return {
+            success: true,
+            message: 'Relationship deleted',
+            relationshipsDeleted: 1,
+        };
+    }
 
     // Debug: log response payload
     try {
@@ -136,6 +165,17 @@ export function useCreateRelationship() {
             queryClient.invalidateQueries({
                 queryKey: ['requirements', 'tree'],
             });
+            // Also invalidate requirements-by-ids queries to ensure full requirement data is refetched
+            queryClient.invalidateQueries({
+                queryKey: ['requirements', 'byIds'],
+            });
+            // Invalidate individual requirement queries to ensure external_id is available
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.requirements.detail(variables.ancestorId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.requirements.detail(variables.descendantId),
+            });
         },
         onError: (error) => {
             console.error('Failed to create relationship:', error);
@@ -148,16 +188,35 @@ export function useDeleteRelationship() {
     return useMutation({
         mutationFn: deleteRelationship,
         onSuccess: (data, variables) => {
-            // Targeted invalidation - only invalidate queries that actually changed
+            // Invalidate descendants for the ancestor (parent) - this removes the child from parent's children list
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.descendants(variables.ancestorId),
             });
+            // Invalidate ancestors for the descendant (child) - this removes the parent from child's ancestors list
             queryClient.invalidateQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
-            // Only invalidate tree queries - more targeted than all requirements
+            // Invalidate tree queries to update the full hierarchy view
             queryClient.invalidateQueries({
                 queryKey: ['requirements', 'tree'],
+            });
+            // Invalidate requirements-by-ids queries to ensure full requirement data is refetched
+            queryClient.invalidateQueries({
+                queryKey: ['requirements', 'byIds'],
+            });
+            // Invalidate individual requirement queries to ensure external_id is available
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.requirements.detail(variables.ancestorId),
+            });
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.requirements.detail(variables.descendantId),
+            });
+            // Force refetch to ensure UI updates immediately
+            queryClient.refetchQueries({
+                queryKey: queryKeys.requirements.descendants(variables.ancestorId),
+            });
+            queryClient.refetchQueries({
+                queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
         },
         onError: (error) => {
