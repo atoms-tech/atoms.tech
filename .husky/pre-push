@@ -1,11 +1,40 @@
+#!/usr/bin/env sh
+set -e
+
 echo "🚀 Running pre-push checks..."
 
-# Lint Check
-echo "📝 Linting staged files..."
-bun run lint
+# Determine upstream base to diff against
+UPSTREAM_REF=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "")
+if [ -n "$UPSTREAM_REF" ]; then
+	BASE_SHA=$(git merge-base HEAD "$UPSTREAM_REF")
+else
+	# Fallback to first commit if no upstream configured
+	BASE_SHA=$(git rev-list --max-parents=0 HEAD)
+fi
 
-# Format check
-echo "🔍 Formatting staged files..."
-bun prettier src --check
+# Collect files changed since base
+CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRTUXB "$BASE_SHA"...HEAD | tr '\n' ' ')
+
+if [ -z "$CHANGED_FILES" ]; then
+	echo "🟰 No relevant file changes detected; skipping lint/format checks."
+	echo "✅ Pre-push checks passed! Ready to push."
+	exit 0
+fi
+
+# Filter by extension for linters/formatters
+JS_TS_FILES=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -E '\\.(js|jsx|ts|tsx)$' || true)
+PRETTIER_FILES=$(echo "$CHANGED_FILES" | tr ' ' '\n' | grep -E '\\.(js|jsx|ts|tsx|json|md|css|scss|yaml|yml)$' || true)
+
+if [ -n "$JS_TS_FILES" ]; then
+	echo "📝 Linting changed JS/TS files..."
+	# shellcheck disable=SC2086
+	bunx eslint --max-warnings=0 $JS_TS_FILES
+fi
+
+if [ -n "$PRETTIER_FILES" ]; then
+	echo "🔍 Checking Prettier on changed files..."
+	# shellcheck disable=SC2086
+	bunx prettier --check $PRETTIER_FILES
+fi
 
 echo "✅ Pre-push checks passed! Ready to push."
