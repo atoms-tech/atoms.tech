@@ -274,7 +274,7 @@ export class ClineRegistryClient {
             this.llmsInstallCache.set(githubUrl, { data: hasLLMS, timestamp: Date.now() });
             
             return hasLLMS;
-        } catch (error) {
+        } catch {
             return false;
         }
     }
@@ -321,7 +321,7 @@ export class ClineRegistryClient {
 
             if (!response.ok) return undefined;
             return response.text();
-        } catch (error) {
+        } catch {
             return undefined;
         }
     }

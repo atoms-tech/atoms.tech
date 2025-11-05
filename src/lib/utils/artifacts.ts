@@ -26,7 +26,7 @@ export function extractArtifacts(text: string): ExtractedArtifacts {
     // Extract explicit artifact tags
     const artifactMatches = Array.from(text.matchAll(ARTIFACT_PATTERN));
     for (const match of artifactMatches) {
-        const [fullMatch, type, title, language, content] = match;
+        const [, type, title, language, content] = match;
         
         const artifact: Artifact = {
             id: generateArtifactId(title),
@@ -50,7 +50,7 @@ export function extractArtifacts(text: string): ExtractedArtifacts {
     // Extract code block artifacts
     const codeBlockMatches = Array.from(text.matchAll(CODE_BLOCK_PATTERN));
     for (const match of codeBlockMatches) {
-        const [fullMatch, language, title, content] = match;
+        const [, language, title, content] = match;
         
         artifacts.push({
             id: generateArtifactId(title),

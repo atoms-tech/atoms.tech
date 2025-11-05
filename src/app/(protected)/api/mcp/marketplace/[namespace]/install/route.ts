@@ -182,46 +182,63 @@ export async function POST(
       );
     }
 
-    // Normalize auth_type: convert 'none' to null, keep valid types
-    const normalizeAuthType = (authType: string | undefined | null): string | null => {
-      if (!authType || authType === 'none') return null;
-      if (['oauth', 'api_key', 'bearer'].includes(authType)) return authType;
-      return null; // Default to null for unknown types
+    // Normalize auth_type: ensure it's never null (database requires it)
+    const normalizeAuthType = (authType: string | undefined | null): string => {
+      if (!authType) return 'none';
+      if (['oauth', 'api_key', 'bearer', 'none'].includes(authType)) return authType;
+      return 'none'; // Default to 'none' for unknown types
     };
 
     // First, ensure the server exists in mcp_servers table
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
     // even though this is a marketplace server. The tier='marketplace' indicates it's from the marketplace.
-    const { data: mcpServer, error: mcpServerError } = await supabase
-      .from('mcp_servers')
-      .upsert({
-        namespace: decodedNamespace,
-        name: server.name,
-        description: server.description || '',
-        version: server.version || '1.0.0',
-        transport_type: transport.type || 'stdio',
-        transport: transport.type || 'stdio',
-        source: 'marketplace',
-        enabled: true,
-        url: server.repository || server.homepage || `https://github.com/${decodedNamespace}`,
-        auth_type: normalizeAuthType(server.auth?.type), // Normalize auth_type
-        tier: 'marketplace',
-        repository_url: server.repository || null,
-        homepage_url: server.homepage || null,
-        documentation_url: server.documentation || null,
-        license: server.license || null,
-        tags: server.tags || [],
-        category: server.category || null,
-        scope: 'user', // Required by valid_scope constraint
-        user_id: userId, // Required by valid_scope constraint
-        organization_id: null, // Must be NULL for user scope
-        project_id: null, // Must be NULL for user scope
-      } as any, {
-        onConflict: 'namespace',
-        ignoreDuplicates: false,
-      })
-      .select('id')
-      .single();
+    const baseServerRecord: Record<string, any> = {
+      namespace: decodedNamespace,
+      name: server.name,
+      description: server.description || '',
+      version: server.version || '1.0.0',
+      transport_type: transport.type || 'stdio',
+      transport: transport.type || 'stdio',
+      source: 'marketplace',
+      tier: 'marketplace',
+      enabled: true,
+      url: server.repository || server.homepage || `https://github.com/${decodedNamespace}`,
+      auth_type: normalizeAuthType(server.auth?.type),
+      repository_url: server.repository || null,
+      homepage_url: server.homepage || null,
+      documentation_url: server.documentation || null,
+      license: server.license || null,
+      tags: server.tags || [],
+      category: server.category || null,
+      scope: 'user',
+      user_id: userId,
+      organization_id: null,
+      project_id: null,
+    };
+
+    const upsertServer = async () =>
+      supabase
+        .from('mcp_servers')
+        .upsert(baseServerRecord, {
+          onConflict: 'namespace',
+          ignoreDuplicates: false,
+        })
+        .select('id')
+        .single();
+
+    let { data: mcpServer, error: mcpServerError } = await upsertServer();
+
+    const retryIfMissing = async (column: string, key: string) => {
+      if (mcpServerError && String(mcpServerError.message ?? '').includes(column)) {
+        delete baseServerRecord[key];
+        ({ data: mcpServer, error: mcpServerError } = await upsertServer());
+      }
+    };
+
+    await retryIfMissing("'project_id'", 'project_id');
+    await retryIfMissing("'tier'", 'tier');
+    await retryIfMissing("'transport_type'", 'transport_type');
+    await retryIfMissing("'source'", 'source');
 
     if (mcpServerError || !mcpServer) {
       console.error('Error upserting MCP server:', mcpServerError);

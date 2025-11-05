@@ -145,28 +145,37 @@ export type Database = {
                     id: string;
                     session_id: string;
                     role: string;
-                    content: string;
+                    content: string | null;
                     tokens: number | null;
                     metadata: Json | null;
                     created_at: string | null;
+                    parent_id: string | null;
+                    variant_index: number;
+                    is_active: boolean;
                 };
                 Insert: {
                     id?: string;
                     session_id: string;
                     role: string;
-                    content: string;
+                    content?: string | null;
                     tokens?: number | null;
                     metadata?: Json | null;
                     created_at?: string | null;
+                    parent_id?: string | null;
+                    variant_index?: number;
+                    is_active?: boolean;
                 };
                 Update: {
                     id?: string;
                     session_id?: string;
                     role?: string;
-                    content?: string;
+                    content?: string | null;
                     tokens?: number | null;
                     metadata?: Json | null;
                     created_at?: string | null;
+                    parent_id?: string | null;
+                    variant_index?: number;
+                    is_active?: boolean;
                 };
                 Relationships: [
                     {
@@ -175,6 +184,13 @@ export type Database = {
                         isOneToOne: false;
                         referencedRelation: 'chat_sessions';
                         referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_chat_messages_parent_session';
+                        columns: ['parent_id', 'session_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'chat_messages';
+                        referencedColumns: ['id', 'session_id'];
                     },
                 ];
             };

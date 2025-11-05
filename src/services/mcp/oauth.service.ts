@@ -68,7 +68,7 @@ async function fetchJSON<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
     let detail: unknown;
     try {
       detail = await response.json();
-    } catch (error) {
+    } catch {
       detail = await response.text();
     }
     throw new Error(

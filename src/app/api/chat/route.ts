@@ -64,7 +64,7 @@ async function createChatSession(params: {
     const { error } = await (supabase.from('chat_sessions' as any)).insert({
         id: sessionId,
         user_id: normalizedUserId,
-        org_id: normalizedOrgId,
+        organization_id: normalizedOrgId,
         model: params.model,
         title: params.title || 'New Chat',
         message_count: 0,
@@ -114,7 +114,7 @@ async function ensureChatSession(params: {
     const { error: insertError } = await (supabase.from('chat_sessions' as any)).insert({
         id: params.sessionId,
         user_id: normalizedUserId,
-        org_id: normalizedOrgId,
+        organization_id: normalizedOrgId,
         model: params.model,
         title: params.title || 'New Chat',
         message_count: 0,
@@ -135,40 +135,212 @@ async function ensureChatSession(params: {
  */
 async function saveMessages(params: {
     sessionId: string;
-    messages: Array<{ role: string; content: unknown }>;
-}): Promise<void> {
-    const supabase = await createClient();
-
-    const messageRecords = params.messages
-        .map((msg, index) => ({
-            session_id: params.sessionId,
-            role: msg.role,
-            content: normalizeMessageContent(msg.content),
-            message_index: index,
-            created_at: new Date().toISOString(),
-        }))
-        // Filter out messages with empty content (e.g., tool calls without content)
-        .filter(msg => msg.content && msg.content.trim().length > 0);
-
-    // Only insert if we have messages with content
-    if (messageRecords.length > 0) {
-        const { error } = await (supabase.from('chat_messages' as any)).insert(messageRecords);
-
-        if (error) {
-            logger.error('Failed to save messages', error);
-            // Don't throw - chat can continue without persistence
-        }
+    messages: Array<Record<string, any>>;
+}): Promise<string | null> {
+    if (!params.messages?.length) {
+        return null;
     }
 
-    // Update session metadata
-    await (supabase
-        .from('chat_sessions' as any))
-        .update({
-            message_count: params.messages.length,
+    const latest = params.messages[params.messages.length - 1];
+    if (!latest) {
+        return null;
+    }
+
+    const normalizedContent = normalizeMessageContent(latest.content);
+    const trimmedContent = normalizedContent.trim();
+
+    if (!trimmedContent && !latest.metadata) {
+        return null;
+    }
+
+    const supabase = await createClient();
+    const messageId = normalizeUUID(latest.id) ?? randomUUID();
+
+    const { data: existing, error: fetchError } = await (supabase
+        .from('chat_messages' as any))
+        .select('id')
+        .eq('id', messageId)
+        .eq('session_id', params.sessionId)
+        .maybeSingle();
+
+    if (fetchError) {
+        logger.error('Failed to look up existing chat message', fetchError, { sessionId: params.sessionId, messageId });
+        return null;
+    }
+
+    if (existing) {
+        return messageId;
+    }
+
+    const payload = {
+        id: messageId,
+        session_id: params.sessionId,
+        role: latest.role,
+        content: trimmedContent.length > 0 ? normalizedContent : null,
+        tokens: latest.tokens ?? null,
+        metadata: latest.metadata ?? null,
+        created_at: new Date().toISOString(),
+        parent_id: null,
+        variant_index: 0,
+        is_active: true,
+    };
+
+    const { error: insertError } = await (supabase
+        .from('chat_messages' as any))
+        .insert(payload);
+
+    if (insertError) {
+        logger.error('Failed to persist chat message', insertError, { sessionId: params.sessionId, role: latest.role });
+        return null;
+    }
+
+    await refreshSessionStats(supabase, params.sessionId);
+    return messageId;
+}
+
+async function refreshSessionStats(supabase: any, sessionId: string): Promise<void> {
+    try {
+        const { count } = await (supabase
+            .from('chat_messages' as any))
+            .select('id', { head: true, count: 'exact' })
+            .eq('session_id', sessionId);
+
+        const updatePayload: Record<string, unknown> = {
             last_message_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-        })
-        .eq('id', params.sessionId);
+        };
+
+        if (typeof count === 'number') {
+            updatePayload.message_count = count;
+        }
+
+        await (supabase
+            .from('chat_sessions' as any))
+            .update(updatePayload)
+            .eq('id', sessionId);
+    } catch (error) {
+        logger.error('Failed to refresh chat session stats', error, { sessionId });
+    }
+}
+
+async function persistAssistantVariant(params: {
+    sessionId: string;
+    responseMessage: Record<string, any>;
+    parentMessageId?: string | null;
+    requestMetadata?: Record<string, any> | null;
+}): Promise<void> {
+    try {
+        const supabase = await createClient();
+
+        const responseMessageId = normalizeUUID(params.responseMessage.id) ?? randomUUID();
+        const normalizedContent = normalizeMessageContent(params.responseMessage.content);
+        const trimmedContent = normalizedContent.trim();
+
+        if (!trimmedContent) {
+            logger.warn('Skipping assistant variant persistence due to empty content', {
+                sessionId: params.sessionId,
+                messageId: responseMessageId,
+            });
+            return;
+        }
+
+        let resolvedParentId = params.parentMessageId ? normalizeUUID(params.parentMessageId) : null;
+
+        if (resolvedParentId) {
+            const { data: parentRecord } = await (supabase
+                .from('chat_messages' as any))
+                .select('id')
+                .eq('id', resolvedParentId)
+                .eq('session_id', params.sessionId)
+                .maybeSingle();
+
+            if (!parentRecord) {
+                resolvedParentId = null;
+            }
+        }
+
+        let nextVariantIndex = 0;
+
+        if (resolvedParentId) {
+            const { data: latestVariant } = await (supabase
+                .from('chat_messages' as any))
+                .select('variant_index')
+                .eq('session_id', params.sessionId)
+                .eq('parent_id', resolvedParentId)
+                .order('variant_index', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (latestVariant?.variant_index !== undefined && latestVariant.variant_index !== null) {
+                nextVariantIndex = latestVariant.variant_index + 1;
+            }
+
+            await (supabase
+                .from('chat_messages' as any))
+                .update({ is_active: false })
+                .eq('session_id', params.sessionId)
+                .eq('parent_id', resolvedParentId);
+        }
+
+        const metadataPayload: Record<string, any> | null = params.responseMessage.metadata || params.requestMetadata
+            ? {
+                response: params.responseMessage.metadata ?? null,
+                request: params.requestMetadata ?? null,
+            }
+            : null;
+
+        const insertPayload = {
+            id: responseMessageId,
+            session_id: params.sessionId,
+            role: 'assistant',
+            content: normalizedContent,
+            metadata: metadataPayload,
+            tokens: params.responseMessage.tokens ?? null,
+            parent_id: resolvedParentId,
+            variant_index: nextVariantIndex,
+            is_active: true,
+            created_at: new Date().toISOString(),
+        };
+
+        const { data: inserted, error: insertError } = await (supabase
+            .from('chat_messages' as any))
+            .insert(insertPayload)
+            .select('id')
+            .single();
+
+        if (insertError) {
+            logger.error('Failed to persist assistant variant', insertError, {
+                sessionId: params.sessionId,
+                parentMessageId: resolvedParentId,
+            });
+            return;
+        }
+
+        const finalParentId = resolvedParentId ?? inserted?.id ?? responseMessageId;
+
+        if (!resolvedParentId && finalParentId) {
+            await (supabase
+                .from('chat_messages' as any))
+                .update({ parent_id: finalParentId })
+                .eq('id', inserted?.id ?? responseMessageId)
+                .eq('session_id', params.sessionId);
+        }
+
+        if (resolvedParentId === null && finalParentId) {
+            // Ensure the initial variant marks itself active (others already handled)
+            await (supabase
+                .from('chat_messages' as any))
+                .update({ is_active: true, variant_index: 0 })
+                .eq('id', inserted?.id ?? responseMessageId)
+                .eq('session_id', params.sessionId);
+        }
+
+        await refreshSessionStats(supabase, params.sessionId);
+    } catch (error) {
+        logger.error('Unexpected error while persisting assistant variant', error, {
+            sessionId: params.sessionId,
+        });
+    }
 }
 
 export async function POST(request: Request) {
@@ -202,18 +374,19 @@ export async function POST(request: Request) {
         }
 
         const { messages, model, metadata, systemPrompt } = await request.json();
+        const requestMetadata = metadata && typeof metadata === 'object' ? metadata : {};
 
         // Get or create session
-    let sessionId = metadata?.session_id;
-    if (sessionId && !isValidUUID(sessionId)) {
-        const normalized = normalizeUUID(sessionId);
-        if (normalized) {
-            sessionId = normalized;
-        } else {
-            logger.warn('Invalid session ID format, creating new session', { sessionId });
-            sessionId = undefined;
+        let sessionId = requestMetadata?.session_id;
+        if (sessionId && !isValidUUID(sessionId)) {
+            const normalized = normalizeUUID(sessionId);
+            if (normalized) {
+                sessionId = normalized;
+            } else {
+                logger.warn('Invalid session ID format, creating new session', { sessionId });
+                sessionId = undefined;
+            }
         }
-    }
         
         if (!sessionId) {
             // Create new session - extract title from first user message
@@ -234,7 +407,7 @@ export async function POST(request: Request) {
 
             sessionId = await createChatSession({
                 userId: profile?.id || user.id,
-                organizationId: metadata?.organization_id,
+                organizationId: requestMetadata?.organization_id,
                 model: model || 'claude-sonnet-4-5@20250929',
                 title,
             });
@@ -258,7 +431,7 @@ export async function POST(request: Request) {
             await ensureChatSession({
                 sessionId,
                 userId: profile?.id || user.id,
-                organizationId: metadata?.organization_id,
+                organizationId: requestMetadata?.organization_id,
                 model: model || 'claude-sonnet-4-5@20250929',
                 title,
             });
@@ -267,6 +440,12 @@ export async function POST(request: Request) {
         const formattedMessages = convertToModelMessages(messages || []);
 
         const chatModel = atomsChatModel((model as string) || DEFAULT_MODEL);
+
+        const parentMessageHint = requestMetadata?.parent_message_id
+            ?? requestMetadata?.parentMessageId
+            ?? requestMetadata?.atomsagent?.parent_message_id
+            ?? requestMetadata?.atomsagent?.parentMessageId
+            ?? null;
 
         const result = streamText({
             model: chatModel,
@@ -283,14 +462,28 @@ export async function POST(request: Request) {
         // Save messages asynchronously (don't wait)
         saveMessages({
             sessionId,
-            messages: [
-                ...messages,
-                // Note: We don't have the assistant response yet
-                // This will be saved on the next request or via a separate endpoint
-            ],
+            messages: messages || [],
         }).catch((error) => {
             logger.error('Failed to save messages asynchronously', error);
         });
+
+        result.response
+            .then(async (modelResponse) => {
+                const assistantMessage = modelResponse.messages?.find((msg: any) => msg.role === 'assistant');
+                if (!assistantMessage) {
+                    return;
+                }
+
+                await persistAssistantVariant({
+                    sessionId,
+                    responseMessage: assistantMessage,
+                    parentMessageId: parentMessageHint,
+                    requestMetadata,
+                });
+            })
+            .catch((error) => {
+                logger.error('Failed to persist assistant variant from stream', error, { sessionId });
+            });
 
         return new Response(response.body, {
             status: response.status,

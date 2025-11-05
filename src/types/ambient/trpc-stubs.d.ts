@@ -12,7 +12,7 @@ declare module '@trpc/react-query' {
     queryClient?: unknown;
   }>;
 
-  interface TRPCReactInstance<TRouter = unknown> {
+  interface TRPCReactInstance = {
     Provider: ComponentType<TRPCReactProviderProps>;
     createClient: (options: TRPCClientOptions) => unknown;
     useContext: () => unknown;

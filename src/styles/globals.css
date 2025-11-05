@@ -175,6 +175,19 @@
     .glow-sm {
         text-shadow: 0 0 5px hsl(var(--primary));
     }
+
+    /* Streaming animations */
+    .stream-in {
+        animation: streamIn 0.2s ease-out;
+    }
+
+    .expand-width {
+        animation: expandWidth 0.3s ease-out;
+    }
+
+    .pulse-subtle {
+        animation: pulse-subtle 2s ease-in-out infinite;
+    }
 }
 
 /* Card flip animation styles */
@@ -252,6 +265,36 @@
     }
     50% {
         background-color: rgba(162, 59, 246, 0.3);
+    }
+}
+
+/* Streaming chat animations */
+@keyframes streamIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes expandWidth {
+    from {
+        max-width: 0;
+    }
+    to {
+        max-width: 100%;
+    }
+}
+
+@keyframes pulse-subtle {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
     }
 }
 

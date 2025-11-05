@@ -75,19 +75,29 @@ export const MessageWithArtifacts: React.FC<MessageWithArtifactsProps> = ({
                             <div className="prose prose-sm dark:prose-invert max-w-none">
                                 {message.isStreaming ? (
                                     // Render plain text during streaming for smoother token-by-token updates
-                                    <div className="whitespace-pre-wrap break-words min-h-[1em]">
+                                    // Add smooth transition for content appearing
+                                    <div
+                                        className="whitespace-pre-wrap break-words min-h-[1em] transition-all duration-150 ease-out"
+                                        style={{
+                                            // Smooth opacity transition as content appears
+                                            opacity: cleanedText ? 1 : 0.7,
+                                        }}
+                                    >
                                         {cleanedText || ''}
                                     </div>
                                 ) : (
                                     // Render markdown only when streaming is complete
-                                    <ReactMarkdown>{cleanedText}</ReactMarkdown>
+                                    // Add fade-in animation when markdown renders
+                                    <div className="animate-in fade-in duration-300">
+                                        <ReactMarkdown>{cleanedText}</ReactMarkdown>
+                                    </div>
                                 )}
                             </div>
                         )}
 
                         {/* Artifacts */}
                         {artifacts.length > 0 && (
-                            <div className="space-y-3">
+                            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {artifacts.map((artifact) => (
                                     <ArtifactRenderer
                                         key={artifact.id}

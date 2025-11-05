@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { TypingIndicator } from '@/components/ui/typing-indicator';
 
 // Streaming cursor animation
 const blinkKeyframes = `
@@ -30,7 +31,9 @@ if (typeof document !== 'undefined') {
     }
 }
 
-interface ConversationRootProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ConversationRootProps extends React.HTMLAttributes<HTMLDivElement> {
+    // Additional props can be added here if needed
+}
 
 export const Conversation = React.forwardRef<HTMLDivElement, ConversationRootProps>(
     ({ className, ...props }, ref) => (
@@ -43,12 +46,16 @@ export const Conversation = React.forwardRef<HTMLDivElement, ConversationRootPro
 );
 Conversation.displayName = 'ConversationRoot';
 
-interface ConversationHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ConversationHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+    // Additional props can be added here if needed
+}
 export const ConversationHeader = ({ className, ...props }: ConversationHeaderProps) => (
     <div className={cn('border-b px-4 py-3', className)} {...props} />
 );
 
-interface ConversationBodyProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ConversationBodyProps extends React.HTMLAttributes<HTMLDivElement> {
+    // Additional props can be added here if needed
+}
 export const ConversationBody = ({ className, ...props }: ConversationBodyProps) => (
     <div className={cn('flex-1 px-3 py-4', className)} {...props} />
 );
@@ -64,7 +71,7 @@ export const ConversationMessages = React.forwardRef<HTMLDivElement, Conversatio
         
         if (scrollable) {
             return (
-                <ScrollArea ref={ref as any} className={cn('h-full pr-2', className)} dir={dir as any} {...scrollAreaProps}>
+                <ScrollArea ref={ref} className={cn('h-full pr-2', className)} dir={dir} {...scrollAreaProps}>
                     <div className="space-y-4">{children}</div>
                 </ScrollArea>
             );
@@ -79,7 +86,9 @@ export const ConversationMessages = React.forwardRef<HTMLDivElement, Conversatio
 );
 ConversationMessages.displayName = 'ConversationMessages';
 
-interface ConversationFooterProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface ConversationFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+    // Additional props can be added here if needed
+}
 export const ConversationFooter = ({ className, ...props }: ConversationFooterProps) => (
     <div className={cn('border-t px-4 py-3', className)} {...props} />
 );
@@ -112,8 +121,33 @@ export const ConversationMessage: React.FC<ConversationMessageProps> = ({
 }) => {
     const isUser = role === 'user';
     const [isHovered, setIsHovered] = React.useState(false);
+
+    // Check if content is empty (for typing indicator)
+    const hasContent = React.useMemo(() => {
+        if (typeof children === 'string') {
+            return children.trim().length > 0;
+        }
+        if (React.isValidElement(children)) {
+            // Check if the element has text content
+            const textContent = React.Children.toArray(children)
+                .map(child => {
+                    if (typeof child === 'string') return child;
+                    if (React.isValidElement(child)) {
+                        // Try to extract text from props
+                        return (child.props as any)?.children || '';
+                    }
+                    return '';
+                })
+                .join('');
+            return textContent.trim().length > 0;
+        }
+        return false;
+    }, [children]);
+
     const bubbleClasses = cn(
-        'w-fit max-w-full sm:max-w-[42rem] rounded-none px-4 py-3 text-sm shadow-sm transition-all duration-200 text-left',
+        'w-fit max-w-full sm:max-w-[42rem] rounded-none px-4 py-3 text-sm shadow-sm text-left',
+        // Add smooth transition for expanding content
+        'transition-all duration-200 ease-out',
         isUser ? 'ml-auto bg-primary text-primary-foreground' : 'bg-muted text-foreground',
         className,
     );
@@ -175,25 +209,32 @@ export const ConversationMessage: React.FC<ConversationMessageProps> = ({
                 )}
                 
                 <div className={bubbleClasses}>
-                    {children}
-                    {isStreaming && !isUser && (
-                        <span 
-                            className="inline-block w-[3px] h-4 ml-1.5 align-middle" 
-                            aria-label="Streaming"
-                            role="status"
-                            style={{
-                                animation: 'blink 1s ease-in-out infinite',
-                                backgroundColor: 'hsl(var(--foreground))',
-                                opacity: 1,
-                                marginLeft: '4px',
-                            }}
-                        />
+                    {/* Show typing indicator if streaming with no content, otherwise show content */}
+                    {isStreaming && !isUser && !hasContent ? (
+                        <TypingIndicator size="sm" className="text-muted-foreground" />
+                    ) : (
+                        <>
+                            {children}
+                            {isStreaming && !isUser && hasContent && (
+                                <span
+                                    className="inline-block w-[3px] h-4 ml-1.5 align-middle"
+                                    aria-label="Streaming"
+                                    role="status"
+                                    style={{
+                                        animation: 'blink 1s ease-in-out infinite',
+                                        backgroundColor: 'hsl(var(--foreground))',
+                                        opacity: 1,
+                                        marginLeft: '4px',
+                                    }}
+                                />
+                            )}
+                        </>
                     )}
                 </div>
                 {isStreaming && !isUser && (
                     <div className="flex items-center gap-2 px-1 text-[11px] text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Generating response...</span>
+                        <span>{hasContent ? 'Generating response...' : 'Thinking...'}</span>
                     </div>
                 )}
                 <div className="flex items-center justify-between px-1 text-[11px] text-muted-foreground">

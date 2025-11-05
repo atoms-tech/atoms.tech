@@ -39,18 +39,28 @@ Required: namespace, name, url ❌, auth_type, source, transport, version
 
 ## Fixes Applied to Code
 
-### **1. Fixed mcp_servers.url** ✅
+### **1. Fixed mcp_servers required fields** ✅
 **File:** `src/app/(protected)/api/mcp/marketplace/[namespace]/install/route.ts`
 
+**Added required fields:**
 ```typescript
 url: server.repository || server.homepage || `https://github.com/${decodedNamespace}`,
-auth_type: server.auth?.type || 'none',
+auth_type: normalizeAuthType(server.auth?.type), // Never null, defaults to 'none'
 repository_url: server.repository || null,
 homepage_url: server.homepage || null,
 documentation_url: server.documentation || null,
 license: server.license || null,
 tags: server.tags || [],
 category: server.category || null,
+```
+
+**Fixed auth_type normalization:**
+```typescript
+const normalizeAuthType = (authType: string | undefined | null): string => {
+  if (!authType) return 'none';
+  if (['oauth', 'api_key', 'bearer', 'none'].includes(authType)) return authType;
+  return 'none'; // Default to 'none' for unknown types
+};
 ```
 
 ### **2. Fixed chat_messages.content** ✅

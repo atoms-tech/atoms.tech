@@ -5,7 +5,6 @@
  */
 
 import { NextResponse } from 'next/server';
-import { agentAPIService } from '@/lib/services/agentapi.service';
 import { createClient } from '@/lib/utils/supabase/server';
 import { logger } from '@/lib/utils/logger';
 
@@ -31,25 +30,132 @@ export async function GET(
             );
         }
 
-        // Fetch session detail
-        try {
-            const data = await agentAPIService.getChatSession(params.sessionId, user.id);
-            return NextResponse.json(data);
-        } catch (serviceError) {
-            logger.error('AgentAPI service error', serviceError, {
+        const { data: session, error: sessionError } = await supabase
+            .from('chat_sessions' as any)
+            .select('*')
+            .eq('id', params.sessionId)
+            .maybeSingle();
+
+        if (sessionError) {
+            logger.error('Failed to fetch chat session metadata', sessionError, {
                 route: '/api/history/[sessionId]',
                 sessionId: params.sessionId,
-                userId: user.id,
             });
-            
             return NextResponse.json(
                 {
                     error: 'Failed to fetch chat session',
-                    details: serviceError instanceof Error ? serviceError.message : 'Unknown error',
+                    details: sessionError.message,
                 },
                 { status: 500 },
             );
         }
+
+        if (!session || session.user_id !== user.id) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
+
+        const { data: messageRows, error: messageError } = await supabase
+            .from('chat_messages' as any)
+            .select('id, role, content, metadata, tokens, created_at, parent_id, variant_index, is_active')
+            .eq('session_id', params.sessionId)
+            .order('created_at', { ascending: true })
+            .order('variant_index', { ascending: true, nullsFirst: true });
+
+        if (messageError) {
+            logger.error('Failed to load chat messages', messageError, {
+                route: '/api/history/[sessionId]',
+                sessionId: params.sessionId,
+            });
+            return NextResponse.json(
+                {
+                    error: 'Failed to fetch chat session',
+                    details: messageError.message,
+                },
+                { status: 500 },
+            );
+        }
+
+        const assistantMap = new Map<string, any>();
+        const orderedMessages: any[] = [];
+
+        const pushAssistantVariant = (row: any) => {
+            const parentKey = row.parent_id ?? row.id;
+            let entry = assistantMap.get(parentKey);
+
+            if (!entry) {
+                entry = {
+                    id: parentKey,
+                    role: 'assistant',
+                    content: row.content,
+                    metadata: row.metadata,
+                    created_at: row.created_at,
+                    tokens: row.tokens,
+                    variants: [] as any[],
+                    activeVariantIndex: row.is_active ? row.variant_index ?? 0 : 0,
+                };
+                assistantMap.set(parentKey, entry);
+                orderedMessages.push(entry);
+            }
+
+            entry.variants.push({
+                id: row.id,
+                parent_id: parentKey,
+                content: row.content,
+                metadata: row.metadata,
+                tokens: row.tokens,
+                created_at: row.created_at,
+                variant_index: row.variant_index ?? 0,
+                is_active: row.is_active,
+            });
+
+            if (row.is_active) {
+                entry.activeVariantIndex = row.variant_index ?? 0;
+                entry.content = row.content;
+                entry.metadata = row.metadata;
+                entry.tokens = row.tokens;
+            }
+
+            if (entry.created_at && row.created_at && new Date(row.created_at) < new Date(entry.created_at)) {
+                entry.created_at = row.created_at;
+            }
+        };
+
+        for (const row of messageRows ?? []) {
+            if (row.role === 'assistant') {
+                pushAssistantVariant(row);
+                continue;
+            }
+
+            orderedMessages.push({
+                id: row.id,
+                role: row.role,
+                content: row.content,
+                metadata: row.metadata,
+                tokens: row.tokens,
+                created_at: row.created_at,
+            });
+        }
+
+        for (const entry of assistantMap.values()) {
+            entry.variants.sort((a: any, b: any) => (a.variant_index ?? 0) - (b.variant_index ?? 0));
+            if (entry.variants.length === 0) {
+                continue;
+            }
+
+            if (entry.activeVariantIndex < 0 || entry.activeVariantIndex >= entry.variants.length) {
+                entry.activeVariantIndex = 0;
+            }
+
+            const activeVariant = entry.variants[entry.activeVariantIndex] ?? entry.variants[0];
+            entry.content = activeVariant?.content ?? null;
+            entry.metadata = activeVariant?.metadata ?? null;
+            entry.tokens = activeVariant?.tokens ?? null;
+        }
+
+        return NextResponse.json({
+            session,
+            messages: orderedMessages,
+        });
     } catch (error) {
         logger.error('Error fetching chat session', error, {
             route: '/api/history/[sessionId]',

@@ -31,20 +31,20 @@ interface RegistryServerVersion {
       registryType?: string;
       identifier?: string;
       version?: string;
-      transport?: any;
-      environmentVariables?: any[];
+      transport?: Record<string, unknown>;
+      environmentVariables?: Record<string, string>[];
     }>;
     remotes?: Array<{
       type: string;
       url: string;
     }>;
-    transport?: any;
-    auth?: any;
+    transport?: Record<string, unknown>;
+    auth?: Record<string, unknown>;
     categories?: string[];
     tags?: string[];
   };
   _meta?: {
-    [key: string]: any;
+    [key: string]: unknown;
     'io.modelcontextprotocol.registry/official'?: {
       status: 'active' | 'deleted' | 'deprecated';
       publishedAt: string;
@@ -185,7 +185,7 @@ class RegistryClientService {
         allServers = [...allServers, ...apiResponse.servers];
         
         // Update total count (use the latest metadata count)
-        totalCount = apiResponse.metadata.count;
+        // totalCount = apiResponse.metadata.count; // Commented out as unused
         
         // Get next cursor for pagination
         cursor = apiResponse.metadata.nextCursor;
@@ -274,9 +274,9 @@ class RegistryClientService {
       const meta = item._meta?.['io.modelcontextprotocol.registry/official'];
 
       // Extract transport info from packages or remotes
-      let transport: any = { type: 'stdio' };
-      let packageEnvVars: any[] = [];
-      let packageHeaders: any[] = [];
+      let transport: Record<string, unknown> = { type: 'stdio' };
+      let packageEnvVars: { key: string; value: string }[] = [];
+      let packageHeaders: { key: string; value: string }[] = [];
 
       if (server.packages && server.packages.length > 0) {
         const pkg = server.packages[0];
@@ -379,7 +379,7 @@ class RegistryClientService {
   /**
    * Infer authentication requirements from transport configuration
    */
-  private inferAuthFromTransport(envVars: any[], headers: any[]): MCPRegistryAuthInfo | undefined {
+  private inferAuthFromTransport(envVars: { key: string; value: string }[], headers: { key: string; value: string }[]): MCPRegistryAuthInfo | undefined {
     let type: MCPAuthKind = 'unknown';
     const scopes: string[] = [];
     let provider: string | undefined;
@@ -453,7 +453,7 @@ class RegistryClientService {
     return undefined;
   }
 
-  private normalizeAuth(rawAuth: any): MCPRegistryAuthInfo | undefined {
+  private normalizeAuth(rawAuth: Record<string, unknown>): MCPRegistryAuthInfo | undefined {
     if (!rawAuth) {
         return undefined;
     }
@@ -521,7 +521,7 @@ class RegistryClientService {
     const scopes: string[] = [];
     const authScopes = auth.scopes || auth.scope;
     if (Array.isArray(authScopes)) {
-      scopes.push(...authScopes.map((scope: any) => String(scope)));
+      scopes.push(...authScopes.map((scope: unknown) => String(scope)));
     } else if (typeof authScopes === 'string') {
       scopes.push(...authScopes.split(/[ ,]+/).filter(Boolean));
     }
@@ -593,7 +593,7 @@ class RegistryClientService {
    */
   private getCacheKey(options: RegistryFetchOptions): string {
     // Exclude page/pageSize from cache key to cache the full dataset
-    const { page, pageSize, ...cacheOptions } = options;
+    const { page: _page, pageSize: _pageSize, ...cacheOptions } = options;
     return JSON.stringify(cacheOptions);
   }
 }
