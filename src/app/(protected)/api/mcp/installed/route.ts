@@ -43,7 +43,7 @@ export async function GET() {
 
         // Fetch user's MCP servers directly from mcp_servers table
         // Query servers where user_id matches or organization_id matches
-        let query = supabase
+        const query = supabase
             .from('mcp_servers')
             .select(`
                 id,
@@ -73,8 +73,8 @@ export async function GET() {
             .eq('user_id', profile.id)
             .order('created_at', { ascending: false });
 
-        const organizations: Array<{ id: string }> = Array.isArray((profile as any)?.organizations)
-            ? (profile as any).organizations
+        const organizations: Array<{ id: string }> = Array.isArray((profile as { organizations?: unknown[] })?.organizations)
+            ? (profile as { organizations: unknown[] }).organizations
             : [];
 
         // Also get organization servers if user has organizations

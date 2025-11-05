@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/react';
-import debounce from 'lodash/debounce';
+import { debounce } from 'es-toolkit';
 import {
     AlignCenter,
     AlignLeft,

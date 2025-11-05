@@ -105,7 +105,7 @@ export function ServerAuthConfigModal({
                     providerKey,
                     mcpNamespace: server?.namespace || '',
                     scopes: server?.auth?.scopes,
-                    authMetadata: (server?.auth as any)?.raw ?? server?.auth,
+                    authMetadata: (server?.auth as Record<string, unknown>)?.raw ?? server?.auth,
                 });
 
                 if (oauthResult.status === 'authorized') {
@@ -182,7 +182,7 @@ export function ServerAuthConfigModal({
                         <Alert>
                             <Info className="h-4 w-4" />
                             <AlertDescription>
-                                This server uses OAuth authentication. You'll be redirected to authorize access after clicking Continue.
+                                This server uses OAuth authentication. You&apos;ll be redirected to authorize access after clicking Continue.
                             </AlertDescription>
                         </Alert>
                     )}

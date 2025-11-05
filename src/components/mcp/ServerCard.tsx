@@ -64,7 +64,7 @@ export function ServerCard({
   };
 
   const getTierBadge = () => {
-    const tier = (server as any).curationTier;
+    const tier = (server as { curationTier?: string }).curationTier;
     switch (tier) {
       case 'first-party':
         return (
@@ -84,7 +84,7 @@ export function ServerCard({
   };
 
   const getSecurityBadge = () => {
-    const securityReview = (server as any).securityReview;
+    const securityReview = (server as { securityReview?: { status?: string; reviewDate?: string; } }).securityReview;
     if (!securityReview) return null;
 
     switch (securityReview.status) {
@@ -124,10 +124,12 @@ export function ServerCard({
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             {getTierBadge()}
-            {((server as any).qualityScore !== undefined || (server as any).curationScore !== undefined) && (
+            {((server as { qualityScore?: number; curationScore?: number }).qualityScore !== undefined || 
+              (server as { qualityScore?: number; curationScore?: number }).curationScore !== undefined) && (
               <Badge variant="secondary" className="text-xs">
                 <Star className="h-3 w-3 mr-1 fill-current text-yellow-500" />
-                {(server as any).qualityScore || (server as any).curationScore}
+                {(server as { qualityScore?: number; curationScore?: number }).qualityScore || 
+                 (server as { qualityScore?: number; curationScore?: number }).curationScore}
               </Badge>
             )}
           </div>

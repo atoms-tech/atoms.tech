@@ -182,16 +182,19 @@ export async function POST(
       );
     }
 
-    // Normalize auth_type: ensure it's never null (database requires it)
+    // Normalize auth_type: database only allows 'oauth' or 'bearer'
+    // Default to 'bearer' for servers without auth (most flexible)
     const normalizeAuthType = (authType: string | undefined | null): string => {
-      if (!authType) return 'none';
-      if (['oauth', 'api_key', 'bearer', 'none'].includes(authType)) return authType;
-      return 'none'; // Default to 'none' for unknown types
+      if (!authType || authType === 'none') return 'bearer';
+      if (authType === 'oauth') return 'oauth';
+      if (authType === 'api_key' || authType === 'bearer') return 'bearer';
+      return 'bearer'; // Default to 'bearer' for unknown types
     };
 
     // First, ensure the server exists in mcp_servers table
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
-    // even though this is a marketplace server. The tier='marketplace' indicates it's from the marketplace.
+    // Source: 'registry' for MCP registry servers
+    // Tier: 'community' for marketplace servers (user risk)
     const baseServerRecord: Record<string, any> = {
       namespace: decodedNamespace,
       name: server.name,
@@ -199,8 +202,8 @@ export async function POST(
       version: server.version || '1.0.0',
       transport_type: transport.type || 'stdio',
       transport: transport.type || 'stdio',
-      source: 'marketplace',
-      tier: 'marketplace',
+      source: 'registry',
+      tier: 'community',
       enabled: true,
       url: server.repository || server.homepage || `https://github.com/${decodedNamespace}`,
       auth_type: normalizeAuthType(server.auth?.type),

@@ -152,7 +152,7 @@ class RegistryClientService {
       // Fetch all pages using cursor-based pagination
       let allServers: RegistryServerVersion[] = [];
       let cursor: string | undefined = undefined;
-      let totalCount = 0;
+      // let totalCount = 0; // Unused variable
 
       do {
         if (cursor) {
@@ -184,7 +184,6 @@ class RegistryClientService {
         // Add servers from this page
         allServers = [...allServers, ...apiResponse.servers];
         
-        // Update total count (use the latest metadata count)
         // totalCount = apiResponse.metadata.count; // Commented out as unused
         
         // Get next cursor for pagination
@@ -287,8 +286,8 @@ class RegistryClientService {
         }
         // Extract environment variables and headers from package
         packageEnvVars = pkg.environmentVariables || [];
-        if ((transport as any).headers) {
-          packageHeaders = (transport as any).headers;
+        if ((transport as { headers?: Record<string, string>[] }).headers) {
+          packageHeaders = (transport as { headers?: Record<string, string>[] }).headers || [];
         }
       } else if (server.remotes && server.remotes.length > 0) {
         const remote = server.remotes[0];
@@ -298,8 +297,8 @@ class RegistryClientService {
             url: remote.url,
           };
           // Extract headers from remote
-          if ((remote as any)?.headers) {
-            packageHeaders = (remote as any).headers;
+          if ((remote as { headers?: Record<string, string>[] })?.headers) {
+            packageHeaders = (remote as { headers?: Record<string, string>[] }).headers;
           }
         } else {
           console.warn('Invalid remote configuration:', remote);
@@ -336,7 +335,7 @@ class RegistryClientService {
       // Extract repository URL
       let repositoryUrl: string | undefined;
       if (typeof server.repository === 'object' && server.repository !== null) {
-        repositoryUrl = (server.repository as any).url;
+        repositoryUrl = (server.repository as { url?: string })?.url;
       } else if (typeof server.repository === 'string') {
         repositoryUrl = server.repository;
       }
@@ -364,7 +363,7 @@ class RegistryClientService {
         homepage: server.homepage,
         repository: repositoryUrl,
         license: server.license,
-        transport: transport as any,
+        transport: transport as Record<string, unknown>,
         auth: normalizedAuth,
         category: server.categories?.[0],
         tags: server.tags || [],

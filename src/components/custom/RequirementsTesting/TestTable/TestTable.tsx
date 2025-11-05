@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import debounce from 'lodash/debounce';
+import { debounce } from 'es-toolkit';
 import { Search } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 

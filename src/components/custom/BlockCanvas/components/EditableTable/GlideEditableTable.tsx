@@ -37,7 +37,7 @@ import { glideLightTheme } from './glideLightTheme';
 
 import '@glideapps/glide-data-grid/dist/index.css';
 
-import debounce from 'lodash/debounce';
+import { debounce } from 'es-toolkit';
 import { useParams } from 'next/navigation';
 import { useLayer } from 'react-laag';
 

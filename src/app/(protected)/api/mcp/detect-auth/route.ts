@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
       // Check response headers for authentication hints
       const wwwAuthenticate = response.headers.get('www-authenticate');
-      const authorizationHeader = response.headers.get('authorization');
+      // const authorizationHeader = response.headers.get('authorization'); // Unused
 
       if (wwwAuthenticate) {
         if (wwwAuthenticate.toLowerCase().includes('bearer')) {

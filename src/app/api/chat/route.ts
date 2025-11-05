@@ -64,7 +64,7 @@ async function createChatSession(params: {
     const { error } = await (supabase.from('chat_sessions' as any)).insert({
         id: sessionId,
         user_id: normalizedUserId,
-        organization_id: normalizedOrgId,
+        org_id: normalizedOrgId,
         model: params.model,
         title: params.title || 'New Chat',
         message_count: 0,
@@ -172,12 +172,18 @@ async function saveMessages(params: {
         return messageId;
     }
 
+    const resolvedTokens = typeof latest.tokens === 'number'
+        ? latest.tokens
+        : typeof latest.tokens?.total === 'number'
+            ? latest.tokens.total
+            : null;
+
     const payload = {
         id: messageId,
         session_id: params.sessionId,
         role: latest.role,
         content: trimmedContent.length > 0 ? normalizedContent : null,
-        tokens: latest.tokens ?? null,
+        tokens: resolvedTokens,
         metadata: latest.metadata ?? null,
         created_at: new Date().toISOString(),
         parent_id: null,
@@ -295,7 +301,9 @@ async function persistAssistantVariant(params: {
             role: 'assistant',
             content: normalizedContent,
             metadata: metadataPayload,
-            tokens: params.responseMessage.tokens ?? null,
+            tokens_in: params.responseMessage.tokens?.input ?? params.responseMessage.tokens_in ?? 0,
+            tokens_out: params.responseMessage.tokens?.output ?? params.responseMessage.tokens_out ?? 0,
+            tokens_total: params.responseMessage.tokens?.total ?? params.responseMessage.tokens_total ?? 0,
             parent_id: resolvedParentId,
             variant_index: nextVariantIndex,
             is_active: true,

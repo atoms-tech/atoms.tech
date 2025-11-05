@@ -45,11 +45,19 @@ import {
   Loader2,
 } from 'lucide-react';
 
+// Helper type to access dynamic properties on server
+type ServerWithExtras = CuratedServer & {
+  documentation?: { url?: string };
+  tools?: Array<{ name?: string; description?: string }>;
+  prompts?: Array<{ name?: string; description?: string }>;
+  resources?: Array<{ name?: string; description?: string }>;
+};
+
 interface ServerDetailModalProps {
-  server: CuratedServer | null;
+  server: ServerWithExtras | null;
   open: boolean;
   onClose: () => void;
-  onInstall: (server: any, scope: 'user' | 'organization', orgId?: string) => void;
+  onInstall: (server: ServerWithExtras, scope: 'user' | 'organization', orgId?: string) => void;
   organizations?: Array<{ id: string; name: string }>;
   isInstalling?: boolean;
 }
@@ -394,7 +402,7 @@ export function ServerDetailModal({
             <Separator />
 
             {/* Links */}
-            {(server.homepage || server.repository || (server as any).documentation?.url || server.license) && (
+            {(server.homepage || server.repository || (server as { documentation?: { url?: string } }).documentation?.url || server.license) && (
               <div>
                 <h3 className="text-sm font-semibold mb-3">Links</h3>
                 <div className="flex flex-wrap gap-2">
@@ -416,9 +424,9 @@ export function ServerDetailModal({
                       </a>
                     </Button>
                   )}
-                  {(server as any).documentation?.url && (
+                  {server.documentation?.url && (
                     <Button variant="outline" size="sm" asChild>
-                      <a href={(server as any).documentation.url} target="_blank" rel="noopener noreferrer">
+                      <a href={server.documentation.url} target="_blank" rel="noopener noreferrer">
                         <FileText className="h-4 w-4 mr-2" />
                         Documentation
                         <ExternalLink className="h-3 w-3 ml-1" />
@@ -443,16 +451,16 @@ export function ServerDetailModal({
             )}
 
             {/* Tools */}
-            {(server as any).tools && (server as any).tools.length > 0 && (
+            {server.tools && server.tools.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <Wrench className="h-4 w-4" />
-                    Tools ({(server as any).tools.length})
+                    Tools ({server.tools?.length || 0})
                   </h3>
                   <div className="space-y-2">
-                    {(server as any).tools.map((tool: any, idx: number) => (
+                    {server.tools?.map((tool, idx: number) => (
                       <div key={idx} className="p-3 bg-muted rounded-lg">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 min-w-0">
@@ -475,16 +483,16 @@ export function ServerDetailModal({
             )}
 
             {/* Prompts */}
-            {(server as any).prompts && (server as any).prompts.length > 0 && (
+            {server.prompts && server.prompts.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    Prompts ({(server as any).prompts.length})
+                    Prompts ({server.prompts?.length || 0})
                   </h3>
                   <div className="space-y-2">
-                    {(server as any).prompts.map((prompt: any, idx: number) => (
+                    {server.prompts?.map((prompt, idx: number) => (
                       <div key={idx} className="p-3 bg-muted rounded-lg min-w-0">
                         <p className="font-medium text-sm break-words">{prompt.name}</p>
                         {prompt.description && (
@@ -509,16 +517,16 @@ export function ServerDetailModal({
             )}
 
             {/* Resources */}
-            {(server as any).resources && (server as any).resources.length > 0 && (
+            {server.resources && server.resources.length > 0 && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                     <Package className="h-4 w-4" />
-                    Resources ({(server as any).resources.length})
+                    Resources ({server.resources?.length || 0})
                   </h3>
                   <div className="space-y-2">
-                    {(server as any).resources.map((resource: any, idx: number) => (
+                    {server.resources?.map((resource, idx: number) => (
                       <div key={idx} className="p-3 bg-muted rounded-lg min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">

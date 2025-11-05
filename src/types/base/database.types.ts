@@ -400,15 +400,10 @@ export type Database = {
                     id: string;
                     session_id: string;
                     role: string;
-                    content: string;
-                    tokens_in: number | null;
-                    tokens_out: number | null;
-                    tokens_total: number | null;
+                    content: string | null;
+                    tokens: number | null;
                     metadata: Json | null;
-                    created_at: string;
-                    message_index: number;
-                    updated_at: string;
-                    sequence: number;
+                    created_at: string | null;
                     parent_id: string | null;
                     variant_index: number;
                     is_active: boolean;
@@ -417,15 +412,10 @@ export type Database = {
                     id?: string;
                     session_id: string;
                     role: string;
-                    content: string;
-                    tokens_in?: number | null;
-                    tokens_out?: number | null;
-                    tokens_total?: number | null;
+                    content?: string | null;
+                    tokens?: number | null;
                     metadata?: Json | null;
-                    created_at?: string;
-                    message_index?: number;
-                    updated_at?: string;
-                    sequence?: number;
+                    created_at?: string | null;
                     parent_id?: string | null;
                     variant_index?: number;
                     is_active?: boolean;
@@ -434,78 +424,82 @@ export type Database = {
                     id?: string;
                     session_id?: string;
                     role?: string;
-                    content?: string;
-                    tokens_in?: number | null;
-                    tokens_out?: number | null;
-                    tokens_total?: number | null;
+                    content?: string | null;
+                    tokens?: number | null;
                     metadata?: Json | null;
-                    created_at?: string;
-                    message_index?: number;
-                    updated_at?: string;
-                    sequence?: number;
+                    created_at?: string | null;
                     parent_id?: string | null;
                     variant_index?: number;
                     is_active?: boolean;
                 };
-                Relationships: never[];
+                Relationships: [
+                    {
+                        foreignKeyName: 'chat_messages_session_id_fkey';
+                        columns: ['session_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'chat_sessions';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'fk_chat_messages_parent_session';
+                        columns: ['parent_id', 'session_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'chat_messages';
+                        referencedColumns: ['id', 'session_id'];
+                    },
+                ];
             };
             chat_sessions: {
                 Row: {
                     id: string;
                     user_id: string;
-                    org_id: string | null;
-                    model_id: string | null;
-                    agent_id: string | null;
+                    organization_id: string | null;
                     title: string | null;
-                    metadata: Json | null;
-                    created_at: string;
-                    updated_at: string;
-                    last_message_at: string | null;
-                    message_count: number;
-                    tokens_in: number;
-                    tokens_out: number;
-                    tokens_total: number;
-                    archived: boolean;
                     model: string | null;
                     agent_type: string | null;
+                    metadata: Json | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                    last_message_at: string | null;
+                    message_count: number | null;
+                    tokens_in: number | null;
+                    tokens_out: number | null;
+                    tokens_total: number | null;
+                    archived: boolean | null;
                 };
                 Insert: {
                     id?: string;
                     user_id: string;
-                    org_id?: string | null;
-                    model_id?: string | null;
-                    agent_id?: string | null;
+                    organization_id?: string | null;
                     title?: string | null;
-                    metadata?: Json | null;
-                    created_at?: string;
-                    updated_at?: string;
-                    last_message_at?: string | null;
-                    message_count?: number;
-                    tokens_in?: number;
-                    tokens_out?: number;
-                    tokens_total?: number;
-                    archived?: boolean;
                     model?: string | null;
                     agent_type?: string | null;
+                    metadata?: Json | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_message_at?: string | null;
+                    message_count?: number | null;
+                    tokens_in?: number | null;
+                    tokens_out?: number | null;
+                    tokens_total?: number | null;
+                    archived?: boolean | null;
                 };
                 Update: {
                     id?: string;
                     user_id?: string;
-                    org_id?: string | null;
-                    model_id?: string | null;
-                    agent_id?: string | null;
+                    organization_id?: string | null;
                     title?: string | null;
-                    metadata?: Json | null;
-                    created_at?: string;
-                    updated_at?: string;
-                    last_message_at?: string | null;
-                    message_count?: number;
-                    tokens_in?: number;
-                    tokens_out?: number;
-                    tokens_total?: number;
-                    archived?: boolean;
                     model?: string | null;
                     agent_type?: string | null;
+                    metadata?: Json | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_message_at?: string | null;
+                    message_count?: number | null;
+                    tokens_in?: number | null;
+                    tokens_out?: number | null;
+                    tokens_total?: number | null;
+                    archived?: boolean | null;
                 };
                 Relationships: never[];
             };
@@ -3233,19 +3227,20 @@ export type Database = {
     };
 };
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+type DatabaseSchemaNames = Exclude<keyof Database, '__InternalSupabase'>;
+type DefaultSchema = Database[Extract<DatabaseSchemaNames, 'public'>];
 
 export type Tables<
     DefaultSchemaTableNameOrOptions extends
         | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-        | { schema: keyof Database },
+        | { schema: DatabaseSchemaNames },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: DatabaseSchemaNames;
     }
         ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
               Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+> = DefaultSchemaTableNameOrOptions extends { schema: DatabaseSchemaNames }
     ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
           Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
           Row: infer R;
@@ -3265,13 +3260,13 @@ export type Tables<
 export type TablesInsert<
     DefaultSchemaTableNameOrOptions extends
         | keyof DefaultSchema['Tables']
-        | { schema: keyof Database },
+        | { schema: DatabaseSchemaNames },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: DatabaseSchemaNames;
     }
         ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+> = DefaultSchemaTableNameOrOptions extends { schema: DatabaseSchemaNames }
     ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Insert: infer I;
       }
@@ -3288,13 +3283,13 @@ export type TablesInsert<
 export type TablesUpdate<
     DefaultSchemaTableNameOrOptions extends
         | keyof DefaultSchema['Tables']
-        | { schema: keyof Database },
+        | { schema: DatabaseSchemaNames },
     TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof Database;
+        schema: DatabaseSchemaNames;
     }
         ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
         : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+> = DefaultSchemaTableNameOrOptions extends { schema: DatabaseSchemaNames }
     ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
           Update: infer U;
       }
@@ -3311,13 +3306,13 @@ export type TablesUpdate<
 export type Enums<
     DefaultSchemaEnumNameOrOptions extends
         | keyof DefaultSchema['Enums']
-        | { schema: keyof Database },
+        | { schema: DatabaseSchemaNames },
     EnumName extends DefaultSchemaEnumNameOrOptions extends {
-        schema: keyof Database;
+        schema: DatabaseSchemaNames;
     }
         ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
         : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+> = DefaultSchemaEnumNameOrOptions extends { schema: DatabaseSchemaNames }
     ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
     : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
       ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
@@ -3326,13 +3321,13 @@ export type Enums<
 export type CompositeTypes<
     PublicCompositeTypeNameOrOptions extends
         | keyof DefaultSchema['CompositeTypes']
-        | { schema: keyof Database },
+        | { schema: DatabaseSchemaNames },
     CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-        schema: keyof Database;
+        schema: DatabaseSchemaNames;
     }
         ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
         : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+> = PublicCompositeTypeNameOrOptions extends { schema: DatabaseSchemaNames }
     ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
     : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
       ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
