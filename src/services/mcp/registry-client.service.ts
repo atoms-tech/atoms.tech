@@ -275,8 +275,8 @@ class RegistryClientService {
 
       // Extract transport info from packages or remotes
       let transport: Record<string, unknown> = { type: 'stdio' };
-      let packageEnvVars: { key: string; value: string }[] = [];
-      let packageHeaders: { key: string; value: string }[] = [];
+      let packageEnvVars: { name?: string; description?: string; value?: string }[] = [];
+      let packageHeaders: { name?: string; description?: string; value?: string }[] = [];
 
       if (server.packages && server.packages.length > 0) {
         const pkg = server.packages[0];
@@ -364,7 +364,7 @@ class RegistryClientService {
         homepage: server.homepage,
         repository: repositoryUrl,
         license: server.license,
-        transport,
+        transport: transport as any,
         auth: normalizedAuth,
         category: server.categories?.[0],
         tags: server.tags || [],

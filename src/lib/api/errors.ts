@@ -99,8 +99,8 @@ export function handleApiError(
             error: {
                 code: API_ERROR_CODES.VALIDATION_ERROR,
                 message: 'Validation failed',
-                details: error.issues.map((err: { path?: string[]; message: string; code?: string }) => ({
-                    field: err.path.join('.'),
+                details: error.issues.map((err) => ({
+                    field: Array.isArray(err.path) ? err.path.join('.') : '',
                     message: err.message,
                     code: err.code,
                 })),

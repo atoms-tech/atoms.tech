@@ -7,13 +7,13 @@ declare module '@trpc/client' {
 declare module '@trpc/react-query' {
   type TRPCClientOptions = Record<string, unknown>;
 
-  type TRPCReactProviderProps = PropsWithChildren<{
+  type TRPCReactProviderProps<TRouter = unknown> = PropsWithChildren<{
     client: unknown;
     queryClient?: unknown;
   }>;
 
-  interface TRPCReactInstance = {
-    Provider: ComponentType<TRPCReactProviderProps>;
+  interface TRPCReactInstance<TRouter = unknown> {
+    Provider: ComponentType<TRPCReactProviderProps<TRouter>>;
     createClient: (options: TRPCClientOptions) => unknown;
     useContext: () => unknown;
   }

@@ -271,8 +271,8 @@ async function persistAssistantVariant(params: {
                 .limit(1)
                 .maybeSingle();
 
-            if (latestVariant?.variant_index !== undefined && latestVariant.variant_index !== null) {
-                nextVariantIndex = latestVariant.variant_index + 1;
+            if ((latestVariant as any)?.variant_index !== undefined && (latestVariant as any).variant_index !== null) {
+                nextVariantIndex = (latestVariant as any).variant_index + 1;
             }
 
             await (supabase
@@ -316,13 +316,13 @@ async function persistAssistantVariant(params: {
             return;
         }
 
-        const finalParentId = resolvedParentId ?? inserted?.id ?? responseMessageId;
+        const finalParentId = resolvedParentId ?? (inserted as any)?.id ?? responseMessageId;
 
         if (!resolvedParentId && finalParentId) {
             await (supabase
                 .from('chat_messages' as any))
                 .update({ parent_id: finalParentId })
-                .eq('id', inserted?.id ?? responseMessageId)
+                .eq('id', (inserted as any)?.id ?? responseMessageId)
                 .eq('session_id', params.sessionId);
         }
 
@@ -331,7 +331,7 @@ async function persistAssistantVariant(params: {
             await (supabase
                 .from('chat_messages' as any))
                 .update({ is_active: true, variant_index: 0 })
-                .eq('id', inserted?.id ?? responseMessageId)
+                .eq('id', (inserted as any)?.id ?? responseMessageId)
                 .eq('session_id', params.sessionId);
         }
 

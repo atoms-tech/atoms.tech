@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (server.scope === 'organization') {
-      if (!server.organization_id) {
+    if ((server as any).scope === 'organization') {
+      if (!(server as any).organization_id) {
         console.error('Server missing organization_id for organization scope', { serverId });
         return NextResponse.json(
           { error: 'Server organization is not configured' },
@@ -199,12 +199,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Check access based on scope
-    if (server.scope === 'user' && server.user_id !== profile.id) {
+    if ((server as any).scope === 'user' && (server as any).user_id !== profile.id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    if (server.scope === 'organization') {
-      if (!server.organization_id) {
+    if ((server as any).scope === 'organization') {
+      if (!(server as any).organization_id) {
         console.error('Server missing organization_id for organization scope', { serverId });
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }

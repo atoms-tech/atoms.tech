@@ -71,7 +71,7 @@ export const ConversationMessages = React.forwardRef<HTMLDivElement, Conversatio
         
         if (scrollable) {
             return (
-                <ScrollArea ref={ref} className={cn('h-full pr-2', className)} dir={dir} {...scrollAreaProps}>
+                <ScrollArea ref={ref} className={cn('h-full pr-2', className)} dir={dir as any} {...scrollAreaProps}>
                     <div className="space-y-4">{children}</div>
                 </ScrollArea>
             );

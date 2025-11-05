@@ -50,7 +50,7 @@ export async function GET(
             );
         }
 
-        if (!session || session.user_id !== user.id) {
+        if (!session || (session as any).user_id !== user.id) {
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
 
@@ -102,8 +102,8 @@ export async function GET(
                 parent_id: parentKey,
                 content: row.content,
                 metadata: row.metadata,
-                tokens: row.tokens,
-                created_at: row.created_at,
+                tokens: (row as any).tokens,
+                created_at: (row as any).created_at,
                 variant_index: row.variant_index ?? 0,
                 is_active: row.is_active,
             });
@@ -121,18 +121,18 @@ export async function GET(
         };
 
         for (const row of messageRows ?? []) {
-            if (row.role === 'assistant') {
-                pushAssistantVariant(row);
+            if ((row as any).role === 'assistant') {
+                pushAssistantVariant(row as any);
                 continue;
             }
 
             orderedMessages.push({
-                id: row.id,
-                role: row.role,
-                content: row.content,
-                metadata: row.metadata,
-                tokens: row.tokens,
-                created_at: row.created_at,
+                id: (row as any).id,
+                role: (row as any).role,
+                content: (row as any).content,
+                metadata: (row as any).metadata,
+                tokens: (row as any).tokens,
+                created_at: (row as any).created_at,
             });
         }
 

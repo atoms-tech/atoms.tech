@@ -219,7 +219,7 @@ export async function POST(
     const upsertServer = async () =>
       supabase
         .from('mcp_servers')
-        .upsert(baseServerRecord, {
+        .upsert(baseServerRecord as any, {
           onConflict: 'namespace',
           ignoreDuplicates: false,
         })
