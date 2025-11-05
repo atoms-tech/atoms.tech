@@ -88,19 +88,61 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(10000), // 10 second timeout
+    }).catch((fetchError) => {
+      console.error('Failed to fetch from AgentAPI:', fetchError);
+      throw new Error(
+        `Failed to connect to AgentAPI at ${targetUrl}. ` +
+        `Please ensure the service is running. Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+      );
     });
 
-    const responseData = await response.json();
-
+    // Check if response is OK before trying to parse JSON
     if (!response.ok) {
+      let errorMessage = `AgentAPI returned status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error?.message || errorMessage;
+      } catch {
+        // If response isn't JSON, use the status text
+        errorMessage = `${errorMessage}: ${response.statusText}`;
+      }
+
       const error: ModelsError = {
         error: {
-          message: responseData.error?.message || 'Failed to fetch models',
-          type: responseData.error?.type || 'api_error',
-          code: responseData.error?.code,
+          message: errorMessage,
+          type: 'api_error',
+          code: `HTTP_${response.status}`,
         },
       };
-      return NextResponse.json(error, { status: response.status });
+      return NextResponse.json(error, {
+        status: response.status,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse AgentAPI response:', parseError);
+      const error: ModelsError = {
+        error: {
+          message: 'Invalid JSON response from AgentAPI',
+          type: 'invalid_response',
+        },
+      };
+      return NextResponse.json(error, {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     // Validate response format
@@ -112,7 +154,14 @@ export async function GET(request: NextRequest) {
           type: 'invalid_response',
         },
       };
-      return NextResponse.json(error, { status: 502 });
+      return NextResponse.json(error, {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     return NextResponse.json(modelsResponse, {
@@ -120,6 +169,9 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=60', // Cache for 1 minute
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     });
   } catch (error) {
@@ -133,7 +185,14 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(errorResponse, { status: 500 });
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
   }
 }
 
@@ -155,7 +214,14 @@ export async function GET_MODEL_BY_ID(
           type: 'invalid_request',
         },
       };
-      return NextResponse.json(error, { status: 400 });
+      return NextResponse.json(error, {
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     const targetUrl = `${AGENTAPI_BASE_URL}/v1/models/${modelId}`;
@@ -173,19 +239,59 @@ export async function GET_MODEL_BY_ID(
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(10000),
+    }).catch((fetchError) => {
+      console.error('Failed to fetch model from AgentAPI:', fetchError);
+      throw new Error(
+        `Failed to connect to AgentAPI at ${targetUrl}. ` +
+        `Please ensure the service is running. Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+      );
     });
 
-    const responseData = await response.json();
-
     if (!response.ok) {
+      let errorMessage = `AgentAPI returned status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error?.message || errorMessage;
+      } catch {
+        errorMessage = `${errorMessage}: ${response.statusText}`;
+      }
+
       const error: ModelsError = {
         error: {
-          message: responseData.error?.message || 'Model not found',
-          type: responseData.error?.type || 'not_found',
-          code: responseData.error?.code,
+          message: errorMessage,
+          type: 'api_error',
+          code: `HTTP_${response.status}`,
         },
       };
-      return NextResponse.json(error, { status: response.status });
+      return NextResponse.json(error, {
+        status: response.status,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse AgentAPI response:', parseError);
+      const error: ModelsError = {
+        error: {
+          message: 'Invalid JSON response from AgentAPI',
+          type: 'invalid_response',
+        },
+      };
+      return NextResponse.json(error, {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     return NextResponse.json(responseData, {
@@ -193,6 +299,9 @@ export async function GET_MODEL_BY_ID(
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     });
   } catch (error) {
@@ -206,7 +315,14 @@ export async function GET_MODEL_BY_ID(
       },
     };
 
-    return NextResponse.json(errorResponse, { status: 500 });
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
   }
 }
 
@@ -217,6 +333,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
+      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',

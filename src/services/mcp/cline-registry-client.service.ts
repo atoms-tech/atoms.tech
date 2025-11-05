@@ -52,16 +52,64 @@ interface GitHubRepo {
 export class ClineRegistryClient {
     private baseUrl = 'https://api.github.com';
     private marketplaceRepo = 'cline/mcp-marketplace';
+    
+    // Cache for registry data
+    private serversCache: { data: ClineMCPServer[]; timestamp: number } | null = null;
+    private readonly CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    
+    // Cache for repo info and LLMS install checks
+    private repoInfoCache = new Map<string, { data: GitHubRepo; timestamp: number }>();
+    private llmsInstallCache = new Map<string, { data: boolean; timestamp: number }>();
+    private readonly REPO_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
     async fetchServers(): Promise<ClineMCPServer[]> {
+        // Check cache first
+        if (this.serversCache && Date.now() - this.serversCache.timestamp < this.CACHE_TTL) {
+            return this.serversCache.data;
+        }
+
         try {
             const issues = await this.fetchApprovedIssues();
-            const servers = await Promise.all(
-                issues.map((issue) => this.parseIssueToServer(issue)),
-            );
-            return servers.filter((server): server is ClineMCPServer => server !== null);
+            
+            // Batch fetch repo info in parallel
+            const repoInfoPromises = issues.map(async (issue) => {
+                const githubUrl = this.extractGitHubUrl(issue.body);
+                if (!githubUrl) return { issue, repoInfo: null, githubUrl: null };
+                
+                const repoInfo = await this.fetchRepoInfo(githubUrl);
+                return { issue, repoInfo, githubUrl };
+            });
+            
+            const repoResults = await Promise.all(repoInfoPromises);
+            
+            // Batch check LLMS install in parallel
+            const llmsPromises = repoResults.map(async ({ githubUrl }) => {
+                if (!githubUrl) return { githubUrl, hasLLMS: false };
+                const hasLLMS = await this.checkLLMSInstall(githubUrl);
+                return { githubUrl, hasLLMS };
+            });
+            
+            const llmsResults = await Promise.all(llmsPromises);
+            const llmsMap = new Map(llmsResults.map(r => [r.githubUrl, r.hasLLMS]));
+            
+            // Parse servers with cached data
+            const serverPromises = repoResults.map(async ({ issue, repoInfo, githubUrl }) => {
+                if (!repoInfo || !githubUrl) return null;
+                return await this.parseIssueToServer(issue, repoInfo, llmsMap.get(githubUrl) || false);
+            });
+            const serverResults = await Promise.all(serverPromises);
+            const servers = serverResults.filter((server): server is ClineMCPServer => server !== null);
+            
+            // Cache the results
+            this.serversCache = { data: servers, timestamp: Date.now() };
+            
+            return servers;
         } catch (error) {
             console.error('Failed to fetch Cline servers:', error);
+            // Return cached data if available, even if stale
+            if (this.serversCache) {
+                return this.serversCache.data;
+            }
             return [];
         }
     }
@@ -81,17 +129,29 @@ export class ClineRegistryClient {
             );
 
             if (!response.ok) {
-                throw new Error(`GitHub API error: ${response.status}`);
+                // Handle rate limiting and other errors gracefully
+                if (response.status === 403 || response.status === 429) {
+                    console.warn(`GitHub API rate limited or forbidden (${response.status}). Skipping Cline registry.`);
+                    return [];
+                }
+                // Log but don't throw for other errors
+                console.warn(`GitHub API error: ${response.status}. Skipping Cline registry.`);
+                return [];
             }
 
             return response.json();
         } catch (error) {
-            console.error('Failed to fetch approved issues:', error);
+            // Gracefully handle errors - return empty array instead of throwing
+            console.warn('Failed to fetch approved issues from Cline registry:', error instanceof Error ? error.message : error);
             return [];
         }
     }
 
-    private async parseIssueToServer(issue: GitHubIssue): Promise<ClineMCPServer | null> {
+    private async parseIssueToServer(
+        issue: GitHubIssue,
+        repoInfo: GitHubRepo,
+        hasLLMSInstall: boolean
+    ): Promise<ClineMCPServer | null> {
         try {
             const githubUrl = this.extractGitHubUrl(issue.body);
             if (!githubUrl) {
@@ -100,10 +160,6 @@ export class ClineRegistryClient {
             }
 
             const logoUrl = this.extractLogoUrl(issue.body);
-            const repoInfo = await this.fetchRepoInfo(githubUrl);
-            if (!repoInfo) return null;
-
-            const hasLLMSInstall = await this.checkLLMSInstall(githubUrl);
             const category = this.extractCategory(issue.labels);
 
             return {
@@ -151,6 +207,12 @@ export class ClineRegistryClient {
     }
 
     private async fetchRepoInfo(githubUrl: string): Promise<GitHubRepo | null> {
+        // Check cache first
+        const cached = this.repoInfoCache.get(githubUrl);
+        if (cached && Date.now() - cached.timestamp < this.REPO_CACHE_TTL) {
+            return cached.data;
+        }
+
         try {
             const match = githubUrl.match(/github\.com\/([\w-]+)\/([\w-]+)/);
             if (!match) return null;
@@ -170,14 +232,25 @@ export class ClineRegistryClient {
                 return null;
             }
 
-            return response.json();
+            const repoInfo = await response.json();
+            
+            // Cache the result
+            this.repoInfoCache.set(githubUrl, { data: repoInfo, timestamp: Date.now() });
+            
+            return repoInfo;
         } catch (error) {
             console.error('Failed to fetch repo info:', error);
             return null;
         }
     }
 
-    private async checkLLMSInstall(githubUrl: string): Promise<boolean> {
+    async checkLLMSInstall(githubUrl: string): Promise<boolean> {
+        // Check cache first
+        const cached = this.llmsInstallCache.get(githubUrl);
+        if (cached && Date.now() - cached.timestamp < this.REPO_CACHE_TTL) {
+            return cached.data;
+        }
+
         try {
             const match = githubUrl.match(/github\.com\/([\w-]+)\/([\w-]+)/);
             if (!match) return false;
@@ -195,7 +268,12 @@ export class ClineRegistryClient {
                 },
             );
 
-            return response.ok;
+            const hasLLMS = response.ok;
+            
+            // Cache the result
+            this.llmsInstallCache.set(githubUrl, { data: hasLLMS, timestamp: Date.now() });
+            
+            return hasLLMS;
         } catch (error) {
             return false;
         }
@@ -246,6 +324,15 @@ export class ClineRegistryClient {
         } catch (error) {
             return undefined;
         }
+    }
+
+    /**
+     * Clear all caches
+     */
+    clearCache(): void {
+        this.serversCache = null;
+        this.repoInfoCache.clear();
+        this.llmsInstallCache.clear();
     }
 }
 

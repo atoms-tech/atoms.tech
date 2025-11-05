@@ -37,3 +37,29 @@ export async function createClient() {
         },
     );
 }
+
+/**
+ * Create an authenticated Supabase client using a JWT access token.
+ * This is used for WorkOS authenticated requests where we have a JWT token.
+ */
+export function createAuthenticatedClient(accessToken: string) {
+    return createServerClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll() {
+                    return [];
+                },
+                setAll() {
+                    // No-op for server-side usage
+                },
+            },
+            global: {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            },
+        },
+    );
+}

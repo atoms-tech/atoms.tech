@@ -11,8 +11,10 @@ import { logger } from '@/lib/utils/logger';
 
 export async function GET(
     request: Request,
-    { params }: { params: { sessionId: string } },
+    context: { params: { sessionId: string } },
 ) {
+    const { params } = context;
+
     try {
         // Get authenticated user
         const supabase = await createClient();

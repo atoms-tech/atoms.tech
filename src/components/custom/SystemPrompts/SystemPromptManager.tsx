@@ -6,14 +6,13 @@ import {
     Eye,
     Globe,
     Loader2,
-    Lock,
     Plus,
     Tag,
     Trash2,
     Building2,
     User,
 } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,6 +65,8 @@ interface SystemPromptManagerProps {
     onPromptSelected?: (promptId: string) => void;
 }
 
+type PromptScope = 'all' | 'user' | 'organization' | 'system';
+
 export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
     currentOrganizationId,
     onPromptSelected,
@@ -75,12 +76,17 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
     const { isPlatformAdmin } = usePlatformAdmin();
 
     // State
-    const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
+    const [allPrompts, setAllPrompts] = useState<SystemPrompt[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'user' | 'organization' | 'system' | 'all'>('all');
+    const [activeTab, setActiveTab] = useState<PromptScope>('all');
     const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
     const [previewPrompt, setPreviewPrompt] = useState<SystemPrompt | null>(null);
     const [mergedPreview, setMergedPreview] = useState<string>('');
+    const [mergedDetails, setMergedDetails] = useState<{
+        system?: string | null;
+        organization?: string | null;
+        user?: string | null;
+    }>({});
 
     // Dialog state
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -100,36 +106,43 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
     const [tagInput, setTagInput] = useState('');
 
     // Load prompts
-    const loadPrompts = useCallback(
-        async (scope: 'user' | 'organization' | 'system' | 'all' = 'all') => {
-            setLoading(true);
-            try {
-                const params = new URLSearchParams();
-                params.set('scope', scope);
-                if (currentOrganizationId && scope === 'organization') {
-                    params.set('organization_id', currentOrganizationId);
-                }
-                params.set('include_public', 'true');
-
-                const response = await fetch(`/api/system-prompts?${params.toString()}`);
-                if (!response.ok) {
-                    throw new Error('Failed to load prompts');
-                }
-
-                const data = await response.json();
-                setPrompts(data.prompts || []);
-            } catch (error) {
-                console.error('Error loading prompts:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Failed to load system prompts',
-                });
-            } finally {
-                setLoading(false);
+    const loadPrompts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            params.set('scope', 'all');
+            if (currentOrganizationId) {
+                params.set('organization_id', currentOrganizationId);
             }
+            params.set('include_public', 'true');
+
+            const response = await fetch(`/api/system-prompts?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error('Failed to load prompts');
+            }
+
+            const data = await response.json();
+            const nextPrompts: SystemPrompt[] = data.prompts || [];
+            setAllPrompts(nextPrompts);
+
+            if (
+                selectedPromptId &&
+                !nextPrompts.some((prompt) => prompt.id === selectedPromptId)
+            ) {
+                setSelectedPromptId(null);
+            }
+        } catch (error) {
+            console.error('Error loading prompts:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to load system prompts',
+            });
+        } finally {
+            setLoading(false);
+        }
         },
-        [currentOrganizationId, toast],
+        [currentOrganizationId, toast, selectedPromptId],
     );
 
     // Load merged preview
@@ -147,16 +160,49 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
             }
 
             const data = await response.json();
-            setMergedPreview(data.merged_content);
+            setMergedPreview((data.merged_content || '').trim());
+            setMergedDetails({
+                system: data.details?.system_content ?? null,
+                organization: data.details?.organization_content ?? null,
+                user: data.details?.user_content ?? null,
+            });
         } catch (error) {
             console.error('Error loading merged preview:', error);
         }
     }, [currentOrganizationId]);
 
     useEffect(() => {
-        loadPrompts(activeTab);
+        loadPrompts();
+    }, [loadPrompts]);
+
+    useEffect(() => {
         loadMergedPreview();
-    }, [activeTab, loadPrompts, loadMergedPreview]);
+    }, [loadMergedPreview]);
+
+    const promptsByScope = useMemo<Record<PromptScope, SystemPrompt[]>>(
+        () => ({
+            all: allPrompts,
+            user: allPrompts.filter((prompt) => prompt.scope === 'user'),
+            organization: allPrompts.filter(
+                (prompt) =>
+                    prompt.scope === 'organization' &&
+                    (!currentOrganizationId || prompt.organization_id === currentOrganizationId),
+            ),
+            system: allPrompts.filter((prompt) => prompt.scope === 'system'),
+        }),
+        [allPrompts, currentOrganizationId],
+    );
+
+    const scopedPrompts = promptsByScope[activeTab];
+
+    useEffect(() => {
+        const firstPrompt = scopedPrompts[0];
+        if (selectedPromptId && !scopedPrompts.some((p) => p.id === selectedPromptId)) {
+            setSelectedPromptId(firstPrompt?.id ?? null);
+        } else if (!selectedPromptId && firstPrompt) {
+            setSelectedPromptId(firstPrompt.id);
+        }
+    }, [scopedPrompts, selectedPromptId]);
 
     // Handle create prompt
     const handleCreatePrompt = async () => {
@@ -212,7 +258,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
 
             setCreateDialogOpen(false);
             resetForm();
-            loadPrompts(activeTab);
+            loadPrompts();
             loadMergedPreview();
         } catch (error: any) {
             console.error('Error creating prompt:', error);
@@ -261,7 +307,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
             setEditDialogOpen(false);
             setEditingPrompt(null);
             resetForm();
-            loadPrompts(activeTab);
+            loadPrompts();
             loadMergedPreview();
         } catch (error: any) {
             console.error('Error updating prompt:', error);
@@ -295,7 +341,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
                 description: 'System prompt deleted successfully',
             });
 
-            loadPrompts(activeTab);
+            loadPrompts();
             loadMergedPreview();
         } catch (error: any) {
             console.error('Error deleting prompt:', error);
@@ -375,18 +421,247 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
     const getScopeColor = (scope: string) => {
         switch (scope) {
             case 'user':
-                return 'bg-blue-100 text-blue-800';
+                return 'bg-muted text-muted-foreground border-primary/30';
             case 'organization':
-                return 'bg-purple-100 text-purple-800';
+                return 'bg-muted text-muted-foreground border-primary/40';
             case 'system':
-                return 'bg-green-100 text-green-800';
+                return 'bg-muted text-muted-foreground border-primary/50';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-muted text-muted-foreground';
         }
     };
 
-    // Filter prompts for display
-    const displayPrompts = prompts;
+    // Source sections for merged preview breakdown
+    const mergedSections = useMemo(
+        () =>
+            [
+                {
+                    scope: 'system' as const,
+                    label: 'System (Base Layer)',
+                    description: 'Organization-wide defaults managed by platform admins.',
+                    content: (mergedDetails.system || '').trim(),
+                },
+                {
+                    scope: 'organization' as const,
+                    label: 'Organization (Middle Layer)',
+                    description: 'Applies when chatting within this organization.',
+                    content: (mergedDetails.organization || '').trim(),
+                },
+                {
+                    scope: 'user' as const,
+                    label: 'Personal (Top Layer)',
+                    description: 'Your personal adjustments on top of other prompts.',
+                    content: (mergedDetails.user || '').trim(),
+                },
+            ].map((section) => ({
+                ...section,
+                hasContent: section.content.length > 0,
+            })),
+        [mergedDetails],
+    );
+
+    const tabOrder: PromptScope[] = ['all', 'user', 'organization', 'system'];
+
+    const emptyMessages: Record<PromptScope, string> = {
+        all: 'No prompts found yet. Create one to get started.',
+        user: 'No personal prompts yet. Create one to tailor the agent just for you.',
+        organization: 'No organization prompts yet. Create one to standardize responses for your team.',
+        system: 'System prompts define the universal defaults. Create one to set the global tone.',
+    };
+
+    const highlightByTab: Record<PromptScope, 'system' | 'organization' | 'user' | undefined> = {
+        all: undefined,
+        user: 'user',
+        organization: 'organization',
+        system: 'system',
+    };
+
+    const renderMergedPreviewCard = (highlight?: 'system' | 'organization' | 'user') => (
+        <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-primary" />
+                    Current Merged Prompt
+                </CardTitle>
+                <CardDescription className="text-xs">
+                    This is the final prompt combining system, organization, and personal layers.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {mergedPreview ? (
+                    <pre className="whitespace-pre-wrap rounded-md border border-border bg-background p-3 text-sm text-foreground shadow-sm">
+                        {mergedPreview}
+                    </pre>
+                ) : (
+                    <div className="rounded-md border border-dashed border-muted-foreground/20 bg-muted/50 p-3 text-center text-xs text-muted-foreground">
+                        No default prompt configured yet.
+                    </div>
+                )}
+
+                <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Prompt Layers
+                    </p>
+                    {mergedSections.map((section) => {
+                        const isHighlighted = highlight === section.scope;
+                        const hasContent = section.hasContent;
+                        return (
+                            <div
+                                key={section.scope}
+                                className={`rounded-md border bg-background p-3 text-xs transition-colors ${
+                                    isHighlighted
+                                        ? 'border-primary ring-1 ring-primary/20'
+                                        : 'border-border'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between gap-2 text-foreground">
+                                    <span className="flex items-center gap-2">
+                                        {getScopeIcon(section.scope)}
+                                        <span>{section.label}</span>
+                                    </span>
+                                    <Badge
+                                        variant={hasContent ? 'outline' : 'secondary'}
+                                        className={hasContent ? 'border-primary text-primary' : ''}
+                                    >
+                                        {hasContent ? 'Active' : 'Empty'}
+                                    </Badge>
+                                </div>
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                    {section.description}
+                                </p>
+                                <p
+                                    className={`mt-2 whitespace-pre-wrap text-foreground ${
+                                        hasContent ? '' : 'italic text-muted-foreground'
+                                    }`}
+                                >
+                                    {hasContent
+                                        ? section.content
+                                        : 'No prompt configured for this layer yet.'}
+                                </p>
+                            </div>
+                        );
+                    })}
+                </div>
+            </CardContent>
+        </Card>
+    );
+
+    const renderPromptList = (scope: PromptScope) => {
+        const prompts = promptsByScope[scope];
+        return (
+            <ScrollArea className="h-[400px]">
+                {loading ? (
+                    <div className="flex h-40 items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                ) : prompts.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">
+                        {emptyMessages[scope]}
+                    </div>
+                ) : (
+                    <div className="space-y-3 pr-4">
+                        {prompts.map((prompt) => (
+                            <Card
+                                key={prompt.id}
+                                className={`cursor-pointer transition-all hover:shadow-md bg-card border-border ${
+                                    selectedPromptId === prompt.id
+                                        ? 'border-primary ring-1 ring-primary/20'
+                                        : ''
+                                }`}
+                                onClick={() => handleSelectPrompt(prompt.id)}
+                            >
+                                <CardContent className="p-4">
+                                    <div className="space-y-3">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1 space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-medium text-sm">
+                                                        {prompt.name}
+                                                    </h4>
+                                                    {prompt.is_default && (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="text-xs bg-primary/20 text-primary dark:bg-primary/30 dark:text-primary"
+                                                        >
+                                                            <Check className="mr-1 h-3 w-3" />
+                                                            Default
+                                                        </Badge>
+                                                    )}
+                                                    {selectedPromptId === prompt.id && (
+                                                        <Check className="h-4 w-4 text-primary" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Badge variant="outline" className={`text-xs ${getScopeColor(prompt.scope)}`}>
+                                                        {getScopeIcon(prompt.scope)}
+                                                        <span className="ml-1 capitalize">
+                                                            {prompt.scope}
+                                                        </span>
+                                                    </Badge>
+                                                    {prompt.is_public && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            <Globe className="mr-1 h-3 w-3" />
+                                                            Public
+                                                        </Badge>
+                                                    )}
+                                                    {prompt.tags &&
+                                                        prompt.tags.length > 0 &&
+                                                        prompt.tags.slice(0, 3).map((tag) => (
+                                                            <Badge
+                                                                key={tag}
+                                                                variant="outline"
+                                                                className="text-xs"
+                                                            >
+                                                                <Tag className="mr-1 h-3 w-3" />
+                                                                {tag}
+                                                            </Badge>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        openEditDialog(prompt);
+                                                    }}
+                                                >
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        handleDeletePrompt(prompt.id);
+                                                    }}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+
+                                        {prompt.description && (
+                                            <p className="text-xs text-muted-foreground">
+                                                {prompt.description}
+                                            </p>
+                                        )}
+
+                                        <div className="rounded-md bg-muted/40 p-3 text-xs whitespace-pre-wrap">
+                                            {prompt.content}
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </ScrollArea>
+        );
+    };
 
     return (
         <div className="space-y-4">
@@ -405,7 +680,10 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)}>
+            <Tabs
+                value={activeTab}
+                onValueChange={(value) => setActiveTab((value as PromptScope) || 'all')}
+            >
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="all" className="flex items-center gap-1">
                         All
@@ -424,157 +702,12 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value={activeTab} className="space-y-4 mt-4">
-                    {/* Merged Preview Card */}
-                    {mergedPreview && (
-                        <Card className="bg-blue-50 border-blue-200">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm flex items-center gap-2">
-                                    <Eye className="h-4 w-4" />
-                                    Current Merged Prompt
-                                </CardTitle>
-                                <CardDescription className="text-xs">
-                                    This is the final prompt combining system, organization, and user
-                                    prompts
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="bg-white rounded-md p-3 text-xs font-mono whitespace-pre-wrap max-h-32 overflow-y-auto">
-                                    {mergedPreview}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Prompts List */}
-                    <ScrollArea className="h-[400px]">
-                        {loading ? (
-                            <div className="flex items-center justify-center h-40">
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            </div>
-                        ) : displayPrompts.length === 0 ? (
-                            <div className="text-center text-sm text-muted-foreground py-8">
-                                No prompts found for this scope
-                            </div>
-                        ) : (
-                            <div className="space-y-3 pr-4">
-                                {displayPrompts.map((prompt) => (
-                                    <Card
-                                        key={prompt.id}
-                                        className={`cursor-pointer transition-all hover:shadow-md ${
-                                            selectedPromptId === prompt.id
-                                                ? 'border-blue-500 bg-blue-50'
-                                                : ''
-                                        }`}
-                                        onClick={() => handleSelectPrompt(prompt.id)}
-                                    >
-                                        <CardContent className="p-4">
-                                            <div className="space-y-3">
-                                                {/* Header */}
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1 space-y-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <h4 className="font-medium text-sm">
-                                                                {prompt.name}
-                                                            </h4>
-                                                            {prompt.is_default && (
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="text-xs bg-green-100 text-green-800"
-                                                                >
-                                                                    <Check className="h-3 w-3 mr-1" />
-                                                                    Default
-                                                                </Badge>
-                                                            )}
-                                                            {selectedPromptId === prompt.id && (
-                                                                <Check className="h-4 w-4 text-blue-600" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 flex-wrap">
-                                                            <Badge
-                                                                className={`text-xs ${getScopeColor(prompt.scope)}`}
-                                                            >
-                                                                {getScopeIcon(prompt.scope)}
-                                                                <span className="ml-1 capitalize">
-                                                                    {prompt.scope}
-                                                                </span>
-                                                            </Badge>
-                                                            {prompt.is_public && (
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="text-xs"
-                                                                >
-                                                                    <Globe className="h-3 w-3 mr-1" />
-                                                                    Public
-                                                                </Badge>
-                                                            )}
-                                                            {prompt.tags &&
-                                                                prompt.tags.length > 0 &&
-                                                                prompt.tags.slice(0, 3).map((tag) => (
-                                                                    <Badge
-                                                                        key={tag}
-                                                                        variant="outline"
-                                                                        className="text-xs"
-                                                                    >
-                                                                        <Tag className="h-3 w-3 mr-1" />
-                                                                        {tag}
-                                                                    </Badge>
-                                                                ))}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setPreviewPrompt(prompt);
-                                                            }}
-                                                        >
-                                                            <Eye className="h-3 w-3" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                openEditDialog(prompt);
-                                                            }}
-                                                        >
-                                                            <Edit className="h-3 w-3" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeletePrompt(prompt.id);
-                                                            }}
-                                                        >
-                                                            <Trash2 className="h-3 w-3 text-destructive" />
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {/* Description */}
-                                                {prompt.description && (
-                                                    <p className="text-xs text-muted-foreground line-clamp-2">
-                                                        {prompt.description}
-                                                    </p>
-                                                )}
-
-                                                {/* Content Preview */}
-                                                <div className="bg-gray-50 rounded-md p-2 text-xs font-mono line-clamp-3">
-                                                    {prompt.content}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </TabsContent>
+                {tabOrder.map((scope) => (
+                    <TabsContent key={scope} value={scope} className="mt-4 space-y-4">
+                        {renderMergedPreviewCard(highlightByTab[scope])}
+                        {renderPromptList(scope)}
+                    </TabsContent>
+                ))}
             </Tabs>
 
             {/* Create Dialog */}
@@ -886,12 +1019,12 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
 
                     <div className="space-y-4 py-4">
                         <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className={getScopeColor(previewPrompt?.scope || '')}>
+                            <Badge variant="outline" className={getScopeColor(previewPrompt?.scope || '')}>
                                 {getScopeIcon(previewPrompt?.scope || '')}
                                 <span className="ml-1 capitalize">{previewPrompt?.scope}</span>
                             </Badge>
                             {previewPrompt?.is_default && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                <Badge variant="secondary" className="bg-muted text-primary border-primary/30">
                                     <Check className="h-3 w-3 mr-1" />
                                     Default
                                 </Badge>

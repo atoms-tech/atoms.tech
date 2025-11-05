@@ -138,7 +138,7 @@ const systemSchema = baseSchema
     serverUrl: z.string().url('Invalid URL').optional(),
     bearerToken: z.string().optional(),
     stdioCommand: z.string().optional(),
-    environmentVariables: z.record(z.string()).optional(),
+    environmentVariables: z.record(z.string(), z.string()).optional(),
     workingDirectory: z.string().optional(),
   })
   .refine(

@@ -19,18 +19,10 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
     onClick,
     className,
 }) => {
-    const { currentPinnedOrganizationId, organizationMessages } = useAgentStore();
-
-    // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
-    const messages = React.useMemo(() => {
-        if (!currentPinnedOrganizationId) {
-            return [];
-        }
-        return organizationMessages[currentPinnedOrganizationId] || [];
-    }, [currentPinnedOrganizationId, organizationMessages]);
-
-    // Count unread messages (for future implementation)
-    const unreadCount = 0; // This could be calculated based on read/unread status
+    // Note: Message count removed since messages are now managed server-side
+    // This could be fetched from API if needed
+    const messageCount = 0;
+    const unreadCount = 0;
 
     // Don't show anything when panel is open
     if (isOpen) {
@@ -75,7 +67,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
                 <div className="px-3 pb-3 w-full">
                     <div className="flex items-center justify-between w-full">
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {messages.length} messages
+                            AI Assistant
                         </span>
                         {unreadCount > 0 && (
                             <Badge

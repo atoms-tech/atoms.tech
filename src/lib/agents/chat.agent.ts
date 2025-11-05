@@ -1,11 +1,11 @@
 /**
  * Chat Agent for atomsAgent
  * 
- * Uses AI SDK 6 ToolLoopAgent with MCP tool integration
+ * Provides MCP tools for use with streamText
+ * Tools are executed by atomsAgent's MCP integration
  */
 
-import { ToolLoopAgent, tool } from 'ai';
-import { atomsChatModel, AtomsChatModelId, DEFAULT_MODEL } from '@/lib/providers/atomsagent.provider';
+import { tool } from 'ai';
 import { z } from 'zod';
 
 /**
@@ -100,30 +100,8 @@ export const mcpTools = {
     }),
 };
 
-/**
- * Create a chat agent with specified model
- */
-export const createChatAgent = (
-    modelId: AtomsChatModelId = DEFAULT_MODEL,
-    systemPrompt?: string,
-) => {
-    return new ToolLoopAgent({
-        model: atomsChatModel(modelId),
-        instructions:
-            systemPrompt ||
-            `You are a helpful AI assistant for the Atoms platform. 
+export const DEFAULT_AGENT_INSTRUCTIONS = `You are a helpful AI assistant for the Atoms platform. 
 You help users manage requirements, documents, and projects.
 You have access to tools for searching, creating, and updating content.
 Always be clear and concise in your responses.
-When using tools that require approval, explain what you're about to do.`,
-        tools: mcpTools,
-        // Optional: Add structured output if needed
-        // output: Output.object({ schema: z.object({ ... }) }),
-    });
-};
-
-/**
- * Default agent instance
- */
-export const defaultChatAgent = createChatAgent();
-
+When using tools that require approval, explain what you're about to do.`;

@@ -4,16 +4,5 @@
  * Centralized exports for all React contexts in the application
  */
 
-// MCP Context
-export {
-  MCPProvider,
-  MCPContext,
-  useMCP,
-  useIsMCPAvailable,
-  type MCPContextType,
-  type MCPConnection,
-  type MCPConnectionState,
-  type MCPProviderProps,
-  type OAuthProvider,
-  type OAuthToken,
-} from './MCPContext';
+// No contexts currently exported
+// MCP servers handle their own OAuth - no centralized context needed

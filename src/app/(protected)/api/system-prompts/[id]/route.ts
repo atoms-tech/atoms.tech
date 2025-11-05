@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@workos-inc/authkit-nextjs';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
+import { createClient } from '@/lib/supabase/supabaseServer';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -19,16 +21,18 @@ export const dynamic = 'force-dynamic';
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     let promptId: string | undefined;
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         const { id } = await params;
         promptId = id;
@@ -45,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // Check permissions based on scope
-        if (existingPrompt.scope === 'user' && existingPrompt.user_id !== user.id) {
+        if (existingPrompt.scope === 'user' && existingPrompt.user_id !== profile.id) {
             return NextResponse.json(
                 { error: 'You do not have permission to update this prompt' },
                 { status: 403 },
@@ -53,11 +57,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         if (existingPrompt.scope === 'organization') {
+            const organizationId = existingPrompt.organization_id;
+            if (!organizationId) {
+                return NextResponse.json({ error: 'Organization prompt missing organization_id' }, { status: 400 });
+            }
             const { data: membership } = await supabase
                 .from('organization_members')
                 .select('role')
-                .eq('organization_id', existingPrompt.organization_id)
-                .eq('user_id', user.id)
+                .eq('organization_id', organizationId)
+                .eq('user_id', profile.id)
                 .single();
 
             if (!membership || !['owner', 'admin'].includes(membership.role)) {
@@ -69,13 +77,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         if (existingPrompt.scope === 'system') {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('admin_role')
-                .eq('id', user.id)
+            const { data: adminCheck } = await supabase
+                .from('platform_admins')
+                .select('id')
+                .eq('user_id', profile.id)
                 .single();
 
-            if (!profile?.admin_role) {
+            if (!adminCheck) {
                 return NextResponse.json(
                     { error: 'Only platform administrators can update system prompts' },
                     { status: 403 },
@@ -89,7 +97,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         // Prepare update data
         const updateData: any = {
-            updated_by: user.id,
+            updated_by: profile.id,
         };
 
         if (name !== undefined) updateData.name = name;
@@ -111,9 +119,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 .neq('id', id);
 
             if (existingPrompt.scope === 'user') {
-                updateQuery.eq('user_id', user.id);
+                updateQuery.eq('user_id', profile.id);
             } else if (existingPrompt.scope === 'organization') {
-                updateQuery.eq('organization_id', existingPrompt.organization_id);
+                const organizationId = existingPrompt.organization_id;
+                if (!organizationId) {
+                    return NextResponse.json({ error: 'Organization prompt missing organization_id' }, { status: 400 });
+                }
+                updateQuery.eq('organization_id', organizationId);
             }
 
             await updateQuery;
@@ -155,16 +167,18 @@ export async function DELETE(
 ) {
     let promptId: string | undefined;
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         const { id } = await params;
         promptId = id;
@@ -181,7 +195,7 @@ export async function DELETE(
         }
 
         // Check permissions based on scope
-        if (existingPrompt.scope === 'user' && existingPrompt.user_id !== user.id) {
+        if (existingPrompt.scope === 'user' && existingPrompt.user_id !== profile.id) {
             return NextResponse.json(
                 { error: 'You do not have permission to delete this prompt' },
                 { status: 403 },
@@ -189,11 +203,15 @@ export async function DELETE(
         }
 
         if (existingPrompt.scope === 'organization') {
+            const organizationId = existingPrompt.organization_id;
+            if (!organizationId) {
+                return NextResponse.json({ error: 'Organization prompt missing organization_id' }, { status: 400 });
+            }
             const { data: membership } = await supabase
                 .from('organization_members')
                 .select('role')
-                .eq('organization_id', existingPrompt.organization_id)
-                .eq('user_id', user.id)
+                .eq('organization_id', organizationId)
+                .eq('user_id', profile.id)
                 .single();
 
             if (!membership || !['owner', 'admin'].includes(membership.role)) {
@@ -205,13 +223,13 @@ export async function DELETE(
         }
 
         if (existingPrompt.scope === 'system') {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('admin_role')
-                .eq('id', user.id)
+            const { data: adminCheck } = await supabase
+                .from('platform_admins')
+                .select('id')
+                .eq('user_id', profile.id)
                 .single();
 
-            if (!profile?.admin_role) {
+            if (!adminCheck) {
                 return NextResponse.json(
                     { error: 'Only platform administrators can delete system prompts' },
                     { status: 403 },
@@ -247,16 +265,18 @@ export async function DELETE(
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     let promptId: string | undefined;
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         const { id } = await params;
         promptId = id;

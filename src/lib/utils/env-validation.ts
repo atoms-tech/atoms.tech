@@ -45,35 +45,35 @@ const envSchema = z.object({
     // Feature Flags
     NEXT_PUBLIC_ENABLE_PERFORMANCE_MONITORING: z
         .string()
-        .transform((val) => val === 'true')
-        .default('false'),
+        .default('false')
+        .transform((val) => val === 'true'),
     NEXT_PUBLIC_ENABLE_ERROR_TRACKING: z
         .string()
-        .transform((val) => val === 'true')
-        .default('false'),
+        .default('false')
+        .transform((val) => val === 'true'),
     NEXT_PUBLIC_ENABLE_ANALYTICS: z
         .string()
-        .transform((val) => val === 'true')
-        .default('false'),
+        .default('false')
+        .transform((val) => val === 'true'),
     NEXT_PUBLIC_CSP_ENABLED: z
         .string()
-        .transform((val) => val === 'true')
-        .default('true'),
+        .default('true')
+        .transform((val) => val === 'true'),
     NEXT_PUBLIC_SECURITY_HEADERS_ENABLED: z
         .string()
-        .transform((val) => val === 'true')
-        .default('true'),
+        .default('true')
+        .transform((val) => val === 'true'),
 
     // Logging
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     ENABLE_REQUEST_LOGGING: z
         .string()
-        .transform((val) => val === 'true')
-        .default('false'),
+        .default('false')
+        .transform((val) => val === 'true'),
     ENABLE_DEBUG_LOGGING: z
         .string()
-        .transform((val) => val === 'true')
-        .default('false'),
+        .default('false')
+        .transform((val) => val === 'true'),
 });
 
 // Production-specific schema
@@ -111,8 +111,8 @@ export function validateEnv(): EnvConfig {
         console.error('❌ Environment validation failed:');
 
         if (error instanceof z.ZodError) {
-            error.errors.forEach((err) => {
-                console.error(`  - ${err.path.join('.')}: ${err.message}`);
+            error.issues.forEach((issue) => {
+                console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
             });
         }
 

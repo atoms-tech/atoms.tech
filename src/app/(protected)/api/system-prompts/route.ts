@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@workos-inc/authkit-nextjs';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
+import { createClient } from '@/lib/supabase/supabaseServer';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -15,16 +17,18 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         // Get query parameters
         const searchParams = request.nextUrl.searchParams;
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
 
         // Filter by scope
         if (scope === 'user') {
-            query = query.eq('scope', 'user').eq('user_id', user.id);
+            query = query.eq('scope', 'user').eq('user_id', profile.id);
         } else if (scope === 'organization') {
             query = query.eq('scope', 'organization');
             if (organizationId) {
@@ -47,19 +51,127 @@ export async function GET(request: NextRequest) {
             query = query.eq('scope', 'system');
             if (!includePublic) {
                 // Check if user is platform admin
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('admin_role')
-                    .eq('id', user.id)
+                const { data: adminCheck } = await supabase
+                    .from('platform_admins')
+                    .select('id')
+                    .eq('user_id', profile.id)
                     .single();
 
-                if (!profile?.admin_role) {
+                if (!adminCheck) {
                     query = query.eq('is_public', true);
                 }
             }
         } else if (scope === 'all') {
-            // Return all accessible prompts
-            // This is handled by RLS policies
+            // For 'all', we need to explicitly fetch prompts from all accessible scopes
+            // Build an OR condition to get user, organization, and system prompts
+            
+            // Check if user is platform admin for system prompts
+            const { data: adminCheck } = await supabase
+                .from('platform_admins')
+                .select('id')
+                .eq('user_id', profile.id)
+                .single();
+
+            const isPlatformAdmin = !!adminCheck;
+
+            // Get user's organization memberships for filtering org prompts
+            const { data: memberships } = await supabase
+                .from('organization_members')
+                .select('organization_id')
+                .eq('user_id', profile.id);
+            
+            const userOrgIds = new Set((memberships || []).map((m: any) => m.organization_id));
+
+            // Use multiple queries and combine results since Supabase doesn't support complex OR easily
+            const [userPrompts, orgPrompts, systemPrompts] = await Promise.all([
+                // User prompts
+                supabase
+                    .from('system_prompts')
+                    .select('*')
+                    .eq('scope', 'user')
+                    .eq('user_id', profile.id),
+                // Organization prompts (RLS will filter by membership)
+                supabase
+                    .from('system_prompts')
+                    .select('*')
+                    .eq('scope', 'organization'),
+                // System prompts: all if admin, otherwise only public
+                isPlatformAdmin
+                    ? supabase
+                          .from('system_prompts')
+                          .select('*')
+                          .eq('scope', 'system')
+                    : supabase
+                          .from('system_prompts')
+                          .select('*')
+                          .eq('scope', 'system')
+                          .eq('is_public', true),
+            ]);
+
+            // Combine and deduplicate
+            const allPrompts: any[] = [];
+            const seenIds = new Set<string>();
+
+            // Process user prompts
+            if (userPrompts.data) {
+                userPrompts.data.forEach((prompt: any) => {
+                    if (!seenIds.has(prompt.id)) {
+                        allPrompts.push(prompt);
+                        seenIds.add(prompt.id);
+                    }
+                });
+            }
+
+            // Process organization prompts (RLS filters by membership)
+            if (orgPrompts.data) {
+                orgPrompts.data.forEach((prompt: any) => {
+                    if (!seenIds.has(prompt.id)) {
+                        // Only include prompts from organizations the user is a member of
+                        if (prompt.organization_id && userOrgIds.has(prompt.organization_id)) {
+                            allPrompts.push(prompt);
+                            seenIds.add(prompt.id);
+                        }
+                    }
+                });
+            }
+
+            // Process system prompts
+            if (systemPrompts.data) {
+                systemPrompts.data.forEach((prompt: any) => {
+                    if (!seenIds.has(prompt.id)) {
+                        // Additional check: if not admin, only include public prompts
+                        if (prompt.scope === 'system') {
+                            if (isPlatformAdmin || prompt.is_public) {
+                                allPrompts.push(prompt);
+                                seenIds.add(prompt.id);
+                            }
+                        } else {
+                            allPrompts.push(prompt);
+                            seenIds.add(prompt.id);
+                        }
+                    }
+                });
+            }
+
+            // Log any errors but don't fail the request
+            if (userPrompts.error) {
+                logger.warn('Error fetching user prompts', { error: userPrompts.error });
+            }
+            if (orgPrompts.error) {
+                logger.warn('Error fetching organization prompts', { error: orgPrompts.error });
+            }
+            if (systemPrompts.error) {
+                logger.warn('Error fetching system prompts', { error: systemPrompts.error });
+            }
+
+            // Sort by created_at desc
+            allPrompts.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0).getTime();
+                const dateB = new Date(b.created_at || 0).getTime();
+                return dateB - dateA;
+            });
+
+            return NextResponse.json({ prompts: allPrompts });
         }
 
         // Order by created_at desc
@@ -94,16 +206,18 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         // Parse request body
         const body = await request.json();
@@ -136,13 +250,13 @@ export async function POST(request: NextRequest) {
 
         // Check permissions for system scope
         if (scope === 'system') {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('admin_role')
-                .eq('id', user.id)
+            const { data: adminCheck } = await supabase
+                .from('platform_admins')
+                .select('id')
+                .eq('user_id', profile.id)
                 .single();
 
-            if (!profile?.admin_role) {
+            if (!adminCheck) {
                 return NextResponse.json(
                     { error: 'Only platform administrators can create system prompts' },
                     { status: 403 },
@@ -156,7 +270,7 @@ export async function POST(request: NextRequest) {
                 .from('organization_members')
                 .select('role')
                 .eq('organization_id', organization_id)
-                .eq('user_id', user.id)
+                .eq('user_id', profile.id)
                 .single();
 
             if (!membership || !['owner', 'admin'].includes(membership.role)) {
@@ -176,13 +290,13 @@ export async function POST(request: NextRequest) {
             tags: tags || [],
             is_default: is_default || false,
             is_public: scope === 'system' ? is_public || false : false,
-            created_by: user.id,
-            updated_by: user.id,
+            created_by: profile.id,
+            updated_by: profile.id,
         };
 
         // Add scope-specific fields
         if (scope === 'user') {
-            insertData.user_id = user.id;
+            insertData.user_id = profile.id;
         } else if (scope === 'organization') {
             insertData.organization_id = organization_id;
         }
@@ -196,7 +310,7 @@ export async function POST(request: NextRequest) {
                 .eq('is_default', true);
 
             if (scope === 'user') {
-                updateQuery.eq('user_id', user.id);
+                updateQuery.eq('user_id', profile.id);
             } else if (scope === 'organization') {
                 updateQuery.eq('organization_id', organization_id);
             }
@@ -218,7 +332,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ prompt }, { status: 201 });
     } catch (error) {
-    logger.error('Error in POST /api/system-prompts', error, { route: '/api/system-prompts' });
+        logger.error('Error in POST /api/system-prompts', error, { route: '/api/system-prompts' });
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

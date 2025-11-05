@@ -140,6 +140,106 @@ export type Database = {
                     },
                 ];
             };
+            chat_messages: {
+                Row: {
+                    id: string;
+                    session_id: string;
+                    role: string;
+                    content: string;
+                    tokens: number | null;
+                    metadata: Json | null;
+                    created_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    session_id: string;
+                    role: string;
+                    content: string;
+                    tokens?: number | null;
+                    metadata?: Json | null;
+                    created_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    session_id?: string;
+                    role?: string;
+                    content?: string;
+                    tokens?: number | null;
+                    metadata?: Json | null;
+                    created_at?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'chat_messages_session_id_fkey';
+                        columns: ['session_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'chat_sessions';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
+            chat_sessions: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    organization_id: string | null;
+                    title: string | null;
+                    model: string | null;
+                    agent_type: string | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                    last_message_at: string | null;
+                    message_count: number | null;
+                    tokens_in: number | null;
+                    tokens_out: number | null;
+                    tokens_total: number | null;
+                    metadata: Json | null;
+                    archived: boolean | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    organization_id?: string | null;
+                    title?: string | null;
+                    model?: string | null;
+                    agent_type?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_message_at?: string | null;
+                    message_count?: number | null;
+                    tokens_in?: number | null;
+                    tokens_out?: number | null;
+                    tokens_total?: number | null;
+                    metadata?: Json | null;
+                    archived?: boolean | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    organization_id?: string | null;
+                    title?: string | null;
+                    model?: string | null;
+                    agent_type?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_message_at?: string | null;
+                    message_count?: number | null;
+                    tokens_in?: number | null;
+                    tokens_out?: number | null;
+                    tokens_total?: number | null;
+                    metadata?: Json | null;
+                    archived?: boolean | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'chat_sessions_organization_id_fkey';
+                        columns: ['organization_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'organizations';
+                        referencedColumns: ['id'];
+                    },
+                ];
+            };
             blocks: {
                 Row: {
                     content: Json | null;
@@ -1578,6 +1678,21 @@ export type Database = {
             create_personal_organization: {
                 Args: { user_id: string; name: string };
                 Returns: string;
+            };
+            get_merged_system_prompt: {
+                Args: {
+                    p_user_id: string;
+                    p_organization_id?: string | null;
+                };
+                Returns: {
+                    merged_content: string;
+                    system_prompt_id: string | null;
+                    organization_prompt_id: string | null;
+                    user_prompt_id: string | null;
+                    system_content: string | null;
+                    organization_content: string | null;
+                    user_content: string | null;
+                }[];
             };
             gbt_bit_compress: {
                 Args: { '': unknown };

@@ -20,7 +20,8 @@ export async function GET(_request: NextRequest) {
         }
 
         // Check if user is platform admin
-        const isInPlatformAdminOrg = organizationId === PLATFORM_ADMIN_ORG_ID && role === 'admin';
+        // Accept both 'admin' and 'member' roles in the platform admin org
+        const isInPlatformAdminOrg = organizationId === PLATFORM_ADMIN_ORG_ID && (role === 'admin' || role === 'member');
         const isInDatabase = await platformAdminService.isPlatformAdmin(user.id);
         const isPlatformAdmin = isInPlatformAdminOrg || isInDatabase;
 

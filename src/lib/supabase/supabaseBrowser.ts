@@ -1,5 +1,4 @@
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
 
 import { Database } from '@/types/base/database.types';
 
@@ -32,6 +31,9 @@ export const supabase =
 
 /**
  * Create Supabase client with WorkOS token for authenticated requests
+ *
+ * This function is server-safe and can be used in both client and server components.
+ * For React hooks, use useSupabaseAuth from './useSupabaseAuth'
  */
 export function createSupabaseClientWithToken(token: string) {
     const tokenKey = token.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'token';
@@ -52,56 +54,4 @@ export function createSupabaseClientWithToken(token: string) {
             },
         },
     );
-}
-
-/**
- * Hook to get authenticated Supabase client with WorkOS token
- *
- * This allows Supabase Row-Level Security (RLS) to work with WorkOS-authenticated users.
- * Call this hook in a client component after WorkOS authentication is confirmed.
- */
-export function useSupabaseAuth() {
-    const [isReady, setIsReady] = useState(false);
-    const [accessToken, setAccessToken] = useState<string | null>(null);
-
-    const getAuthenticatedClient = useCallback(() => {
-        if (!accessToken) return null;
-        return createSupabaseClientWithToken(accessToken);
-    }, [accessToken]);
-
-    useEffect(() => {
-        const initializeAuth = async () => {
-            try {
-                // Get WorkOS session info from API
-                const response = await fetch('/api/auth/session', {
-                    credentials: 'include',
-                });
-
-                if (response.ok) {
-                    const sessionData = await response.json();
-                    if (sessionData.accessToken) {
-                        setAccessToken(sessionData.accessToken);
-                        setIsReady(true);
-                    } else {
-                        console.log('useSupabaseAuth: No access token in session');
-                        setIsReady(false);
-                    }
-                } else {
-                    console.log('useSupabaseAuth: No active WorkOS session');
-                    setIsReady(false);
-                }
-            } catch (error) {
-                console.error('useSupabaseAuth: Error initializing auth:', error);
-                setIsReady(false);
-            }
-        };
-
-        initializeAuth();
-    }, []);
-
-    return {
-        isReady,
-        accessToken,
-        getAuthenticatedClient,
-    };
 }

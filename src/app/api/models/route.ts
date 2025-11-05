@@ -35,34 +35,68 @@ export async function GET() {
             // Continue - profile not strictly needed for fetching models
         }
 
-        // Fetch models from atomsAgent
-        const response = await fetch(`${ATOMSAGENT_URL}/v1/models`, {
-            headers: {
-                'Content-Type': 'application/json',
+        // Define allowed models (Vertex AI Claude models only)
+        const allowedModels = [
+            {
+                id: 'claude-sonnet-4-5@20250929',
+                object: 'model',
+                owned_by: 'anthropic',
+                context_length: 200000,
+                capabilities: ['chat', 'streaming'],
+                description: 'Primary model - Claude Sonnet 4.5 (200K context)'
             },
-        });
+            {
+                id: 'claude-sonnet-4-5@20250929-1m',
+                object: 'model',
+                owned_by: 'anthropic',
+                context_length: 1000000,
+                capabilities: ['chat', 'streaming'],
+                description: 'Claude Sonnet 4.5 with 1M context window (beta)',
+                beta_header: 'context-1m-2025-08-07'
+            },
+            {
+                id: 'claude-haiku-4-5@20251001',
+                object: 'model',
+                owned_by: 'anthropic',
+                context_length: 200000,
+                capabilities: ['chat', 'streaming'],
+                description: 'Small/fast model - Claude Haiku 4.5'
+            }
+        ];
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            logger.error('atomsAgent error', { status: response.status, error: errorText });
-
-            // Return fallback models if atomsAgent is down
-            return NextResponse.json({
-                data: [
-                    {
-                        id: 'claude-3-5-sonnet-20241022',
-                        object: 'model',
-                        owned_by: 'anthropic',
-                        context_length: 200000,
-                        capabilities: ['chat', 'streaming']
-                    }
-                ],
-                object: 'list'
+        // Try to fetch models from atomsAgent
+        try {
+            const response = await fetch(`${ATOMSAGENT_URL}/v1/models`, {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                // Filter to only allowed models
+                const filteredModels = data.data?.filter((model: any) =>
+                    allowedModels.some(allowed => model.id === allowed.id)
+                ) || [];
+
+                // If we got models from atomsAgent, use them
+                if (filteredModels.length > 0) {
+                    return NextResponse.json({
+                        data: filteredModels,
+                        object: 'list'
+                    });
+                }
+            }
+        } catch (fetchError) {
+            logger.warn('Failed to fetch from atomsAgent, using fallback models', { error: fetchError });
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        // Return allowed models as fallback
+        return NextResponse.json({
+            data: allowedModels,
+            object: 'list'
+        });
     } catch (error) {
         logger.error('Error fetching models', error, { route: '/api/models' });
 
@@ -70,11 +104,28 @@ export async function GET() {
         return NextResponse.json({
             data: [
                 {
-                    id: 'claude-3-5-sonnet-20241022',
+                    id: 'claude-sonnet-4-5@20250929',
                     object: 'model',
                     owned_by: 'anthropic',
                     context_length: 200000,
-                    capabilities: ['chat', 'streaming']
+                    capabilities: ['chat', 'streaming'],
+                    description: 'Primary model - Claude Sonnet 4.5'
+                },
+                {
+                    id: 'claude-sonnet-4-5@20250929-1m',
+                    object: 'model',
+                    owned_by: 'anthropic',
+                    context_length: 1000000,
+                    capabilities: ['chat', 'streaming'],
+                    description: 'Claude Sonnet 4.5 with 1M context (beta)'
+                },
+                {
+                    id: 'claude-haiku-4-5@20251001',
+                    object: 'model',
+                    owned_by: 'anthropic',
+                    context_length: 200000,
+                    capabilities: ['chat', 'streaming'],
+                    description: 'Small/fast model - Claude Haiku 4.5'
                 }
             ],
             object: 'list'

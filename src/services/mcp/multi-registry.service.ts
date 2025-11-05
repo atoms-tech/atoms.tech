@@ -6,6 +6,7 @@
  */
 
 import { registryClient, MCPRegistryServer } from './registry-client.service';
+import { MCPRegistryAuthInfo } from './types';
 import { clineRegistryClient, ClineMCPServer } from './cline-registry-client.service';
 
 export type RegistrySource = 'anthropic' | 'cline';
@@ -15,6 +16,7 @@ export interface UnifiedMCPServer {
     id: string;
     name: string;
     description: string;
+    namespace: string; // Required for installation
 
     // Sources
     sources: RegistrySource[];
@@ -46,11 +48,7 @@ export interface UnifiedMCPServer {
     };
 
     // Auth
-    auth?: {
-        type: 'none' | 'api-key' | 'oauth2' | 'bearer';
-        provider?: string;
-        scopes?: string[];
-    };
+    auth?: MCPRegistryAuthInfo;
 
     // Categorization
     category?: string;
@@ -71,6 +69,14 @@ export interface MultiRegistryFilters {
 }
 
 export class MultiRegistryService {
+    // Cache for unified servers
+    private unifiedCache: { data: UnifiedMCPServer[]; timestamp: number } | null = null;
+    private readonly CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+    
+    // Cache for LLMS install checks (shared across servers)
+    private llmsInstallCache = new Map<string, { data: boolean; timestamp: number }>();
+    private readonly LLMS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
     constructor(
         private anthropicClient: typeof registryClient,
         private clineClient: typeof clineRegistryClient,
@@ -80,6 +86,11 @@ export class MultiRegistryService {
      * Fetch all servers from both registries
      */
     async fetchAllServers(): Promise<UnifiedMCPServer[]> {
+        // Check cache first
+        if (this.unifiedCache && Date.now() - this.unifiedCache.timestamp < this.CACHE_TTL) {
+            return this.unifiedCache.data;
+        }
+
         try {
             // Fetch from both registries in parallel
             const [anthropicResponse, clineServers] = await Promise.all([
@@ -87,16 +98,37 @@ export class MultiRegistryService {
                 this.clineClient.fetchServers().catch(() => []),
             ]);
 
-            // Merge and deduplicate
-            const unified = this.mergeServers(anthropicResponse.servers, clineServers);
+            // Ensure servers arrays are valid
+            const anthropicServers = Array.isArray(anthropicResponse?.servers) 
+                ? anthropicResponse.servers 
+                : [];
+            const clineServersArray = Array.isArray(clineServers) ? clineServers : [];
+
+            // Merge and deduplicate (now async with parallel LLMS checks)
+            const unified = await this.mergeServers(anthropicServers, clineServersArray);
+
+            // Ensure unified is an array
+            if (!Array.isArray(unified)) {
+                console.error('mergeServers did not return an array:', unified);
+                return [];
+            }
 
             // Calculate quality scores
-            return unified.map((server) => ({
+            const serversWithScores = unified.map((server) => ({
                 ...server,
                 qualityScore: this.calculateQualityScore(server),
             }));
+
+            // Cache the results
+            this.unifiedCache = { data: serversWithScores, timestamp: Date.now() };
+
+            return serversWithScores;
         } catch (error) {
             console.error('Failed to fetch servers from registries:', error);
+            // Return cached data if available, even if stale
+            if (this.unifiedCache) {
+                return this.unifiedCache.data;
+            }
             return [];
         }
     }
@@ -169,16 +201,43 @@ export class MultiRegistryService {
     /**
      * Merge servers from both registries and deduplicate
      */
-    private mergeServers(
+    private async mergeServers(
         anthropicServers: MCPRegistryServer[],
         clineServers: ClineMCPServer[],
-    ): UnifiedMCPServer[] {
+    ): Promise<UnifiedMCPServer[]> {
         const serverMap = new Map<string, UnifiedMCPServer>();
 
-        // Add Anthropic servers
-        for (const server of anthropicServers) {
+        // Batch LLMS install checks for Anthropic servers in parallel
+        const anthropicLLMSChecks = new Map<string, Promise<boolean>>();
+        const uniqueRepos = new Set<string>();
+        
+        anthropicServers.forEach(server => {
+            if (server.repository && !anthropicLLMSChecks.has(server.repository)) {
+                uniqueRepos.add(server.repository);
+                anthropicLLMSChecks.set(server.repository, this.checkLLMSInstallCached(server.repository));
+            }
+        });
+        
+        // Wait for all LLMS checks to complete
+        const llmsResults = await Promise.all(
+            Array.from(anthropicLLMSChecks.entries()).map(async ([repo, promise]) => [
+                repo,
+                await promise,
+            ] as [string, boolean])
+        );
+        const llmsMap = new Map<string, boolean>(llmsResults);
+
+        // Add Anthropic servers (with cached LLMS checks)
+        const anthropicPromises = anthropicServers.map(async (server) => {
             const key = this.getServerKey(server);
-            serverMap.set(key, this.convertAnthropicServer(server));
+            const hasLLMSInstall = server.repository ? (llmsMap.get(server.repository) || false) : false;
+            const converted = await this.convertAnthropicServer(server, hasLLMSInstall);
+            return { key, converted };
+        });
+
+        const anthropicResults = await Promise.all(anthropicPromises);
+        for (const { key, converted } of anthropicResults) {
+            serverMap.set(key, converted);
         }
 
         // Merge Cline servers
@@ -196,6 +255,24 @@ export class MultiRegistryService {
         }
 
         return Array.from(serverMap.values());
+    }
+
+    /**
+     * Check LLMS install with caching
+     */
+    private async checkLLMSInstallCached(repository: string): Promise<boolean> {
+        // Check cache first
+        const cached = this.llmsInstallCache.get(repository);
+        if (cached && Date.now() - cached.timestamp < this.LLMS_CACHE_TTL) {
+            return cached.data;
+        }
+
+        const hasLLMS = await this.clineClient.checkLLMSInstall(repository);
+        
+        // Cache the result
+        this.llmsInstallCache.set(repository, { data: hasLLMS, timestamp: Date.now() });
+        
+        return hasLLMS;
     }
 
     /**
@@ -219,11 +296,15 @@ export class MultiRegistryService {
     /**
      * Convert Anthropic server to unified format
      */
-    private convertAnthropicServer(server: MCPRegistryServer): UnifiedMCPServer {
+    private async convertAnthropicServer(
+        server: MCPRegistryServer,
+        hasLLMSInstall: boolean
+    ): Promise<UnifiedMCPServer> {
         return {
             id: `anthropic-${server.namespace}-${server.name}`,
             name: server.name,
             description: server.description,
+            namespace: server.namespace,
             sources: ['anthropic'],
             primarySource: 'anthropic',
             author: server.publisher,
@@ -235,7 +316,7 @@ export class MultiRegistryService {
             lastUpdated: server.lastUpdated || new Date().toISOString(),
             logoUrl: server.iconUrl,
             icon: server.icon,
-            hasLLMSInstall: false, // Anthropic doesn't track this
+            hasLLMSInstall,
             transport: server.transport,
             auth: server.auth,
             category: server.category,
@@ -253,6 +334,7 @@ export class MultiRegistryService {
             id: server.id,
             name: server.name,
             description: server.description,
+            namespace: server.id, // Use id as namespace for Cline servers
             sources: ['cline'],
             primarySource: 'cline',
             author: server.author,
@@ -362,6 +444,14 @@ export class MultiRegistryService {
 
         return Math.min(100, score);
     }
+
+    /**
+     * Clear all caches
+     */
+    clearCache(): void {
+        this.unifiedCache = null;
+        this.llmsInstallCache.clear();
+    }
 }
 
 // Export singleton instance
@@ -369,4 +459,3 @@ export const multiRegistryService = new MultiRegistryService(
     registryClient,
     clineRegistryClient,
 );
-

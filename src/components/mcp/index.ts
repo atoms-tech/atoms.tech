@@ -1,31 +1,23 @@
 /**
- * MCP OAuth Components
+ * MCP Components
  *
- * Barrel exports for MCP-related components and types
+ * Barrel exports for MCP-related components
+ * OAuth now handled by atomsAgent FastMCP proxy
  */
 
-// Callback component and utilities (pre-existing)
-export { MCPOAuthCallback, generateOAuthState, hasValidToken, getProviderToken, revokeProviderToken } from './MCPOAuthCallback';
-
-// OAuth Connect component (new)
-export { MCPOAuthConnect } from './MCPOAuthConnect';
-
 // Marketplace components
-export { ServerMarketplace } from './ServerMarketplace';
 export { ServerCard } from './ServerCard';
 export { ServerDetailModal } from './ServerDetailModal';
 export { MCPServerConfigDialog } from './MCPServerConfigDialog';
-export { MarketplaceTabs } from './MarketplaceTabs';
 export { EnhancedMarketplace } from './EnhancedMarketplace';
-export { UnifiedServerCard } from './UnifiedServerCard';
 
-// Type definitions
-export type {
-    OAuthProvider,
-    OAuthInitRequest,
-    OAuthInitResponse,
-    OAuthErrorResponse,
-    ProviderConfig,
-    MCPOAuthConnectProps,
-    OAuthConnectionStatus,
-} from './types';
+// Panel components
+export { MCPPanel } from './MCPPanel';
+export { InstalledServersView } from './InstalledServersView';
+export { MCPSystemSettings } from './MCPSystemSettings';
+export { MCPProfiles } from './MCPProfiles';
+
+// Backwards compatibility aliases
+export { EnhancedMarketplace as MCPTabs } from './EnhancedMarketplace';
+export { EnhancedMarketplace as MarketplaceTabs } from './EnhancedMarketplace';
+export { EnhancedMarketplace as ServerMarketplace } from './EnhancedMarketplace';

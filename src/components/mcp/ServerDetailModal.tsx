@@ -38,14 +38,20 @@ import {
   Star,
   Download,
   Info,
+  Wrench,
+  MessageSquare,
+  FileText,
+  Package,
+  Loader2,
 } from 'lucide-react';
 
 interface ServerDetailModalProps {
   server: CuratedServer | null;
   open: boolean;
   onClose: () => void;
-  onInstall: (server: CuratedServer, scope: 'user' | 'organization', orgId?: string) => void;
+  onInstall: (server: any, scope: 'user' | 'organization', orgId?: string) => void;
   organizations?: Array<{ id: string; name: string }>;
+  isInstalling?: boolean;
 }
 
 export function ServerDetailModal({
@@ -54,12 +60,15 @@ export function ServerDetailModal({
   onClose,
   onInstall,
   organizations = [],
+  isInstalling: externalInstalling = false,
 }: ServerDetailModalProps) {
   const [installScope, setInstallScope] = useState<'user' | 'organization'>('user');
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [installing, setInstalling] = useState(false);
 
   if (!server) return null;
+
+  const isInstallingState = externalInstalling || installing;
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -69,7 +78,8 @@ export function ServerDetailModal({
         installScope,
         installScope === 'organization' ? selectedOrgId : undefined
       );
-      onClose();
+      // Only close if installation was successful (handled by parent)
+      // onClose will be called by parent after successful install
     } catch (error) {
       console.error('Installation failed:', error);
     } finally {
@@ -111,12 +121,12 @@ export function ServerDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <DialogTitle className="text-2xl">{server.name}</DialogTitle>
-              <DialogDescription className="mt-1">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-2xl break-words">{server.name}</DialogTitle>
+              <DialogDescription className="mt-1 break-words">
                 {server.namespace}
                 {server.publisherVerified && (
                   <CheckCircle2 className="inline-block h-4 w-4 ml-2 text-blue-500" />
@@ -138,12 +148,12 @@ export function ServerDetailModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-6">
+        <ScrollArea className="max-h-[60vh] pr-4 overflow-x-hidden">
+          <div className="space-y-6 min-w-0">
             {/* Description */}
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold mb-2">Description</h3>
-              <p className="text-sm text-muted-foreground">{server.description}</p>
+              <p className="text-sm text-muted-foreground break-words">{server.description}</p>
             </div>
 
             {/* Publisher Info */}
@@ -159,31 +169,141 @@ export function ServerDetailModal({
               </div>
             </div>
 
+            {/* Category & Tags */}
+            {(server.category || (server.tags && server.tags.length > 0)) && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Category & Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {server.category && (
+                    <Badge variant="default">{server.category}</Badge>
+                  )}
+                  {server.tags && server.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="outline">{tag}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Separator />
 
             {/* Technical Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Transport</h3>
-                <Badge variant="secondary">{server.transport.type.toUpperCase()}</Badge>
-                {server.transport.url && (
-                  <p className="text-xs text-muted-foreground mt-1 truncate">
-                    {server.transport.url}
-                  </p>
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Transport Configuration</h3>
+              <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Type:</span>
+                  <Badge variant="secondary">{server.transport.type.toUpperCase()}</Badge>
+                </div>
+
+                {/* STDIO Transport Details */}
+                {server.transport.type === 'stdio' && server.transport.command && (
+                  <>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Command:</span>
+                      <code className="block text-xs bg-background p-2 rounded mt-1 font-mono break-all whitespace-pre-wrap">
+                        {server.transport.command}
+                      </code>
+                    </div>
+                    {server.transport.args && server.transport.args.length > 0 && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Arguments:</span>
+                        <code className="block text-xs bg-background p-2 rounded mt-1 font-mono break-all whitespace-pre-wrap">
+                          {server.transport.args.join(' ')}
+                        </code>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* HTTP/SSE Transport Details */}
+                {(server.transport.type === 'http' || server.transport.type === 'sse') && server.transport.url && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">URL:</span>
+                    <code className="block text-xs bg-background p-2 rounded mt-1 font-mono break-all">
+                      {server.transport.url}
+                    </code>
+                  </div>
+                )}
+
+                {/* Environment Variables */}
+                {server.transport.env && Object.keys(server.transport.env).length > 0 && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Environment Variables:</span>
+                    <div className="mt-1 space-y-1">
+                      {Object.entries(server.transport.env).map(([key, value]) => (
+                        <div key={key} className="text-xs bg-background p-2 rounded">
+                          <code className="font-mono text-blue-600">{key}</code>
+                          {value && (
+                            <>
+                              <span className="text-muted-foreground"> = </span>
+                              <code className="font-mono">{value}</code>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
+            </div>
 
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Authentication</h3>
-                <Badge variant="secondary">
-                  {server.auth?.type === 'oauth2'
-                    ? `OAuth: ${server.auth.provider}`
-                    : server.auth?.type || 'None'}
-                </Badge>
-                {server.auth?.scopes && server.auth.scopes.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {server.auth.scopes.length} scope(s)
-                  </p>
+            <Separator />
+
+            {/* Authentication Requirements */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Authentication</h3>
+              <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Type:</span>
+                  <Badge variant="secondary">
+                    {server.auth?.type === 'oauth'
+                      ? `OAuth`
+                      : server.auth?.type === 'unknown'
+                      ? 'Unknown'
+                      : server.auth?.type || 'None'}
+                  </Badge>
+                </div>
+
+                {/* OAuth Details */}
+                {server.auth?.type === 'oauth' && (
+                  <>
+                    {server.auth.provider && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Provider:</span>
+                        <span className="text-sm font-medium">{server.auth.provider}</span>
+                      </div>
+                    )}
+                    {server.auth.scopes && server.auth.scopes.length > 0 && (
+                      <div>
+                        <span className="text-sm text-muted-foreground">Required Scopes:</span>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {server.auth.scopes.map((scope, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {scope}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Auth Requirements */}
+                {server.auth && (
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    {server.auth.requiresUserSecret && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Requires user secret/credentials</span>
+                      </div>
+                    )}
+                    {server.auth.requiresOAuthPopup && (
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Requires OAuth popup authorization</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -192,15 +312,19 @@ export function ServerDetailModal({
 
             {/* Security Review */}
             <div>
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 {getSecurityIcon()}
                 Security Review
               </h3>
-              <div className="space-y-2">
+              <div className="space-y-3 bg-muted/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Status:</span>
-                  <span className="text-sm font-medium">{getSecurityStatusText()}</span>
+                  <div className="flex items-center gap-2">
+                    {getSecurityIcon()}
+                    <span className="text-sm font-medium">{getSecurityStatusText()}</span>
+                  </div>
                 </div>
+
                 {server.securityReview?.reviewedAt && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Reviewed:</span>
@@ -209,11 +333,30 @@ export function ServerDetailModal({
                     </span>
                   </div>
                 )}
+
+                {server.securityReview?.reviewer && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Reviewer:</span>
+                    <span className="text-sm">{server.securityReview.reviewer}</span>
+                  </div>
+                )}
+
                 {server.securityReview?.notes && (
-                  <p className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                    <Info className="inline h-3 w-3 mr-1" />
-                    {server.securityReview.notes}
-                  </p>
+                  <div className="mt-2 min-w-0">
+                    <span className="text-sm text-muted-foreground">Notes:</span>
+                    <p className="text-xs text-muted-foreground bg-background p-3 rounded mt-1 break-words">
+                      <Info className="inline h-3 w-3 mr-1" />
+                      {server.securityReview.notes}
+                    </p>
+                  </div>
+                )}
+
+                {/* Publisher Verification */}
+                {server.publisherVerified && (
+                  <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Verified Publisher</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -251,29 +394,158 @@ export function ServerDetailModal({
             <Separator />
 
             {/* Links */}
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold mb-2">Links</h3>
-              <div className="flex flex-wrap gap-2">
-                {server.homepage && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={server.homepage} target="_blank" rel="noopener noreferrer">
-                      <Globe className="h-4 w-4 mr-2" />
-                      Homepage
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                )}
-                {server.repository && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={server.repository} target="_blank" rel="noopener noreferrer">
-                      <Github className="h-4 w-4 mr-2" />
-                      Repository
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                )}
+            {(server.homepage || server.repository || (server as any).documentation?.url || server.license) && (
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Links</h3>
+                <div className="flex flex-wrap gap-2">
+                  {server.homepage && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={server.homepage} target="_blank" rel="noopener noreferrer">
+                        <Globe className="h-4 w-4 mr-2" />
+                        Homepage
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                  {server.repository && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={server.repository} target="_blank" rel="noopener noreferrer">
+                        <Github className="h-4 w-4 mr-2" />
+                        Repository
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                  {(server as any).documentation?.url && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={(server as any).documentation.url} target="_blank" rel="noopener noreferrer">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Documentation
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                  {server.license && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={`https://choosealicense.com/licenses/${server.license.toLowerCase()}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        License: {server.license}
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Tools */}
+            {(server as any).tools && (server as any).tools.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    Tools ({(server as any).tools.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {(server as any).tools.map((tool: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-muted rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm break-words">{tool.name}</p>
+                            {tool.description && (
+                              <p className="text-xs text-muted-foreground mt-1 break-words">
+                                {tool.description}
+                              </p>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="text-xs ml-2">
+                            {tool.inputSchema?.type || 'object'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Prompts */}
+            {(server as any).prompts && (server as any).prompts.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Prompts ({(server as any).prompts.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {(server as any).prompts.map((prompt: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-muted rounded-lg min-w-0">
+                        <p className="font-medium text-sm break-words">{prompt.name}</p>
+                        {prompt.description && (
+                          <p className="text-xs text-muted-foreground mt-1 break-words">
+                            {prompt.description}
+                          </p>
+                        )}
+                        {prompt.arguments && prompt.arguments.length > 0 && (
+                          <div className="flex gap-1 mt-2">
+                            {(prompt.arguments || []).map((arg: any, argIdx: number) => (
+                              <Badge key={argIdx} variant="secondary" className="text-xs">
+                                {arg.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Resources */}
+            {(server as any).resources && (server as any).resources.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Resources ({(server as any).resources.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {(server as any).resources.map((resource: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-muted rounded-lg min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm break-words">{resource.name}</p>
+                            {resource.description && (
+                              <p className="text-xs text-muted-foreground mt-1 break-words">
+                                {resource.description}
+                              </p>
+                            )}
+                            {resource.uri && (
+                              <code className="text-xs bg-background px-2 py-1 rounded mt-1 inline-block break-all max-w-full">
+                                {resource.uri}
+                              </code>
+                            )}
+                          </div>
+                          {resource.mimeType && (
+                            <Badge variant="outline" className="text-xs ml-2">
+                              {resource.mimeType}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator />
 
@@ -328,11 +600,18 @@ export function ServerDetailModal({
           <Button
             onClick={handleInstall}
             disabled={
-              installing ||
+              isInstallingState ||
               (installScope === 'organization' && !selectedOrgId)
             }
           >
-            {installing ? 'Installing...' : 'Install Server'}
+            {isInstallingState ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Installing...
+              </>
+            ) : (
+              'Install Server'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

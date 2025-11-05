@@ -75,6 +75,7 @@ export interface ChatCompletionRequest {
   user?: string;
   tools?: unknown[];
   tool_choice?: unknown;
+  metadata?: Record<string, unknown>;
 }
 
 /**

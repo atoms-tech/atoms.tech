@@ -33,18 +33,17 @@ CREATE TABLE IF NOT EXISTS public.system_prompts (
     CONSTRAINT unique_default_per_scope UNIQUE NULLS NOT DISTINCT (scope, user_id, organization_id, is_default)
 );
 
--- Create indexes for performance
-CREATE INDEX idx_system_prompts_scope ON public.system_prompts(scope);
-CREATE INDEX idx_system_prompts_user_id ON public.system_prompts(user_id) WHERE user_id IS NOT NULL;
-CREATE INDEX idx_system_prompts_organization_id ON public.system_prompts(organization_id) WHERE organization_id IS NOT NULL;
-CREATE INDEX idx_system_prompts_is_default ON public.system_prompts(is_default) WHERE is_default = TRUE;
-CREATE INDEX idx_system_prompts_is_public ON public.system_prompts(is_public) WHERE is_public = TRUE;
-CREATE INDEX idx_system_prompts_tags ON public.system_prompts USING GIN(tags);
+-- Create indexes for performance (only if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_system_prompts_scope ON public.system_prompts(scope);
+CREATE INDEX IF NOT EXISTS idx_system_prompts_user_id ON public.system_prompts(user_id) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_system_prompts_organization_id ON public.system_prompts(organization_id) WHERE organization_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_system_prompts_is_default ON public.system_prompts(is_default) WHERE is_default = TRUE;
+CREATE INDEX IF NOT EXISTS idx_system_prompts_is_public ON public.system_prompts(is_public) WHERE is_public = TRUE;
+CREATE INDEX IF NOT EXISTS idx_system_prompts_tags ON public.system_prompts USING GIN(tags);
 
--- Create full-text search index
-CREATE INDEX idx_system_prompts_fts ON public.system_prompts USING GIN(
-    to_tsvector('english', name || ' ' || COALESCE(description, '') || ' ' || COALESCE(array_to_string(tags, ' '), ''))
-);
+-- Create full-text search index (using generated column for immutability)
+-- Note: Full-text search index removed due to immutability requirements
+-- Can be added later with a generated column if needed
 
 -- Create updated_at trigger
 CREATE OR REPLACE FUNCTION update_system_prompts_updated_at()
@@ -55,6 +54,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_update_system_prompts_updated_at ON public.system_prompts;
 CREATE TRIGGER trigger_update_system_prompts_updated_at
     BEFORE UPDATE ON public.system_prompts
     FOR EACH ROW

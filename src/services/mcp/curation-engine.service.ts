@@ -289,10 +289,8 @@ class CurationEngineService {
       }
     }
 
-    // Transport preference (SSE/HTTP preferred for marketplace)
-    if (server.transport.type === 'sse' || server.transport.type === 'http') {
-      score += 5;
-    }
+    // Transport preference removed - all transport types are equally supported
+    // Previously gave bonus to SSE/HTTP, but stdio servers should be shown equally
 
     return Math.min(100, Math.round(score));
   }

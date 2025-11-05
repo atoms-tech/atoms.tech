@@ -11,10 +11,10 @@ import { getProfileById } from '@/lib/auth/profile-sync';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { userId: string } },
+    context: { params: Promise<{ userId: string }> },
 ) {
     try {
-        const { userId } = params;
+        const { userId } = await context.params;
 
         if (!userId) {
             return NextResponse.json({ error: 'User ID is required' }, { status: 400 });

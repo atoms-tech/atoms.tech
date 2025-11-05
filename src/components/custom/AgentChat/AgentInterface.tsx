@@ -8,9 +8,7 @@ import {
     DialogDescription,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { DEFAULT_MODEL } from '@/lib/providers/atomsagent.provider';
-
-import { AgentPanelV6 } from './AgentPanelV6';
+import { AgentPanel } from './AgentPanel';
 import { AgentSettingsV6 } from './AgentSettingsV6';
 import { AgentToggle } from './AgentToggle';
 import { useAgentStore } from './hooks/useAgentStore';
@@ -24,10 +22,15 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
     className,
     autoInit = false,
 }) => {
-    const { isOpen, setIsOpen, togglePanel } = useAgentStore();
+    const {
+        isOpen,
+        setIsOpen,
+        togglePanel,
+        selectedModel,
+        setSelectedModel,
+    } = useAgentStore();
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
 
     // Auto-initialize the agent interface if autoInit is true (only once on mount)
     useEffect(() => {
@@ -55,14 +58,12 @@ export const AgentInterface: React.FC<AgentInterfaceProps> = ({
             {/* Toggle Button */}
             <AgentToggle isOpen={isOpen} onClick={handleToggle} className={className} />
 
-            {/* Agent Panel V6 */}
-            <AgentPanelV6
+            {/* Agent Panel */}
+            <AgentPanel
                 isOpen={isOpen}
                 onToggle={handleToggle}
                 onClose={handleClose}
                 onSettingsClick={handleSettingsClick}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
             />
 
             {/* Settings Dialog */}

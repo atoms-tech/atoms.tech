@@ -5,6 +5,8 @@ import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { createClient } from '@/lib/supabase/supabaseServer';
 import { logger } from '@/lib/utils/logger';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/mcp/servers
  * List MCP servers based on user's access level
@@ -24,51 +26,48 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
     const { searchParams } = new URL(request.url);
-    const scope = searchParams.get('scope');
     const organizationId = searchParams.get('organizationId');
 
-    // Build query based on scope
+    // Query user's installed servers from user_mcp_servers junction table
     let query = supabase
-      .from('mcp_servers')
-      .select('*')
-      .eq('is_deleted', false);
+      .from('user_mcp_servers')
+      .select(`
+        id,
+        enabled,
+        installed_at,
+        last_used_at,
+        usage_count,
+        organization_id,
+        server:mcp_servers (
+          id,
+          namespace,
+          name,
+          description,
+          version,
+          tier,
+          category,
+          tags,
+          enabled,
+          repository_url,
+          homepage_url,
+          documentation_url
+        )
+      `)
+      .eq('user_id', profile.id)
+      .eq('enabled', true);
 
-    if (scope === 'user') {
-      query = query.eq('scope', 'user').eq('user_id', profile.id);
-    } else if (scope === 'organization' && organizationId) {
-      query = query.eq('scope', 'organization').eq('organization_id', organizationId);
-    } else if (scope === 'system') {
-      // Check if user is platform admin
-      const { data: adminCheck } = await supabase
-        .from('platform_admins')
-        .select('id')
-        .eq('user_id', profile.id)
-        .single();
-
-      if (!adminCheck) {
-        // Regular users can see system servers but not filtered to just system
-        query = query.eq('scope', 'system');
-      } else {
-        // Platform admins can see all system servers
-        query = query.eq('scope', 'system');
-      }
-    } else {
-      // Return all servers user has access to
-      query = query.or(
-        `and(scope.eq.user,user_id.eq.${profile.id}),scope.eq.system${
-          organizationId ? `,and(scope.eq.organization,organization_id.eq.${organizationId})` : ''
-        }`
-      );
+    // Filter by organization if provided
+    if (organizationId) {
+      query = query.eq('organization_id', organizationId);
     }
 
-    const { data: servers, error } = await query.order('created_at', {
+    const { data: userServers, error } = await query.order('installed_at', {
       ascending: false,
     });
 
     if (error) {
       logger.error('Error fetching MCP servers', error, {
         route: '/api/mcp/servers',
-        scope,
         organizationId,
       });
       return NextResponse.json(
@@ -77,7 +76,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ servers: servers || [] });
+    // Transform the data to flatten server info
+    const servers = (userServers || []).map((us: any) => ({
+      id: us.id,
+      namespace: us.server?.namespace,
+      name: us.server?.name,
+      description: us.server?.description,
+      version: us.server?.version,
+      tier: us.server?.tier,
+      category: us.server?.category,
+      tags: us.server?.tags,
+      enabled: us.enabled,
+      repository_url: us.server?.repository_url,
+      homepage_url: us.server?.homepage_url,
+      documentation_url: us.server?.documentation_url,
+      installed_at: us.installed_at,
+      last_used_at: us.last_used_at,
+      usage_count: us.usage_count,
+      organization_id: us.organization_id,
+    }));
+
+    return NextResponse.json({ servers });
   } catch (error) {
     logger.error('MCP servers GET error', error, { route: '/api/mcp/servers' });
     return NextResponse.json(
@@ -214,7 +233,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare server configuration
-    const serverConfig: Record<string, unknown> = {
+    const serverConfig = {
       name,
       description: description || null,
       server_url: serverUrl || null,
@@ -225,36 +244,25 @@ export async function POST(request: NextRequest) {
       organization_id: scope === 'organization' ? organizationId : null,
       created_by: profile.id,
       updated_by: profile.id,
-    };
-
-    // Add transport-specific configuration
-    if (transport === 'stdio') {
-      serverConfig.stdio_config = {
+      stdio_config: transport === 'stdio' ? {
         command: stdioCommand,
         workingDirectory: workingDirectory || null,
         environmentVariables: environmentVariables || {},
-      };
-    }
-
-    // Add auth-specific configuration
-    if (authType === 'bearer') {
-      // In production, encrypt the bearer token before storing
-      serverConfig.auth_config = {
+      } : null,
+      auth_config: authType === 'bearer' ? {
         bearerToken: bearerToken, // TODO: Encrypt this
-      };
-    } else if (authType === 'oauth') {
-      serverConfig.auth_config = {
+      } : authType === 'oauth' ? {
         oauthConfigured: false,
         // OAuth configuration will be added separately
-      };
-    }
+      } : null,
+    };
 
     // Insert server configuration
     const { data: server, error } = await supabase
       .from('mcp_servers')
-    .insert([serverConfig])
-    .select()
-    .single();
+      .insert(serverConfig)
+      .select()
+      .single();
 
   if (error) {
       logger.error('Error creating MCP server', error, {
@@ -267,8 +275,53 @@ export async function POST(request: NextRequest) {
       );
   }
 
+    // Generate MCP configuration
+    const serverName = server.name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    let mcpConfig: Record<string, unknown> = {};
+
+    if (server.transport === 'stdio') {
+        const stdioConfig = server.stdio_config as { command?: string; args?: string[]; environmentVariables?: Record<string, string> } | null;
+        mcpConfig = {
+            [serverName]: {
+                command: stdioConfig?.command || '',
+                args: stdioConfig?.args || [],
+                env: stdioConfig?.environmentVariables || {},
+            },
+        };
+    } else if (server.transport === 'sse' || server.transport === 'http') {
+        const config: Record<string, unknown> = {
+            type: server.transport,
+            url: server.server_url,
+        };
+
+        const headers: Record<string, string> = {};
+
+        const authConfig = server.auth_config as { bearerToken?: string } | null;
+        if (server.auth_type === 'bearer' && authConfig?.bearerToken) {
+            headers['Authorization'] = `Bearer ${authConfig.bearerToken}`;
+        } else if (server.auth_type === 'oauth') {
+            // OAuth is now handled by MCP servers themselves
+            // No proxy needed
+        }
+
+        if (Object.keys(headers).length > 0) {
+            config.headers = headers;
+        }
+
+        mcpConfig = {
+            [serverName]: config,
+        };
+    }
+
+    // Note: mcp_config is not a column in the database
+    // MCP configuration is generated on-the-fly from server settings
+
     return NextResponse.json(
-      { server, message: 'MCP server created successfully' },
+      { 
+        server: { ...server, mcp_config: mcpConfig },
+        mcpConfig,
+        message: 'MCP server created successfully' 
+      },
       { status: 201 }
     );
   } catch (error) {

@@ -26,6 +26,19 @@ export interface OAuthToken {
  */
 export type OAuthProvider = 'google' | 'microsoft' | 'github' | 'custom';
 
+export type MCPAuthKind = 'none' | 'oauth' | 'bearer' | 'api-key' | 'unknown';
+
+export interface MCPRegistryAuthInfo {
+  type: MCPAuthKind;
+  provider?: string;
+  scopes: string[];
+  requiresUserSecret: boolean;
+  requiresOAuthPopup: boolean;
+  supportsDynamicClientRegistration: boolean;
+  detection: 'declared' | 'heuristic';
+  raw?: Record<string, unknown>;
+}
+
 /**
  * OAuth grant types
  */

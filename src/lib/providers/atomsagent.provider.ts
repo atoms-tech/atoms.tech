@@ -17,15 +17,11 @@ export const atomsAgent = createOpenAICompatible({
     // No API key - handled by proxy with JWT
 });
 
-// Type-safe model IDs from atomsAgent
+// Type-safe model IDs - Vertex AI Claude models only
 export type AtomsChatModelId =
-    | 'claude-3-5-sonnet-20241022'
-    | 'claude-3-5-haiku-20241022'
-    | 'claude-3-opus-20240229'
-    | 'gpt-4o'
-    | 'gpt-4o-mini'
-    | 'gpt-4-turbo'
-    | 'gpt-3.5-turbo'
+    | 'claude-sonnet-4-5@20250929'        // Primary model (200K context)
+    | 'claude-sonnet-4-5@20250929-1m'     // 1M context window (beta)
+    | 'claude-haiku-4-5@20251001'         // Small/fast model
     | (string & Record<never, never>);
 
 /**
@@ -35,7 +31,7 @@ export const atomsChatModel = (modelId: AtomsChatModelId) =>
     atomsAgent.chatModel(modelId);
 
 /**
- * Default model for the application
+ * Default model for the application (Vertex AI Claude Sonnet 4.5)
  */
-export const DEFAULT_MODEL: AtomsChatModelId = 'claude-3-5-sonnet-20241022';
+export const DEFAULT_MODEL: AtomsChatModelId = 'claude-sonnet-4-5@20250929';
 

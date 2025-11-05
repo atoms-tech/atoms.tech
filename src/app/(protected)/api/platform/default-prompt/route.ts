@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@workos-inc/authkit-nextjs';
 
-import { createServerClient } from '@/lib/supabase/server';
+import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
+import { createClient } from '@/lib/supabase/supabaseServer';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -16,16 +18,18 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        const profile = await getOrCreateProfileForWorkOSUser(user);
+        if (!profile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        const supabase = await createClient();
 
         // Get query parameters
         const searchParams = request.nextUrl.searchParams;
@@ -36,7 +40,7 @@ export async function GET(request: NextRequest) {
         const { data: mergedData, error: mergeError } = await supabase.rpc(
             'get_merged_system_prompt',
             {
-                p_user_id: user.id,
+                p_user_id: profile.id,
                 p_organization_id: organizationId,
             },
         );
@@ -105,14 +109,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createServerClient();
+        const { user } = await withAuth();
 
-        // Check authentication
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-        if (authError || !user) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

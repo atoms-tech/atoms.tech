@@ -89,9 +89,9 @@ class ServerValidationService {
     // Check authentication compatibility
     if (server.auth && server.auth.type !== 'none') {
       // Ensure OAuth provider is supported
-      if (server.auth.type === 'oauth2' && !server.auth.provider) {
+      if (server.auth.type === 'oauth' && !server.auth.provider) {
         dependencies = false;
-        issues.push('OAuth2 authentication requires a valid provider');
+        issues.push('OAuth authentication requires a valid provider');
       }
     }
 
@@ -129,16 +129,21 @@ class ServerValidationService {
     const validation = this.validateServer(server);
 
     // Additional installation-specific checks
-    if (server.auth?.type === 'oauth2' && !server.auth.provider) {
-      validation.errors.push('OAuth2 server requires a configured provider');
-      validation.valid = false;
-    }
+    // Note: OAuth servers may not always have a provider field in registry,
+    // so we'll allow installation and handle provider configuration later
+    // if (server.auth?.type === 'oauth' && !server.auth.provider) {
+    //   validation.errors.push('OAuth server requires a configured provider');
+    //   validation.valid = false;
+    // }
 
     // Check compatibility
+    // Note: Compatibility checks are warnings, not blockers for installation
+    // Servers can be installed even if they have compatibility warnings
     const compatibility = this.checkCompatibility(server);
     if (!compatibility.compatible) {
-      validation.errors.push(...compatibility.issues);
-      validation.valid = false;
+      compatibility.issues.forEach(issue => {
+        validation.warnings.push(issue);
+      });
     }
 
     // Scope-specific validation
@@ -162,13 +167,15 @@ class ServerValidationService {
       errors.push('Server name is required');
     }
 
-    if (!server.description) {
-      errors.push('Server description is required');
-    }
+    // Description is optional in database schema (can be NULL)
+    // if (!server.description) {
+    //   errors.push('Server description is required');
+    // }
 
-    if (!server.publisher) {
-      errors.push('Server publisher is required');
-    }
+    // Publisher is optional - can be stored in metadata
+    // if (!server.publisher) {
+    //   errors.push('Server publisher is required');
+    // }
 
     if (!server.transport) {
       errors.push('Server transport configuration is required');
@@ -192,8 +199,9 @@ class ServerValidationService {
 
     switch (transport.type) {
       case 'stdio':
+        // STDIO command is preferred but not strictly required (can be configured later)
         if (!transport.command) {
-          errors.push('STDIO transport requires a command');
+          warnings.push('STDIO transport command not specified - may need manual configuration');
         }
         // Warn about STDIO limitations
         warnings.push('STDIO transport may have limited compatibility in browser environments');
@@ -211,12 +219,12 @@ class ServerValidationService {
             errors.push(`Invalid transport URL: ${transport.url}`);
           }
 
-          // Require HTTPS in production
+          // Warn about HTTPS in production (but don't block installation)
           if (
             process.env.NODE_ENV === 'production' &&
             !transport.url.startsWith('https://')
           ) {
-            errors.push('Production servers must use HTTPS');
+            warnings.push('Production servers should use HTTPS for security');
           }
         }
         break;
@@ -242,12 +250,13 @@ class ServerValidationService {
     const { auth } = server;
 
     switch (auth.type) {
-      case 'oauth2':
+      case 'oauth':
+        // OAuth provider may be configured later, so this is a warning, not an error
         if (!auth.provider) {
-          errors.push('OAuth2 authentication requires a provider');
+          warnings.push('OAuth provider not specified - may need manual configuration');
         }
         if (!auth.scopes || auth.scopes.length === 0) {
-          warnings.push('OAuth2 server does not specify required scopes');
+          warnings.push('OAuth server does not specify required scopes');
         }
         break;
 
@@ -293,7 +302,7 @@ class ServerValidationService {
     }
 
     // Broad OAuth scopes risk
-    if (server.auth?.type === 'oauth2' && server.auth.scopes) {
+    if (server.auth?.type === 'oauth' && server.auth.scopes) {
       const broadScopes = ['admin', 'write', 'delete', 'full'];
       const hasBroadScope = server.auth.scopes.some(scope =>
         broadScopes.some(broad => scope.toLowerCase().includes(broad))

@@ -54,34 +54,35 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="h-8 text-xs"
+                    className="h-8 text-xs font-medium min-w-[120px] justify-between"
                     disabled={loading}
                 >
-                    <span className="max-w-[150px] truncate">
+                    <span className="max-w-[100px] truncate">
                         {loading ? 'Loading...' : displayName}
                     </span>
-                    <ChevronDown className="h-3 w-3 ml-1" />
+                    <ChevronDown className="h-3 w-3 ml-1 shrink-0" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[250px]">
+            <DropdownMenuContent align="start" className="w-[320px]">
                 {models.map((model) => {
                     const display = formatModelDisplayName(model.id, model.owned_by);
+                    const description = (model as any).description;
                     return (
                         <DropdownMenuItem
                             key={model.id}
                             onClick={() => onModelChange(model.id)}
-                            className="flex items-center justify-between"
+                            className="flex items-center justify-between py-3"
                         >
-                            <div className="flex flex-col">
+                            <div className="flex flex-col flex-1 min-w-0 mr-2">
                                 <span className="font-medium text-sm">{display.displayName}</span>
-                                <span className="text-xs text-muted-foreground">
-                                    {display.providerLabel || model.owned_by}
+                                <span className="text-xs text-muted-foreground truncate">
+                                    {description || display.providerLabel || model.owned_by}
                                 </span>
                             </div>
                             {selectedModel === model.id && (
-                                <Check className="h-4 w-4" />
+                                <Check className="h-4 w-4 flex-shrink-0" />
                             )}
                         </DropdownMenuItem>
                     );

@@ -109,6 +109,12 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers,
       body: JSON.stringify(validatedRequest),
+    }).catch((fetchError) => {
+      console.error('Failed to fetch from AgentAPI:', fetchError);
+      throw new Error(
+        `Failed to connect to AgentAPI at ${targetUrl}. ` +
+        `Please ensure the service is running. Error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`
+      );
     });
 
     // Handle streaming responses
@@ -120,28 +126,60 @@ export async function POST(request: NextRequest) {
           'Cache-Control': 'no-cache',
           'Connection': 'keep-alive',
           'X-Accel-Buffering': 'no', // Disable nginx buffering
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },
       });
     }
 
     // Handle non-streaming responses
-    const responseData = await response.json();
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse AgentAPI response:', parseError);
+      const error: ChatCompletionError = {
+        error: {
+          message: 'Invalid JSON response from AgentAPI',
+          type: 'invalid_response',
+        },
+      };
+      return NextResponse.json(error, {
+        status: 502,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
 
     if (!response.ok) {
       const error: ChatCompletionError = {
         error: {
-          message: responseData.error?.message || 'Request failed',
+          message: responseData.error?.message || `Request failed with status ${response.status}`,
           type: responseData.error?.type || 'api_error',
-          code: responseData.error?.code,
+          code: responseData.error?.code || `HTTP_${response.status}`,
         },
       };
-      return NextResponse.json(error, { status: response.status });
+      return NextResponse.json(error, {
+        status: response.status,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
     }
 
     return NextResponse.json(responseData, {
       status: response.status,
       headers: {
         'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     });
   } catch (error) {
@@ -155,7 +193,14 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    return NextResponse.json(errorResponse, { status: 500 });
+    return NextResponse.json(errorResponse, {
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
   }
 }
 
@@ -166,6 +211,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
+      'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',

@@ -9,7 +9,31 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { multiRegistryService, UnifiedMCPServer } from '@/services/mcp/multi-registry.service';
+import {
+    multiRegistryService,
+    UnifiedMCPServer,
+} from '@/services/mcp/multi-registry.service';
+
+type KnownAuthType = NonNullable<UnifiedMCPServer['auth']>['type'];
+
+const normalizeAuthParam = (value: string | null | undefined): KnownAuthType | undefined => {
+    if (!value) return undefined;
+    const normalized = value.trim().toLowerCase();
+    switch (normalized) {
+        case 'oauth':
+        case 'oauth':
+            return 'oauth';
+        case 'api-key':
+        case 'apikey':
+            return 'api-key';
+        case 'bearer':
+            return 'bearer';
+        case 'none':
+            return 'none';
+        default:
+            return undefined;
+    }
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +53,10 @@ export async function GET(request: NextRequest) {
             ? parseInt(searchParams.get('minQualityScore')!, 10)
             : undefined;
         const search = searchParams.get('search') || undefined;
+        const transport = searchParams.get('transport') as 'stdio' | 'sse' | 'http' | undefined;
+        const authParam = searchParams.get('auth');
+        const normalizedAuthFilter = normalizeAuthParam(authParam ?? undefined);
+        const sortBy = searchParams.get('sort') || 'quality';
 
         // Fetch servers with filters
         let servers;
@@ -55,6 +83,21 @@ export async function GET(request: NextRequest) {
                 if (minQualityScore && server.qualityScore < minQualityScore) {
                     return false;
                 }
+                // Transport filter
+                if (transport) {
+                    const serverTransport = server.transport?.type;
+                    const normalizedServerTransport = serverTransport?.toLowerCase();
+                    const normalizedFilterTransport = transport.toLowerCase();
+                    if (normalizedServerTransport !== normalizedFilterTransport) {
+                        return false;
+                    }
+                }
+                if (normalizedAuthFilter) {
+                    const serverAuthType = normalizeAuthParam(server.auth?.type ?? 'none');
+                    if (serverAuthType !== normalizedAuthFilter) {
+                        return false;
+                    }
+                }
                 return true;
             });
         } else {
@@ -67,14 +110,67 @@ export async function GET(request: NextRequest) {
                 hasLLMSInstall: hasLLMSInstall || undefined,
                 minQualityScore,
             });
+
+            // Apply transport and auth filters (not supported by service yet)
+            if (transport || normalizedAuthFilter) {
+                const beforeCount = servers.length;
+                servers = servers.filter((server: UnifiedMCPServer) => {
+                    if (transport) {
+                        const serverTransport = server.transport?.type;
+                        const normalizedServerTransport = serverTransport?.toLowerCase();
+                        const normalizedFilterTransport = transport.toLowerCase();
+                        if (normalizedServerTransport !== normalizedFilterTransport) {
+                            return false;
+                        }
+                    }
+                    if (normalizedAuthFilter) {
+                        const serverAuthType = normalizeAuthParam(server.auth?.type ?? 'none');
+                        if (serverAuthType !== normalizedAuthFilter) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+                console.log(
+                    `Multi-registry filters - Transport: ${transport || 'none'}, Auth: ${normalizedAuthFilter || 'none'}, Count: ${beforeCount} -> ${servers.length}`,
+                );
+            }
         }
 
-        // Sort by quality score (descending)
-        servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => b.qualityScore - a.qualityScore);
+        // Sort servers based on sortBy parameter
+        switch (sortBy) {
+            case 'name':
+                servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => 
+                    (a.name || '').localeCompare(b.name || '')
+                );
+                break;
+            case 'name-desc':
+                servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => 
+                    (b.name || '').localeCompare(a.name || '')
+                );
+                break;
+            case 'stars':
+                servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => 
+                    (b.stars || 0) - (a.stars || 0)
+                );
+                break;
+            case 'recent':
+                servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => {
+                    const aDate = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+                    const bDate = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+                    return bDate - aDate;
+                });
+                break;
+            case 'quality':
+            default:
+                // Default: sort by quality score (descending)
+                servers.sort((a: UnifiedMCPServer, b: UnifiedMCPServer) => b.qualityScore - a.qualityScore);
+                break;
+        }
 
         // Pagination
         const page = parseInt(searchParams.get('page') || '1', 10);
-        const pageSize = parseInt(searchParams.get('pageSize') || '20', 10);
+        const pageSize = parseInt(searchParams.get('pageSize') || '9', 10);
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         const paginatedServers = servers.slice(startIndex, endIndex);
@@ -95,6 +191,8 @@ export async function GET(request: NextRequest) {
                     hasLLMSInstall,
                     minQualityScore,
                     search,
+                    transport,
+                    auth: normalizedAuthFilter,
                 },
             },
         });
@@ -116,4 +214,3 @@ export async function GET(request: NextRequest) {
         );
     }
 }
-

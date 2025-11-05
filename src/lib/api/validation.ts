@@ -53,7 +53,7 @@ export const commonSchemas = {
             .string()
             .min(1, 'Search query is required')
             .max(500, 'Search query too long'),
-        filters: z.record(z.any()).optional(),
+        filters: z.record(z.string(), z.any()).optional(),
     }),
 };
 
@@ -67,7 +67,7 @@ export async function validateRequest<T>(
         return schema.parse(body);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation('Request validation failed', error.errors);
+            throw createApiError.validation('Request validation failed', error.issues);
         }
         throw createApiError.badRequest('Invalid JSON in request body');
     }
@@ -82,7 +82,7 @@ export function validateQuery<T>(request: NextRequest, schema: z.ZodSchema<T>): 
         if (error instanceof z.ZodError) {
             throw createApiError.validation(
                 'Query parameters validation failed',
-                error.errors,
+                error.issues,
             );
         }
         throw createApiError.badRequest('Invalid query parameters');
@@ -100,7 +100,7 @@ export function validateParams<T>(
         if (error instanceof z.ZodError) {
             throw createApiError.validation(
                 'Path parameters validation failed',
-                error.errors,
+                error.issues,
             );
         }
         throw createApiError.badRequest('Invalid path parameters');
@@ -114,7 +114,7 @@ export function validateHeaders<T>(request: NextRequest, schema: z.ZodSchema<T>)
         return schema.parse(headers);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation('Headers validation failed', error.errors);
+            throw createApiError.validation('Headers validation failed', error.issues);
         }
         throw createApiError.badRequest('Invalid headers');
     }
@@ -131,7 +131,7 @@ export async function validateFormData<T>(
         return schema.parse(data);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw createApiError.validation('Form data validation failed', error.errors);
+            throw createApiError.validation('Form data validation failed', error.issues);
         }
         throw createApiError.badRequest('Invalid form data');
     }
@@ -155,17 +155,18 @@ export function validateFileUpload(
     } = options || {};
 
     if (required && files.length === 0) {
-        throw createApiError.validation('At least one file is required');
+        throw createApiError.validation('At least one file is required', undefined);
     }
 
     if (files.length > maxFiles) {
-        throw createApiError.validation(`Maximum ${maxFiles} files allowed`);
+        throw createApiError.validation(`Maximum ${maxFiles} files allowed`, undefined);
     }
 
     for (const file of files) {
         if (file.size > maxSize) {
             throw createApiError.validation(
                 `File "${file.name}" exceeds maximum size of ${maxSize / (1024 * 1024)}MB`,
+                undefined,
             );
         }
 
@@ -175,6 +176,7 @@ export function validateFileUpload(
         ) {
             throw createApiError.validation(
                 `File "${file.name}" type "${file.type}" is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
+                undefined,
             );
         }
     }

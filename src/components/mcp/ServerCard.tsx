@@ -17,6 +17,7 @@ import {
   Shield,
   ShieldAlert,
   Star,
+  Loader2,
 } from 'lucide-react';
 
 interface ServerCardProps {
@@ -24,6 +25,7 @@ interface ServerCardProps {
   onInstall?: (server: CuratedServer) => void;
   onViewDetails?: (server: CuratedServer) => void;
   isInstalled?: boolean;
+  isInstalling?: boolean;
 }
 
 export function ServerCard({
@@ -31,6 +33,7 @@ export function ServerCard({
   onInstall,
   onViewDetails,
   isInstalled = false,
+  isInstalling = false,
 }: ServerCardProps) {
   const getTransportBadgeVariant = (type: string) => {
     switch (type) {
@@ -46,12 +49,14 @@ export function ServerCard({
 
   const getAuthBadgeVariant = (type: string) => {
     switch (type) {
-      case 'oauth2':
+      case 'oauth':
         return 'default';
       case 'api-key':
       case 'bearer':
         return 'secondary';
       case 'none':
+        return 'outline';
+      case 'unknown':
         return 'outline';
       default:
         return 'outline';
@@ -59,7 +64,8 @@ export function ServerCard({
   };
 
   const getTierBadge = () => {
-    switch (server.curationTier) {
+    const tier = (server as any).curationTier;
+    switch (tier) {
       case 'first-party':
         return (
           <Badge variant="default" className="bg-blue-600">
@@ -78,9 +84,10 @@ export function ServerCard({
   };
 
   const getSecurityBadge = () => {
-    if (!server.securityReview) return null;
+    const securityReview = (server as any).securityReview;
+    if (!securityReview) return null;
 
-    switch (server.securityReview.status) {
+    switch (securityReview.status) {
       case 'approved':
         return (
           <div className="flex items-center gap-1 text-xs text-green-600">
@@ -106,7 +113,7 @@ export function ServerCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg truncate">{server.name}</CardTitle>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-nowrap">
               <span className="text-xs text-muted-foreground truncate">
                 {server.namespace}
               </span>
@@ -115,7 +122,15 @@ export function ServerCard({
               )}
             </div>
           </div>
-          {getTierBadge()}
+          <div className="flex flex-col items-end gap-1 flex-shrink-0">
+            {getTierBadge()}
+            {((server as any).qualityScore !== undefined || (server as any).curationScore !== undefined) && (
+              <Badge variant="secondary" className="text-xs">
+                <Star className="h-3 w-3 mr-1 fill-current text-yellow-500" />
+                {(server as any).qualityScore || (server as any).curationScore}
+              </Badge>
+            )}
+          </div>
         </div>
         <CardDescription className="line-clamp-2 mt-2">
           {server.description}
@@ -136,8 +151,10 @@ export function ServerCard({
               {server.transport.type.toUpperCase()}
             </Badge>
             <Badge variant={getAuthBadgeVariant(server.auth?.type || 'none')}>
-              {server.auth?.type === 'oauth2'
-                ? `OAuth: ${server.auth.provider}`
+              {server.auth?.type === 'oauth'
+                ? `OAuth: ${server.auth.provider ?? 'Configured'}`
+                : server.auth?.type === 'unknown'
+                ? 'Auth: Unknown'
                 : server.auth?.type || 'No Auth'}
             </Badge>
           </div>
@@ -179,12 +196,22 @@ export function ServerCard({
           <ExternalLink className="h-4 w-4 mr-2" />
           Details
         </Button>
+
         <Button
           className="flex-1"
           onClick={() => onInstall?.(server)}
-          disabled={isInstalled}
+          disabled={isInstalled || isInstalling}
         >
-          {isInstalled ? 'Installed' : 'Install'}
+          {isInstalling ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Installing...
+            </>
+          ) : isInstalled ? (
+            'Installed'
+          ) : (
+            'Install'
+          )}
         </Button>
       </CardFooter>
     </Card>

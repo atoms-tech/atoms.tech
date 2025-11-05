@@ -5,7 +5,12 @@ export interface ModelDisplayInfo {
 }
 
 const MODEL_NAME_OVERRIDES: Record<string, string> = {
-    'claude-sonnet-4-5@20250929': 'Claude Sonnet 4.5',
+    // Vertex AI Claude models (primary)
+    'claude-sonnet-4-5@20250929': 'Sonnet 4.5',
+    'claude-sonnet-4-5@20250929-1m': 'Sonnet 4.5 (Max)',
+    'claude-haiku-4-5@20251001': 'Haiku 4.5',
+
+    // Legacy models (for backwards compatibility)
     'claude-haiku-4-5@20250929': 'Claude Haiku 4.5',
     'claude-3-5-sonnet-20241022': 'Claude 3.5 Sonnet',
     'claude-3-5-haiku-20241022': 'Claude 3.5 Haiku',
@@ -34,7 +39,13 @@ const PROVIDER_OVERRIDES: Record<string, string> = {
     anthropic: 'Anthropic',
     openai: 'OpenAI',
     google: 'Google',
+    googlevertexai: 'Google Vertex AI',
     vertex: 'Google Vertex AI',
+    vertexai: 'Google Vertex AI',
+    meta: 'Meta',
+    metaai: 'Meta AI',
+    bedrock: 'Amazon Bedrock',
+    amazonbedrock: 'Amazon Bedrock',
 };
 
 /**
@@ -57,22 +68,28 @@ export function formatModelDisplayName(modelId: string, ownedBy?: string): Model
     const sanitized = baseId.replace(/[:_]/g, '-');
     const dotted = sanitized.replace(/(\d)-(?=\d)/g, '$1.');
 
-    const parts = dotted.split('-').filter(Boolean);
-    const displayName = parts
-        .map((part) => {
-            const lower = part.toLowerCase();
-            if (TOKEN_OVERRIDES[lower]) {
-                return TOKEN_OVERRIDES[lower];
-            }
-            if (/^[a-z]{1}\d+[a-z]?$/i.test(part)) {
-                return part.toUpperCase();
-            }
-            if (/^\d+(\.\d+)?$/.test(part)) {
-                return part;
-            }
-            return lower.charAt(0).toUpperCase() + lower.slice(1);
-        })
-        .join(' ');
+    const rawParts = dotted.split('-').filter(Boolean);
+    const trimmedParts = [...rawParts];
+
+    while (trimmedParts.length > 1 && /^\d{6,}$/.test(trimmedParts[trimmedParts.length - 1])) {
+        trimmedParts.pop();
+    }
+
+    const displayTokens: string[] = [];
+    for (let index = 0; index < trimmedParts.length; index += 1) {
+        const part = trimmedParts[index];
+        const next = trimmedParts[index + 1];
+
+        if (/^\d+$/.test(part) && next && /^\d+$/.test(next) && next.length <= 2) {
+            displayTokens.push(`${part}.${next}`);
+            index += 1;
+            continue;
+        }
+
+        displayTokens.push(formatToken(part));
+    }
+
+    const displayName = displayTokens.join(' ').trim();
 
     return {
         id: modelId,
@@ -83,6 +100,29 @@ export function formatModelDisplayName(modelId: string, ownedBy?: string): Model
 
 function getProviderLabel(raw?: string): string | undefined {
     if (!raw) return undefined;
-    const normalized = raw.trim().toLowerCase();
-    return PROVIDER_OVERRIDES[normalized] || raw;
+    const cleaned = raw.replace(/[^A-Za-z0-9\s-]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!cleaned) return undefined;
+    const normalized = cleaned.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    if (normalized && PROVIDER_OVERRIDES[normalized]) {
+        return PROVIDER_OVERRIDES[normalized];
+    }
+    const dashed = cleaned.replace(/\s+/g, '-').toLowerCase();
+    if (PROVIDER_OVERRIDES[dashed]) {
+        return PROVIDER_OVERRIDES[dashed];
+    }
+    return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatToken(part: string): string {
+    const lower = part.toLowerCase();
+    if (TOKEN_OVERRIDES[lower]) {
+        return TOKEN_OVERRIDES[lower];
+    }
+    if (/^[a-z]{1}\d+[a-z]?$/i.test(part)) {
+        return part.toUpperCase();
+    }
+    if (/^\d+(\.\d+)?$/.test(part)) {
+        return part;
+    }
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
 }

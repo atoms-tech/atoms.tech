@@ -21,7 +21,8 @@ export async function GET(_request: NextRequest) {
         }
 
         // Check if user is in the platform admin WorkOS org
-        const isInPlatformAdminOrg = organizationId === PLATFORM_ADMIN_ORG_ID && role === 'admin';
+        // Accept both 'admin' and 'member' roles in the platform admin org
+        const isInPlatformAdminOrg = organizationId === PLATFORM_ADMIN_ORG_ID && (role === 'admin' || role === 'member');
 
         // Check database status
         const isInDatabase = await platformAdminService.isPlatformAdmin(user.id);

@@ -1,10 +1,68 @@
 /**
- * Anthropic MCP Registry Client Service
+ * MCP Registry Client Service
  *
- * Fetches and caches MCP server data from the official Anthropic registry.
+ * Fetches and caches MCP server data from the official MCP registry.
  * This service handles API communication with the public registry.
+ *
+ * Official API: https://registry.modelcontextprotocol.io
+ * Documentation: https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/consuming/use-rest-api.md
+ *
+ * Using v0.1 API for stability (only backward-compatible changes)
  */
 
+import { MCPAuthKind, MCPRegistryAuthInfo } from './types';
+
+// Official MCP Registry API response types (v0.1)
+// Note: The API returns a nested structure with 'server' and '_meta' at the top level
+interface RegistryServerVersion {
+  server: {
+    $schema?: string;
+    name: string;
+    description?: string;
+    version: string;
+    homepage?: string;
+    repository?: string | { url?: string; source?: string };
+    license?: string;
+    publisher?: {
+      name?: string;
+      url?: string;
+    };
+    packages?: Array<{
+      registryType?: string;
+      identifier?: string;
+      version?: string;
+      transport?: any;
+      environmentVariables?: any[];
+    }>;
+    remotes?: Array<{
+      type: string;
+      url: string;
+    }>;
+    transport?: any;
+    auth?: any;
+    categories?: string[];
+    tags?: string[];
+  };
+  _meta?: {
+    [key: string]: any;
+    'io.modelcontextprotocol.registry/official'?: {
+      status: 'active' | 'deleted' | 'deprecated';
+      publishedAt: string;
+      updatedAt?: string;
+      isLatest: boolean;
+    };
+  };
+}
+
+interface RegistryAPIResponse {
+  servers: RegistryServerVersion[];
+  metadata: {
+    count: number;
+    nextCursor?: string;
+  };
+}
+
+// Our internal server representation
 export interface MCPRegistryServer {
   namespace: string;
   name: string;
@@ -26,11 +84,7 @@ export interface MCPRegistryServer {
   };
 
   // Authentication
-  auth?: {
-    type: 'none' | 'api-key' | 'oauth2' | 'bearer';
-    provider?: string;
-    scopes?: string[];
-  };
+  auth?: MCPRegistryAuthInfo;
 
   // Metadata
   category?: string;
@@ -64,15 +118,20 @@ export interface RegistryFetchOptions {
 /**
  * Registry Client Service
  *
- * Fetches MCP servers from the Anthropic registry with caching support.
+ * Fetches MCP servers from the official MCP registry with caching support.
+ * Uses v0.1 API for stability (only backward-compatible changes).
+ *
+ * API Documentation: https://github.com/modelcontextprotocol/registry/blob/main/docs/guides/consuming/use-rest-api.md
  */
 class RegistryClientService {
   private cache: Map<string, { data: MCPRegistryResponse; timestamp: number }> = new Map();
-  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-  private readonly REGISTRY_BASE_URL = 'https://registry.anthropic.com/api/v1';
+  private readonly CACHE_TTL = 10 * 60 * 1000; // 10 minutes (increased from 5)
+  // Use v0.1 for production stability
+  private readonly REGISTRY_BASE_URL = 'https://registry.modelcontextprotocol.io/v0.1';
 
   /**
    * Fetch all servers from registry with optional filters
+   * Uses cursor-based pagination to fetch all available servers
    */
   async fetchServers(options: RegistryFetchOptions = {}): Promise<MCPRegistryResponse> {
     const cacheKey = this.getCacheKey(options);
@@ -84,53 +143,422 @@ class RegistryClientService {
     }
 
     try {
-      // Build query parameters
+      // Build query parameters for the official MCP registry API
       const params = new URLSearchParams();
-      if (options.page) params.set('page', options.page.toString());
-      if (options.pageSize) params.set('pageSize', options.pageSize.toString());
-      if (options.category) params.set('category', options.category);
-      if (options.transportType) params.set('transport', options.transportType);
-      if (options.authType) params.set('auth', options.authType);
-      if (options.search) params.set('q', options.search);
-      if (options.tags?.length) params.set('tags', options.tags.join(','));
+      // Set a high limit to fetch more servers per request
+      params.set('limit', '100'); // Fetch 100 at a time
+      if (options.search) params.set('search', options.search);
 
-      const url = `${this.REGISTRY_BASE_URL}/servers?${params.toString()}`;
+      // Fetch all pages using cursor-based pagination
+      let allServers: RegistryServerVersion[] = [];
+      let cursor: string | undefined = undefined;
+      let totalCount = 0;
 
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-        },
-        cache: 'no-store',
+      do {
+        if (cursor) {
+          params.set('cursor', cursor);
+        }
+
+        // API already includes /v0.1 in base URL
+        const url = `${this.REGISTRY_BASE_URL}/servers?${params.toString()}`;
+
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+          },
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Registry API error: ${response.status} ${response.statusText}`);
+        }
+
+        const apiResponse: RegistryAPIResponse = await response.json();
+
+        // Validate response structure
+        if (!apiResponse.servers || !Array.isArray(apiResponse.servers)) {
+          console.error('Invalid API response structure:', apiResponse);
+          throw new Error('Invalid API response: missing servers array');
+        }
+
+        // Add servers from this page
+        allServers = [...allServers, ...apiResponse.servers];
+        
+        // Update total count (use the latest metadata count)
+        totalCount = apiResponse.metadata.count;
+        
+        // Get next cursor for pagination
+        cursor = apiResponse.metadata.nextCursor;
+        
+        // Remove cursor from params for next iteration
+        params.delete('cursor');
+      } while (cursor);
+
+      // Transform API response to our internal format
+      const transformedServers = allServers
+        .map(item => this.transformServerVersion(item))
+        .filter((server): server is MCPRegistryServer => server !== null);
+
+      // Deduplicate servers by namespace (keep only the first occurrence)
+      const seenNamespaces = new Set<string>();
+      const uniqueServers = transformedServers.filter(server => {
+        if (seenNamespaces.has(server.namespace)) {
+          return false;
+        }
+        seenNamespaces.add(server.namespace);
+        return true;
       });
 
-      if (!response.ok) {
-        throw new Error(`Registry API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data: MCPRegistryResponse = await response.json();
+      const transformedData: MCPRegistryResponse = {
+        servers: uniqueServers,
+        total: uniqueServers.length, // Use actual unique count
+        page: options.page || 1,
+        pageSize: options.pageSize || 20,
+      };
 
       // Cache the result
-      this.cache.set(cacheKey, { data, timestamp: Date.now() });
+      this.cache.set(cacheKey, { data: transformedData, timestamp: Date.now() });
 
-      return data;
+      return transformedData;
     } catch (error) {
       console.error('Error fetching from MCP registry:', error);
 
-      // Return mock data for development if registry is unavailable
-      if (process.env.NODE_ENV === 'development') {
-        return this.getMockRegistryData(options);
-      }
-
-      throw error;
+      // Return empty response instead of mock data
+      return {
+        servers: [],
+        total: 0,
+        page: options.page || 1,
+        pageSize: options.pageSize || 20,
+      };
     }
   }
 
   /**
+   * Transform API server version to our internal format
+   * Handles v0.1 API response structure (nested server object)
+   */
+  private transformServerVersion(item: RegistryServerVersion): MCPRegistryServer | null {
+    try {
+      // Validate required fields - be more lenient
+      if (!item) {
+        console.warn('Invalid server data: item is null or undefined');
+        return null;
+      }
+      
+      if (!item.server) {
+        console.warn('Invalid server data: missing server object', { item });
+        return null;
+      }
+      
+      const server = item.server;
+      
+      // Check if name exists and is not empty - be more lenient
+      if (!server.name) {
+        console.warn('Invalid server data: missing name', { 
+          hasServer: !!server,
+          serverKeys: server ? Object.keys(server) : [],
+          item: JSON.stringify(item, null, 2).substring(0, 500)
+        });
+        return null;
+      }
+      
+      const serverName = String(server.name).trim();
+      if (!serverName) {
+        console.warn('Invalid server data: empty name', { 
+          name: server.name,
+          server: server 
+        });
+        return null;
+      }
+
+      const meta = item._meta?.['io.modelcontextprotocol.registry/official'];
+
+      // Extract transport info from packages or remotes
+      let transport: any = { type: 'stdio' };
+      let packageEnvVars: any[] = [];
+      let packageHeaders: any[] = [];
+
+      if (server.packages && server.packages.length > 0) {
+        const pkg = server.packages[0];
+        transport = pkg.transport || { type: 'stdio' };
+        // Ensure transport has required fields
+        if (!transport.type) {
+          transport.type = 'stdio';
+        }
+        // Extract environment variables and headers from package
+        packageEnvVars = pkg.environmentVariables || [];
+        if ((transport as any).headers) {
+          packageHeaders = (transport as any).headers;
+        }
+      } else if (server.remotes && server.remotes.length > 0) {
+        const remote = server.remotes[0];
+        if (remote && remote.type && remote.url) {
+          transport = {
+            type: remote.type === 'streamable-http' ? 'http' : remote.type,
+            url: remote.url,
+          };
+          // Extract headers from remote
+          if ((remote as any)?.headers) {
+            packageHeaders = (remote as any).headers;
+          }
+        } else {
+          console.warn('Invalid remote configuration:', remote);
+          transport = { type: 'stdio' };
+        }
+      } else if (server.transport) {
+        transport = server.transport;
+        if (!transport.type) {
+          transport.type = 'stdio';
+        }
+      }
+
+      // Normalize transport type
+      if (transport.type === 'sse' || transport.type === 'http' || transport.type === 'streamable-http') {
+        transport.type = transport.type === 'streamable-http' ? 'http' : transport.type;
+      } else {
+        transport.type = 'stdio';
+      }
+
+      // Map environment variables from packages to transport.env for stdio servers
+      if (transport.type === 'stdio' && packageEnvVars.length > 0) {
+        const env: Record<string, string> = {};
+        for (const envVar of packageEnvVars) {
+          if (envVar.name) {
+            // Use empty string as placeholder - will be filled by user
+            env[envVar.name] = '';
+          }
+        }
+        if (Object.keys(env).length > 0) {
+          transport.env = env;
+        }
+      }
+
+      // Extract repository URL
+      let repositoryUrl: string | undefined;
+      if (typeof server.repository === 'object' && server.repository !== null) {
+        repositoryUrl = (server.repository as any).url;
+      } else if (typeof server.repository === 'string') {
+        repositoryUrl = server.repository;
+      }
+
+      // Safely extract name parts
+      const nameParts = serverName.split('/');
+      const shortName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : serverName;
+      const publisherName = nameParts.length > 1 ? nameParts[0] : 'Unknown';
+
+      // Normalize auth - try server.auth first, then infer from env vars/headers
+      let normalizedAuth = this.normalizeAuth(server.auth);
+
+      // If no auth detected, try to infer from environment variables and headers
+      if (!normalizedAuth && (packageEnvVars.length > 0 || packageHeaders.length > 0)) {
+        normalizedAuth = this.inferAuthFromTransport(packageEnvVars, packageHeaders);
+      }
+
+      return {
+        namespace: serverName,
+        name: shortName,
+        description: server.description || '',
+        publisher: server.publisher?.name || publisherName,
+        publisherVerified: meta?.status === 'active' || false,
+        version: server.version || '0.0.0',
+        homepage: server.homepage,
+        repository: repositoryUrl,
+        license: server.license,
+        transport,
+        auth: normalizedAuth,
+        category: server.categories?.[0],
+        tags: server.tags || [],
+        lastUpdated: meta?.publishedAt || meta?.updatedAt,
+      };
+    } catch (error) {
+      console.error('Error transforming server version:', error, { item });
+      return null;
+    }
+  }
+
+  /**
+   * Infer authentication requirements from transport configuration
+   */
+  private inferAuthFromTransport(envVars: any[], headers: any[]): MCPRegistryAuthInfo | undefined {
+    let type: MCPAuthKind = 'unknown';
+    const scopes: string[] = [];
+    let provider: string | undefined;
+    let requiresUserSecret = false;
+    let requiresOAuthPopup = false;
+
+    // Check environment variables for auth indicators
+    for (const envVar of envVars) {
+      const name = (envVar.name || '').toLowerCase();
+      const description = (envVar.description || '').toLowerCase();
+
+      // OAuth indicators
+      if (name.includes('oauth') || description.includes('oauth')) {
+        type = 'oauth';
+        requiresOAuthPopup = true;
+      }
+      // API key indicators
+      else if (name.includes('api_key') || name.includes('apikey') || name === 'api_key') {
+        if (type === 'unknown') type = 'api-key';
+        requiresUserSecret = true;
+      }
+      // Token/Bearer indicators
+      else if (name.includes('token') || name.includes('bearer') || name.includes('jwt')) {
+        if (type === 'unknown') type = 'bearer';
+        requiresUserSecret = true;
+      }
+      // Client ID/Secret (OAuth)
+      else if (name.includes('client_id') || name.includes('client_secret')) {
+        type = 'oauth';
+        requiresOAuthPopup = true;
+      }
+
+      // Extract provider from env var name
+      if (name.includes('github')) provider = 'github';
+      else if (name.includes('google')) provider = 'google';
+      else if (name.includes('slack')) provider = 'slack';
+      else if (name.includes('notion')) provider = 'notion';
+    }
+
+    // Check headers for auth indicators
+    for (const header of headers) {
+      const name = (header.name || '').toLowerCase();
+      const value = (header.value || '').toLowerCase();
+
+      if (name === 'authorization') {
+        if (value.includes('bearer') || value.includes('{') || value.includes('token')) {
+          if (type === 'unknown') type = 'bearer';
+          requiresUserSecret = true;
+        }
+      }
+      else if (name.includes('api-key') || name.includes('x-api-key')) {
+        if (type === 'unknown') type = 'api-key';
+        requiresUserSecret = true;
+      }
+    }
+
+    // If we detected any auth, return it
+    if (type !== 'unknown') {
+      return {
+        type,
+        provider,
+        scopes,
+        requiresUserSecret,
+        requiresOAuthPopup,
+        supportsDynamicClientRegistration: false,
+        detection: 'heuristic',
+        raw: { envVars, headers },
+      };
+    }
+
+    return undefined;
+  }
+
+  private normalizeAuth(rawAuth: any): MCPRegistryAuthInfo | undefined {
+    if (!rawAuth) {
+        return undefined;
+    }
+
+    const auth = typeof rawAuth === 'object' && rawAuth !== null ? rawAuth : {};
+    const rawTypeValue = String(
+      auth.type || auth.scheme || auth.strategy || auth.method || auth.name || ''
+    ).toLowerCase();
+
+    if (!rawTypeValue || rawTypeValue === 'none') {
+      return undefined;
+    }
+
+    let detection: MCPRegistryAuthInfo['detection'] = 'declared';
+    let type: MCPAuthKind = 'unknown';
+
+    const setTypeFromString = (value: string) => {
+      const normalized = value.toLowerCase();
+      if (!normalized || normalized === 'none') {
+        type = 'none';
+        return;
+      }
+      if (normalized.includes('oauth')) {
+        type = 'oauth';
+      } else if (normalized === 'bearer' || normalized === 'jwt' || normalized === 'token') {
+        type = 'bearer';
+      } else if (normalized.includes('api') && normalized.includes('key')) {
+        type = 'api-key';
+      }
+    };
+
+    setTypeFromString(rawTypeValue);
+
+    const schemes = auth.schemes || auth.methods || auth.mechanisms;
+    if (type === 'unknown' && Array.isArray(schemes)) {
+      for (const scheme of schemes) {
+        if (typeof scheme === 'string') {
+          setTypeFromString(scheme);
+        } else if (scheme?.type) {
+          setTypeFromString(String(scheme.type));
+        }
+      }
+    }
+
+    if (type === 'unknown' && typeof auth.authorization === 'string') {
+      setTypeFromString(auth.authorization);
+    }
+
+    if (type === 'unknown' && typeof auth.scheme === 'string') {
+      setTypeFromString(auth.scheme);
+    }
+
+    if (type === 'unknown') {
+      // heuristic detection based on field names
+      detection = 'heuristic';
+      if (auth.client_id || auth.clientSecret || auth.client_secret || auth.redirect_uri) {
+        type = 'oauth';
+      } else if (auth.header === 'Authorization' || auth.token || auth.secret) {
+        type = 'bearer';
+      } else if (auth.apiKey || auth.api_key || auth.keyParam || auth.query_param) {
+        type = 'api-key';
+      }
+    }
+
+    const scopes: string[] = [];
+    const authScopes = auth.scopes || auth.scope;
+    if (Array.isArray(authScopes)) {
+      scopes.push(...authScopes.map((scope: any) => String(scope)));
+    } else if (typeof authScopes === 'string') {
+      scopes.push(...authScopes.split(/[ ,]+/).filter(Boolean));
+    }
+
+    const provider = auth.provider || auth.issuer || auth.vendor || auth.authority || undefined;
+
+    const supportsDcr = Boolean(
+      auth.dynamic_client_registration ||
+      auth.supportsDcr ||
+      auth.dcr ||
+      auth.pkce ||
+      auth.forward_pkce
+    );
+
+    const requiresOAuthPopup = type === 'oauth';
+    const requiresUserSecret = type === 'bearer' || type === 'api-key';
+
+    return {
+      type,
+      provider,
+      scopes,
+      requiresUserSecret,
+      requiresOAuthPopup,
+      supportsDynamicClientRegistration: supportsDcr,
+      detection,
+      raw: auth,
+    };
+  }
+
+  /**
    * Fetch a specific server by namespace
+   * Uses v0.1 API endpoint
    */
   async fetchServerByNamespace(namespace: string): Promise<MCPRegistryServer | null> {
     try {
-      const url = `${this.REGISTRY_BASE_URL}/servers/${namespace}`;
+      // Use the latest version endpoint (v0.1 API)
+      const url = `${this.REGISTRY_BASE_URL}/servers/${encodeURIComponent(namespace)}/versions/latest`;
 
       const response = await fetch(url, {
         headers: {
@@ -144,16 +572,10 @@ class RegistryClientService {
         throw new Error(`Registry API error: ${response.status} ${response.statusText}`);
       }
 
-      const server: MCPRegistryServer = await response.json();
-      return server;
+      const apiResponse: RegistryServerVersion = await response.json();
+      return this.transformServerVersion(apiResponse);
     } catch (error) {
       console.error(`Error fetching server ${namespace}:`, error);
-
-      // Return mock data for development
-      if (process.env.NODE_ENV === 'development') {
-        return this.getMockServerData(namespace);
-      }
-
       return null;
     }
   }
@@ -167,189 +589,12 @@ class RegistryClientService {
 
   /**
    * Generate cache key from options
+   * Note: We exclude page/pageSize from cache key since we fetch all servers
    */
   private getCacheKey(options: RegistryFetchOptions): string {
-    return JSON.stringify(options);
-  }
-
-  /**
-   * Mock data for development/testing
-   */
-  private getMockRegistryData(options: RegistryFetchOptions): MCPRegistryResponse {
-    const mockServers: MCPRegistryServer[] = [
-      {
-        namespace: 'anthropic/github',
-        name: 'GitHub MCP Server',
-        description: 'Access GitHub repositories, issues, and pull requests',
-        publisher: 'Anthropic',
-        publisherVerified: true,
-        version: '1.0.0',
-        homepage: 'https://github.com/anthropics/mcp-servers',
-        repository: 'https://github.com/anthropics/mcp-servers',
-        license: 'MIT',
-        transport: {
-          type: 'sse',
-          url: 'https://api.github.com/mcp',
-        },
-        auth: {
-          type: 'oauth2',
-          provider: 'github',
-          scopes: ['repo', 'read:user'],
-        },
-        category: 'Development',
-        tags: ['github', 'git', 'version-control'],
-        installCount: 15234,
-        stars: 892,
-        lastUpdated: new Date().toISOString(),
-        iconUrl: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-      },
-      {
-        namespace: 'anthropic/google-drive',
-        name: 'Google Drive MCP Server',
-        description: 'Access and manage Google Drive files and folders',
-        publisher: 'Anthropic',
-        publisherVerified: true,
-        version: '1.2.0',
-        homepage: 'https://github.com/anthropics/mcp-servers',
-        repository: 'https://github.com/anthropics/mcp-servers',
-        license: 'MIT',
-        transport: {
-          type: 'sse',
-          url: 'https://www.googleapis.com/mcp',
-        },
-        auth: {
-          type: 'oauth2',
-          provider: 'google',
-          scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-        },
-        category: 'Productivity',
-        tags: ['google', 'drive', 'storage'],
-        installCount: 12456,
-        stars: 745,
-        lastUpdated: new Date().toISOString(),
-      },
-      {
-        namespace: 'community/slack',
-        name: 'Slack MCP Server',
-        description: 'Send messages and interact with Slack workspaces',
-        publisher: 'Community',
-        publisherVerified: false,
-        version: '0.9.0',
-        homepage: 'https://github.com/slack-mcp/server',
-        repository: 'https://github.com/slack-mcp/server',
-        license: 'Apache-2.0',
-        transport: {
-          type: 'stdio',
-          command: 'npx',
-          args: ['-y', '@slack/mcp-server'],
-        },
-        auth: {
-          type: 'oauth2',
-          provider: 'slack',
-          scopes: ['chat:write', 'channels:read'],
-        },
-        category: 'Communication',
-        tags: ['slack', 'messaging', 'team'],
-        installCount: 8923,
-        stars: 456,
-        lastUpdated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        namespace: 'anthropic/filesystem',
-        name: 'Filesystem MCP Server',
-        description: 'Read and write local files with security controls',
-        publisher: 'Anthropic',
-        publisherVerified: true,
-        version: '2.0.0',
-        homepage: 'https://github.com/anthropics/mcp-servers',
-        repository: 'https://github.com/anthropics/mcp-servers',
-        license: 'MIT',
-        transport: {
-          type: 'stdio',
-          command: 'npx',
-          args: ['-y', '@modelcontextprotocol/server-filesystem'],
-        },
-        auth: {
-          type: 'none',
-        },
-        category: 'System',
-        tags: ['filesystem', 'files', 'local'],
-        installCount: 25678,
-        stars: 1234,
-        lastUpdated: new Date().toISOString(),
-      },
-      {
-        namespace: 'community/notion',
-        name: 'Notion MCP Server',
-        description: 'Access and update Notion databases and pages',
-        publisher: 'Community',
-        publisherVerified: false,
-        version: '1.1.0',
-        homepage: 'https://github.com/notion-mcp/server',
-        repository: 'https://github.com/notion-mcp/server',
-        license: 'MIT',
-        transport: {
-          type: 'sse',
-          url: 'https://api.notion.com/mcp',
-        },
-        auth: {
-          type: 'oauth2',
-          provider: 'notion',
-          scopes: ['read_content', 'insert_content'],
-        },
-        category: 'Productivity',
-        tags: ['notion', 'notes', 'database'],
-        installCount: 6789,
-        stars: 321,
-        lastUpdated: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-
-    // Apply filters
-    let filtered = mockServers;
-
-    if (options.transportType) {
-      filtered = filtered.filter(s => s.transport.type === options.transportType);
-    }
-
-    if (options.category) {
-      filtered = filtered.filter(s => s.category === options.category);
-    }
-
-    if (options.search) {
-      const search = options.search.toLowerCase();
-      filtered = filtered.filter(s =>
-        s.name.toLowerCase().includes(search) ||
-        s.description.toLowerCase().includes(search) ||
-        s.namespace.toLowerCase().includes(search)
-      );
-    }
-
-    if (options.tags?.length) {
-      filtered = filtered.filter(s =>
-        s.tags?.some(tag => options.tags!.includes(tag))
-      );
-    }
-
-    const page = options.page || 1;
-    const pageSize = options.pageSize || 20;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-
-    return {
-      servers: filtered.slice(start, end),
-      total: filtered.length,
-      page,
-      pageSize,
-    };
-  }
-
-  /**
-   * Mock single server data
-   */
-  private getMockServerData(namespace: string): MCPRegistryServer | null {
-    const mockData = this.getMockRegistryData({});
-    return mockData.servers.find(s => s.namespace === namespace) || null;
+    // Exclude page/pageSize from cache key to cache the full dataset
+    const { page, pageSize, ...cacheOptions } = options;
+    return JSON.stringify(cacheOptions);
   }
 }
 
