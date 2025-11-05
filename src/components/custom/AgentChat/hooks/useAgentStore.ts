@@ -9,9 +9,24 @@ interface Message {
     type?: 'text' | 'voice';
 }
 
+interface ChatSession {
+    id: string;
+    title: string;
+    messages: Message[];
+    createdAt: Date;
+    updatedAt: Date;
+    isArchived: boolean;
+    tags: string[];
+}
+
 // Organization-specific messages structure
 interface OrganizationMessages {
     [orgId: string]: Message[];
+}
+
+// Organization-specific chat sessions
+interface OrganizationChatSessions {
+    [orgId: string]: ChatSession[];
 }
 
 interface AgentStore {
@@ -23,11 +38,12 @@ interface AgentStore {
     // Messages - now organized by organization
     organizationMessages: OrganizationMessages;
 
+    // Chat sessions - organized by organization
+    organizationChatSessions: OrganizationChatSessions;
+    currentChatSessionId: string | null;
+
     // Hydration state - critical for preventing data loss on refresh
     _hasHydrated: boolean;
-
-    // N8N Integration
-    n8nWebhookUrl?: string;
 
     // User Context
     currentProjectId?: string;
@@ -37,6 +53,10 @@ interface AgentStore {
     currentPinnedOrganizationId?: string;
     currentUsername: string | null;
     currentOrgName?: string | null;
+
+    // AgentAPI Configuration
+    agentapiWebhookUrl: string | null;
+    selectedModel: string;
 
     // Actions
     setIsOpen: (isOpen: boolean) => void;
@@ -51,10 +71,27 @@ interface AgentStore {
     getMessagesForCurrentOrg: () => Message[];
     getMessagesForOrg: (orgId: string) => Message[];
 
+    // Chat session management
+    createChatSession: (title?: string) => string;
+    getChatSessionsForCurrentOrg: () => ChatSession[];
+    getCurrentChatSession: () => ChatSession | null;
+    setCurrentChatSession: (sessionId: string) => void;
+    updateChatSessionTitle: (sessionId: string, title: string) => void;
+    archiveChatSession: (sessionId: string) => void;
+    unarchiveChatSession: (sessionId: string) => void;
+    deleteChatSession: (sessionId: string) => void;
+    addTagToChatSession: (sessionId: string, tag: string) => void;
+    removeTagFromChatSession: (sessionId: string, tag: string) => void;
+    autoArchiveInactiveSessions: () => void;
+
+    // AgentAPI actions
+    setAgentAPIConfig: (webhookUrl: string) => void;
+    sendToAgentAPI: (data: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    setSelectedModel: (modelId: string) => void;
+
     // Hydration actions
     setHasHydrated: (hydrated: boolean) => void;
 
-    setN8nConfig: (webhookUrl: string) => void;
     setUserContext: (context: {
         projectId?: string;
         documentId?: string;
@@ -64,11 +101,6 @@ interface AgentStore {
         username?: string;
         orgName?: string;
     }) => void;
-
-    // N8N Integration methods
-    sendToN8n: (
-        data: Omit<N8nRequestData, 'secureContext'>,
-    ) => Promise<Record<string, unknown>>;
 
     // Chat queue per organization
     organizationQueues: { [orgId: string]: string[] };
@@ -81,26 +113,6 @@ interface AgentStore {
 }
 
 type _PinnedOrganizationId = string | undefined;
-
-interface SecureUserContext {
-    userId: string;
-    orgId: string;
-    orgName?: string;
-    pinnedOrganizationId?: string;
-    projectId?: string;
-    documentId?: string;
-    timestamp: string;
-    sessionToken: string;
-    username?: string;
-}
-
-interface N8nRequestData {
-    type: string;
-    message?: string;
-    conversationHistory?: Message[];
-    timestamp?: string;
-    secureContext: SecureUserContext;
-}
 
 // Utility function to debug localStorage state
 export const debugAgentStore = () => {
@@ -137,11 +149,15 @@ export const useAgentStore = create<AgentStore>()(
             isMinimized: false,
             panelWidth: 400,
             organizationMessages: {},
+            organizationChatSessions: {},
+            currentChatSessionId: null,
             _hasHydrated: false,
             currentPinnedOrganizationId: undefined,
             currentUsername: null,
             organizationQueues: {},
             currentOrgName: null,
+            agentapiWebhookUrl: null,
+            selectedModel: 'claude-sonnet-4-5@20250929', // Default to Claude 4.5 Sonnet
 
             // Actions
             setIsOpen: (isOpen: boolean) => set({ isOpen }),
@@ -203,8 +219,6 @@ export const useAgentStore = create<AgentStore>()(
 
             setHasHydrated: (hydrated: boolean) => set({ _hasHydrated: hydrated }),
 
-            setN8nConfig: (webhookUrl: string) => set({ n8nWebhookUrl: webhookUrl }),
-
             setUserContext: (context) =>
                 set({
                     currentProjectId: context.projectId,
@@ -216,90 +230,41 @@ export const useAgentStore = create<AgentStore>()(
                     currentOrgName: context.orgName ?? null,
                 }),
 
-            // N8N Integration methods
-            sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
-                const {
-                    n8nWebhookUrl,
-                    currentProjectId,
-                    currentDocumentId,
-                    currentUserId,
-                    currentOrgId,
-                    currentPinnedOrganizationId,
-                    currentOrgName,
-                    currentUsername,
-                } = get();
+            // AgentAPI configuration and methods
+            setAgentAPIConfig: (webhookUrl: string) => {
+                set({ agentapiWebhookUrl: webhookUrl });
+            },
 
-                if (!n8nWebhookUrl) {
-                    throw new Error('N8N webhook URL not configured');
+            sendToAgentAPI: async (data: Record<string, unknown>) => {
+                const { agentapiWebhookUrl, selectedModel } = get();
+
+                if (!agentapiWebhookUrl) {
+                    throw new Error('AgentAPI webhook URL is not configured');
                 }
 
-                if (!currentUserId || !currentOrgId) {
-                    throw new Error('User context is required');
+                // Include the selected model in the request data
+                const requestData = {
+                    ...data,
+                    model: selectedModel,
+                };
+
+                const response = await fetch(agentapiWebhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`AgentAPI request failed: ${response.statusText}`);
                 }
 
-                try {
-                    const orgName = currentOrgName ?? undefined;
+                return await response.json();
+            },
 
-                    // Create secure context with only necessary information
-                    const secureContext: SecureUserContext = {
-                        userId: currentUserId,
-                        orgId: currentOrgId,
-                        orgName,
-                        pinnedOrganizationId: currentPinnedOrganizationId,
-                        timestamp: new Date().toISOString(),
-                        sessionToken: '',
-                        username: currentUsername || '',
-                    };
-
-                    // Include optional context if available
-                    if (currentProjectId) {
-                        secureContext.projectId = currentProjectId;
-                    }
-                    if (currentDocumentId) {
-                        secureContext.documentId = currentDocumentId;
-                    }
-
-                    // Include secure user context in the request
-                    const requestData: N8nRequestData = {
-                        ...data,
-                        secureContext,
-                    };
-
-                    // Use our server-side proxy to avoid CORS issues
-                    const response = await fetch('/api/n8n-proxy', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Secure-Context': Buffer.from(
-                                JSON.stringify(secureContext),
-                            ).toString('base64'),
-                        },
-                        body: JSON.stringify({
-                            webhookUrl: n8nWebhookUrl,
-                            ...requestData,
-                        }),
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        // Handle specific N8N errors with user-friendly messages
-                        if (
-                            errorData.code === 404 &&
-                            errorData.message?.includes('webhook')
-                        ) {
-                            throw new Error(
-                                'We are currently experiencing connection issues with our server. Please try again in a few moments.',
-                            );
-                        }
-                        throw new Error(
-                            'We are having trouble connecting to our server. Please try again later.',
-                        );
-                    }
-
-                    return await response.json();
-                } catch (error) {
-                    throw error;
-                }
+            setSelectedModel: (modelId: string) => {
+                set({ selectedModel: modelId });
             },
 
             // Chat queue per organization
@@ -357,6 +322,196 @@ export const useAgentStore = create<AgentStore>()(
                 if (!currentPinnedOrganizationId) return [];
                 return organizationQueues[currentPinnedOrganizationId] || [];
             },
+
+            // Chat session management
+            createChatSession: (title?: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return '';
+
+                const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const newSession: ChatSession = {
+                    id: sessionId,
+                    title: title || 'New Chat',
+                    messages: [],
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    isArchived: false,
+                    tags: [],
+                };
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: [
+                            ...(organizationChatSessions[currentPinnedOrganizationId] || []),
+                            newSession,
+                        ],
+                    },
+                    currentChatSessionId: sessionId,
+                });
+
+                return sessionId;
+            },
+
+            getChatSessionsForCurrentOrg: () => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return [];
+                return organizationChatSessions[currentPinnedOrganizationId] || [];
+            },
+
+            getCurrentChatSession: () => {
+                const { currentChatSessionId, getChatSessionsForCurrentOrg } = get();
+                if (!currentChatSessionId) return null;
+                const sessions = getChatSessionsForCurrentOrg();
+                return sessions.find((s) => s.id === currentChatSessionId) || null;
+            },
+
+            setCurrentChatSession: (sessionId: string) => {
+                set({ currentChatSessionId: sessionId });
+            },
+
+            updateChatSessionTitle: (sessionId: string, title: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.map((session) =>
+                    session.id === sessionId
+                        ? { ...session, title, updatedAt: new Date() }
+                        : session,
+                );
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
+
+            archiveChatSession: (sessionId: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.map((session) =>
+                    session.id === sessionId
+                        ? { ...session, isArchived: true, updatedAt: new Date() }
+                        : session,
+                );
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
+
+            unarchiveChatSession: (sessionId: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.map((session) =>
+                    session.id === sessionId
+                        ? { ...session, isArchived: false, updatedAt: new Date() }
+                        : session,
+                );
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
+
+            deleteChatSession: (sessionId: string) => {
+                const {
+                    currentPinnedOrganizationId,
+                    organizationChatSessions,
+                    currentChatSessionId,
+                } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.filter((session) => session.id !== sessionId);
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                    currentChatSessionId:
+                        currentChatSessionId === sessionId ? null : currentChatSessionId,
+                });
+            },
+
+            addTagToChatSession: (sessionId: string, tag: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.map((session) =>
+                    session.id === sessionId && !session.tags.includes(tag)
+                        ? { ...session, tags: [...session.tags, tag], updatedAt: new Date() }
+                        : session,
+                );
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
+
+            removeTagFromChatSession: (sessionId: string, tag: string) => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const updatedSessions = sessions.map((session) =>
+                    session.id === sessionId
+                        ? {
+                              ...session,
+                              tags: session.tags.filter((t) => t !== tag),
+                              updatedAt: new Date(),
+                          }
+                        : session,
+                );
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
+
+            autoArchiveInactiveSessions: () => {
+                const { currentPinnedOrganizationId, organizationChatSessions } = get();
+                if (!currentPinnedOrganizationId) return;
+
+                const sessions = organizationChatSessions[currentPinnedOrganizationId] || [];
+                const now = new Date();
+                const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+                const updatedSessions = sessions.map((session) => {
+                    if (!session.isArchived && session.updatedAt < twentyFourHoursAgo) {
+                        return { ...session, isArchived: true };
+                    }
+                    return session;
+                });
+
+                set({
+                    organizationChatSessions: {
+                        ...organizationChatSessions,
+                        [currentPinnedOrganizationId]: updatedSessions,
+                    },
+                });
+            },
         }),
         {
             // Persist the store to the browser's localStorage
@@ -373,9 +528,27 @@ export const useAgentStore = create<AgentStore>()(
                         ],
                     ),
                 ),
-                n8nWebhookUrl: state.n8nWebhookUrl,
+                organizationChatSessions: Object.fromEntries(
+                    Object.entries(state.organizationChatSessions).map(
+                        ([orgId, sessions]) => [
+                            orgId,
+                            sessions.map((session) => ({
+                                ...session,
+                                createdAt: session.createdAt.toISOString(),
+                                updatedAt: session.updatedAt.toISOString(),
+                                messages: session.messages.map((msg) => ({
+                                    ...msg,
+                                    timestamp: msg.timestamp.toISOString(),
+                                })),
+                            })),
+                        ],
+                    ),
+                ),
+                currentChatSessionId: state.currentChatSessionId,
                 isMinimized: state.isMinimized,
                 panelWidth: state.panelWidth,
+                agentapiWebhookUrl: state.agentapiWebhookUrl,
+                selectedModel: state.selectedModel,
             }),
             onRehydrateStorage: () => (state) => {
                 console.log('AgentStore - onRehydrateStorage called');
@@ -454,6 +627,32 @@ export const useAgentStore = create<AgentStore>()(
                     console.log(
                         'AgentStore - No organization messages found in localStorage',
                     );
+                }
+
+                if (state?.organizationChatSessions) {
+                    console.log(
+                        'AgentStore - Restoring chat sessions from localStorage:',
+                        Object.keys(state.organizationChatSessions).length,
+                    );
+                    // Convert timestamp strings back to Date objects
+                    state.organizationChatSessions = Object.fromEntries(
+                        Object.entries(state.organizationChatSessions).map(
+                            ([orgId, sessions]) => [
+                                orgId,
+                                sessions.map((session) => ({
+                                    ...session,
+                                    createdAt: new Date(session.createdAt),
+                                    updatedAt: new Date(session.updatedAt),
+                                    messages: session.messages.map((msg) => ({
+                                        ...msg,
+                                        timestamp: new Date(msg.timestamp),
+                                    })),
+                                })),
+                            ],
+                        ),
+                    );
+                } else {
+                    console.log('AgentStore - No chat sessions found in localStorage');
                 }
                 // Set hydration flag after localStorage data is restored
                 state?.setHasHydrated(true);

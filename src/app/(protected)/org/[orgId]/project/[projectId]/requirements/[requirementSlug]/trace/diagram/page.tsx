@@ -19,7 +19,7 @@ const TraceLinksGraph = dynamic(() => import('@/components/TraceLinksGraph'), {
 export default function TraceDiagramPage() {
     const params = useParams();
     const _searchParams = useSearchParams();
-    const requirementId = params.requirementSlug as string;
+    const requirementId = params?.requirementSlug as string;
 
     return (
         <div className="container mx-auto py-6">

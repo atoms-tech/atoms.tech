@@ -51,7 +51,7 @@ export default function UserDashboard() {
     const [searchTerm, setSearchTerm] = useState(''); // Ensure the initial state is an empty string
 
     // Get current tab from URL params, default to 'all' if not present
-    const currentTabFromUrl = searchParams.get('currentTab') || 'all';
+    const currentTabFromUrl = searchParams?.get('currentTab') || 'all';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
 
     const [greeting, setGreeting] = useState('');
@@ -175,14 +175,14 @@ export default function UserDashboard() {
     // Update URL when tab changes
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams);
+        const params = new URLSearchParams(searchParams || '');
         params.set('currentTab', newTab);
         // router.push(`?${params.toString()}`, { scroll: false });
     };
 
     // Sync tab state with URL params when they change
     useEffect(() => {
-        const tabFromUrl = searchParams.get('currentTab');
+        const tabFromUrl = searchParams?.get('currentTab');
         if (tabFromUrl && tabFromUrl !== activeTab) {
             setActiveTab(tabFromUrl);
         }
@@ -231,7 +231,7 @@ export default function UserDashboard() {
                         onValueChange={handleTabChange}
                         className="w-full md:w-auto"
                     >
-                        <TabsList className="grid grid-cols-4 w-full md:w-auto">
+                        <TabsList className="w-full md:w-auto">
                             <TabsTrigger value="all">All ({enterpriseCount})</TabsTrigger>
                             <TabsTrigger value="enterprise">
                                 Enterprise ({enterpriseCount})
@@ -307,7 +307,7 @@ export default function UserDashboard() {
                                             </CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <p className="text-sm line-clamp-3 break-words h-[3.75rem]">
+                                            <p className="text-sm break-words">
                                                 {org.description ||
                                                     'No description provided'}
                                             </p>

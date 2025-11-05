@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
         // Here we can implement different strategies:
         // 1. Direct AI integration (OpenAI, Anthropic, etc.)
-        // 2. Route to N8N workflow
+        // 2. Route to AgentAPI workflow
         // 3. Use local AI model
         // 4. Fallback responses
 
@@ -57,7 +57,7 @@ async function generateResponse(
     // - OpenAI API
     // - Anthropic Claude
     // - Local AI models
-    // - N8N workflows
+    // - AgentAPI workflows
     // - Custom business logic
 
     const lowerMessage = message.toLowerCase();
@@ -71,23 +71,23 @@ async function generateResponse(
         return `I can assist you with various tasks:
 
 • Answer questions about your projects
-• Help with code and technical issues  
+• Help with code and technical issues
 • Provide information and explanations
-• Integrate with N8N workflows for automation
+• Integrate with AgentAPI workflows for automation
 • Process voice commands
 
 What would you like help with?`;
     }
 
-    if (lowerMessage.includes('n8n') || lowerMessage.includes('workflow')) {
-        return `I can help you with N8N workflow automation! Here's what I can do:
+    if (lowerMessage.includes('workflow') || lowerMessage.includes('automation')) {
+        return `I can help you with workflow automation! Here's what I can do:
 
-• Connect to your N8N instance
+• Connect to your AgentAPI instance
 • Send data to your workflows
 • Receive responses from automated processes
 • Help configure webhook integrations
 
-To get started, please configure your N8N webhook URL in the agent settings.`;
+To get started, please configure your AgentAPI webhook URL in the agent settings.`;
     }
 
     if (lowerMessage.includes('voice') || lowerMessage.includes('microphone')) {
@@ -120,12 +120,12 @@ What programming challenge are you working on?`;
     }
 
     // Default response
-    return `I understand you're asking about "${message}". While I'm still learning about your specific needs, I'm here to help! 
+    return `I understand you're asking about "${message}". While I'm still learning about your specific needs, I'm here to help!
 
 Could you provide more details about what you'd like to know or accomplish? I can assist with:
 • Technical questions and coding
-• Project planning and documentation  
-• Workflow automation with N8N
+• Project planning and documentation
+• Workflow automation with AgentAPI
 • General information and explanations`;
 }
 

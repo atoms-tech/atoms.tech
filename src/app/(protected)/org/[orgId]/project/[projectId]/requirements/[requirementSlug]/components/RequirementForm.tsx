@@ -286,11 +286,11 @@ export function RequirementForm({
             .filter((doc) => !(doc.id in selectedFiles))
             .reduce(
                 (acc, doc) => {
-                    if (!doc.gumloop_name) return acc;
+                    if (!doc.agentapi_resource_name) return acc;
                     acc[doc.id] = {
                         name: doc.name,
                         supabaseId: doc.id,
-                        gumloopName: doc.gumloop_name,
+                        gumloopName: doc.agentapi_resource_name,
                     };
                     return acc;
                 },

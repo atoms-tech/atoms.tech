@@ -192,6 +192,36 @@ export type Database = {
                     },
                 ];
             };
+            admin_audit_log: {
+                Row: {
+                    id: string;
+                    admin_id: string;
+                    action: string;
+                    target_org_id: string | null;
+                    target_user_id: string | null;
+                    details: Json | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    admin_id: string;
+                    action: string;
+                    target_org_id?: string | null;
+                    target_user_id?: string | null;
+                    details?: Json | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    admin_id?: string;
+                    action?: string;
+                    target_org_id?: string | null;
+                    target_user_id?: string | null;
+                    details?: Json | null;
+                    created_at?: string;
+                };
+                Relationships: [];
+            };
             billing_cache: {
                 Row: {
                     billing_status: Json;
@@ -584,7 +614,7 @@ export type Database = {
                     created_by: string | null;
                     deleted_at: string | null;
                     deleted_by: string | null;
-                    gumloop_name: string | null;
+                    agentapi_resource_name: string | null;
                     id: string;
                     is_deleted: boolean | null;
                     name: string;
@@ -601,7 +631,7 @@ export type Database = {
                     created_by?: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
-                    gumloop_name?: string | null;
+                    agentapi_resource_name?: string | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name: string;
@@ -618,7 +648,7 @@ export type Database = {
                     created_by?: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
-                    gumloop_name?: string | null;
+                    agentapi_resource_name?: string | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name?: string;
@@ -629,6 +659,162 @@ export type Database = {
                     updated_at?: string | null;
                     updated_by?: string | null;
                     url?: string | null;
+                };
+                Relationships: [];
+            };
+            mcp_servers: {
+                Row: {
+                    id: string;
+                    name: string;
+                    namespace: string | null;
+                    description: string | null;
+                    server_url: string | null;
+                    transport: Json | null;
+                    transport_type: string | null;
+                    auth: Json | null;
+                    auth_type: string | null;
+                    auth_status: string | null;
+                    scope: string;
+                    enabled: boolean | null;
+                    config: Json | null;
+                    auth_config: Json | null;
+                    stdio_config: Json | null;
+                    proxy_config: Json | null;
+                    metadata: Json | null;
+                    env: Json | null;
+                    user_id: string | null;
+                    organization_id: string | null;
+                    created_at: string | null;
+                    created_by: string | null;
+                    updated_at: string | null;
+                    updated_by: string | null;
+                    deleted_at: string | null;
+                    deleted_by: string | null;
+                    is_deleted: boolean | null;
+                    last_test_at: string | null;
+                    last_test_status: string | null;
+                    last_test_error: string | null;
+                    tier: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    name: string;
+                    namespace?: string | null;
+                    description?: string | null;
+                    server_url?: string | null;
+                    transport?: Json | null;
+                    transport_type?: string | null;
+                    auth?: Json | null;
+                    auth_type?: string | null;
+                    auth_status?: string | null;
+                    scope: string;
+                    enabled?: boolean | null;
+                    config?: Json | null;
+                    auth_config?: Json | null;
+                    stdio_config?: Json | null;
+                    proxy_config?: Json | null;
+                    metadata?: Json | null;
+                    env?: Json | null;
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
+                    is_deleted?: boolean | null;
+                    last_test_at?: string | null;
+                    last_test_status?: string | null;
+                    last_test_error?: string | null;
+                    tier?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    name?: string;
+                    namespace?: string | null;
+                    description?: string | null;
+                    server_url?: string | null;
+                    transport?: Json | null;
+                    transport_type?: string | null;
+                    auth?: Json | null;
+                    auth_type?: string | null;
+                    auth_status?: string | null;
+                    scope?: string;
+                    enabled?: boolean | null;
+                    config?: Json | null;
+                    auth_config?: Json | null;
+                    stdio_config?: Json | null;
+                    proxy_config?: Json | null;
+                    metadata?: Json | null;
+                    env?: Json | null;
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    created_at?: string | null;
+                    created_by?: string | null;
+                    updated_at?: string | null;
+                    updated_by?: string | null;
+                    deleted_at?: string | null;
+                    deleted_by?: string | null;
+                    is_deleted?: boolean | null;
+                    last_test_at?: string | null;
+                    last_test_status?: string | null;
+                    last_test_error?: string | null;
+                    tier?: string | null;
+                };
+                Relationships: [];
+            };
+            user_mcp_servers: {
+                Row: {
+                    id: string;
+                    server_id: string | null;
+                    user_id: string | null;
+                    organization_id: string | null;
+                    scope: string;
+                    enabled: boolean | null;
+                    config: Json | null;
+                    transport_type: string | null;
+                    auth_status: string | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                    last_test_at: string | null;
+                    last_test_status: string | null;
+                    last_test_error: string | null;
+                    metadata: Json | null;
+                };
+                Insert: {
+                    id?: string;
+                    server_id?: string | null;
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    scope: string;
+                    enabled?: boolean | null;
+                    config?: Json | null;
+                    transport_type?: string | null;
+                    auth_status?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_test_at?: string | null;
+                    last_test_status?: string | null;
+                    last_test_error?: string | null;
+                    metadata?: Json | null;
+                };
+                Update: {
+                    id?: string;
+                    server_id?: string | null;
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    scope?: string;
+                    enabled?: boolean | null;
+                    config?: Json | null;
+                    transport_type?: string | null;
+                    auth_status?: string | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_test_at?: string | null;
+                    last_test_status?: string | null;
+                    last_test_error?: string | null;
+                    metadata?: Json | null;
                 };
                 Relationships: [];
             };
@@ -815,6 +1001,45 @@ export type Database = {
                         referencedColumns: ['id'];
                     },
                 ];
+            };
+            platform_admins: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    workos_user_id: string | null;
+                    email: string;
+                    name: string | null;
+                    added_by: string | null;
+                    added_at: string;
+                    is_active: boolean;
+                    updated_at: string | null;
+                    created_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    workos_user_id?: string | null;
+                    email: string;
+                    name?: string | null;
+                    added_by?: string | null;
+                    added_at?: string;
+                    is_active?: boolean;
+                    updated_at?: string | null;
+                    created_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    workos_user_id?: string | null;
+                    email?: string;
+                    name?: string | null;
+                    added_by?: string | null;
+                    added_at?: string;
+                    is_active?: boolean;
+                    updated_at?: string | null;
+                    created_at?: string | null;
+                };
+                Relationships: [];
             };
             organizations: {
                 Row: {
@@ -1688,6 +1913,89 @@ export type Database = {
                     updated_at?: string;
                 };
                 Relationships: [];
+            };
+            system_prompts: {
+                Row: {
+                    id: string;
+                    name: string;
+                    description: string | null;
+                    content: string;
+                    scope: 'user' | 'organization' | 'system';
+                    user_id: string | null;
+                    organization_id: string | null;
+                    tags: string[] | null;
+                    is_default: boolean | null;
+                    is_public: boolean | null;
+                    version: number | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                    created_by: string | null;
+                    updated_by: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    name: string;
+                    description?: string | null;
+                    content: string;
+                    scope: 'user' | 'organization' | 'system';
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    tags?: string[] | null;
+                    is_default?: boolean | null;
+                    is_public?: boolean | null;
+                    version?: number | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    created_by?: string | null;
+                    updated_by?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    name?: string;
+                    description?: string | null;
+                    content?: string;
+                    scope?: 'user' | 'organization' | 'system';
+                    user_id?: string | null;
+                    organization_id?: string | null;
+                    tags?: string[] | null;
+                    is_default?: boolean | null;
+                    is_public?: boolean | null;
+                    version?: number | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    created_by?: string | null;
+                    updated_by?: string | null;
+                };
+                Relationships: [
+                    {
+                        foreignKeyName: 'system_prompts_user_id_fkey';
+                        columns: ['user_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'system_prompts_organization_id_fkey';
+                        columns: ['organization_id'];
+                        isOneToOne: false;
+                        referencedRelation: 'organizations';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'system_prompts_created_by_fkey';
+                        columns: ['created_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                    {
+                        foreignKeyName: 'system_prompts_updated_by_fkey';
+                        columns: ['updated_by'];
+                        isOneToOne: false;
+                        referencedRelation: 'profiles';
+                        referencedColumns: ['id'];
+                    },
+                ];
             };
             stripe_customers: {
                 Row: {

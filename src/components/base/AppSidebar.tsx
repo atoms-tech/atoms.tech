@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, GitBranch, Hammer, Home, Pin, Sparkles, Users } from 'lucide-react';
+import { ChevronDown, GitBranch, Hammer, Home, Pin, Shield, Sparkles, Users } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,8 +29,10 @@ import {
 } from '@/components/ui/sidebar';
 import { useUpdateProfile } from '@/hooks/mutations/useProfileMutation';
 import { useProfile } from '@/hooks/queries/useProfile';
+import { usePlatformAdmin } from '@/hooks/usePlatformAdmin';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
+import { logger } from '@/lib/utils/logger';
 import { Organization, OrganizationType } from '@/types';
 
 function AppSidebar() {
@@ -40,6 +42,7 @@ function AppSidebar() {
     const { mutate: updateProfile } = useUpdateProfile();
     const { organizations, setCurrentOrganization } = useOrganization();
     const { setUserContext } = useAgentStore();
+    const { isPlatformAdmin } = usePlatformAdmin();
 
     const personalOrganization = organizations.find(
         (org) => org.type === OrganizationType.personal,
@@ -68,21 +71,33 @@ function AppSidebar() {
 
     const navigateToPlayground = () => {
         if (!personalOrganization) {
-            return console.error('No personal organization found');
+            logger.error('No personal organization found when navigating to Playground');
+            return;
         }
-        console.log('Navigating to Playground:');
+        logger.info('Navigating to Playground', {
+            route: '/app-sidebar',
+            organizationId: personalOrganization.id,
+        });
         router.push(`/org/${personalOrganization.id}`);
     };
 
     const navigateToOrganization = (org: Organization) => {
-        console.log('Navigating to Organization:');
+        logger.info('Navigating to organization', {
+            route: '/app-sidebar',
+            organizationId: org.id,
+        });
         setCurrentOrganization(org);
         router.push(`/org/${org.id}`);
     };
 
     const navigateToAdmin = () => {
-        console.log('Navigating to admin page:');
+        logger.info('Navigating to admin page', { route: '/app-sidebar' });
         router.push('/admin');
+    };
+
+    const navigateToPlatformAdmin = () => {
+        logger.info('Navigating to platform admin page', { route: '/app-sidebar' });
+        router.push('/platform-admin');
     };
 
     // Handle pinning an organization
@@ -102,7 +117,10 @@ function AppSidebar() {
                 pinned_organization_id: newPinnedOrganizationId || null,
             });
         } catch (err) {
-            console.error('Unexpected error:', err);
+            logger.error('Unexpected error while pinning organization', err, {
+                route: '/app-sidebar',
+                organizationId: orgId,
+            });
         }
     };
 
@@ -308,6 +326,22 @@ function AppSidebar() {
                                             <Hammer className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
                                             <span className="text-xs font-medium">
                                                 Admin
+                                            </span>
+                                        </Button>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
+                            {isPlatformAdmin && (
+                                <SidebarMenuItem className="mb-0.5">
+                                    <SidebarMenuButton asChild>
+                                        <Button
+                                            variant="ghost"
+                                            className="w-full justify-start"
+                                            onClick={navigateToPlatformAdmin}
+                                        >
+                                            <Shield className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                            <span className="text-xs font-medium">
+                                                Platform Admin
                                             </span>
                                         </Button>
                                     </SidebarMenuButton>

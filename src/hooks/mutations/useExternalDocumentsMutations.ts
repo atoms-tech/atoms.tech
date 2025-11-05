@@ -140,7 +140,7 @@ export function useUpdateExternalDocument() {
                 throw new Error(authError ?? 'Supabase client not ready');
             }
 
-            const updateDict: Partial<ExternalDocument> = {};
+            const updateDict: Partial<ExternalDocument & { gumloop_name?: string }> = {};
             if (gumloopName) updateDict.gumloop_name = gumloopName;
             if (name) updateDict.name = name;
             const { data, error } = await supabase

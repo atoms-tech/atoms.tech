@@ -71,7 +71,7 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     const searchParams = useSearchParams();
 
     // Get current tab from URL params, default to 'projects' if not present
-    const currentTabFromUrl = searchParams.get('currentTab') || 'projects';
+    const currentTabFromUrl = searchParams?.get('currentTab') || 'projects';
     const [activeTab, setActiveTab] = useState(currentTabFromUrl);
     const [isCreatePanelOpen, setIsCreatePanelOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -165,14 +165,14 @@ export default function OrgDashboard(props: OrgDashboardProps) {
     // Update URL when tab changes
     const handleTabChange = (newTab: string) => {
         setActiveTab(newTab);
-        const params = new URLSearchParams(searchParams);
+        const params = new URLSearchParams(searchParams || '');
         params.set('currentTab', newTab);
         // router.push(`?${params.toString()}`, { scroll: false });
     };
 
     // Sync tab state with URL params when they change
     useEffect(() => {
-        const tabFromUrl = searchParams.get('currentTab');
+        const tabFromUrl = searchParams?.get('currentTab');
         if (tabFromUrl && tabFromUrl !== activeTab) {
             setActiveTab(tabFromUrl);
         }

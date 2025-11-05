@@ -1,0 +1,31 @@
+import type { ComponentType, PropsWithChildren } from 'react';
+
+declare module '@trpc/client' {
+  export function httpBatchLink(config: Record<string, unknown>): unknown;
+}
+
+declare module '@trpc/react-query' {
+  type TRPCClientOptions = Record<string, unknown>;
+
+  type TRPCReactProviderProps = PropsWithChildren<{
+    client: unknown;
+    queryClient?: unknown;
+  }>;
+
+  interface TRPCReactInstance<TRouter = unknown> {
+    Provider: ComponentType<TRPCReactProviderProps>;
+    createClient: (options: TRPCClientOptions) => unknown;
+    useContext: () => unknown;
+  }
+
+  export function createTRPCReact<TRouter = unknown>(): TRPCReactInstance<TRouter>;
+}
+
+declare module 'superjson' {
+  const superjson: unknown;
+  export default superjson;
+}
+
+declare module '@/server/trpc/router' {
+  export type AppRouter = unknown;
+}

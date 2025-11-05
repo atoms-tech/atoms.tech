@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 
 export default function ResetPasswordPage() {
     const searchParams = useSearchParams();
-    const token = searchParams.get('token');
+    const token = searchParams?.get('token');
 
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

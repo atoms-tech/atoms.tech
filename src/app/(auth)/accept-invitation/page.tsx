@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 
 export default function AcceptInvitationPage() {
     const searchParams = useSearchParams();
-    const invitation = searchParams.get('invitation');
+    const invitation = searchParams?.get('invitation');
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

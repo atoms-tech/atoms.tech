@@ -23,7 +23,7 @@ import { Separator } from '@/components/ui/separator';
 // Create a separate client component for the login form
 function LoginForm() {
     const searchParams = useSearchParams();
-    const externalAuthId = searchParams.get('external_auth_id') || undefined;
+    const externalAuthId = searchParams?.get('external_auth_id') || undefined;
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

@@ -380,7 +380,7 @@ export type Database = {
                     created_by: string | null;
                     deleted_at: string | null;
                     deleted_by: string | null;
-                    gumloop_name: string | null;
+                    agentapi_resource_name: string | null;
                     id: string;
                     is_deleted: boolean | null;
                     name: string;
@@ -397,7 +397,7 @@ export type Database = {
                     created_by?: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
-                    gumloop_name?: string | null;
+                    agentapi_resource_name?: string | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name: string;
@@ -414,7 +414,7 @@ export type Database = {
                     created_by?: string | null;
                     deleted_at?: string | null;
                     deleted_by?: string | null;
-                    gumloop_name?: string | null;
+                    agentapi_resource_name?: string | null;
                     id?: string;
                     is_deleted?: boolean | null;
                     name?: string;

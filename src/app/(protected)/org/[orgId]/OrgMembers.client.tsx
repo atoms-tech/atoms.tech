@@ -56,7 +56,7 @@ export default function OrgMembers() {
         queryKey: ['organization-members', params?.orgId || ''],
         queryFn: () =>
             params && supabase
-                ? getOrganizationMembers(supabase, params.orgId)
+                ? getOrganizationMembers(supabase, params?.orgId || '')
                 : Promise.resolve([]),
         enabled: !!params?.orgId && !!supabase && !authLoading,
     });

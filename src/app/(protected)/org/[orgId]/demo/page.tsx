@@ -30,7 +30,7 @@ interface AnalysisData {
 }
 
 export default function RequirementPage() {
-    const organizationId = usePathname().split('/')[2];
+    const organizationId = usePathname()?.split('/')[2] || '';
     const [reqText, setReqText] = useState<string>('');
     const [systemName, setSystemName] = useState<string>('');
     const [objective, setObjective] = useState<string>('');

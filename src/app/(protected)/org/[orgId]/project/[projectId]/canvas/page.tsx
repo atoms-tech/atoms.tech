@@ -31,7 +31,7 @@ type DiagramType = 'flowchart' | 'sequence' | 'class';
 
 export default function Draw() {
     // const organizationId = '9badbbf0-441c-49f6-91e7-3d9afa1c13e6';
-    const organizationId = usePathname().split('/')[2];
+    const organizationId = usePathname()?.split('/')[2] || '';
     const [prompt, setPrompt] = useState('');
     const [diagramType, setDiagramType] = useState<DiagramType>('flowchart');
     const [excalidrawApi, setExcalidrawApi] = useState<{

@@ -88,11 +88,11 @@ export default function TracePage() {
     const [isDeleteMode, setIsDeleteMode] = useState(false);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-    const requirementId = params.requirementSlug as string; 
-    const projectId = params.projectId as string; 
+    const requirementId = params?.requirementSlug as string;
+    const projectId = params?.projectId as string;
 
     // Get documentId from URL query parameter
-    const documentId = searchParams.get('documentId') || '';
+    const documentId = searchParams?.get('documentId') || '';
     
     const { data: requirements, isLoading: isLoadingRequirements } =
         useDocumentRequirements(documentId);
@@ -737,9 +737,9 @@ export default function TracePage() {
         const handleNodeClick = () => {
             // Navigate to the requirement's trace page if it's not the current requirement
             if (node.id !== requirementId) {
-                const orgId = params.orgId as string;
-                const projectId = params.projectId as string;
-                const documentId = searchParams.get('documentId') || '';
+                const orgId = params?.orgId as string;
+                const projectId = params?.projectId as string;
+                const documentId = searchParams?.get('documentId') || '';
                 const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${node.id}/trace${documentId ? `?documentId=${documentId}` : ''}`;
                 router.push(traceUrl);
             }
