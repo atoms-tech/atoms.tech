@@ -132,14 +132,14 @@ export async function POST(
     const transport = server.packages?.[0]?.transport || server.transport || { type: 'stdio' };
 
     // Prepare server configuration
-    const serverConfig: Record<string, unknown> = {
+    // const serverConfig: Record<string, unknown> = { // Unused
       name: config?.name || server.name,
       description: server.description || '',
       namespace: decodedNamespace,
       version: server.version || '1.0.0',
       transport_type: transport.type || 'stdio',
       enabled: config?.enabled !== false,
-      config: config || {},
+      user_id: userId,
       user_id: userId,
       scope: scope || 'user',
       organization_id: scope === 'organization' ? organizationId : null,
@@ -201,7 +201,7 @@ export async function POST(
       description: server.description || '',
       version: server.version || '1.0.0',
       transport_type: transport.type || 'stdio',
-      transport: transport.type || 'stdio',
+      transport: transport || { type: 'stdio' }, // JSONB object, not string
       source: 'registry',
       tier: 'community',
       enabled: true,
@@ -222,7 +222,7 @@ export async function POST(
     const upsertServer = async () =>
       supabase
         .from('mcp_servers')
-        .upsert(baseServerRecord as any, {
+        .upsert(baseServerRecord as Record<string, unknown>, {
           onConflict: 'namespace',
           ignoreDuplicates: false,
         })
@@ -241,6 +241,7 @@ export async function POST(
     await retryIfMissing("'project_id'", 'project_id');
     await retryIfMissing("'tier'", 'tier');
     await retryIfMissing("'transport_type'", 'transport_type');
+    await retryIfMissing("'transport'", 'transport');
     await retryIfMissing("'source'", 'source');
 
     if (mcpServerError || !mcpServer) {
@@ -268,7 +269,7 @@ export async function POST(
         scope: scope || 'user',
         config: config || {},
         organization_id: scope === 'organization' ? organizationId : null,
-      } as any)
+      } as { id: string; [key: string]: unknown })
       .select()
       .single();
 

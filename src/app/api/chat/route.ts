@@ -295,33 +295,68 @@ async function persistAssistantVariant(params: {
             }
             : null;
 
-        const insertPayload = {
-            id: responseMessageId,
-            session_id: params.sessionId,
-            role: 'assistant',
-            content: normalizedContent,
-            metadata: metadataPayload,
-            tokens_in: params.responseMessage.tokens?.input ?? params.responseMessage.tokens_in ?? 0,
-            tokens_out: params.responseMessage.tokens?.output ?? params.responseMessage.tokens_out ?? 0,
-            tokens_total: params.responseMessage.tokens?.total ?? params.responseMessage.tokens_total ?? 0,
-            parent_id: resolvedParentId,
-            variant_index: nextVariantIndex,
-            is_active: true,
-            created_at: new Date().toISOString(),
-        };
-
-        const { data: inserted, error: insertError } = await (supabase
+        // Check if message already exists to avoid duplicate key errors
+        const { data: existingMessage } = await (supabase
             .from('chat_messages' as any))
-            .insert(insertPayload)
             .select('id')
-            .single();
+            .eq('id', responseMessageId)
+            .eq('session_id', params.sessionId)
+            .maybeSingle();
 
-        if (insertError) {
-            logger.error('Failed to persist assistant variant', insertError, {
-                sessionId: params.sessionId,
-                parentMessageId: resolvedParentId,
-            });
-            return;
+        let inserted: any = existingMessage;
+
+        if (!existingMessage) {
+            const insertPayload = {
+                id: responseMessageId,
+                session_id: params.sessionId,
+                role: 'assistant',
+                content: normalizedContent,
+                metadata: metadataPayload,
+                tokens_in: params.responseMessage.tokens?.input ?? params.responseMessage.tokens_in ?? 0,
+                tokens_out: params.responseMessage.tokens?.output ?? params.responseMessage.tokens_out ?? 0,
+                tokens_total: params.responseMessage.tokens?.total ?? params.responseMessage.tokens_total ?? 0,
+                parent_id: resolvedParentId,
+                variant_index: nextVariantIndex,
+                is_active: true,
+                created_at: new Date().toISOString(),
+            };
+
+            const { data: insertedData, error: insertError } = await (supabase
+                .from('chat_messages' as any))
+                .insert(insertPayload)
+                .select('id')
+                .single();
+
+            if (insertError) {
+                logger.error('Failed to persist assistant variant', insertError, {
+                    sessionId: params.sessionId,
+                    parentMessageId: resolvedParentId,
+                });
+                return;
+            }
+
+            inserted = insertedData;
+        } else {
+            // Message already exists, just update it
+            const { error: updateError } = await (supabase
+                .from('chat_messages' as any))
+                .update({
+                    content: normalizedContent,
+                    metadata: metadataPayload,
+                    tokens_in: params.responseMessage.tokens?.input ?? params.responseMessage.tokens_in ?? 0,
+                    tokens_out: params.responseMessage.tokens?.output ?? params.responseMessage.tokens_out ?? 0,
+                    tokens_total: params.responseMessage.tokens?.total ?? params.responseMessage.tokens_total ?? 0,
+                    is_active: true,
+                })
+                .eq('id', responseMessageId)
+                .eq('session_id', params.sessionId);
+
+            if (updateError) {
+                logger.error('Failed to update existing assistant message', updateError, {
+                    sessionId: params.sessionId,
+                    messageId: responseMessageId,
+                });
+            }
         }
 
         const finalParentId = resolvedParentId ?? (inserted as any)?.id ?? responseMessageId;
