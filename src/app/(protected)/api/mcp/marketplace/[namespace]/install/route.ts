@@ -97,7 +97,7 @@ export async function POST(
     const servers = registryData.servers || [];
 
     // Find server by namespace (name field in registry)
-    const serverEntry = servers.find((s: any) => s.server?.name === decodedNamespace);
+    const serverEntry = servers.find((s: { server?: { name?: string } }) => s.server?.name === decodedNamespace);
 
     if (!serverEntry || !serverEntry.server) {
       return NextResponse.json(
@@ -132,7 +132,7 @@ export async function POST(
     const transport = server.packages?.[0]?.transport || server.transport || { type: 'stdio' };
 
     // Prepare server configuration
-    const serverConfig: any = {
+    const serverConfig: Record<string, unknown> = {
       name: config?.name || server.name,
       description: server.description || '',
       namespace: decodedNamespace,

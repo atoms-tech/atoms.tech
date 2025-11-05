@@ -126,7 +126,7 @@ export async function GET() {
             const allServers = [...(userServers || []), ...(orgServers || [])];
             
             // Transform the data to match the expected format
-            const servers = allServers.map((server: any) => ({
+            const servers = allServers.map((server: { [key: string]: unknown }) => ({
                 id: server.id,
                 name: server.name || 'Unknown',
                 namespace: server.namespace || '',
@@ -170,7 +170,7 @@ export async function GET() {
             }
 
             // Transform the data to match the expected format
-            const servers = (userServers || []).map((server: any) => ({
+            const servers = (userServers || []).map((server: { [key: string]: unknown }) => ({
                 id: server.id,
                 name: server.name || 'Unknown',
                 namespace: server.namespace || '',
