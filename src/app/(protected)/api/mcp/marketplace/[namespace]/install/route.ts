@@ -193,7 +193,7 @@ export async function POST(
 
     // First, ensure the server exists in mcp_servers table
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
-    // Source: 'registry' for MCP registry servers
+    // Source: 'registry' for MCP registry servers (now allowed after constraint update)
     // Tier: 'community' for marketplace servers (user risk)
     const baseServerRecord: Record<string, any> = {
       namespace: decodedNamespace,

@@ -68,7 +68,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             <DropdownMenuContent align="start" className="w-[320px]">
                 {models.map((model) => {
                     const display = formatModelDisplayName(model.id, model.owned_by);
-                    const description = (model as any).description;
+                    const description = (model as { description?: string }).description || 'No description available';
                     return (
                         <DropdownMenuItem
                             key={model.id}

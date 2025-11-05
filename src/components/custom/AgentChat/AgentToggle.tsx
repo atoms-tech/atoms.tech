@@ -6,7 +6,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-import { useAgentStore } from './hooks/useAgentStore';
+// import { useAgentStore } from './hooks/useAgentStore'; // Will be used when implementing toggle
 
 interface AgentToggleProps {
     isOpen: boolean;
@@ -21,7 +21,7 @@ export const AgentToggle: React.FC<AgentToggleProps> = ({
 }) => {
     // Note: Message count removed since messages are now managed server-side
     // This could be fetched from API if needed
-    const messageCount = 0;
+    const _messageCount = 0;
     const unreadCount = 0;
 
     // Don't show anything when panel is open

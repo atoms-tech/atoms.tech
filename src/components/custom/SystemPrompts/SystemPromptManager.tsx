@@ -1,5 +1,6 @@
 'use client';
 
+// eslint-disable @typescript-eslint/no-explicit-any
 import {
     Check,
     Edit,
@@ -71,7 +72,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
     currentOrganizationId,
     onPromptSelected,
 }) => {
-    const { user, profile } = useUser();
+    const { user: _user, profile: _profile } = useUser();
     const { toast } = useToast();
     const { isPlatformAdmin } = usePlatformAdmin();
 

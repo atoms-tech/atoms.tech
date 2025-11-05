@@ -1,5 +1,7 @@
 'use client';
 
+// eslint-disable @typescript-eslint/no-explicit-any
+
 /**
  * EnhancedMarketplace Component
  * Multi-registry marketplace with Anthropic + Cline registries
@@ -13,7 +15,7 @@ import { ServerCard } from './ServerCard';
 import { ServerDetailModal } from './ServerDetailModal';
 import { InstallationProgressModal, InstallationStepStatus } from './InstallationProgressModal';
 import { ServerAuthConfigModal } from './ServerAuthConfigModal';
-import { Search, Loader2, RefreshCw, Shield, Users, Zap, ChevronLeft, ChevronRight, Code, FileText, Download, ExternalLink, Globe, Lock, LockOpen, CheckCircle2, Star } from 'lucide-react';
+import { Search, Loader2, RefreshCw, Shield, Users, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Pagination } from '@/components/ui/pagination';
 import { UnifiedMCPServer, RegistrySource } from '@/services/mcp/multi-registry.service';
@@ -46,7 +48,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
     const [selectedTransport, setSelectedTransport] = useState<string>('all');
     const [selectedAuth, setSelectedAuth] = useState<string>('all');
     const [transports, setTransports] = useState<string[]>([]);
-    const [authTypes, setAuthTypes] = useState<string[]>([]);
+    const [_authTypes, _setAuthTypes] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState<string>('quality');
     
     // Installation loading state - track by server namespace

@@ -16,6 +16,7 @@ interface MessageWithArtifactsProps {
         content: string;
         createdAt?: Date;
         isStreaming?: boolean;
+        isPending?: boolean; // Message is queued and waiting to be sent
     };
     editable?: boolean;
     onEdit?: () => void;
@@ -56,7 +57,7 @@ export const MessageWithArtifacts: React.FC<MessageWithArtifactsProps> = ({
                 role={message.role}
                 isStreaming={message.isStreaming}
                 timestamp={message.createdAt}
-                editable={editable && !isEditing}
+                editable={editable && !isEditing && !message.isPending}
                 onEdit={onEdit}
                 isEditing={isEditing}
                 branchCount={branchCount}
@@ -65,6 +66,7 @@ export const MessageWithArtifacts: React.FC<MessageWithArtifactsProps> = ({
                 className={cn(
                     message.role === 'system' && 'bg-secondary text-secondary-foreground',
                     message.role === 'tool' && 'bg-muted/70 text-muted-foreground',
+                    message.isPending && 'opacity-60 ring-1 ring-primary/30',
                 )}
             >
                 {/* Message Content */}
@@ -120,7 +122,21 @@ export const MessageWithArtifacts: React.FC<MessageWithArtifactsProps> = ({
                     </div>
                 )}
             </ConversationMessage>
-            
+
+            {/* Queued indicator for pending messages */}
+            {message.isPending && (
+                <div className="flex justify-end mt-1 px-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        <div className="flex gap-0.5">
+                            <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.4s' }} />
+                            <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '160ms', animationDuration: '1.4s' }} />
+                            <div className="w-1 h-1 rounded-full bg-current animate-bounce" style={{ animationDelay: '320ms', animationDuration: '1.4s' }} />
+                        </div>
+                        <span>Queued</span>
+                    </div>
+                </div>
+            )}
+
             {/* Branch navigation below message where branch occurred */}
             {showBranchNav && branchCount > 1 && onSwitchBranch && (
                 <div className="flex justify-end mt-2 px-1">

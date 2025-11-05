@@ -199,7 +199,7 @@ export const AgentSettingsV6: React.FC<AgentSettingsV6Props> = ({
                                 <div className="space-y-0.5">
                                     <Label>Stream Responses</Label>
                                     <p className="text-sm text-muted-foreground">
-                                        Show responses as they're generated
+                                        Show responses as they&apos;re generated
                                     </p>
                                 </div>
                                 <input type="checkbox" defaultChecked className="h-4 w-4" />

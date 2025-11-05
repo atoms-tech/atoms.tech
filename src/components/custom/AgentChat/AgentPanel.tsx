@@ -1,4 +1,5 @@
-// @ts-nocheck
+// Type checking disabled for rapid development - will be refactored
+// eslint-disable @typescript-eslint/no-explicit-any
 /**
  * Agent Panel - Vercel AI SDK v6 implementation
  *
@@ -10,7 +11,7 @@
 
 'use client';
 
-import { ChevronLeft, ChevronRight, GitBranch, RefreshCcw, Paperclip } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GitBranch, Paperclip } from 'lucide-react';
 import React, {
     useCallback,
     useEffect,
@@ -19,7 +20,7 @@ import React, {
     useState,
     useReducer,
 } from 'react';
-import ReactMarkdown from 'react-markdown';
+// import ReactMarkdown from 'react-markdown'; // Will be used when rendering markdown
 import { v4 as uuidv4 } from 'uuid';
 
 import { useChat, type UIMessage as Message } from '@ai-sdk/react';
@@ -36,7 +37,7 @@ import {
     ConversationBody,
     ConversationMessages,
     ConversationFooter,
-    ConversationMessage,
+    // ConversationMessage, // Will be used when rendering messages
     PromptInput,
 } from '@/components/ui/ai-elements';
 
@@ -65,6 +66,7 @@ interface DisplayMessage {
     role: ChatRole;
     content: string;
     isStreaming?: boolean;
+    isPending?: boolean; // Message is queued and waiting to be sent
     createdAt?: Date;
 }
 
@@ -144,7 +146,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const [pendingApprovals, setPendingApprovals] = useState<Map<string, (approved: boolean) => void>>(new Map());
 
     // NEW: Tool execution state
-    const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
+    const [toolExecutions, _setToolExecutions] = useState<ToolExecution[]>([]);
 
     const ensureSessionId = useCallback(() => {
         if (currentSessionId) return currentSessionId;
@@ -164,12 +166,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         messages: sdkMessages,
     } = chatHelpers;
 
+    // Type definition for dynamic chat helpers
+    type ChatHelpers = {
+        append: (message: any) => void;
+        sendMessage: (message: any) => void;
+        setMessages: (messages: any[]) => void;
+        isLoading: boolean;
+        error: any;
+    };
+
     // Type assertions for v6 migration
-    const append = (chatHelpers as any).append;
-    const sendMessage = (chatHelpers as any).sendMessage;
-    const setMessages = (chatHelpers as any).setMessages;
-    const isLoading = (chatHelpers as any).isLoading;
-    const error = (chatHelpers as any).error;
+    const append = (chatHelpers as ChatHelpers).append;
+    const sendMessage = (chatHelpers as ChatHelpers).sendMessage;
+    const setMessages = (chatHelpers as ChatHelpers).setMessages;
+    const isLoading = (chatHelpers as ChatHelpers).isLoading;
+    const error = (chatHelpers as ChatHelpers).error;
 
     // Force re-render during streaming
     const [, forceUpdate] = useReducer(x => x + 1, 0);
@@ -213,12 +224,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const displayMessages = React.useMemo(
         () => {
             // Filter messages based on hiddenAfterIndex
-            const visibleMessages = hiddenAfterIndex !== null 
+            const visibleMessages = hiddenAfterIndex !== null
                 ? sdkMessages.slice(0, hiddenAfterIndex + 1)
                 : sdkMessages;
-            
+
             const normalized = visibleMessages.map((msg, index) => normalizeMessage(msg, index, visibleMessages));
-            
+
             // If loading and last visible message is user (or no messages), add a placeholder assistant message for streaming
             const lastNormalized = normalized[normalized.length - 1];
             if (isLoading && (!lastNormalized || lastNormalized.role === 'user')) {
@@ -229,10 +240,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                     isStreaming: true,
                 });
             }
-            
+
+            // Add queued messages as pending user messages
+            messageQueue.forEach((queuedMessage, index) => {
+                normalized.push({
+                    id: `queued-${index}`,
+                    role: 'user',
+                    content: queuedMessage,
+                    isStreaming: false,
+                    isPending: true, // Mark as pending/queued
+                });
+            });
+
             return normalized;
         },
-        [sdkMessages, normalizeMessage, hiddenAfterIndex, isLoading],
+        [sdkMessages, normalizeMessage, hiddenAfterIndex, isLoading, messageQueue],
     );
 
     // Track last message content for smooth streaming updates

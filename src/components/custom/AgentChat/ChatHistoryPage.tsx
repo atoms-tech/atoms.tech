@@ -61,7 +61,7 @@ export const ChatHistoryPage: React.FC<ChatHistoryPageProps> = ({
             if (!response.ok) throw new Error('Failed to load sessions');
             
             const data = await response.json();
-            const mappedSessions: ChatSession[] = data.sessions.map((s: any) => ({
+            const mappedSessions: ChatSession[] = data.sessions.map((s: { id: string; title?: string; updated_at?: string; }) => ({
                 id: s.id,
                 title: s.title || 'Untitled Chat',
                 lastMessage: 'Last message preview...', // TODO: Get from API
@@ -167,7 +167,7 @@ export const ChatHistoryPage: React.FC<ChatHistoryPageProps> = ({
             </div>
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)} className="flex-1 flex flex-col">
                 <TabsList className="w-full justify-start rounded-none border-b px-4">
                     <TabsTrigger value="all">All ({sessions.length})</TabsTrigger>
                     <TabsTrigger value="active">Active ({activeSessions.length})</TabsTrigger>
