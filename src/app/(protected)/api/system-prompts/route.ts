@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@workos-inc/authkit-nextjs';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createClient as _createClient } from '@/lib/database';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
         }
 
-        const supabase = await createClient();
+        const supabase = await createServerClient();
 
         // Get query parameters
         const searchParams = request.nextUrl.searchParams;
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
         }
 
-        const supabase = await createClient();
+        const supabase = await createServerClient();
 
         // Parse request body
         const body = await request.json();

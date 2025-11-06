@@ -1,5 +1,5 @@
 // Type checking disabled for rapid development - will be refactored
-// eslint-disable @typescript-eslint/no-explicit-any
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Agent Panel - Vercel AI SDK v6 implementation
  *

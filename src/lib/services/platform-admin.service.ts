@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 import type { Database, Json } from '@/types/base/database.types';
 
 type PlatformAdmin = Database['public']['Tables']['platform_admins']['Row'];
@@ -17,7 +17,7 @@ export interface PlatformAdminService {
 }
 
 export class PlatformAdminServiceImpl implements PlatformAdminService {
-    private supabase = getSupabaseServiceRoleClient();
+    private supabase = getServiceRoleClient();
 
     private getClient(): SupabaseClient<Database> | null {
         return this.supabase;

@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/utils/supabase/server';
+import { createClient as _createClient } from '@/lib/utils/supabase/server';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(
@@ -17,7 +17,7 @@ export async function GET(
 
     try {
         // Get authenticated user
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         const {
             data: { user },
             error: authError,

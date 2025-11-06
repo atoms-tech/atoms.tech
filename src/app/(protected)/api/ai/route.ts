@@ -6,7 +6,7 @@ import {
     gumloopService,
 } from '@/lib/services/gumloop';
 
-// import { createClient } from '@/lib/supabase/supabaseServer';
+// import { createClient } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     try {
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
         //     );
 
         //     // increment the API usage counter
-        //     const supabase = await createClient();
+        //     const supabase = await createServerClient();
         //     const { data: billingRecord, error } = await supabase
         //         .from('billing_cache')
         //         .select('*')

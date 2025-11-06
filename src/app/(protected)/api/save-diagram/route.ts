@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createClient as _createClient } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     console.log('request');
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     const { diagramData, diagramId } = await request.json();
 

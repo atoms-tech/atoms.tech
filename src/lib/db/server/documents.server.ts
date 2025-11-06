@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createClient } from '@/lib/database';
 
 export const getProjectDocumentsServer = async (projectId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('documents')
         .select('*')
@@ -13,7 +13,7 @@ export const getProjectDocumentsServer = async (projectId: string) => {
 };
 
 export const getDocumentBlocksAndRequirementsServer = async (documentId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('blocks')
         .select(
@@ -31,7 +31,7 @@ export const getDocumentBlocksAndRequirementsServer = async (documentId: string)
 };
 
 export const getDocumentDataServer = async (documentId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('documents')
         .select('*')

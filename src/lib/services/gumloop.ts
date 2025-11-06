@@ -1,3 +1,5 @@
+import { BaseHTTPClient } from '@/lib/http';
+
 const GUMLOOP_API_KEY = process.env.NEXT_PUBLIC_GUMLOOP_API_KEY;
 const GUMLOOP_API_URL =
     process.env.NEXT_PUBLIC_GUMLOOP_API_URL || 'https://api.gumloop.com/api/v1';
@@ -69,10 +71,24 @@ export interface PipelineRunStatusResponse {
     credit_cost: number;
 }
 
-export class GumloopService {
+export class GumloopService extends BaseHTTPClient {
     private static instance: GumloopService;
 
-    private constructor() {}
+    private constructor() {
+        super({
+            baseURL: GUMLOOP_API_URL,
+            apiKey: `Bearer ${GUMLOOP_API_KEY}`,
+            timeout: 60000, // 60 seconds for long-running operations
+            retries: 3,
+            retryDelay: 1000,
+            onRequest: async (url, options) => {
+                console.log('[Gumloop] Request:', options.method, url);
+            },
+            onError: async (error) => {
+                console.error('[Gumloop] Error:', error.message);
+            },
+        });
+    }
 
     public static getInstance(): GumloopService {
         if (!GumloopService.instance) {
@@ -116,7 +132,6 @@ export class GumloopService {
             const encodedFiles = await Promise.all(
                 files.map(async (file) => {
                     const fileContents = await file.bytes();
-
                     return Buffer.from(fileContents).toString('base64');
                 }),
             );
@@ -129,30 +144,12 @@ export class GumloopService {
                 })),
             };
 
-            console.log('Making API request to upload files');
-            const response = await fetch(`${GUMLOOP_API_URL}/upload_files`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${GUMLOOP_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            const uploadResult = await this.post<{ uploaded_files: string[] }>(
+                '/upload_files',
+                payload,
+            );
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Upload API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseBody: errorText,
-                });
-                throw new Error(
-                    `Server error: ${response.status} ${response.statusText}`,
-                );
-            }
-
-            const uploadResult = await response.json();
-            console.log('Upload result:', uploadResult.success);
+            console.log('Upload result:', uploadResult);
             return uploadResult.uploaded_files;
         } catch (error) {
             console.error('Upload process failed:', error);
@@ -266,38 +263,18 @@ export class GumloopService {
         console.log('Prepared pipeline inputs:', pipelineInputs);
 
         try {
-            console.log('Making API request to start pipeline');
-            console.log({
+            console.log('Starting pipeline:', {
                 user_id: USER_ID,
                 saved_item_id: pipeline_id,
                 pipeline_inputs: pipelineInputs,
             });
-            const response = await fetch(`${GUMLOOP_API_URL}/start_pipeline`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${GUMLOOP_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id: USER_ID,
-                    saved_item_id: pipeline_id,
-                    pipeline_inputs: pipelineInputs,
-                }),
+
+            const result = await this.post<StartPipelineResponse>('/start_pipeline', {
+                user_id: USER_ID,
+                saved_item_id: pipeline_id,
+                pipeline_inputs: pipelineInputs,
             });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Start pipeline API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseBody: errorText,
-                });
-                throw new Error(
-                    `Failed to start pipeline: ${response.status} ${response.statusText}`,
-                );
-            }
-
-            const result = await response.json();
             console.log('Pipeline started successfully:', result);
             return result;
         } catch (error) {
@@ -317,32 +294,10 @@ export class GumloopService {
         });
 
         try {
-            // console.log('Making API request to get pipeline run');
-            const response = await fetch(
-                `${GUMLOOP_API_URL}/get_pl_run?run_id=${runId}&user_id=${USER_ID}`,
-                {
-                    method: 'GET',
-                    headers: {
-                        Authorization: `Bearer ${GUMLOOP_API_KEY}`,
-                        'Content-Type': 'application/json',
-                    },
-                },
+            const result = await this.get<PipelineRunStatusResponse>(
+                `/get_pl_run?run_id=${runId}&user_id=${USER_ID}`,
             );
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Get pipeline run API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseBody: errorText,
-                });
-                throw new Error(
-                    `Failed to get pipeline run status: ${response.status} ${response.statusText}`,
-                );
-            }
-
-            const result = (await response.json()) as PipelineRunStatusResponse;
-            // console.log('Pipeline run status retrieved:', result);
             return result;
         } catch (error) {
             console.error('Get pipeline run process failed:', error);

@@ -8,6 +8,8 @@
  * @module agentapi
  */
 
+import { BaseHTTPClient } from '@/lib/http';
+
 // ============================================================================
 // Type Definitions
 // ============================================================================
@@ -208,28 +210,37 @@ export interface ChatCompletionOptions {
  * });
  * ```
  */
-export class AgentAPIClient {
-  private baseURL: string;
+export class AgentAPIClient extends BaseHTTPClient {
   private apiKey?: string;
   private getToken?: () => Promise<string | null>;
-  private timeout: number;
-  private maxRetries: number;
-  private retryDelay: number;
 
   constructor(config: AgentAPIConfig = {}) {
-    this.baseURL = config.baseURL || process.env.NEXT_PUBLIC_AGENTAPI_URL || 'http://localhost:8787';
+    const baseURL = config.baseURL || process.env.NEXT_PUBLIC_AGENTAPI_URL || 'http://localhost:8787';
 
-    // Priority: provided apiKey > static API key from env > getToken function
+    // Determine API key
+    let apiKey: string | undefined;
     if (config.apiKey) {
-      this.apiKey = config.apiKey;
+      apiKey = config.apiKey;
     } else if (config.useStaticApiKey && process.env.NEXT_PUBLIC_STATIC_API_KEY) {
-      this.apiKey = process.env.NEXT_PUBLIC_STATIC_API_KEY;
+      apiKey = process.env.NEXT_PUBLIC_STATIC_API_KEY;
     }
 
+    super({
+      baseURL,
+      apiKey: apiKey ? `Bearer ${apiKey}` : undefined,
+      timeout: config.timeout || 60000,
+      retries: config.maxRetries || 3,
+      retryDelay: config.retryDelay || 1000,
+      onRequest: async (url, options) => {
+        console.log('[AgentAPI] Request:', options.method, url);
+      },
+      onError: async (error) => {
+        console.error('[AgentAPI] Error:', error.message);
+      },
+    });
+
+    this.apiKey = apiKey;
     this.getToken = config.getToken;
-    this.timeout = config.timeout || 60000; // 60 seconds
-    this.maxRetries = config.maxRetries || 3;
-    this.retryDelay = config.retryDelay || 1000; // 1 second
   }
 
   /**
@@ -250,51 +261,14 @@ export class AgentAPIClient {
   }
 
   /**
-   * Sleep for a specified duration
+   * Fetch for streaming (uses native fetch for streaming support)
+   * Note: Streaming requests don't use retry logic
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Retry logic wrapper for fetch requests
-   */
-  private async fetchWithRetry(
+  private async fetchForStreaming(
     url: string,
-    options: RequestInit,
-    retries = 0
+    options: RequestInit
   ): Promise<Response> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      const response = await fetch(url, {
-        ...options,
-        signal: options.signal || controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // Don't retry on client errors (4xx)
-      if (response.status >= 400 && response.status < 500) {
-        return response;
-      }
-
-      // Retry on server errors (5xx) or network errors
-      if (!response.ok && retries < this.maxRetries) {
-        await this.sleep(this.retryDelay * Math.pow(2, retries));
-        return this.fetchWithRetry(url, options, retries + 1);
-      }
-
-      return response;
-    } catch (error) {
-      // Retry on network errors
-      if (retries < this.maxRetries) {
-        await this.sleep(this.retryDelay * Math.pow(2, retries));
-        return this.fetchWithRetry(url, options, retries + 1);
-      }
-      throw error;
-    }
+    return fetch(url, options);
   }
 
   /**
@@ -408,28 +382,26 @@ export class AgentAPIClient {
         headers['Authorization'] = authHeader;
       }
 
-      const url = `${this.baseURL}/v1/chat/completions`;
-
       try {
-        const response = await this.fetchWithRetry(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(request),
-          signal: options.signal,
-        });
-
-        if (!response.ok) {
-          const errorData: APIError = await response.json().catch(() => ({
-            error: {
-              message: `HTTP ${response.status}: ${response.statusText}`,
-              type: 'api_error',
-            },
-          }));
-          throw new Error(errorData.error.message || 'Unknown API error');
-        }
-
-        // Handle streaming responses
+        // Handle streaming responses (use native fetch for streaming)
         if (request.stream) {
+          const response = await this.fetchForStreaming(`${this.getBaseURL()}/v1/chat/completions`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(request),
+            signal: options.signal,
+          });
+
+          if (!response.ok) {
+            const errorData: APIError = await response.json().catch(() => ({
+              error: {
+                message: `HTTP ${response.status}: ${response.statusText}`,
+                type: 'api_error',
+              },
+            }));
+            throw new Error(errorData.error.message || 'Unknown API error');
+          }
+
           await this.parseSSEStream(
             response,
             options.onChunk || (() => {}),
@@ -439,8 +411,12 @@ export class AgentAPIClient {
           return;
         }
 
-        // Handle non-streaming responses
-        const data: ChatCompletionResponse = await response.json();
+        // Handle non-streaming responses (use BaseHTTPClient)
+        const data = await this.post<ChatCompletionResponse>(
+          '/v1/chat/completions',
+          request,
+          { headers: authHeader ? { Authorization: authHeader } : {} }
+        );
         return data;
       } catch (error) {
         const wrappedError = error instanceof Error
@@ -473,33 +449,12 @@ export class AgentAPIClient {
      */
     list: async (): Promise<ModelsResponse> => {
       const authHeader = await this.getAuthHeader();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
-
-      const url = `${this.baseURL}/v1/models`;
 
       try {
-        const response = await this.fetchWithRetry(url, {
-          method: 'GET',
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData: APIError = await response.json().catch(() => ({
-            error: {
-              message: `HTTP ${response.status}: ${response.statusText}`,
-              type: 'api_error',
-            },
-          }));
-          throw new Error(errorData.error.message || 'Unknown API error');
-        }
-
-        const data: ModelsResponse = await response.json();
+        const data = await this.get<ModelsResponse>(
+          '/v1/models',
+          { headers: authHeader ? { Authorization: authHeader } : {} }
+        );
         return data;
       } catch (error) {
         throw error instanceof Error ? error : new Error(String(error));
@@ -520,33 +475,12 @@ export class AgentAPIClient {
      */
     retrieve: async (modelId: string): Promise<ModelInfo> => {
       const authHeader = await this.getAuthHeader();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (authHeader) {
-        headers['Authorization'] = authHeader;
-      }
-
-      const url = `${this.baseURL}/v1/models/${modelId}`;
 
       try {
-        const response = await this.fetchWithRetry(url, {
-          method: 'GET',
-          headers,
-        });
-
-        if (!response.ok) {
-          const errorData: APIError = await response.json().catch(() => ({
-            error: {
-              message: `HTTP ${response.status}: ${response.statusText}`,
-              type: 'api_error',
-            },
-          }));
-          throw new Error(errorData.error.message || 'Unknown API error');
-        }
-
-        const data: ModelInfo = await response.json();
+        const data = await this.get<ModelInfo>(
+          `/v1/models/${modelId}`,
+          { headers: authHeader ? { Authorization: authHeader } : {} }
+        );
         return data;
       } catch (error) {
         throw error instanceof Error ? error : new Error(String(error));

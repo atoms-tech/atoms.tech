@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getDocumentDataServer } from '@/lib/db/server/documents.server';
-import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { createServerClientWithToken } from '@/lib/database';
+import { getServiceRoleClient } from '@/lib/database';
 import { Json } from '@/types/base/database.types';
 
 /**
@@ -44,7 +44,7 @@ export async function GET(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -82,7 +82,7 @@ export async function GET(
         if (!accessToken) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
         const { data: rows, error: rowsError } = await userClient
             .from('table_rows')
             .select('*')
@@ -141,7 +141,7 @@ export async function POST(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -188,7 +188,7 @@ export async function POST(
         if (!accessToken) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
         const { data, error } = await userClient
             .from('table_rows')
             .insert({
@@ -247,7 +247,7 @@ export async function PATCH(
                 { status: 409 },
             );
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -290,7 +290,7 @@ export async function PATCH(
         if (!accessToken) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
         const { data, error } = await userClient
             .from('table_rows')
             .update(updatePayload)
@@ -343,7 +343,7 @@ export async function DELETE(
                 { status: 409 },
             );
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -379,7 +379,7 @@ export async function DELETE(
         if (!accessToken) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
         const { error } = await userClient
             .from('table_rows')
             .delete()

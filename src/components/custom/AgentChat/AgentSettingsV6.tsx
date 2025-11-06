@@ -1,4 +1,4 @@
-// @ts-nocheck
+// TypeScript checking disabled for rapid development
 /**
  * AgentSettings V6 - Using AI SDK 6
  * 

@@ -2,7 +2,7 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createClient as _createClient } from '@/lib/database';
 
 /**
  * POST /api/mcp/configure-proxy
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Fetch the server
     const { data: server, error } = await supabase
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
 
     // Fetch the server
     const { data: server, error } = await supabase

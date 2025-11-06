@@ -10,7 +10,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@workos-inc/authkit-nextjs';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -146,7 +146,7 @@ export async function POST(
     };
 
     // Use service role client for admin operations
-    const supabase = getSupabaseServiceRoleClient();
+    const supabase = getServiceRoleClient();
 
     if (!supabase) {
       return NextResponse.json(

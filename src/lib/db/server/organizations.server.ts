@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createServerClient } from '@/lib/database';
 
 export const getOrganizationIdBySlugServer = async (slug: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('organizations')
         .select('id')
@@ -12,7 +12,7 @@ export const getOrganizationIdBySlugServer = async (slug: string) => {
 };
 
 export const getOrganizationServer = async (orgId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('organizations')
         .select('*')
@@ -24,7 +24,7 @@ export const getOrganizationServer = async (orgId: string) => {
 };
 
 export const getUserOrganizationsServer = async (userId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('organization_members')
         .select(
@@ -51,7 +51,7 @@ export const getUserOrganizationsServer = async (userId: string) => {
 
 // Get all organization ids for a user by membership
 export const getOrganizationIdsByMembershipServer = async (userId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('organization_members')
         .select('organization_id')
@@ -64,7 +64,7 @@ export const getOrganizationIdsByMembershipServer = async (userId: string) => {
 };
 
 export const getOrganizationMembersServer = async (organizationId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('organization_members')
         .select('*, profiles(*)')

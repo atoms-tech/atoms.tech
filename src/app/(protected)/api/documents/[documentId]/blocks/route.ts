@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getDocumentDataServer } from '@/lib/db/server/documents.server';
 // No user-scoped client needed here; use service role for insertion to avoid UUID casting issues in policies
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 import { Json, TablesInsert } from '@/types/base/database.types';
 
 /**
@@ -54,7 +54,7 @@ export async function POST(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },

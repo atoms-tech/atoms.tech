@@ -2,7 +2,7 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 
 /**
  * GET /api/organizations/[orgId]/properties
@@ -37,7 +37,7 @@ export async function GET(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },

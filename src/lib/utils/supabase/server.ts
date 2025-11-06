@@ -1,1 +1,1 @@
-export { createClient } from '@/lib/supabase/supabaseServer';
+export { createServerClient as createClient } from '@/lib/database';

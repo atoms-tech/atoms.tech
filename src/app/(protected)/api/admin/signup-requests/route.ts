@@ -6,7 +6,7 @@ import { Resend } from 'resend';
 
 import { SignupApprovalEmail } from '@/emails/SignupApprovalEmail';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -42,7 +42,7 @@ export async function GET(_request: NextRequest) {
         // TODO: Add role-based access control to verify user is an admin
         // For now, all authenticated users can view
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json(
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json(

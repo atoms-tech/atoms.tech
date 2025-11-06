@@ -2,8 +2,8 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { createServerClientWithToken } from '@/lib/database';
+import { getServiceRoleClient } from '@/lib/database';
 
 interface CreateRelationshipRequest {
     ancestorId: string;
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
 
-        const serviceClient = getSupabaseServiceRoleClient();
+        const serviceClient = getServiceRoleClient();
         if (!serviceClient) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
 
         // Call database function to create relationship with cycle detection (user-scoped)
         const { data, error } = await userClient.rpc('create_requirement_relationship', {
@@ -189,7 +189,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
 
-        const serviceClient = getSupabaseServiceRoleClient();
+        const serviceClient = getServiceRoleClient();
         if (!serviceClient) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -275,7 +275,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const userClient = createSupabaseClientWithToken(accessToken);
+        const userClient = createServerClientWithToken(accessToken);
 
         // Call database function to delete relationship (user-scoped)
         const { data, error } = await userClient.rpc('delete_requirement_relationship', {
@@ -351,8 +351,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
         }
 
-        const userClient = createSupabaseClientWithToken(accessToken);
-        const serviceClient = getSupabaseServiceRoleClient();
+        const userClient = createServerClientWithToken(accessToken);
+        const serviceClient = getServiceRoleClient();
         if (!serviceClient) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },

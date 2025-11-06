@@ -3,7 +3,7 @@
 import { History } from 'lucide-react';
 import React, { useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
+// import { Badge } from '@/components/ui/badge'; // Will be used when implementing badge
 import { Button } from '@/components/ui/button';
 import {
     Dialog,

@@ -2,7 +2,7 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 
 export async function GET(
     _request: Request,
@@ -33,7 +33,7 @@ export async function GET(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json(

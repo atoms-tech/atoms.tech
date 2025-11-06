@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getDocumentDataServer } from '@/lib/db/server/documents.server';
-import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { createServerClientWithToken } from '@/lib/database';
+import { getServiceRoleClient } from '@/lib/database';
 import { isFeatureEnabled } from '@/lib/utils/env-validation';
 import { Json, TablesInsert } from '@/types/base/database.types';
 
@@ -74,7 +74,7 @@ export async function GET(
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -404,7 +404,7 @@ export async function POST(
                   defaultValue?: string;
               };
 
-        const supabase = getSupabaseServiceRoleClient();
+        const supabase = getServiceRoleClient();
         if (!supabase) {
             return NextResponse.json(
                 { error: 'Supabase service client unavailable' },
@@ -521,7 +521,7 @@ export async function POST(
 
             // Insert column using user-scoped client to align with table grants
             const userClient = accessToken
-                ? createSupabaseClientWithToken(accessToken)
+                ? createServerClientWithToken(accessToken)
                 : null;
             const { data: column, error: columnErr } = await (userClient ?? supabase)
                 .from('columns')
@@ -562,7 +562,7 @@ export async function POST(
             const position = await getNextPosition(body.blockId);
 
             const userClient2 = accessToken
-                ? createSupabaseClientWithToken(accessToken)
+                ? createServerClientWithToken(accessToken)
                 : null;
             const { data: column, error: columnErr } = await (userClient2 ?? supabase)
                 .from('columns')

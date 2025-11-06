@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Copy, Download, Code, Eye, Maximize2 } from 'lucide-react';
+import { Copy, Download, Code, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { MermaidPreview, MermaidFallback } from './MermaidPreview';
+import { MermaidPreview } from './MermaidPreview';
 
 export interface Artifact {
     id: string;
@@ -141,12 +141,8 @@ const ArtifactPreview: React.FC<ArtifactPreviewProps> = ({ artifact }) => {
         case 'svg':
             return <SVGPreview content={artifact.content} />;
         case 'mermaid':
-            // Use MermaidPreview with error boundary
-            try {
-                return <MermaidPreview content={artifact.content} />;
-            } catch (error) {
-                return <MermaidFallback content={artifact.content} />;
-            }
+            // Use MermaidPreview
+            return <MermaidPreview content={artifact.content} />;
         case 'react':
             return <ReactPreview content={artifact.content} />;
         default:

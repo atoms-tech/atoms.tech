@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/supabaseServer';
+import { createClient } from '@/lib/database';
 
 export const getProjectByIdServer = async (id: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -13,7 +13,7 @@ export const getProjectByIdServer = async (id: string) => {
 };
 
 export const getUserProjectsServer = async (userId: string, orgId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data: projectData, error } = await supabase
         .from('projects')
         .select(
@@ -33,7 +33,7 @@ export const getUserProjectsServer = async (userId: string, orgId: string) => {
 };
 
 export const getProjectMembersServer = async (projectId: string) => {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const { data, error } = await supabase
         .from('project_members')
         .select('*, profiles(*)')

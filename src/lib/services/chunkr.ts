@@ -1,3 +1,5 @@
+import { BaseHTTPClient } from '@/lib/http';
+
 const CHUNKR_API_KEY =
     process.env.NEXT_PUBLIC_CHUNKR_API_KEY ||
     (process.env.NODE_ENV === 'production' ? undefined : 'mock_api_key_for_build');
@@ -41,10 +43,24 @@ export type GetOCRRunParams = {
     taskId: string;
 };
 
-export class ChunkrService {
+export class ChunkrService extends BaseHTTPClient {
     private static instance: ChunkrService;
 
-    private constructor() {}
+    private constructor() {
+        super({
+            baseURL: CHUNKR_API_URL,
+            apiKey: CHUNKR_API_KEY,
+            timeout: 120000, // 2 minutes for OCR operations
+            retries: 3,
+            retryDelay: 2000,
+            onRequest: async (url, options) => {
+                console.log('[Chunkr] Request:', options.method, url);
+            },
+            onError: async (error) => {
+                console.error('[Chunkr] Error:', error.message);
+            },
+        });
+    }
 
     public static getInstance(): ChunkrService {
         if (!ChunkrService.instance) {
@@ -73,29 +89,8 @@ export class ChunkrService {
                 },
             };
 
-            console.log('Making API request to start OCR task');
-            const response = await fetch(`${CHUNKR_API_URL}/task/parse`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `${CHUNKR_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            const result = await this.post<TaskResponse>('/task/parse', payload);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Start OCR task API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseBody: errorText,
-                });
-                throw new Error(
-                    `Failed to start OCR task: ${response.status} ${response.statusText}`,
-                );
-            }
-
-            const result = (await response.json()) as TaskResponse;
             console.log('OCR task started successfully with task ID:', result.task_id);
             return result;
         } catch (error) {
@@ -110,27 +105,8 @@ export class ChunkrService {
         console.log('Getting OCR task status for task ID:', taskId);
 
         try {
-            const response = await fetch(`${CHUNKR_API_URL}/task/${taskId}`, {
-                method: 'GET',
-                headers: {
-                    Authorization: `${CHUNKR_API_KEY}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            const result = await this.get<TaskResponse>(`/task/${taskId}`);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Get OCR task status API error:', {
-                    status: response.status,
-                    statusText: response.statusText,
-                    responseBody: errorText,
-                });
-                throw new Error(
-                    `Failed to get OCR task status: ${response.status} ${response.statusText}`,
-                );
-            }
-
-            const result = (await response.json()) as TaskResponse;
             console.log('OCR task status retrieved:', result.status);
             return result;
         } catch (error) {

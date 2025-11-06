@@ -2,6 +2,15 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { Database } from '@/types/base/database.types';
 
+import {
+    findMaxNumber,
+    generateBatchIds,
+    generateOrgPrefix,
+    generateSequentialId,
+    generateTimestampId,
+    parseSequentialId,
+} from './string/id-generator';
+
 /**
  * Generates the next unique requirement ID for an organization
  * Format: REQ-{org_prefix}-{sequential_number}
@@ -12,44 +21,22 @@ export async function generateNextRequirementId(
     organizationId: string,
 ): Promise<string> {
     try {
-        // Get the organization to determine the prefix
-        // Fetch org name via API
-        const respOrg = await fetch(`/api/organizations/${organizationId}`, {
-            method: 'GET',
-            cache: 'no-store',
-        });
-        let orgName = 'ORG';
-        if (respOrg.ok) {
-            const payload = (await respOrg.json()) as {
-                organization?: { name?: string };
-            };
-            orgName = payload.organization?.name || 'ORG';
+        // Fetch organization name
+        const orgName = await fetchOrganizationName(organizationId);
+        const orgPrefix = generateOrgPrefix(orgName);
+        const fullPrefix = `REQ-${orgPrefix}`;
+
+        // Try to get next ID from API
+        const nextId = await fetchNextIdFromAPI(organizationId);
+        if (nextId) {
+            return nextId;
         }
 
-        // orgName defaults to 'ORG' when API fails
-
-        // Create a short prefix from organization name (first 3 chars, uppercase)
-        const orgPrefix = orgName.substring(0, 3).toUpperCase();
-
-        // Get the highest existing requirement ID for this organization
-        // We need to join with documents and projects to get organization-scoped requirements
-        // Ask server API to compute next ID using service role with necessary joins
-        const respNext = await fetch(
-            `/api/organizations/${organizationId}/requirements/next-id`,
-            { method: 'GET', cache: 'no-store' },
-        );
-        if (respNext.ok) {
-            const payload = (await respNext.json()) as { nextExternalId?: string };
-            if (payload.nextExternalId) return payload.nextExternalId;
-        }
-
-        // Fallback to timestamp-based ID handled in catch (no local scanning)
-        return `REQ-${orgPrefix}-${new Date().getTime().toString().slice(-3)}`;
+        // Fallback to timestamp-based ID
+        return generateTimestampId(fullPrefix);
     } catch (error) {
         console.error('Error generating requirement ID:', error);
-        // Fallback to a timestamp-based ID if there's an error
-        const timestamp = Date.now().toString().slice(-6);
-        return `REQ-${timestamp}`;
+        return generateTimestampId('REQ');
     }
 }
 
@@ -62,7 +49,9 @@ export async function generateDocumentScopedRequirementId(
     documentId: string,
 ): Promise<string> {
     try {
-        // Get the highest existing requirement ID for this document
+        const prefix = 'REQ-DOC-';
+
+        // Get existing requirement IDs for this document
         const { data: requirements, error: reqError } = await supabase
             .from('requirements')
             .select('external_id')
@@ -75,31 +64,15 @@ export async function generateDocumentScopedRequirementId(
             throw new Error('Failed to fetch existing requirements');
         }
 
-        // Find the highest number for this document's requirements
-        let maxNumber = 0;
-        const prefix = 'REQ-DOC-';
-
-        if (requirements && requirements.length > 0) {
-            for (const req of requirements) {
-                if (req.external_id && req.external_id.startsWith(prefix)) {
-                    const numberPart = req.external_id.substring(prefix.length);
-                    const number = parseInt(numberPart, 10);
-                    if (!isNaN(number) && number > maxNumber) {
-                        maxNumber = number;
-                    }
-                }
-            }
-        }
+        // Find the highest number using utility function
+        const externalIds = requirements?.map((r) => r.external_id).filter(Boolean) as string[];
+        const maxNumber = findMaxNumber(externalIds, prefix);
 
         // Generate the next ID
-        const nextNumber = maxNumber + 1;
-        const paddedNumber = nextNumber.toString().padStart(3, '0');
-        return `${prefix}${paddedNumber}`;
+        return generateSequentialId({ prefix: 'REQ-DOC', length: 3 }, maxNumber + 1);
     } catch (error) {
         console.error('Error generating document-scoped requirement ID:', error);
-        // Fallback to a timestamp-based ID if there's an error
-        const timestamp = Date.now().toString().slice(-6);
-        return `REQ-DOC-${timestamp}`;
+        return generateTimestampId('REQ-DOC');
     }
 }
 
@@ -112,6 +85,8 @@ export async function generateProjectScopedRequirementId(
     projectId: string,
 ): Promise<string> {
     try {
+        const prefix = 'REQ-PROJ-';
+
         // Get all requirements for this project through documents
         const { data: requirements, error: reqError } = await supabase
             .from('requirements')
@@ -130,31 +105,15 @@ export async function generateProjectScopedRequirementId(
             throw new Error('Failed to fetch existing requirements');
         }
 
-        // Find the highest number for this project's requirements
-        let maxNumber = 0;
-        const prefix = 'REQ-PROJ-';
-
-        if (requirements && requirements.length > 0) {
-            for (const req of requirements) {
-                if (req.external_id && req.external_id.startsWith(prefix)) {
-                    const numberPart = req.external_id.substring(prefix.length);
-                    const number = parseInt(numberPart, 10);
-                    if (!isNaN(number) && number > maxNumber) {
-                        maxNumber = number;
-                    }
-                }
-            }
-        }
+        // Find the highest number using utility function
+        const externalIds = requirements?.map((r) => r.external_id).filter(Boolean) as string[];
+        const maxNumber = findMaxNumber(externalIds, prefix);
 
         // Generate the next ID
-        const nextNumber = maxNumber + 1;
-        const paddedNumber = nextNumber.toString().padStart(3, '0');
-        return `${prefix}${paddedNumber}`;
+        return generateSequentialId({ prefix: 'REQ-PROJ', length: 3 }, maxNumber + 1);
     } catch (error) {
         console.error('Error generating project-scoped requirement ID:', error);
-        // Fallback to a timestamp-based ID if there's an error
-        const timestamp = Date.now().toString().slice(-6);
-        return `REQ-PROJ-${timestamp}`;
+        return generateTimestampId('REQ-PROJ');
     }
 }
 
@@ -180,8 +139,8 @@ export async function generateBatchRequirementIds(
             throw new Error('Failed to fetch organization');
         }
 
-        // Create a short prefix from organization name (first 3 chars, uppercase)
-        const orgPrefix = org?.name?.substring(0, 3).toUpperCase() || 'ORG';
+        const orgPrefix = generateOrgPrefix(org?.name || 'ORG');
+        const prefix = `REQ-${orgPrefix}-`;
 
         // Get the highest existing requirement ID for this organization
         const { data: requirements, error: reqError } = await supabase
@@ -206,39 +165,69 @@ export async function generateBatchRequirementIds(
             throw new Error('Failed to fetch existing requirements');
         }
 
-        // Find the highest number for this organization's requirements
-        let maxNumber = 0;
-        const prefix = `REQ-${orgPrefix}-`;
+        // Find the highest number using utility function
+        const externalIds = requirements?.map((r) => r.external_id).filter(Boolean) as string[];
+        const maxNumber = findMaxNumber(externalIds, prefix);
 
-        if (requirements && requirements.length > 0) {
-            for (const req of requirements) {
-                if (req.external_id && req.external_id.startsWith(prefix)) {
-                    const numberPart = req.external_id.substring(prefix.length);
-                    const number = parseInt(numberPart, 10);
-                    if (!isNaN(number) && number > maxNumber) {
-                        maxNumber = number;
-                    }
-                }
-            }
-        }
-
-        // Generate the batch of IDs
-        const ids: string[] = [];
-        for (let i = 1; i <= count; i++) {
-            const nextNumber = maxNumber + i;
-            const paddedNumber = nextNumber.toString().padStart(3, '0');
-            ids.push(`${prefix}${paddedNumber}`);
-        }
-
-        return ids;
+        // Generate batch of IDs using utility function
+        return generateBatchIds({ prefix: `REQ-${orgPrefix}`, length: 3 }, maxNumber + 1, count);
     } catch (error) {
         console.error('Error generating batch requirement IDs:', error);
-        // Fallback to timestamp-based IDs if there's an error
+        // Fallback to timestamp-based IDs
         const ids: string[] = [];
         for (let i = 0; i < count; i++) {
-            const timestamp = (Date.now() + i).toString().slice(-6);
-            ids.push(`REQ-${timestamp}`);
+            ids.push(generateTimestampId('REQ'));
         }
         return ids;
+    }
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Fetch organization name from API
+ */
+async function fetchOrganizationName(organizationId: string): Promise<string> {
+    try {
+        const response = await fetch(`/api/organizations/${organizationId}`, {
+            method: 'GET',
+            cache: 'no-store',
+        });
+
+        if (response.ok) {
+            const payload = (await response.json()) as {
+                organization?: { name?: string };
+            };
+            return payload.organization?.name || 'ORG';
+        }
+
+        return 'ORG';
+    } catch (error) {
+        console.error('Error fetching organization name:', error);
+        return 'ORG';
+    }
+}
+
+/**
+ * Fetch next requirement ID from API
+ */
+async function fetchNextIdFromAPI(organizationId: string): Promise<string | null> {
+    try {
+        const response = await fetch(
+            `/api/organizations/${organizationId}/requirements/next-id`,
+            { method: 'GET', cache: 'no-store' },
+        );
+
+        if (response.ok) {
+            const payload = (await response.json()) as { nextExternalId?: string };
+            return payload.nextExternalId || null;
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error fetching next ID from API:', error);
+        return null;
     }
 }

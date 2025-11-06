@@ -11,7 +11,7 @@ import { DEFAULT_AGENT_INSTRUCTIONS, mcpTools } from '@/lib/agents/chat.agent';
 import { atomsChatModel, DEFAULT_MODEL } from '@/lib/providers/atomsagent.provider';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { logger } from '@/lib/utils/logger';
-import { createClient } from '@/lib/utils/supabase/server';
+import { createServerClient } from '@/lib/database';
 import { createHash, randomUUID } from 'crypto';
 
 /**
@@ -56,7 +56,7 @@ async function createChatSession(params: {
     model: string;
     title?: string;
 }): Promise<string> {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const sessionId = generateSessionId();
 
     const normalizedUserId = normalizeUUID(params.userId) ?? randomUUID();
@@ -92,7 +92,7 @@ async function ensureChatSession(params: {
     model: string;
     title?: string;
 }): Promise<void> {
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const normalizedUserId = normalizeUUID(params.userId) ?? params.userId;
     const normalizedOrgId = normalizeUUID(params.organizationId);
 
@@ -154,7 +154,7 @@ async function saveMessages(params: {
         return null;
     }
 
-    const supabase = await createClient();
+    const supabase = await createServerClient();
     const messageId = normalizeUUID(latest.id) ?? randomUUID();
 
     const { data: existing, error: fetchError } = await (supabase
@@ -237,7 +237,7 @@ async function persistAssistantVariant(params: {
     requestMetadata?: Record<string, any> | null;
 }): Promise<void> {
     try {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
 
         const responseMessageId = normalizeUUID(params.responseMessage.id) ?? randomUUID();
         const normalizedContent = normalizeMessageContent(params.responseMessage.content);

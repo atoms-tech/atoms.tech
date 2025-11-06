@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
+import { getServiceRoleClient } from '@/lib/database';
 import { Database } from '@/types/base/database.types';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -18,7 +18,7 @@ type WorkOSUserLike = {
 export async function getOrCreateProfileForWorkOSUser(
     workosUser: WorkOSUserLike,
 ): Promise<ProfileRow | null> {
-    const supabase = getSupabaseServiceRoleClient();
+    const supabase = getServiceRoleClient();
 
     if (!supabase) {
         console.warn('Supabase service role client unavailable - cannot sync profile.');
@@ -98,7 +98,7 @@ export async function getOrCreateProfileForWorkOSUser(
  * Fetch a Supabase profile by its primary key using the service client.
  */
 export async function getProfileById(userId: string): Promise<ProfileRow | null> {
-    const supabase = getSupabaseServiceRoleClient();
+    const supabase = getServiceRoleClient();
 
     if (!supabase) {
         console.warn('Supabase service role client unavailable - cannot fetch profile.');
