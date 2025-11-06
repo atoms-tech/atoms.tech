@@ -118,17 +118,11 @@ export function DeleteRequirementDialog({
                                     <Checkbox
                                         id="confirm-delete"
                                         checked={confirmChecked}
-                                        onCheckedChange={(checked) =>
-                                            setConfirmChecked(checked === true)
+                                        onChange={(e) =>
+                                            setConfirmChecked(e.target.checked)
                                         }
+                                        label="I understand, disconnect and delete this requirement"
                                     />
-                                    <label
-                                        htmlFor="confirm-delete"
-                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                    >
-                                        I understand, disconnect and delete this
-                                        requirement
-                                    </label>
                                 </div>
                             </div>
                         ) : (
