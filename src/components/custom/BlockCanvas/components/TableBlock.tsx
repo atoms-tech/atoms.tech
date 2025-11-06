@@ -18,6 +18,10 @@ import {
     Property,
     PropertyType,
 } from '@/components/custom/BlockCanvas/types';
+import {
+    buildCsv,
+    saveCsvWithPicker,
+} from '@/components/custom/BlockCanvas/utils/exportCsv';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -38,6 +42,7 @@ import {
     EditableColumnType,
     PropertyConfig,
 } from './EditableTable/types';
+import { ExportTableDialog } from './ExportTableDialog';
 import { GenericTableBlockContent } from './GenericTableBlockContent';
 import { TableBlockContent } from './TableBlockContent';
 import { TableBlockLoadingState } from './TableBlockLoadingState';
@@ -73,6 +78,7 @@ const TableHeader: React.FC<{
     ) => void;
     onAddColumnFromProperty?: (propertyId: string, defaultValue: string) => void;
     onDelete: () => void;
+    onOpenExport?: () => void;
     dragActivators?: React.ComponentProps<typeof Button>;
     orgId: string;
     projectId?: string;
@@ -86,6 +92,7 @@ const TableHeader: React.FC<{
     onAddColumn,
     onAddColumnFromProperty,
     onDelete,
+    onOpenExport,
     orgId,
     projectId,
     documentId,
@@ -153,6 +160,13 @@ const TableHeader: React.FC<{
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Column
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onOpenExport?.()}
+                            >
+                                Export Table
                             </Button>
                         </>
                     )}
@@ -717,6 +731,87 @@ export const TableBlock: React.FC<BlockProps> = ({
         }
     }, [onDelete]);
 
+    const [isExportOpen, setIsExportOpen] = useState(false);
+
+    // Build export data (headers + rows) for current table view
+    const collectExportData = useCallback(async () => {
+        let headers: string[] = [];
+        let rows: Array<Array<unknown>> = [];
+
+        if (isGenericTable) {
+            // Generic table: derive columns from effectiveColumnsRaw excluding base props
+            const genericCols =
+                (effectiveColumnsRaw || [])
+                    .filter((col) => {
+                        if (!col.property) return false;
+                        const prop = col.property as Property;
+                        return !prop.is_base;
+                    })
+                    .map((col) => {
+                        const prop = col.property as Property;
+                        return {
+                            id: col.id,
+                            header: prop.name,
+                            accessor: prop.name,
+                            position: col.position ?? 0,
+                            width: col.width ?? 150,
+                        };
+                    })
+                    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
+
+            headers = genericCols.map((c) => c.header);
+
+            // Fetch current rows from API for this block
+            const res = await fetch(
+                `/api/documents/${block.document_id}/rows?blockId=${block.id}`,
+                { method: 'GET', cache: 'no-store' },
+            );
+            if (res.ok) {
+                const payload = (await res.json()) as {
+                    rows?: Array<{
+                        row_data?: Record<string, unknown>;
+                    }>;
+                };
+                const dataRows = (payload.rows || []).map((r) => r.row_data || {});
+                rows = dataRows.map((obj) =>
+                    genericCols.map((c) => (obj as Record<string, unknown>)[c.accessor]),
+                );
+            } else {
+                rows = [];
+            }
+        } else {
+            // Requirements table: use computed columns and dynamicRequirements
+            headers = columns.map((c) => c.header);
+            rows = (dynamicRequirements || []).map((req) =>
+                columns.map((c) => {
+                    const v = (req as Record<string, unknown>)[c.accessor as string];
+                    return v;
+                }),
+            );
+        }
+
+        return { headers, rows };
+    }, [
+        isGenericTable,
+        effectiveColumnsRaw,
+        block.document_id,
+        block.id,
+        columns,
+        dynamicRequirements,
+    ]);
+
+    const handleConfirmExport = useCallback(
+        async ({ includeHeader }: { includeHeader: boolean }) => {
+            const { headers, rows } = await collectExportData();
+            const csv = buildCsv(headers, rows, includeHeader);
+            const safeName =
+                (blockName || 'table').replace(/[^a-zA-Z0-9-_]+/g, '_') || 'table';
+            const suggested = `${safeName}_${new Date().toISOString().slice(0, 10)}.csv`;
+            await saveCsvWithPicker(csv, suggested);
+        },
+        [collectExportData, blockName],
+    );
+
     return (
         <div className="w-full max-w-full bg-background border-b rounded-lg overflow-hidden">
             <div className="flex flex-col w-full max-w-full min-w-0">
@@ -727,6 +822,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     onAddColumn={handleAddColumn}
                     onAddColumnFromProperty={handleAddColumnFromProperty}
                     onDelete={handleBlockDelete}
+                    onOpenExport={() => setIsExportOpen(true)}
                     dragActivators={dragActivators}
                     orgId={currentOrganization?.id || ''}
                     projectId={projectId}
@@ -812,6 +908,12 @@ export const TableBlock: React.FC<BlockProps> = ({
                 orgId={currentOrganization?.id || ''}
                 projectId={projectId}
                 documentId={params.documentId as string}
+            />
+            <ExportTableDialog
+                isOpen={isEditMode && isExportOpen}
+                onClose={() => setIsExportOpen(false)}
+                onConfirm={handleConfirmExport}
+                defaultIncludeHeader={true}
             />
         </div>
     );
