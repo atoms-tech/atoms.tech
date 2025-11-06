@@ -60,6 +60,13 @@ export async function GET(
             return NextResponse.json({ error: 'Diagram not found' }, { status: 404 });
         }
 
+        if (!diagram.project_id) {
+            return NextResponse.json(
+                { error: 'Diagram has no associated project' },
+                { status: 400 },
+            );
+        }
+
         // Verify project membership
         const { data: membership, error: membershipError } = await supabase
             .from('project_members')
@@ -134,6 +141,13 @@ export async function PATCH(
 
         if (!diagram) {
             return NextResponse.json({ error: 'Diagram not found' }, { status: 404 });
+        }
+
+        if (!diagram.project_id) {
+            return NextResponse.json(
+                { error: 'Diagram has no associated project' },
+                { status: 400 },
+            );
         }
 
         // Verify project membership
@@ -234,6 +248,13 @@ export async function DELETE(
 
         if (!diagram) {
             return NextResponse.json({ error: 'Diagram not found' }, { status: 404 });
+        }
+
+        if (!diagram.project_id) {
+            return NextResponse.json(
+                { error: 'Diagram has no associated project' },
+                { status: 400 },
+            );
         }
 
         // Verify project membership
