@@ -22,4 +22,10 @@ export const glideDarkTheme: Partial<Theme> = {
     textHeader: '#ffffffff', // header text color
 
     baseFontStyle: '14px', // base font style (size) for the grid
+
+    // Cell padding for consistent spacing - applied to all text cells
+    // These values ensure text never touches cell borders
+    cellHorizontalPadding: 8, // horizontal padding per side (left and right)
+    cellVerticalPadding: 6, // vertical padding per side (top and bottom)
+    // Note: Glide uses these for built-in TextCell rendering when allowWrapping is true
 };
