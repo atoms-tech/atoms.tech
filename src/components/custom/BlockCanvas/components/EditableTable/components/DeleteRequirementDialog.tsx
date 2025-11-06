@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useParams } from 'next/navigation';
 
 import {
     AlertDialog,
@@ -10,11 +11,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    useCheckRequirementRelationships,
-    useDeleteRelationship,
-} from '@/hooks/queries/useRequirementRelationships';
+import { Button } from '@/components/ui/button';
+import { useCheckRequirementRelationships } from '@/hooks/queries/useRequirementRelationships';
 
 interface DeleteRequirementDialogProps {
     open: boolean;
@@ -31,12 +29,11 @@ export function DeleteRequirementDialog({
     requirementName,
     onConfirmDelete,
 }: DeleteRequirementDialogProps) {
-    const [confirmChecked, setConfirmChecked] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const params = useParams();
 
     const { data: relationshipCheck, isLoading: isCheckingRelationships } =
         useCheckRequirementRelationships(requirementId);
-    const deleteRelationshipMutation = useDeleteRelationship();
 
     const hasRelationships = relationshipCheck?.hasRelationships || false;
     const relatedRequirements = relationshipCheck?.relatedRequirements || [];
@@ -44,36 +41,7 @@ export function DeleteRequirementDialog({
     const handleConfirm = async () => {
         try {
             setIsDeleting(true);
-
-            // If there are relationships, disconnect them first
-            if (hasRelationships && relatedRequirements.length > 0) {
-                for (const relatedReq of relatedRequirements) {
-                    // Determine if the current requirement is ancestor or descendant
-                    // We'll try both directions since we don't know the exact relationship type
-                    try {
-                        await deleteRelationshipMutation.mutateAsync({
-                            ancestorId: requirementId,
-                            descendantId: relatedReq.id,
-                        });
-                    } catch {
-                        // If it fails, try the opposite direction
-                        try {
-                            await deleteRelationshipMutation.mutateAsync({
-                                ancestorId: relatedReq.id,
-                                descendantId: requirementId,
-                            });
-                        } catch (error) {
-                            console.error('Failed to delete relationship:', error);
-                        }
-                    }
-                }
-            }
-
-            // Now delete the requirement itself
             await onConfirmDelete();
-
-            // Reset state and close dialog
-            setConfirmChecked(false);
             onOpenChange(false);
         } catch (error) {
             console.error('Error during requirement deletion:', error);
@@ -82,7 +50,15 @@ export function DeleteRequirementDialog({
         }
     };
 
-    const canDelete = !hasRelationships || confirmChecked;
+    const handleGoToTraceability = () => {
+        const orgId = params.orgId as string;
+        const projectId = params.projectId as string;
+        window.open(
+            `/org/${orgId}/project/${projectId}/requirements/${requirementId}/trace`,
+            '_blank',
+        );
+        onOpenChange(false);
+    };
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -94,9 +70,13 @@ export function DeleteRequirementDialog({
                             <span>Checking for relationships...</span>
                         ) : hasRelationships ? (
                             <div className="space-y-3">
+                                <p className="text-red-600 font-semibold">
+                                    Cannot delete this requirement because it has
+                                    relationships with other requirements.
+                                </p>
                                 <p>
-                                    This requirement is connected to other requirements.
-                                    Deleting it will also disconnect all relationships.
+                                    Please disconnect all relationships first on the
+                                    Traceability page, then try deleting again.
                                 </p>
                                 <div className="rounded border border-yellow-200 bg-yellow-50 p-3">
                                     <p className="mb-2 font-semibold text-yellow-800">
@@ -110,16 +90,6 @@ export function DeleteRequirementDialog({
                                         ))}
                                     </ul>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="confirm-delete"
-                                        checked={confirmChecked}
-                                        onChange={(e) =>
-                                            setConfirmChecked(e.target.checked)
-                                        }
-                                        label="I understand, disconnect and delete this requirement"
-                                    />
-                                </div>
                             </div>
                         ) : (
                             <p>
@@ -130,14 +100,32 @@ export function DeleteRequirementDialog({
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={handleConfirm}
-                        disabled={!canDelete || isDeleting}
-                        className="bg-red-600 hover:bg-red-700"
-                    >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
-                    </AlertDialogAction>
+                    {hasRelationships ? (
+                        <>
+                            <AlertDialogCancel disabled={isDeleting}>
+                                Cancel
+                            </AlertDialogCancel>
+                            <Button
+                                onClick={handleGoToTraceability}
+                                className="bg-blue-600 hover:bg-blue-700"
+                            >
+                                Go to Traceability
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <AlertDialogCancel disabled={isDeleting}>
+                                Cancel
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleConfirm}
+                                disabled={isDeleting}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                {isDeleting ? 'Deleting...' : 'Delete'}
+                            </AlertDialogAction>
+                        </>
+                    )}
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
