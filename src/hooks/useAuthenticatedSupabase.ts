@@ -2,7 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Database } from '@/types/base/database.types';
 

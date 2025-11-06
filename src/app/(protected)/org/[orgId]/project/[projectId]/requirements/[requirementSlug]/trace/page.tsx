@@ -25,13 +25,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
     Table,
     TableBody,
     TableCell,
@@ -78,11 +71,6 @@ export default function TracePage() {
     const { toast } = useToast();
     const { profile } = useUser();
 
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedRequirements, setSelectedRequirements] = useState<
-        SelectedRequirement[]
-    >([]);
-    const [searchQuery, setSearchQuery] = useState('');
     const [isDeleteMode, setIsDeleteMode] = useState(false);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -150,37 +138,6 @@ export default function TracePage() {
     const [parentSearchQuery, setParentSearchQuery] = useState('');
     const [childSearchQuery, setChildSearchQuery] = useState('');
 
-    // Filter out requirements that already have trace links or are the current requirement
-    const availableRequirements =
-        requirements?.filter((req) => {
-            if (req.id === requirementId) return false;
-
-            // Check if this requirement is already linked (either as source or target)
-            const isSourceInOutgoing = outgoingLinks?.some(
-                (link) => link.target_id === req.id,
-            );
-            const isTargetInIncoming = incomingLinks?.some(
-                (link) => link.source_id === req.id,
-            );
-
-            // Filter by search query if present
-            const matchesSearch =
-                searchQuery === '' ||
-                req.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (req.description &&
-                    req.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-            return !isSourceInOutgoing && !isTargetInIncoming && matchesSearch;
-        }) || [];
-
-    const handleAddRequirement = (requirement: SelectedRequirement) => {
-        setSelectedRequirements([...selectedRequirements, requirement]);
-    };
-
-    const handleRemoveRequirement = (id: string) => {
-        setSelectedRequirements(selectedRequirements.filter((req) => req.id !== id));
-    };
-
     const handleDeleteTraceLink = (id: string) => {
         if (!profile) return;
 
@@ -206,53 +163,6 @@ export default function TracePage() {
                 },
             },
         );
-    };
-
-    const handleCreateTraceLinks = async () => {
-        try {
-            const traceLinks = selectedRequirements.map((req) => {
-                if (req.relationship === 'parent_of') {
-                    return {
-                        source_id: requirementId,
-                        source_type: 'requirement' as const,
-                        target_id: req.id,
-                        target_type: 'requirement' as const,
-                        link_type: 'parent_of' as const,
-                        created_by: profile?.id,
-                        updated_by: profile?.id,
-                    };
-                } else {
-                    // child_of
-                    return {
-                        source_id: req.id,
-                        source_type: 'requirement' as const,
-                        target_id: requirementId,
-                        target_type: 'requirement' as const,
-                        link_type: 'child_of' as const,
-                        created_by: profile?.id,
-                        updated_by: profile?.id,
-                    };
-                }
-            });
-
-            await createTraceLinksMutation.mutateAsync(traceLinks);
-
-            toast({
-                title: 'Success',
-                description: `Created ${traceLinks.length} trace links`,
-                variant: 'default',
-            });
-
-            setSelectedRequirements([]);
-            setIsOpen(false);
-        } catch (error) {
-            console.error('Failed to create trace links', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to create trace links',
-                variant: 'destructive',
-            });
-        }
     };
 
     const handleAddParent = async () => {
@@ -373,13 +283,12 @@ export default function TracePage() {
 
         try {
             // Create trace link between requirement and test case
-            // Note: Using 'relates_to' as test_case entity type is not yet supported
             await createTraceLinksMutation.mutateAsync([
                 {
                     source_id: requirementId,
                     source_type: 'requirement' as const,
                     target_id: selectedTestCase.id,
-                    target_type: 'requirement' as const, // MOCK DATA: Using requirement as placeholder - replace when test_case entity type is supported
+                    target_type: 'requirement' as const,
                     link_type: 'relates_to' as const,
                     created_by: profile.id,
                     updated_by: profile.id,
@@ -571,10 +480,24 @@ export default function TracePage() {
                 const fullReq = allRequirements.find(
                     (r) => r.id === treeNode.requirement_id,
                 );
-                const externalId = fullReq?.external_id || '';
-                const displayName = externalId
-                    ? `${externalId} ${treeNode.title}`
-                    : treeNode.title;
+                // WIP: external_id for child/grandchild requirements in hierarchy tree
+                // const externalId = fullReq?.external_id || '';
+
+                // Debug logging for external_id
+                // if (!externalId) {
+                //     console.warn('[Hierarchy] Missing external_id for node:', {
+                //         requirement_id: treeNode.requirement_id,
+                //         title: treeNode.title,
+                //         foundInAllReqs: !!fullReq,
+                //         allReqsHasId: allRequirements.some(r => r.id === treeNode.requirement_id),
+                //     });
+                // }
+
+                // WIP: displayName with external_id for child/grandchild
+                // const displayName = externalId
+                //     ? `${externalId} ${treeNode.title}`
+                //     : treeNode.title;
+                const displayName = treeNode.title;
 
                 // Recursively find children of this child (grandchildren)
                 // This ensures grandchildren only appear under their direct parent
@@ -588,7 +511,9 @@ export default function TracePage() {
                     id: treeNode.requirement_id,
                     name: displayName,
                     type: fullReq?.type || '-',
-                    external_id: externalId,
+                    // WIP: external_id for child/grandchild requirements
+                    // external_id: externalId,
+                    external_id: '', // Empty string for child/grandchild requirements
                     isCurrent: false,
                     children: grandchildren,
                 };
@@ -648,10 +573,14 @@ export default function TracePage() {
             // Build children tree recursively based on parent_id
             children = directChildNodes.map((childNode) => {
                 const fullReq = allReqs.find((r) => r.id === childNode.requirement_id);
-                const externalId = fullReq?.external_id || '';
-                const displayName = externalId
-                    ? `${externalId} ${childNode.title}`
-                    : childNode.title;
+                // WIP: external_id for child/grandchild requirements
+                // const externalId = fullReq?.external_id || '';
+
+                // WIP: displayName with external_id for child/grandchild
+                // const displayName = externalId
+                //     ? `${externalId} ${childNode.title}`
+                //     : childNode.title;
+                const displayName = childNode.title;
 
                 // Recursively find grandchildren using parent_id
                 const grandchildren = buildChildTree(
@@ -664,7 +593,9 @@ export default function TracePage() {
                     id: childNode.requirement_id,
                     name: displayName,
                     type: fullReq?.type || '-',
-                    external_id: externalId,
+                    // WIP: external_id for child/grandchild requirements
+                    // external_id: externalId,
+                    external_id: '', // Empty string for child/grandchild requirements
                     isCurrent: false,
                     children: grandchildren,
                 };
@@ -709,10 +640,12 @@ export default function TracePage() {
                 const fullReq = descendantRequirements?.find(
                     (r) => r.id === child.requirementId,
                 );
-                const externalId = fullReq?.external_id || '';
-                const displayName = externalId
-                    ? `${externalId} ${child.title}`
-                    : child.title;
+                // WIP: external_id for child/grandchild requirements
+                // const externalId = fullReq?.external_id || '';
+                // const displayName = externalId
+                //     ? `${externalId} ${child.title}`
+                //     : child.title;
+                const displayName = child.title;
 
                 // Try to build grandchildren if we have requirementTree
                 let grandchildren: any[] = [];
@@ -728,7 +661,9 @@ export default function TracePage() {
                     id: child.requirementId,
                     name: displayName,
                     type: fullReq?.type || '-',
-                    external_id: externalId,
+                    // WIP: external_id for child/grandchild requirements
+                    // external_id: externalId,
+                    external_id: '', // Empty string for child/grandchild requirements
                     isCurrent: false,
                     children: grandchildren,
                 };
@@ -780,9 +715,81 @@ export default function TracePage() {
         requirementTree,
     ]);
 
-    const renderHierarchyNode = (node: any, level: number = 0) => {
+    // Helper function to calculate relationship type for a node
+    const getRelationshipType = (
+        nodeId: string,
+        isCurrent: boolean,
+        hasParent: boolean,
+        hasChildren: boolean,
+        level: number,
+    ) => {
+        // For current requirement, use the same logic as in Details section
+        if (isCurrent) {
+            const hasParentActual = realParentRequirements.length > 0;
+            const hasChildrenActual = realChildRequirements.length > 0;
+            const isGrandchild =
+                requirementAncestors?.some((ancestor) => ancestor.depth > 1) || false;
+
+            if (hasParentActual && isGrandchild) {
+                return 'Grandchild Requirement';
+            }
+            if (!hasParentActual && !hasChildrenActual) {
+                return 'No Relationships';
+            }
+            if (!hasParentActual && hasChildrenActual) {
+                return 'Parent Requirement';
+            }
+            if (hasParentActual && !hasChildrenActual) {
+                return 'Child Requirement';
+            }
+            if (hasParentActual && hasChildrenActual) {
+                return 'Child/Parent Requirement';
+            }
+            return 'No Relationships';
+        }
+
+        // For other nodes in the tree, infer from tree structure
+        // level > 1 means grandchild
+        const isGrandchild = level > 1;
+
+        if (hasParent && isGrandchild) {
+            return 'Grandchild Requirement';
+        }
+        if (!hasParent && !hasChildren) {
+            return 'No Relationships';
+        }
+        if (!hasParent && hasChildren) {
+            return 'Parent Requirement';
+        }
+        if (hasParent && !hasChildren) {
+            return 'Child Requirement';
+        }
+        if (hasParent && hasChildren) {
+            return 'Child/Parent Requirement';
+        }
+        return 'No Relationships';
+    };
+
+    const renderHierarchyNode = (
+        node: any,
+        level: number = 0,
+        hasParentInTree: boolean = false,
+    ) => {
         const hasChildren = node.children && node.children.length > 0;
         const isExpanded = expandedNodes.has(node.id);
+        const isCurrent = node.isCurrent;
+
+        // Debug logging for external_id for child/grandchild requirements
+        // Only log for current requirement to avoid cluttering console
+        if (isCurrent) {
+            console.debug('[HierarchyNode]', {
+                id: node.id,
+                external_id: node.external_id,
+                name: node.name,
+                level,
+                isCurrent: node.isCurrent,
+            });
+        }
 
         const toggleExpanded = (e: React.MouseEvent) => {
             e.stopPropagation();
@@ -810,14 +817,53 @@ export default function TracePage() {
             }
         };
 
+        // Calculate relationship type for this node
+        // check if they have a parent (level > 0 or hasParentInTree)
+        const nodeHasParent = hasParentInTree || level > 0;
+        const relationshipType = getRelationshipType(
+            node.id,
+            isCurrent,
+            nodeHasParent,
+            hasChildren,
+            level,
+        );
+
         // Calculate indentation based on level
         const indentLevel = level * 24;
+
+        // Extract external_id and name
+        // WIP: external_id extraction for child/grandchild requirements
+        // For current requirement (selected), keep external_id; for children/grandchildren, use empty string
+        const externalId = isCurrent ? node.external_id || '' : '';
+
+        // WIP: name extraction logic that removes external_id for child/grandchild
+        // For current requirement, process external_id; for children/grandchildren, use name as-is
+        let nameWithoutExternalId = node.name;
+        if (isCurrent) {
+            // Only process external_id removal for current requirement
+            if (node.external_id && node.name) {
+                // If external_id exists and name starts with it (possibly with a space), remove it
+                if (node.name.startsWith(node.external_id)) {
+                    // Remove external_id prefix from name (handles both "REQ-001 Name" and "REQ-001Name")
+                    nameWithoutExternalId = node.name
+                        .replace(new RegExp(`^${node.external_id}\\s*`), '')
+                        .trim();
+                }
+            }
+            // Ensure we always have a name to display
+            if (!nameWithoutExternalId) {
+                nameWithoutExternalId = node.name || '-';
+            }
+        } else {
+            // For child/grandchild requirements, use name as-is (external_id already removed from name during tree building)
+            nameWithoutExternalId = node.name || '-';
+        }
 
         return (
             <div key={node.id}>
                 <div
-                    className={`flex items-center gap-2 py-2 px-3 hover:bg-primary/10 transition-colors cursor-pointer ${
-                        node.isCurrent ? 'bg-primary/20 border-l-2 border-primary' : ''
+                    className={`flex items-center gap-2 py-2 px-3 cursor-pointer ${
+                        isCurrent ? 'border-l-2 border-primary' : ''
                     }`}
                     style={{ marginLeft: `${indentLevel}px` }}
                     onClick={handleNodeClick}
@@ -856,12 +902,33 @@ export default function TracePage() {
                         </div>
                     )}
 
+                    {/* External ID - WIP for child/grandchild requirements, only display for current requirement */}
+                    {isCurrent ? (
+                        <span className="font-medium text-primary">
+                            {externalId || '—'}
+                        </span>
+                    ) : null}
+                    {/* WIP: External ID display for child/grandchild requirements
                     <span
-                        className={`font-medium ${node.isCurrent ? 'text-primary' : 'text-foreground'}`}
+                        className={`font-medium ${
+                            isCurrent
+                                ? 'text-primary'
+                                : 'text-foreground dark:text-white'
+                        }`}
                     >
-                        {node.name}
+                        {externalId || '—'}
                     </span>
-                    <span className="text-xs text-muted-foreground">({node.type})</span>
+                    */}
+
+                    {/* Requirement name - white/foreground for all */}
+                    <span className="font-medium text-foreground dark:text-white">
+                        {nameWithoutExternalId}
+                    </span>
+
+                    {/* Relationship type */}
+                    <span className="text-xs text-muted-foreground">
+                        ({relationshipType})
+                    </span>
                 </div>
 
                 {/* render children with proper indentation */}
@@ -869,7 +936,7 @@ export default function TracePage() {
                     <div className="border-l border-border ml-3">
                         {node.children.map((child: any) => (
                             <div key={child.id}>
-                                {renderHierarchyNode(child, level + 1)}
+                                {renderHierarchyNode(child, level + 1, true)}
                             </div>
                         ))}
                     </div>
@@ -909,261 +976,6 @@ export default function TracePage() {
                                 View Diagram
                             </Button>
                         </Link>
-
-                        {/* manage traces button */}
-                        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                            <DialogTrigger asChild>
-                                <Button
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                    style={{ borderRadius: 0 }}
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Manage Traces
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent
-                                className="sm:max-w-[600px] max-h-[80vh] bg-card border-border text-card-foreground"
-                                style={{ borderRadius: 0 }}
-                            >
-                                <DialogHeader>
-                                    <DialogTitle className="text-card-foreground">
-                                        Create Trace Links
-                                    </DialogTitle>
-                                    <DialogDescription className="text-muted-foreground">
-                                        Select requirements to create trace links with
-                                    </DialogDescription>
-                                </DialogHeader>
-
-                                <div className="grid gap-4 py-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <h4 className="font-medium text-card-foreground">
-                                                Available Requirements
-                                            </h4>
-                                            <div className="relative w-[200px]">
-                                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="Search requirements..."
-                                                    className="pl-8 h-9 bg-background border-border text-foreground placeholder-muted-foreground"
-                                                    style={{ borderRadius: 0 }}
-                                                    value={searchQuery}
-                                                    onChange={(e) =>
-                                                        setSearchQuery(e.target.value)
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {isLoadingRequirements ? (
-                                            <div className="text-center py-4 text-muted-foreground">
-                                                Loading requirements...
-                                            </div>
-                                        ) : availableRequirements.length === 0 ? (
-                                            <div className="text-center py-4 text-muted-foreground">
-                                                No available requirements to link
-                                            </div>
-                                        ) : (
-                                            <div className="max-h-[200px] overflow-y-auto bg-background p-2">
-                                                {availableRequirements.map((req) => {
-                                                    const isSelected =
-                                                        selectedRequirements.some(
-                                                            (selected) =>
-                                                                selected.id === req.id,
-                                                        );
-                                                    return (
-                                                        <div
-                                                            key={req.id}
-                                                            className="p-3 flex justify-between items-start hover:bg-accent border-b border-border last:border-b-0"
-                                                        >
-                                                            <div className="space-y-1 flex-1 min-w-0 mr-3">
-                                                                <div className="font-medium text-foreground truncate">
-                                                                    {req.name}
-                                                                </div>
-                                                                <div className="text-sm text-muted-foreground line-clamp-2">
-                                                                    {req.description ||
-                                                                        'No description'}
-                                                                </div>
-                                                            </div>
-                                                            {isSelected ? (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-                                                                    onClick={() =>
-                                                                        handleRemoveRequirement(
-                                                                            req.id,
-                                                                        )
-                                                                    }
-                                                                    style={{
-                                                                        borderRadius: 0,
-                                                                    }}
-                                                                >
-                                                                    <Check
-                                                                        size={16}
-                                                                        className="mr-1"
-                                                                    />{' '}
-                                                                    Added
-                                                                </Button>
-                                                            ) : (
-                                                                <Select
-                                                                    onValueChange={(
-                                                                        value: TraceRelationship,
-                                                                    ) => {
-                                                                        handleAddRequirement(
-                                                                            {
-                                                                                id: req.id,
-                                                                                name: req.name,
-                                                                                description:
-                                                                                    req.description,
-                                                                                external_id:
-                                                                                    req.external_id,
-                                                                                relationship:
-                                                                                    value,
-                                                                            },
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <SelectTrigger
-                                                                        className="w-[120px] bg-background border-border text-foreground"
-                                                                        style={{
-                                                                            borderRadius: 0,
-                                                                        }}
-                                                                    >
-                                                                        <SelectValue placeholder="Relation" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent className="bg-card border-border">
-                                                                        <SelectItem
-                                                                            value="parent_of"
-                                                                            className="text-card-foreground hover:bg-accent"
-                                                                        >
-                                                                            Parent of
-                                                                        </SelectItem>
-                                                                        <SelectItem
-                                                                            value="child_of"
-                                                                            className="text-card-foreground hover:bg-accent"
-                                                                        >
-                                                                            Child of
-                                                                        </SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {selectedRequirements.length > 0 && (
-                                        <div className="space-y-2 mt-4">
-                                            <div className="flex justify-between items-center">
-                                                <h4 className="font-medium text-card-foreground">
-                                                    Selected Requirements
-                                                </h4>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-muted-foreground hover:text-foreground"
-                                                    onClick={() =>
-                                                        setSelectedRequirements([])
-                                                    }
-                                                    style={{ borderRadius: 0 }}
-                                                >
-                                                    Clear All
-                                                </Button>
-                                            </div>
-                                            <div className="max-h-[200px] overflow-y-auto bg-background">
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow className="border-border">
-                                                            <TableHead className="w-[120px] text-muted-foreground">
-                                                                Relationship
-                                                            </TableHead>
-                                                            <TableHead className="w-[100px] text-muted-foreground">
-                                                                ID
-                                                            </TableHead>
-                                                            <TableHead className="text-muted-foreground">
-                                                                Description
-                                                            </TableHead>
-                                                            <TableHead className="w-[50px]"></TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {selectedRequirements.map(
-                                                            (req) => (
-                                                                <TableRow
-                                                                    key={req.id}
-                                                                    className="border-border"
-                                                                >
-                                                                    <TableCell className="text-foreground">
-                                                                        {req.relationship ===
-                                                                        'parent_of'
-                                                                            ? 'Parent of'
-                                                                            : 'Child of'}
-                                                                    </TableCell>
-                                                                    <TableCell className="font-medium text-foreground">
-                                                                        {req.external_id ||
-                                                                            req.id.split(
-                                                                                '-',
-                                                                            )[1]}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-muted-foreground">
-                                                                        {req.name}
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                                                            onClick={() =>
-                                                                                handleRemoveRequirement(
-                                                                                    req.id,
-                                                                                )
-                                                                            }
-                                                                            style={{
-                                                                                borderRadius: 0,
-                                                                            }}
-                                                                        >
-                                                                            <Trash2
-                                                                                size={16}
-                                                                            />
-                                                                        </Button>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            ),
-                                                        )}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <DialogFooter>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setIsOpen(false)}
-                                        className="bg-transparent border-border text-muted-foreground hover:bg-accent"
-                                        style={{ borderRadius: 0 }}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={handleCreateTraceLinks}
-                                        disabled={
-                                            selectedRequirements.length === 0 ||
-                                            createTraceLinksMutation.isPending
-                                        }
-                                        className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                        style={{ borderRadius: 0 }}
-                                    >
-                                        {createTraceLinksMutation.isPending
-                                            ? 'Creating...'
-                                            : 'Create Trace Links'}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
                     </div>
                 </div>
 
@@ -1173,7 +985,7 @@ export default function TracePage() {
                         <div className="flex items-center gap-2">
                             <span className="text-2xl"></span>
                             <h2 className="text-xl font-semibold text-card-foreground">
-                                Relationship Hierarchy
+                                Requirement Hierarchy
                             </h2>
                         </div>
                         <div className="mt-4">
@@ -1242,11 +1054,22 @@ export default function TracePage() {
                             <span
                                 className={`px-3 py-1 text-xs font-medium border ${
                                     currentRequirement?.status === 'approved'
-                                        ? 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30'
-                                        : currentRequirement?.status === 'rejected' ||
-                                            currentRequirement?.status === 'deleted'
-                                          ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30'
-                                          : 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30'
+                                        ? 'bg-green-500/20 dark:bg-green-500/20 text-muted-foreground border-green-500/30 dark:border-green-500/30'
+                                        : currentRequirement?.status === 'active'
+                                          ? 'bg-green-500/20 dark:bg-green-500/20 text-muted-foreground border-green-500/30 dark:border-green-500/30'
+                                          : currentRequirement?.status === 'rejected' ||
+                                              currentRequirement?.status === 'deleted'
+                                            ? 'bg-red-500/20 dark:bg-red-500/20 text-muted-foreground border-red-500/30 dark:border-red-500/30'
+                                            : currentRequirement?.status === 'archived'
+                                              ? 'bg-gray-500/20 dark:bg-gray-500/20 text-muted-foreground border-gray-500/30 dark:border-gray-500/30'
+                                              : currentRequirement?.status ===
+                                                      'in_review' ||
+                                                  currentRequirement?.status ===
+                                                      'draft' ||
+                                                  currentRequirement?.status ===
+                                                      'in_progress'
+                                                ? 'bg-yellow-500/20 dark:bg-yellow-500/20 text-muted-foreground border-yellow-500/30 dark:border-yellow-500/30'
+                                                : 'bg-green-500/20 dark:bg-green-500/20 text-muted-foreground border-green-500/30 dark:border-green-500/30'
                                 }`}
                             >
                                 {currentRequirement?.status
@@ -1259,7 +1082,7 @@ export default function TracePage() {
                         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">
                                 <div>
-                                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                                    <span className="px-2 py-1 bg-primary/10 text-muted-foreground text-xs font-semibold border border-primary/20">
                                         {currentRequirement?.external_id || '—'}
                                     </span>
                                 </div>
@@ -1278,20 +1101,43 @@ export default function TracePage() {
                                     <div className="space-y-1 text-sm">
                                         <p className="text-foreground">
                                             Type:{' '}
-                                            {currentRequirement?.type &&
-                                            String(currentRequirement.type).trim()
-                                                ? String(currentRequirement.type).trim()
-                                                : '-'}
-                                        </p>
-                                        <p className="text-foreground">
-                                            Status:{' '}
-                                            {currentRequirement?.status
-                                                ? String(currentRequirement.status)
-                                                      .replaceAll('_', ' ')
-                                                      .replace(/\b\w/g, (c) =>
-                                                          c.toUpperCase(),
-                                                      )
-                                                : '-'}
+                                            {(() => {
+                                                const hasParent =
+                                                    realParentRequirements.length > 0;
+                                                const hasChildren =
+                                                    realChildRequirements.length > 0;
+
+                                                const isGrandchild =
+                                                    requirementAncestors?.some(
+                                                        (ancestor) => ancestor.depth > 1,
+                                                    ) || false;
+
+                                                if (hasParent && isGrandchild) {
+                                                    return 'Grandchild Requirement';
+                                                }
+
+                                                // No parent and no children
+                                                if (!hasParent && !hasChildren) {
+                                                    return 'No Relationships';
+                                                }
+
+                                                // No parent but has children
+                                                if (!hasParent && hasChildren) {
+                                                    return 'Parent Requirement';
+                                                }
+
+                                                // Has parent but no children
+                                                if (hasParent && !hasChildren) {
+                                                    return 'Child Requirement';
+                                                }
+
+                                                // Has parent and has children
+                                                if (hasParent && hasChildren) {
+                                                    return 'Child/Parent Requirement';
+                                                }
+
+                                                return '-';
+                                            })()}
                                         </p>
                                         <p className="text-foreground">
                                             Priority:{' '}
@@ -1629,8 +1475,22 @@ export default function TracePage() {
                                                 key={req.id}
                                                 className="flex items-center justify-between p-3 bg-background border border-border"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-foreground font-medium">
+                                                <div
+                                                    className="flex items-center gap-4 cursor-pointer"
+                                                    onClick={() => {
+                                                        const orgId =
+                                                            params.orgId as string;
+                                                        const projectId =
+                                                            params.projectId as string;
+                                                        const documentId =
+                                                            searchParams.get(
+                                                                'documentId',
+                                                            ) || '';
+                                                        const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${req.id}/trace${documentId ? `?documentId=${documentId}` : ''}`;
+                                                        router.push(traceUrl);
+                                                    }}
+                                                >
+                                                    <span className="text-foreground font-medium hover:text-primary">
                                                         {req.external_id
                                                             ? `${req.external_id} ${req.name}`
                                                             : req.name}
@@ -1638,14 +1498,12 @@ export default function TracePage() {
                                                     <span className="text-muted-foreground">
                                                         {req.description}
                                                     </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        ({req.type})
-                                                    </span>
                                                 </div>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         if (!profile) return;
                                                         if (!req.id || !requirementId) {
                                                             toast({
@@ -1903,8 +1761,22 @@ export default function TracePage() {
                                                 key={req.id}
                                                 className="flex items-center justify-between p-3 bg-background border border-border"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-foreground font-medium">
+                                                <div
+                                                    className="flex items-center gap-4 cursor-pointer"
+                                                    onClick={() => {
+                                                        const orgId =
+                                                            params.orgId as string;
+                                                        const projectId =
+                                                            params.projectId as string;
+                                                        const documentId =
+                                                            searchParams.get(
+                                                                'documentId',
+                                                            ) || '';
+                                                        const traceUrl = `/org/${orgId}/project/${projectId}/requirements/${req.id}/trace${documentId ? `?documentId=${documentId}` : ''}`;
+                                                        router.push(traceUrl);
+                                                    }}
+                                                >
+                                                    <span className="text-foreground font-medium hover:text-primary">
                                                         {req.external_id
                                                             ? `${req.external_id} ${req.name}`
                                                             : req.name}
@@ -1912,14 +1784,12 @@ export default function TracePage() {
                                                     <span className="text-muted-foreground">
                                                         {req.description}
                                                     </span>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        ({req.type})
-                                                    </span>
                                                 </div>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => {
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
                                                         if (!profile) return;
                                                         if (!requirementId || !req.id) {
                                                             toast({

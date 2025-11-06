@@ -32,6 +32,7 @@ import { useDocumentStore } from '@/store/document.store';
 import { Requirement } from '@/types/base/requirements.types';
 
 import { AddColumnDialog } from './EditableTable/components/AddColumnDialog';
+import { DeleteRequirementDialog } from './EditableTable/components/DeleteRequirementDialog';
 import {
     BaseRow,
     EditableColumn,
@@ -244,6 +245,9 @@ export const TableBlock: React.FC<BlockProps> = ({
         }
     }, [block.name]);
     const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [requirementToDelete, setRequirementToDelete] =
+        useState<DynamicRequirement | null>(null);
 
     // Use the document store for edit mode state
     const { isEditMode, useTanStackTables, useGlideTables } = useDocumentStore();
@@ -449,14 +453,21 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const handleDeleteRequirement = useCallback(
         async (dynamicReq: DynamicRequirement) => {
-            if (!userProfile?.id) return;
-            await deleteRequirement(dynamicReq, userProfile.id);
-            setLocalRequirements((prev) =>
-                prev.filter((req) => req.id !== dynamicReq.id),
-            );
+            // Open the delete dialog instead of deleting immediately
+            setRequirementToDelete(dynamicReq);
+            setDeleteDialogOpen(true);
         },
-        [deleteRequirement, userProfile?.id],
+        [],
     );
+
+    const handleConfirmDelete = useCallback(async () => {
+        if (!requirementToDelete || !userProfile?.id) return;
+
+        await deleteRequirement(requirementToDelete, userProfile.id);
+        setLocalRequirements((prev) =>
+            prev.filter((req) => req.id !== requirementToDelete.id),
+        );
+    }, [requirementToDelete, deleteRequirement, userProfile?.id]);
 
     const handleNameChange = useCallback(
         (newName: string) => {
@@ -813,6 +824,19 @@ export const TableBlock: React.FC<BlockProps> = ({
                 projectId={projectId}
                 documentId={params.documentId as string}
             />
+            {requirementToDelete && (
+                <DeleteRequirementDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    requirementId={requirementToDelete.id}
+                    requirementName={
+                        (requirementToDelete.Name as string) ||
+                        (requirementToDelete.name as string) ||
+                        'Unnamed Requirement'
+                    }
+                    onConfirmDelete={handleConfirmDelete}
+                />
+            )}
         </div>
     );
 };

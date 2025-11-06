@@ -16,4 +16,8 @@ export const glideLightTheme: Partial<Theme> = {
 
     editorFontSize: '14px', // font size for cell being typed
     baseFontStyle: '14px', // base font style for the grid
+
+    // Cell padding for consistent spacing - applied to all text cells
+    cellHorizontalPadding: 8,
+    cellVerticalPadding: 6,
 };

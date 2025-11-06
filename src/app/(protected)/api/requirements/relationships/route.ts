@@ -544,6 +544,126 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ data });
         }
 
+        if (type === 'check') {
+            const requirementId = searchParams.get('requirementId');
+            if (!requirementId) {
+                return NextResponse.json(
+                    { error: 'requirementId is required for type=check' },
+                    { status: 400 },
+                );
+            }
+
+            // Resolve project and enforce membership
+            const { data: reqRow, error: reqErr } = await serviceClient
+                .from('requirements')
+                .select('id, document_id, documents!inner(id, project_id)')
+                .eq('id', requirementId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (reqErr) {
+                return NextResponse.json(
+                    { error: 'Failed to resolve requirement', details: reqErr.message },
+                    { status: 500 },
+                );
+            }
+            const projectId = (
+                reqRow as unknown as { documents?: { project_id?: string } }
+            )?.documents?.project_id;
+            if (!projectId) {
+                return NextResponse.json(
+                    { error: 'Requirement missing project context' },
+                    { status: 500 },
+                );
+            }
+            const { data: membership, error: membershipError } = await serviceClient
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', profile.id)
+                .eq('status', 'active')
+                .maybeSingle();
+            if (membershipError) {
+                return NextResponse.json(
+                    {
+                        error: 'Failed to verify project membership',
+                        details: membershipError.message,
+                    },
+                    { status: 500 },
+                );
+            }
+            if (!membership) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            // Check for relationships in closure table (depth > 0)
+            const { data: relationships, error: relationshipsError } = await serviceClient
+                .from('requirements_closure')
+                .select(
+                    `
+                        ancestor_id,
+                        descendant_id,
+                        depth
+                    `,
+                )
+                .or(`ancestor_id.eq.${requirementId},descendant_id.eq.${requirementId}`)
+                .gt('depth', 0);
+
+            if (relationshipsError) {
+                console.error(
+                    'Database error (check relationships):',
+                    relationshipsError,
+                );
+                return NextResponse.json(
+                    { error: 'Failed to check relationships' },
+                    { status: 500 },
+                );
+            }
+
+            // Get unique related requirement IDs (excluding the requirement itself)
+            const relatedIds = new Set<string>();
+            relationships?.forEach((rel) => {
+                if (rel.ancestor_id !== requirementId) {
+                    relatedIds.add(rel.ancestor_id);
+                }
+                if (rel.descendant_id !== requirementId) {
+                    relatedIds.add(rel.descendant_id);
+                }
+            });
+
+            // Fetch details of related requirements if any exist
+            let relatedRequirements: Array<{
+                id: string;
+                name: string;
+                external_id: string;
+            }> = [];
+            if (relatedIds.size > 0) {
+                const { data: reqData, error: reqDataError } = await serviceClient
+                    .from('requirements')
+                    .select('id, name, external_id')
+                    .in('id', Array.from(relatedIds))
+                    .eq('is_deleted', false);
+
+                if (reqDataError) {
+                    console.error(
+                        'Database error (fetch related requirements):',
+                        reqDataError,
+                    );
+                    return NextResponse.json(
+                        { error: 'Failed to fetch related requirements' },
+                        { status: 500 },
+                    );
+                }
+
+                relatedRequirements = reqData || [];
+            }
+
+            return NextResponse.json({
+                hasRelationships: relatedIds.size > 0,
+                relationshipCount: relationships?.length || 0,
+                relatedRequirements,
+            });
+        }
+
         return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     } catch (error) {
         console.error('GET /api/requirements/relationships error:', error);

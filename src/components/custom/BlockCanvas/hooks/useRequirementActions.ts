@@ -590,19 +590,39 @@ export const useRequirementActions = ({
     };
 
     // Delete a requirement
-    const deleteRequirement = async (dynamicReq: DynamicRequirement, _userId: string) => {
+    const deleteRequirement = async (dynamicReq: DynamicRequirement, userId: string) => {
         try {
             deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
 
             const supabase = getClientOrThrow();
-            const { error } = await supabase
+
+            // Soft delete the requirement
+            const { error: reqError } = await supabase
                 .from('requirements')
-                .delete()
+                .update({
+                    is_deleted: true,
+                    deleted_at: new Date().toISOString(),
+                    deleted_by: userId,
+                })
                 .eq('id', dynamicReq.id);
 
-            if (error) {
+            if (reqError) {
                 deletedRowIdsRef.current.delete(dynamicReq.id);
-                throw error;
+                throw reqError;
+            }
+
+            // Delete the closure table self-reference (depth=0)
+            // NOTE: closure table doesn't have is_deleted field, so we hard delete
+            const { error: closureError } = await supabase
+                .from('requirements_closure')
+                .delete()
+                .eq('ancestor_id', dynamicReq.id)
+                .eq('descendant_id', dynamicReq.id)
+                .eq('depth', 0);
+
+            if (closureError) {
+                console.error('Error deleting closure table entry:', closureError);
+                // Don't throw - requirement is already deleted, just log the error
             }
 
             // Update local state by removing the deleted requirement immediately without refetching
