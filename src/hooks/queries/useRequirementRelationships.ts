@@ -35,6 +35,16 @@ export interface RequirementTreeNode {
     has_children: boolean;
 }
 
+export interface RequirementRelationshipCheck {
+    hasRelationships: boolean;
+    relationshipCount: number;
+    relatedRequirements: Array<{
+        id: string;
+        name: string;
+        external_id: string;
+    }>;
+}
+
 // API functions
 async function createRelationship(
     request: CreateRelationshipRequest,
@@ -148,6 +158,15 @@ async function getRequirementTree(projectId?: string): Promise<RequirementTreeNo
     return result.data;
 }
 
+async function checkRequirementRelationships(
+    requirementId: string,
+): Promise<RequirementRelationshipCheck> {
+    const params = new URLSearchParams({ requirementId, type: 'check' });
+    const response = await fetch(`/api/requirements/relationships?${params}`);
+    if (!response.ok) throw new Error('Failed to check requirement relationships');
+    return response.json();
+}
+
 // Hooks
 export function useCreateRelationship() {
     const queryClient = useQueryClient();
@@ -256,5 +275,15 @@ export function useRequirementTree(projectId?: string) {
         enabled: !!projectId,
         staleTime: 5 * 60 * 1000,
         gcTime: 10 * 60 * 1000,
+    });
+}
+
+export function useCheckRequirementRelationships(requirementId: string) {
+    return useQuery({
+        queryKey: ['requirements', 'check', requirementId],
+        queryFn: () => checkRequirementRelationships(requirementId),
+        enabled: !!requirementId,
+        staleTime: 0, // Always fetch fresh data for relationship checks
+        gcTime: 1 * 60 * 1000, // Keep in cache for 1 minute
     });
 }
