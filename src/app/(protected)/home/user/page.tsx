@@ -101,8 +101,12 @@ export default function UserDashboard() {
         if (!organizations) return [];
         if (!profile?.pinned_organization_id) return organizations;
         return [
-            ...organizations.filter((org) => org.id === profile?.pinned_organization_id),
-            ...organizations.filter((org) => org.id !== profile?.pinned_organization_id),
+            ...organizations.filter(
+                (org: Organization) => org.id === profile?.pinned_organization_id,
+            ),
+            ...organizations.filter(
+                (org: Organization) => org.id !== profile?.pinned_organization_id,
+            ),
         ];
     }, [organizations, profile?.pinned_organization_id]);
 
