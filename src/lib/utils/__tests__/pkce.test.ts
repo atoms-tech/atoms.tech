@@ -7,7 +7,7 @@ import {
     generateCodeVerifier,
     generatePKCE,
     isValidCodeVerifier,
-} from '../pkce';
+} from '@/lib/utils/pkce';
 
 describe('PKCE Utilities', () => {
     describe('generateCodeVerifier', () => {

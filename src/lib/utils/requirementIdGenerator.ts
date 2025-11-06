@@ -8,7 +8,6 @@ import {
     generateOrgPrefix,
     generateSequentialId,
     generateTimestampId,
-    parseSequentialId,
 } from './string/id-generator';
 
 /**

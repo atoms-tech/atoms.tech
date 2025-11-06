@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi as _vi } from 'vitest';
 
-import { BaseHTTPClient } from '../base-client';
+import { BaseHTTPClient } from '@/lib/http/base-client';
 
 describe('BaseHTTPClient', () => {
     let client: BaseHTTPClient;

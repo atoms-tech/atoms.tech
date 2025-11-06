@@ -8,7 +8,7 @@ import {
     generateSequentialId,
     generateTimestampId,
     parseSequentialId,
-} from '../id-generator';
+} from '@/lib/utils/string/id-generator';
 
 describe('ID Generator Utilities', () => {
     describe('generateSequentialId', () => {
