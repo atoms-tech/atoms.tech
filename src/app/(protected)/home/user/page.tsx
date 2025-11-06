@@ -153,10 +153,10 @@ export default function UserDashboard() {
 
     // Get counts for each organization type
     const enterpriseCount = sortedOrganizations.filter(
-        (org) => org.type === OrganizationType.enterprise,
+        (org: Organization) => org.type === OrganizationType.enterprise,
     ).length;
     const teamCount = sortedOrganizations.filter(
-        (org) =>
+        (org: Organization) =>
             org.type !== OrganizationType.personal &&
             org.type !== OrganizationType.enterprise,
     ).length;
