@@ -90,6 +90,7 @@ export default function AnalyzeSandboxPage() {
                         <EnhancedCard
                             enhancedReqEars={analysisData?.enhancedReqEars}
                             enhancedReqIncose={analysisData?.enhancedReqIncose}
+                            enhancedGeneralFeedback={analysisData?.enhancedGeneralFeedback}
                             onAccept={() => {}}
                         />
                     </div>

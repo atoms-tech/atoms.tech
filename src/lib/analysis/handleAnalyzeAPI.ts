@@ -8,6 +8,8 @@ export async function handleAnalyzeAPI({
     setAnalysisData,
     setIsAnalysing,
     apiUrl,
+    orgId,
+    threadTitle,
     maxRetries = 2,
     retryDelayMs = 3000,
 }: {
@@ -17,6 +19,8 @@ export async function handleAnalyzeAPI({
     setAnalysisData: (data: any) => void;
     setIsAnalysing: (value: boolean) => void;
     apiUrl: string;
+    orgId?: string;
+    threadTitle?: string;
     maxRetries?: number;
     retryDelayMs?: number;
 }) {
@@ -35,7 +39,10 @@ export async function handleAnalyzeAPI({
             const { currentPinnedOrganizationId, setUserContext, currentOrgId } = (
                 await import('@/components/custom/AgentChat/hooks/useAgentStore')
             ).useAgentStore.getState();
-            if (!currentPinnedOrganizationId) {
+            // Prefer explicit orgId from caller (e.g., page URL) when provided
+            if (orgId) {
+                setUserContext({ orgId, pinnedOrganizationId: orgId });
+            } else if (!currentPinnedOrganizationId) {
                 const sandboxId = currentOrgId || 'sandbox-org';
                 setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
             }
@@ -126,7 +133,7 @@ export async function handleAnalyzeAPI({
                 };
                 setAnalysisData(normalized);
 
-                // Display a summary message into the agent panel as a new chat thread
+                // Display messages into the agent panel as a new chat thread
                 try {
                     const {
                         addMessage,
@@ -145,7 +152,9 @@ export async function handleAnalyzeAPI({
                         )
                     ).useAgentStore.getState();
                     // Ensure pinned org (again) in case it wasn't set yet when panel opened
-                    if (!currentPinnedOrganizationId) {
+                    if (orgId) {
+                        setUserContext({ orgId, pinnedOrganizationId: orgId });
+                    } else if (!currentPinnedOrganizationId) {
                         const sandboxId = currentOrgId || 'sandbox-org';
                         setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
                     }
@@ -168,30 +177,60 @@ export async function handleAnalyzeAPI({
                         }
                     } catch {}
                     // Create a new chat thread for this analysis
-                    const titleBase = (reqText || 'Analysis').trim().replace(/\s+/g, ' ');
+                    const base = (threadTitle || reqText || 'Analysis')
+                        .trim()
+                        .replace(/\s+/g, ' ');
+                    const max = 60;
                     const title =
-                        titleBase.length > 40
-                            ? `Analysis: ${titleBase.slice(0, 40)}…`
-                            : `Analysis: ${titleBase}`;
-                    const threadId = newThread(title) || undefined;
+                        base.length > max
+                            ? `Analysis: ${base.slice(0, max)}…`
+                            : `Analysis: ${base}`;
+                    const threadId = newThread(title, 'analysis') || undefined;
                     if (threadId) setActiveThread(threadId);
-                    const md =
-                        `**Analysis Result**\n\n` +
-                        `- Original: ${normalized.originalRequirement || 'N/A'}\n` +
-                        `- EARS: ${normalized.earsRequirement || 'N/A'}\n` +
-                        `- INCOSE: ${normalized.incoseFormat || 'N/A'}\n` +
-                        `- Compliance: ${normalized.complianceFeedback || 'N/A'}\n` +
-                        `- Enhanced (EARS): ${normalized.enhancedReqEars || 'N/A'}\n` +
-                        `- Enhanced (INCOSE): ${normalized.enhancedReqIncose || 'N/A'}\n` +
-                        `- Notes: ${normalized.enhancedGeneralFeedback || 'N/A'}`;
-                    addMessage({
-                        id: String(Date.now()),
-                        content: md,
-                        role: 'assistant',
-                        timestamp: new Date(),
-                        category: 'chat',
-                        threadId,
-                    });
+                    // Post individual section messages for better visibility in the chat thread
+                    const mk = (s: string) => (s && s.trim().length > 0 ? s : 'N/A');
+                    const now = Date.now();
+
+                    const messages = [
+                        {
+                            content: `**Analysis Result**`,
+                        },
+                        {
+                            content: `### Original Requirement\n\n${mk(normalized.originalRequirement)}`,
+                        },
+                        {
+                            content: `### EARS\n\n${mk(normalized.earsRequirement)}`,
+                        },
+                        {
+                            content: `### INCOSE\n\n${mk(normalized.incoseFormat)}`,
+                        },
+                        {
+                            content: `### INCOSE Feedback\n\n${mk(normalized.incoseFeedback)}`,
+                        },
+                        {
+                            content: `### Compliance\n\n${mk(normalized.complianceFeedback)}`,
+                        },
+                        {
+                            content: `### Enhanced (EARS)\n\n${mk(normalized.enhancedReqEars)}`,
+                        },
+                        {
+                            content: `### Enhanced (INCOSE)\n\n${mk(normalized.enhancedReqIncose)}`,
+                        },
+                        {
+                            content: `### Enhanced Feedback\n\n${mk(normalized.enhancedGeneralFeedback)}`,
+                        },
+                    ];
+
+                    messages.forEach((m, idx) =>
+                        addMessage({
+                            id: String(now + idx),
+                            content: m.content,
+                            role: 'assistant',
+                            timestamp: new Date(),
+                            category: 'chat',
+                            threadId,
+                        }),
+                    );
                     // Nudge selection in case UI hasn't updated selection yet
                     if (threadId) {
                         try {

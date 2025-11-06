@@ -5,14 +5,13 @@ import {
     Check,
     FilePlus,
     Pencil,
-    Save,
     Upload,
     Wand,
     X,
     Trash,
     CircleAlert,
 } from 'lucide-react';
-import React, { ChangeEvent, KeyboardEvent, useMemo, useRef, useState } from 'react';
+import React, { ChangeEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -45,8 +44,6 @@ export function SandboxRequirementForm({
 }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const [analysisData, setAnalysisData] = useState<unknown>(null);
-
     const [isUploading, setIsUploading] = useState(false);
     const [editingFile, setEditingFile] = useState<string | null>(null);
     const [editingFileName, setEditingFileName] = useState<string>('');
@@ -54,7 +51,15 @@ export function SandboxRequirementForm({
         {},
     );
 
-    const hasUnsavedChanges = useMemo(() => reqText.trim().length > 0, [reqText]);
+    // Whenever selectedFiles changes, emit a simplified map for parent consumers
+    useEffect(() => {
+        const sf: { [k: string]: { file?: File } } = Object.fromEntries(
+            Object.entries(selectedFiles).map(([k, v]) => [k, { file: v.file }]),
+        );
+        onFilesChanged(sf);
+        // onFilesChanged is a stable prop from parent; if not, parent can memoize
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedFiles]);
 
     const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.length) return;
@@ -144,12 +149,7 @@ export function SandboxRequirementForm({
         else setUploadButtonText('Upload Regulation Document');
     }, [isUploading]);
 
-    const emitFiles = () => {
-        const sf: { [k: string]: { file?: File } } = Object.fromEntries(
-            Object.entries(selectedFiles).map(([k, v]) => [k, { file: v.file }]),
-        );
-        onFilesChanged(sf);
-    };
+    // Files are emitted directly via onFilesChanged calls in the parent flow.
 
     return (
         <Card className="p-6">

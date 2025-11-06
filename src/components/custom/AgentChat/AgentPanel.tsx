@@ -6,11 +6,19 @@ import {
     Download,
     FileText,
     MessageSquare,
+    PanelLeft,
+    Maximize2,
+    Minimize2,
     Mic,
     MicOff,
     Send,
     Settings,
+    Trash,
     X,
+    Folder,
+    FolderOpen,
+    ChevronDown,
+    ChevronRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -53,12 +61,20 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [speechSupported, setSpeechSupported] = useState(false);
     const [showPinGuide, setShowPinGuide] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
+    const [analysisExpanded, setAnalysisExpanded] = useState(true);
     // Tabs removed; unified chat view
 
     // Resizable panel state
     const [isResizing, setIsResizing] = useState(false);
     const [startX, setStartX] = useState(0);
     const [startWidth, setStartWidth] = useState(0);
+    // Resizable sidebar state
+    const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+    const [sidebarStartX, setSidebarStartX] = useState(0);
+    const [sidebarStartWidth, setSidebarStartWidth] = useState(260);
+    const [sidebarWidth, setSidebarWidth] = useState(260);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,8 +109,16 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         listThreadsForCurrentOrg,
         newThread,
         setActiveThread,
-        getActiveThreadId,
+    // getActiveThreadId, // removed unused selector
+        deleteThread,
     } = useAgentStore();
+
+    // Track active thread reactively to avoid stale reads from a selector function
+    const activeThreadId = useAgentStore((s) =>
+        s.currentPinnedOrganizationId
+            ? s.currentThreadIdByOrg[s.currentPinnedOrganizationId]
+            : undefined,
+    );
 
     // Get messages for current organization (reactive to currentPinnedOrganizationId changes)
     const messages = React.useMemo(() => {
@@ -107,11 +131,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             `AgentPanel - Loading ${orgMessages.length} messages for organization ${currentPinnedOrganizationId}`,
         );
         // Unified view: use active thread; include undefined or 'chat' categories
-        const activeThreadId = getActiveThreadId();
         return orgMessages.filter(
             (m) => (!m.category || m.category === 'chat') && m.threadId === activeThreadId,
         );
-    }, [currentPinnedOrganizationId, organizationMessages, getActiveThreadId]);
+    }, [currentPinnedOrganizationId, organizationMessages, activeThreadId]);
 
     // Debug: Log when pinned organization changes
     useEffect(() => {
@@ -156,6 +179,17 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 setPanelWidth(width);
             }
         }
+        const savedSidebarWidth = localStorage.getItem('agentSidebarWidth');
+        if (savedSidebarWidth) {
+            const w = parseInt(savedSidebarWidth, 10);
+            if (w >= 220 && w <= 420) setSidebarWidth(w);
+        }
+        const savedShowSidebar = localStorage.getItem('agentShowSidebar');
+        if (savedShowSidebar === 'false') setShowSidebar(false);
+        const savedFull = localStorage.getItem('agentPanelFull');
+        if (savedFull === 'true') setIsFullScreen(true);
+        const savedAnalysisExpanded = localStorage.getItem('agentAnalysisExpanded');
+        if (savedAnalysisExpanded === 'false') setAnalysisExpanded(false);
     }, [setPanelWidth]);
 
     // Save panel width to localStorage
@@ -163,6 +197,25 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         localStorage.setItem('agentPanelWidth', panelWidth.toString());
     }, [panelWidth]);
 
+    // Save sidebar width to localStorage
+    useEffect(() => {
+        localStorage.setItem('agentSidebarWidth', sidebarWidth.toString());
+    }, [sidebarWidth]);
+
+    // Save fullscreen to localStorage
+    useEffect(() => {
+        localStorage.setItem('agentPanelFull', isFullScreen ? 'true' : 'false');
+    }, [isFullScreen]);
+
+    // Save sidebar visibility
+    useEffect(() => {
+        localStorage.setItem('agentShowSidebar', showSidebar ? 'true' : 'false');
+    }, [showSidebar]);
+
+    // Save analysis folder expand state
+    useEffect(() => {
+        localStorage.setItem('agentAnalysisExpanded', analysisExpanded ? 'true' : 'false');
+    }, [analysisExpanded]);
     // Resize handlers
     const handleResizeStart = useCallback(
         (e: React.MouseEvent) => {
@@ -178,7 +231,6 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     const handleResizeMove = useCallback(
         (e: MouseEvent) => {
             if (!isResizing) return;
-
             const deltaX = startX - e.clientX;
             const newWidth = Math.max(300, Math.min(800, startWidth + deltaX));
             setPanelWidth(newWidth);
@@ -188,6 +240,34 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
     const handleResizeEnd = useCallback(() => {
         setIsResizing(false);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+    }, []);
+
+    // Sidebar resize handlers
+    const handleSidebarResizeStart = useCallback(
+        (e: React.MouseEvent) => {
+            setIsResizingSidebar(true);
+            setSidebarStartX(e.clientX);
+            setSidebarStartWidth(sidebarWidth);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        },
+        [sidebarWidth],
+    );
+
+    const handleSidebarResizeMove = useCallback(
+        (e: MouseEvent) => {
+            if (!isResizingSidebar) return;
+            const deltaX = e.clientX - sidebarStartX;
+            const newWidth = Math.max(220, Math.min(420, sidebarStartWidth + deltaX));
+            setSidebarWidth(newWidth);
+        },
+        [isResizingSidebar, sidebarStartX, sidebarStartWidth],
+    );
+
+    const handleSidebarResizeEnd = useCallback(() => {
+        setIsResizingSidebar(false);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
     }, []);
@@ -203,6 +283,18 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             };
         }
     }, [isResizing, handleResizeMove, handleResizeEnd]);
+
+    // Mouse event listeners for sidebar resize
+    useEffect(() => {
+        if (isResizingSidebar) {
+            document.addEventListener('mousemove', handleSidebarResizeMove);
+            document.addEventListener('mouseup', handleSidebarResizeEnd);
+            return () => {
+                document.removeEventListener('mousemove', handleSidebarResizeMove);
+                document.removeEventListener('mouseup', handleSidebarResizeEnd);
+            };
+        }
+    }, [isResizingSidebar, handleSidebarResizeMove, handleSidebarResizeEnd]);
 
     // Set user context when component mounts
     useEffect(() => {
@@ -683,6 +775,138 @@ ${'='.repeat(50)}
 
     const queue = getQueueForCurrentOrg();
 
+    // Shared Markdown component mapping to keep consistent styling
+    const markdownComponents = React.useMemo(
+        () => ({
+            p: ({ children }: { children: React.ReactNode }) => (
+                <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300 break-words whitespace-pre-wrap text-base">
+                    {children}
+                </p>
+            ),
+            strong: ({ children }: { children: React.ReactNode }) => (
+                <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    {children}
+                </strong>
+            ),
+            em: ({ children }: { children: React.ReactNode }) => (
+                <em className="italic text-zinc-700 dark:text-zinc-300">{children}</em>
+            ),
+            code: ({ children }: { children: React.ReactNode }) => (
+                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">
+                    {children}
+                </code>
+            ),
+            pre: ({ children }: { children: React.ReactNode }) => (
+                <pre className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg overflow-x-auto mb-2 break-words whitespace-pre-wrap">
+                    {children}
+                </pre>
+            ),
+            ul: ({ children }: { children: React.ReactNode }) => (
+                <ul className="list-disc ml-4 space-y-1 mb-2">{children}</ul>
+            ),
+            ol: ({ children }: { children: React.ReactNode }) => (
+                <ol className="list-decimal ml-4 space-y-1 mb-2">{children}</ol>
+            ),
+            li: ({ children }: { children: React.ReactNode }) => (
+                <li className="text-zinc-700 dark:text-zinc-300 break-words text-base">
+                    {children}
+                </li>
+            ),
+            blockquote: ({ children }: { children: React.ReactNode }) => (
+                <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 italic text-zinc-600 dark:text-zinc-400 mb-2 break-words text-base">
+                    {children}
+                </blockquote>
+            ),
+            h1: ({ children }: { children: React.ReactNode }) => (
+                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-4 first:mt-0">
+                    {children}
+                </h1>
+            ),
+            h2: ({ children }: { children: React.ReactNode }) => (
+                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                    {children}
+                </h2>
+            ),
+            h3: ({ children }: { children: React.ReactNode }) => (
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                    {children}
+                </h3>
+            ),
+            h4: ({ children }: { children: React.ReactNode }) => (
+                <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                    {children}
+                </h4>
+            ),
+            h5: ({ children }: { children: React.ReactNode }) => (
+                <h5 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                    {children}
+                </h5>
+            ),
+            h6: ({ children }: { children: React.ReactNode }) => (
+                <h6 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
+                    {children}
+                </h6>
+            ),
+            a: ({ children, href }: { children: React.ReactNode; href?: string }) => (
+                <a
+                    href={href}
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    {children}
+                </a>
+            ),
+            table: ({ children }: { children: React.ReactNode }) => (
+                <div className="overflow-x-auto mb-2 max-w-full">
+                    <table className="min-w-full border border-zinc-300 dark:border-zinc-600 table-fixed">
+                        {children}
+                    </table>
+                </div>
+            ),
+            th: ({ children }: { children: React.ReactNode }) => (
+                <th className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 bg-zinc-50 dark:bg-zinc-700 text-left font-semibold text-zinc-900 dark:text-zinc-100 break-words text-sm">
+                    {children}
+                </th>
+            ),
+            td: ({ children }: { children: React.ReactNode }) => (
+                <td className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 text-zinc-700 dark:text-zinc-300 break-words text-sm">
+                    {children}
+                </td>
+            ),
+            hr: () => <hr className="border-t border-zinc-300 dark:border-zinc-600 my-4" />,
+        }),
+        [],
+    );
+
+    // Split markdown by level-2 headings into sections
+    const splitSections = (md: string) => {
+        const lines = md.split(/\r?\n/);
+        const sections: { title: string; body: string }[] = [];
+        let currentTitle: string | null = null;
+        let currentBody: string[] = [];
+
+        const push = () => {
+            if (currentTitle || currentBody.length) {
+                sections.push({ title: currentTitle || 'Overview', body: currentBody.join('\n').trim() });
+            }
+        };
+
+        for (const line of lines) {
+            const m = line.match(/^##\s+(.+)/);
+            if (m) {
+                // new section
+                push();
+                currentTitle = m[1].trim();
+                currentBody = [];
+            } else {
+                currentBody.push(line);
+            }
+        }
+        push();
+        return sections.filter((s) => s.body.trim().length > 0 || s.title);
+    };
+
     return (
         <>
             {/* Backdrop - only on mobile/tablet */}
@@ -703,13 +927,15 @@ ${'='.repeat(50)}
                     // Transform based on open state
                     isOpen ? 'translate-x-0' : 'translate-x-full',
                 )}
-                style={{ width: `${panelWidth}px` }}
+                style={{ width: isFullScreen ? '100vw' : `${panelWidth}px` }}
             >
                 {/* Resize Handle */}
-                <div
-                    className="absolute left-0 top-0 w-[1px] h-full cursor-col-resize hover:w-1.5 transition-all z-10 group bg-border hover:bg-accent"
-                    onMouseDown={handleResizeStart}
-                />
+                {!isFullScreen && (
+                    <div
+                        className="absolute left-0 top-0 w-[1px] h-full cursor-col-resize hover:w-1.5 transition-all z-10 group bg-border hover:bg-accent"
+                        onMouseDown={handleResizeStart}
+                    />
+                )}
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
@@ -723,7 +949,7 @@ ${'='.repeat(50)}
                                 className="object-contain dark:invert"
                             />
                         </div>
-                        <div>
+                        <div className="flex items-center gap-2">
                             <h2 className="font-semibold text-zinc-900 dark:text-zinc-100 text-lg tracking-wide">
                                 ATOMS
                             </h2>
@@ -731,6 +957,28 @@ ${'='.repeat(50)}
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowSidebar((v) => !v)}
+                            className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            title={showSidebar ? 'Hide sidebar' : 'Show sidebar'}
+                        >
+                            <PanelLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsFullScreen((v) => !v)}
+                            className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            title={isFullScreen ? 'Exit full screen' : 'Enter full screen'}
+                        >
+                            {isFullScreen ? (
+                                <Minimize2 className="h-4 w-4" />
+                            ) : (
+                                <Maximize2 className="h-4 w-4" />
+                            )}
+                        </Button>
                         <Button
                             variant="ghost"
                             size="sm"
@@ -773,9 +1021,13 @@ ${'='.repeat(50)}
                 </div>
 
                 {/* Body with sidebar (threads) + main chat [New Added] */}
-                <div className="flex flex-1 min-h-0 bg-zinc-50 dark:bg-zinc-900/50">
+                <div className="flex flex-1 min-h-0 bg-zinc-50 dark:bg-zinc-900/50 relative">
                     {/* Sidebar - chat history [New Added] */}
-                    <div className="hidden md:flex md:flex-col w-60 border-r border-zinc-200 dark:border-zinc-800 p-3 gap-3">
+                    {showSidebar && (
+                    <div
+                        className="hidden md:flex md:flex-col border-r border-zinc-200 dark:border-zinc-800 p-3 gap-3 relative min-w-[220px] max-w-[420px]"
+                        style={{ width: `${sidebarWidth}px` }}
+                    >
                         <Button
                             variant="secondary"
                             className="w-full"
@@ -787,36 +1039,140 @@ ${'='.repeat(50)}
                         >
                             + New chat
                         </Button>
-                        <div className="text-xs text-zinc-500">Chats</div>
-                        <div className="flex-1 overflow-auto">
-                            <ul className="space-y-1">
-                                {listThreadsForCurrentOrg().map((t) => {
-                                    const isActive = getActiveThreadId() === t.id;
-                                    return (
-                                        <li key={t.id}>
+                        {(() => {
+                            const threads = listThreadsForCurrentOrg();
+                            const chatThreads = threads.filter((t) => t.threadType !== 'analysis');
+                            const analysisThreads = threads.filter((t) => t.threadType === 'analysis');
+                            return (
+                                <div className="flex-1 overflow-auto">
+                                    {/* Chats section */}
+                                    <div className="text-xs text-zinc-500">Chats</div>
+                                    <ul className="space-y-1 mb-3">
+                                        {chatThreads.map((t) => {
+                                            const isActive = activeThreadId === t.id;
+                                            return (
+                                                <li key={t.id} className="group">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            className={cn(
+                                                                'flex-1 min-w-0 text-left px-2 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                                                                isActive && 'bg-zinc-200 dark:bg-zinc-700',
+                                                            )}
+                                                            onClick={() => {
+                                                                setActiveThread(t.id);
+                                                            }}
+                                                            title={t.title || 'Untitled'}
+                                                        >
+                                                            <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                                                                {t.title || 'Untitled'}
+                                                            </div>
+                                                            <div className="text-[10px] text-zinc-500">
+                                                                {new Date(t.updatedAt).toLocaleDateString()}
+                                                            </div>
+                                                        </button>
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="h-7 w-7 p-0 ml-1 shrink-0 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                                                            title="Delete chat"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const confirmed = window.confirm('Delete this chat? This will remove all messages in the thread.');
+                                                                if (confirmed) deleteThread(t.id);
+                                                            }}
+                                                        >
+                                                            <Trash className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+
+                                    {/* Analysis section - renders when threads exist */}
+                                    {analysisThreads.length > 0 && (
+                                        <>
                                             <button
-                                                className={cn(
-                                                    'w-full text-left px-2 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 break-words',
-                                                    isActive && 'bg-zinc-200 dark:bg-zinc-700',
-                                                )}
-                                                onClick={() => {
-                                                    setActiveThread(t.id);
-                                                }}
-                                                title={new Date(t.updatedAt).toLocaleString()}
+                                                type="button"
+                                                className="w-full flex items-center justify-between text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 px-1 py-1 rounded"
+                                                onClick={() => setAnalysisExpanded((v) => !v)}
+                                                title={analysisExpanded ? 'Collapse Analysis' : 'Expand Analysis'}
                                             >
-                                                <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
-                                                    {t.title || 'Untitled'}
-                                                </div>
-                                                <div className="text-[10px] text-zinc-500">
-                                                    {new Date(t.updatedAt).toLocaleDateString()}
-                                                </div>
+                                                <span className="flex items-center gap-2">
+                                                    {analysisExpanded ? (
+                                                        <ChevronDown className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                        <ChevronRight className="h-3.5 w-3.5" />
+                                                    )}
+                                                    {analysisExpanded ? (
+                                                        <FolderOpen className="h-3.5 w-3.5" />
+                                                    ) : (
+                                                        <Folder className="h-3.5 w-3.5" />
+                                                    )}
+                                                    <span>Analysis</span>
+                                                </span>
+                                                <span className="text-[10px] text-zinc-400">{analysisThreads.length}</span>
                                             </button>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
+                                            {analysisExpanded && (
+                                            <ul className="space-y-1">
+                                                {analysisThreads.map((t) => {
+                                                    const isActive = activeThreadId === t.id;
+                                                    return (
+                                                        <li key={t.id} className="group">
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    className={cn(
+                                                                        'flex-1 min-w-0 text-left px-2 py-2 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800',
+                                                                        isActive && 'bg-zinc-200 dark:bg-zinc-700',
+                                                                    )}
+                                                                    onClick={() => {
+                                                                        setActiveThread(t.id);
+                                                                    }}
+                                                                    title={t.title || 'Untitled'}
+                                                                >
+                                                                    <div className="text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                                                                        {t.title || 'Untitled'}
+                                                                    </div>
+                                                                    <div className="text-[10px] text-zinc-500">
+                                                                        {new Date(t.updatedAt).toLocaleDateString()}
+                                                                    </div>
+                                                                </button>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    className="h-7 w-7 p-0 ml-1 shrink-0 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                                                                    title="Delete chat"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        const confirmed = window.confirm('Delete this chat? This will remove all messages in the thread.');
+                                                                        if (confirmed) deleteThread(t.id);
+                                                                    }}
+                                                                >
+                                                                    <Trash className="h-3.5 w-3.5" />
+                                                                </Button>
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })()}
+                        {/* Sidebar Resize Handle */}
+                        <div
+                            className="absolute right-0 top-0 h-full w-[3px] cursor-col-resize hover:w-1.5 bg-transparent hover:bg-accent"
+                            onMouseDown={handleSidebarResizeStart}
+                            title="Drag to resize sidebar"
+                        />
                     </div>
+                    )}
+
+                    {/* Sidebar show button when hidden: now toggled via header */}
 
                     {/* Main column: messages + input [New Added] */}
                     <div className="flex-1 flex flex-col min-w-0">
@@ -867,7 +1223,9 @@ ${'='.repeat(50)}
                                             'flex',
                                             msg.role === 'user'
                                                 ? 'justify-end'
-                                                : 'justify-center',
+                                                : isFullScreen
+                                                    ? 'justify-center'
+                                                    : 'justify-center',
                                         )}
                                     >
                                         <div
@@ -875,7 +1233,9 @@ ${'='.repeat(50)}
                                                 'p-3 rounded-lg break-words',
                                                 msg.role === 'user'
                                                     ? 'max-w-[85%] bg-zinc-600 text-white dark:bg-purple-600 dark:text-white'
-                                                    : 'max-w-[95%] bg-white dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600',
+                                                    : isFullScreen
+                                                        ? 'w-full max-w-3xl bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600'
+                                                        : 'max-w-[95%] bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-300 dark:border-zinc-600',
                                             )}
                                         >
                                             {msg.role === 'user' ? (
@@ -899,119 +1259,31 @@ ${'='.repeat(50)}
                                                             </span>
                                                         </div>
                                                     )}
-                                                    <ReactMarkdown
-                                                        components={{
-                                                            p: ({ children }) => (
-                                                                <p className="mb-2 last:mb-0 text-zinc-700 dark:text-zinc-300 break-words whitespace-pre-wrap text-base">
-                                                                    {children}
-                                                                </p>
-                                                            ),
-                                                            strong: ({ children }) => (
-                                                                <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
-                                                                    {children}
-                                                                </strong>
-                                                            ),
-                                                            em: ({ children }) => (
-                                                                <em className="italic text-zinc-700 dark:text-zinc-300">
-                                                                    {children}
-                                                                </em>
-                                                            ),
-                                                            code: ({ children }) => (
-                                                                <code className="bg-zinc-100 dark:bg-zinc-700 px-1 py-0.5 rounded text-sm font-mono text-zinc-800 dark:text-zinc-200 break-all">
-                                                                    {children}
-                                                                </code>
-                                                            ),
-                                                            pre: ({ children }) => (
-                                                                <pre className="bg-zinc-100 dark:bg-zinc-800 p-3 rounded-lg overflow-x-auto mb-2 break-words whitespace-pre-wrap">
-                                                                    {children}
-                                                                </pre>
-                                                            ),
-                                                            ul: ({ children }) => (
-                                                                <ul className="list-disc ml-4 space-y-1 mb-2">
-                                                                    {children}
-                                                                </ul>
-                                                            ),
-                                                            ol: ({ children }) => (
-                                                                <ol className="list-decimal ml-4 space-y-1 mb-2">
-                                                                    {children}
-                                                                </ol>
-                                                            ),
-                                                            li: ({ children }) => (
-                                                                <li className="text-zinc-700 dark:text-zinc-300 break-words text-base">
-                                                                    {children}
-                                                                </li>
-                                                            ),
-                                                            blockquote: ({
-                                                                children,
-                                                            }) => (
-                                                                <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 italic text-zinc-600 dark:text-zinc-400 mb-2 break-words text-base">
-                                                                    {children}
-                                                                </blockquote>
-                                                            ),
-                                                            h1: ({ children }) => (
-                                                                <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-4 first:mt-0">
-                                                                    {children}
-                                                                </h1>
-                                                            ),
-                                                            h2: ({ children }) => (
-                                                                <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
-                                                                    {children}
-                                                                </h2>
-                                                            ),
-                                                            h3: ({ children }) => (
-                                                                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
-                                                                    {children}
-                                                                </h3>
-                                                            ),
-                                                            h4: ({ children }) => (
-                                                                <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
-                                                                    {children}
-                                                                </h4>
-                                                            ),
-                                                            h5: ({ children }) => (
-                                                                <h5 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
-                                                                    {children}
-                                                                </h5>
-                                                            ),
-                                                            h6: ({ children }) => (
-                                                                <h6 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2 mt-3 first:mt-0">
-                                                                    {children}
-                                                                </h6>
-                                                            ),
-                                                            a: ({ children, href }) => (
-                                                                <a
-                                                                    href={href}
-                                                                    className="text-blue-600 dark:text-blue-400 hover:underline"
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
+                                                    {/* Collapsible analysis sections when headings are present */}
+                                                    {/^#?#?\s*Analysis|\n##\s+/.test(msg.content) ? (
+                                                        <div className="space-y-2">
+                                                            {splitSections(msg.content).map((section, sIdx) => (
+                                                                <details
+                                                                    key={sIdx}
+                                                                    className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 open:shadow-sm"
+                                                                    open={sIdx === 0}
                                                                 >
-                                                                    {children}
-                                                                </a>
-                                                            ),
-                                                            table: ({ children }) => (
-                                                                <div className="overflow-x-auto mb-2 max-w-full">
-                                                                    <table className="min-w-full border border-zinc-300 dark:border-zinc-600 table-fixed">
-                                                                        {children}
-                                                                    </table>
-                                                                </div>
-                                                            ),
-                                                            th: ({ children }) => (
-                                                                <th className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 bg-zinc-50 dark:bg-zinc-700 text-left font-semibold text-zinc-900 dark:text-zinc-100 break-words text-sm">
-                                                                    {children}
-                                                                </th>
-                                                            ),
-                                                            td: ({ children }) => (
-                                                                <td className="border border-zinc-300 dark:border-zinc-600 px-2 py-1 text-zinc-700 dark:text-zinc-300 break-words text-sm">
-                                                                    {children}
-                                                                </td>
-                                                            ),
-                                                            hr: () => (
-                                                                <hr className="border-t border-zinc-300 dark:border-zinc-600 my-4" />
-                                                            ),
-                                                        }}
-                                                    >
-                                                        {msg.content}
-                                                    </ReactMarkdown>
+                                                                    <summary className="cursor-pointer select-none px-3 py-2 font-semibold text-zinc-900 dark:text-zinc-100">
+                                                                        {section.title}
+                                                                    </summary>
+                                                                    <div className="px-3 pb-3 text-sm">
+                                                                        <ReactMarkdown components={markdownComponents as unknown as never}>
+                                                                            {section.body}
+                                                                        </ReactMarkdown>
+                                                                    </div>
+                                                                </details>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <ReactMarkdown components={markdownComponents as unknown as never}>
+                                                            {msg.content}
+                                                        </ReactMarkdown>
+                                                    )}
                                                 </div>
                                             )}
                                             {msg.type === 'voice' && (
@@ -1047,9 +1319,13 @@ ${'='.repeat(50)}
                         </ScrollArea>
 
                         {/* Input Area */}
-                        <div className="px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                    <div className="flex gap-2 items-stretch">
-                        <div className="flex-1 relative">
+                        <div className={cn(
+                            "px-8 py-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900",
+                            isFullScreen && "flex justify-center"
+                        )}>
+                    <div className={cn("w-full", isFullScreen ? "max-w-3xl" : undefined)}>
+                        <div className="flex gap-2 items-stretch">
+                            <div className="flex-1 relative">
                             <Textarea
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 {...({ ref: textareaRef } as any)}
@@ -1060,7 +1336,7 @@ ${'='.repeat(50)}
                                 onKeyDown={handleKeyPress}
                                 placeholder="Type your message..."
                                 // Thicker border for more visible input box
-                                className="min-h-[40px] max-h-[120px] resize-none border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
+                                className="min-h-[32px] max-h-[160px] resize-y border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent rounded-lg text-lg"
                                 disabled={queue.length >= 5}
                             />
                             {speechSupported && (
@@ -1084,7 +1360,7 @@ ${'='.repeat(50)}
                                     )}
                                 </Button>
                             )}
-                        </div>
+                            </div>
                         <Button
                             onClick={() => handleSendMessage()}
                             disabled={!message.trim() || queue.length >= 5}
@@ -1099,10 +1375,11 @@ ${'='.repeat(50)}
                             ? 'Listening...'
                             : 'Press Enter to send, Shift+Enter for new line'}
                         </p>
+                    </div>
                         </div>
                         {/* Add minimal UI for queued messages */}
                         {queue.length > 0 && (
-                            <div className="mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded">
+                            <div className={cn("mt-2 p-2 bg-zinc-100 dark:bg-zinc-800 rounded", isFullScreen && "mx-auto max-w-3xl") }>
                                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
                                     Queued Messages ({queue.length}/5):
                                 </p>

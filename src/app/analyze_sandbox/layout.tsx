@@ -2,7 +2,6 @@
 
 import { Suspense } from 'react';
 import LayoutManager from '@/components/base/LayoutManager';
-import { Button } from '@/components/ui/button';
 import { LiveRegionProvider } from '@/components/ui/live-region';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AccessibilityProvider } from '@/lib/providers/accessibility.provider';

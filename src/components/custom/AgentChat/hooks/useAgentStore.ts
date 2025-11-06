@@ -38,6 +38,7 @@ interface AgentStore {
                 title: string;
                 createdAt: string; // ISO
                 updatedAt: string; // ISO
+                threadType?: 'chat' | 'analysis'; // classification
             };
         };
     };
@@ -72,7 +73,7 @@ interface AgentStore {
     getMessagesForOrg: (orgId: string) => Message[];
 
     // Thread methods [ATOMS-ADDED]
-    newThread: (initialTitle?: string) => string | undefined; // returns threadId
+    newThread: (initialTitle?: string, threadType?: 'chat' | 'analysis') => string | undefined; // returns threadId
     setActiveThread: (threadId: string) => void;
     getActiveThreadId: () => string | undefined;
     listThreadsForCurrentOrg: () => Array<{
@@ -80,6 +81,7 @@ interface AgentStore {
         title: string;
         createdAt: string;
         updatedAt: string;
+        threadType?: 'chat' | 'analysis';
     }>;
     renameThread: (threadId: string, title: string) => void;
     deleteThread: (threadId: string) => void;
@@ -186,12 +188,13 @@ export const useAgentStore = create<AgentStore>()(
             addMessage: (message: Message) => {
                 const { currentPinnedOrganizationId } = get();
                 if (!currentPinnedOrganizationId) {
-                    console.warn('No pinned organization ID available for message');
-                    return;
+                    // Fallback: if no pinned org, try currentOrgId or sandbox to avoid dropping the message
+                    const fallbackOrg = get().currentOrgId || 'sandbox-org';
+                    set({ currentPinnedOrganizationId: fallbackOrg, currentOrgId: fallbackOrg });
                 }
                 // For chat messages, ensure they are associated with an active thread [New Added]
                 set((state) => {
-                    const orgId = currentPinnedOrganizationId;
+                    const orgId = (state.currentPinnedOrganizationId || 'sandbox-org') as string;
                     const isAnalysis = message.category === 'analysis';
                     let threadId = message.threadId;
                     if (!isAnalysis) {
@@ -267,14 +270,34 @@ export const useAgentStore = create<AgentStore>()(
             setN8nConfig: (webhookUrl: string) => set({ n8nWebhookUrl: webhookUrl }),
 
             setUserContext: (context) =>
-                set({
-                    currentProjectId: context.projectId,
-                    currentDocumentId: context.documentId,
-                    currentUserId: context.userId,
-                    currentOrgId: context.orgId,
-                    currentPinnedOrganizationId: context.pinnedOrganizationId,
-                    currentUsername: context.username || null,
-                }),
+                set((state) => ({
+                    // Only update when a value is provided; ignore undefined/empty strings to prevent clobbering
+                    currentProjectId:
+                        context.projectId !== undefined
+                            ? context.projectId
+                            : state.currentProjectId,
+                    currentDocumentId:
+                        context.documentId !== undefined
+                            ? context.documentId
+                            : state.currentDocumentId,
+                    currentUserId:
+                        context.userId !== undefined && context.userId !== ''
+                            ? context.userId
+                            : state.currentUserId,
+                    currentOrgId:
+                        context.orgId !== undefined && context.orgId !== ''
+                            ? context.orgId
+                            : state.currentOrgId,
+                    currentPinnedOrganizationId:
+                        context.pinnedOrganizationId !== undefined &&
+                        context.pinnedOrganizationId !== ''
+                            ? context.pinnedOrganizationId
+                            : state.currentPinnedOrganizationId,
+                    currentUsername:
+                        context.username !== undefined && context.username !== ''
+                            ? context.username
+                            : state.currentUsername,
+                })),
 
             // N8N Integration methods
             sendToN8n: async (data: Omit<N8nRequestData, 'secureContext'>) => {
@@ -430,7 +453,7 @@ export const useAgentStore = create<AgentStore>()(
             },
 
             // Thread management [New Added]
-            newThread: (initialTitle?: string) => {
+            newThread: (initialTitle?: string, threadType?: 'chat' | 'analysis') => {
                 const { currentPinnedOrganizationId } = get();
                 if (!currentPinnedOrganizationId) return undefined;
                 const orgId = currentPinnedOrganizationId;
@@ -446,6 +469,7 @@ export const useAgentStore = create<AgentStore>()(
                                 title: initialTitle || 'New chat',
                                 createdAt: now,
                                 updatedAt: now,
+                                threadType: threadType || 'chat',
                             },
                         },
                     },
@@ -502,10 +526,18 @@ export const useAgentStore = create<AgentStore>()(
                     const msgs = state.organizationMessages[orgId] || [];
                     const filtered = msgs.filter((m) => m.threadId !== threadId);
                     // pick a new active thread
-                    const newActive = Object.keys(threads)[0] || createDefaultThreadForOrg({
-                        ...state,
-                        organizationThreads: { ...state.organizationThreads, [orgId]: threads },
-                    } as any, orgId);
+                    const newActive =
+                        Object.keys(threads)[0] ||
+                        createDefaultThreadForOrg(
+                            {
+                                ...state,
+                                organizationThreads: {
+                                    ...state.organizationThreads,
+                                    [orgId]: threads,
+                                },
+                            } as AgentStore,
+                            orgId,
+                        );
                     return {
                         organizationThreads: {
                             ...state.organizationThreads,
@@ -625,8 +657,10 @@ export const useAgentStore = create<AgentStore>()(
 
                 // Migration: Initialize threads per org if missing [ATOMS-ADDED]
                 if (state) {
-                    if (!state.organizationThreads) state.organizationThreads = {} as any;
-                    if (!state.currentThreadIdByOrg) state.currentThreadIdByOrg = {} as any;
+                    if (!state.organizationThreads)
+                        state.organizationThreads = {} as AgentStore['organizationThreads'];
+                    if (!state.currentThreadIdByOrg)
+                        state.currentThreadIdByOrg = {} as AgentStore['currentThreadIdByOrg'];
                     const orgIds = Object.keys(state.organizationMessages || {});
                     for (const orgId of orgIds) {
                         const hasThreads = state.organizationThreads[orgId] &&
@@ -641,6 +675,14 @@ export const useAgentStore = create<AgentStore>()(
                         msgs.forEach((m) => {
                             if (m.category !== 'analysis' && !m.threadId) {
                                 m.threadId = currentId;
+                            }
+                        });
+                        // Migration: ensure threadType set; classify analysis by title prefix
+                        const threadsMeta = state.organizationThreads[orgId] || {};
+                        Object.values(threadsMeta).forEach((meta) => {
+                            if (!meta.threadType) {
+                                if (/^Analysis:/i.test(meta.title)) meta.threadType = 'analysis';
+                                else meta.threadType = 'chat';
                             }
                         });
                     }

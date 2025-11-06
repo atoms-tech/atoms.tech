@@ -23,12 +23,22 @@ export async function handleAnalyzeAPI({
     setIsAnalysing(true);
     setAnalysisData(null);
     try {
-        // Open right agent panel and switch to the Analysis tab
+        // Open right agent panel
         try {
             const { setIsOpen } = (
                 await import('@/components/custom/AgentChat/hooks/useAgentStore')
             ).useAgentStore.getState();
             setIsOpen(true);
+        } catch {}
+        // Ensure a pinned org for sandbox so threads/messages can persist
+        try {
+            const { currentPinnedOrganizationId, currentOrgId, setUserContext } = (
+                await import('@/components/custom/AgentChat/hooks/useAgentStore')
+            ).useAgentStore.getState();
+            if (!currentPinnedOrganizationId) {
+                const sandboxId = currentOrgId || 'sandbox-org';
+                setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
+            }
         } catch {}
         let attempt = 0;
         while (attempt <= maxRetries) {
@@ -116,29 +126,82 @@ export async function handleAnalyzeAPI({
                 };
                 setAnalysisData(normalized);
 
-                // Display a summary message into the agent panel
+                // Create a new chat thread and display messages into the agent panel
                 try {
-                    const { addMessage } = (
+                    const {
+                        addMessage,
+                        newThread,
+                        setActiveThread,
+                        getActiveThreadId,
+                        getMessagesForCurrentOrg,
+                        organizationThreads,
+                        renameThread,
+                        currentPinnedOrganizationId,
+                        setUserContext,
+                        currentOrgId,
+                    } = (
                         await import(
                             '@/components/custom/AgentChat/hooks/useAgentStore'
                         )
                     ).useAgentStore.getState();
-                    const md =
-                        `**Analysis Result**\n\n` +
-                        `- Original: ${normalized.originalRequirement || 'N/A'}\n` +
-                        `- EARS: ${normalized.earsRequirement || 'N/A'}\n` +
-                        `- INCOSE: ${normalized.incoseFormat || 'N/A'}\n` +
-                        `- Compliance: ${normalized.complianceFeedback || 'N/A'}\n` +
-                        `- Enhanced (EARS): ${normalized.enhancedReqEars || 'N/A'}\n` +
-                        `- Enhanced (INCOSE): ${normalized.enhancedReqIncose || 'N/A'}\n` +
-                        `- Notes: ${normalized.enhancedGeneralFeedback || 'N/A'}`;
-                    addMessage({
-                        id: String(Date.now()),
-                        content: md,
-                        role: 'assistant',
-                        timestamp: new Date(),
-                        category: 'analysis',
-                    });
+                    // Ensure pinned org again in case it wasn't set yet when panel opened
+                    if (!currentPinnedOrganizationId) {
+                        const sandboxId = currentOrgId || 'sandbox-org';
+                        setUserContext({ orgId: sandboxId, pinnedOrganizationId: sandboxId, username: 'Guest' });
+                    }
+                    // Optionally title the current thread if generic
+                    try {
+                        const currentId = getActiveThreadId?.();
+                        if (currentId) {
+                            const orgId = currentPinnedOrganizationId || '';
+                            const meta = organizationThreads?.[orgId]?.[currentId];
+                            const hasGenericTitle = !meta || !meta.title || /^\s*$/.test(meta.title) || meta.title === 'New chat';
+                            if (hasGenericTitle) {
+                                const msgs = getMessagesForCurrentOrg?.() || [];
+                                const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && m.threadId === currentId);
+                                if (lastUser?.content) {
+                                    const clean = lastUser.content.replace(/\s+/g, ' ').trim();
+                                    const newTitle = clean.length > 40 ? clean.slice(0, 40) + '…' : clean;
+                                    if (newTitle) renameThread?.(currentId, newTitle);
+                                }
+                            }
+                        }
+                    } catch {}
+                    // Create a new chat thread for this analysis
+                    const base = (reqText || 'Analysis').trim().replace(/\s+/g, ' ');
+                    const max = 60;
+                    const title = base.length > max ? `Analysis: ${base.slice(0, max)}…` : `Analysis: ${base}`;
+                    const threadId = newThread(title, 'analysis') || undefined;
+                    if (threadId) setActiveThread(threadId);
+                    // Post individual section messages
+                    const mk = (s: string) => (s && s.trim().length > 0 ? s : 'N/A');
+                    const now = Date.now();
+                    const messages = [
+                        { content: `**Analysis Result**` },
+                        { content: `### Original Requirement\n\n${mk(normalized.originalRequirement)}` },
+                        { content: `### EARS\n\n${mk(normalized.earsRequirement)}` },
+                        { content: `### INCOSE\n\n${mk(normalized.incoseFormat)}` },
+                        { content: `### INCOSE Feedback\n\n${mk(normalized.incoseFeedback)}` },
+                        { content: `### Compliance\n\n${mk(normalized.complianceFeedback)}` },
+                        { content: `### Enhanced (EARS)\n\n${mk(normalized.enhancedReqEars)}` },
+                        { content: `### Enhanced (INCOSE)\n\n${mk(normalized.enhancedReqIncose)}` },
+                        { content: `### Enhanced Feedback\n\n${mk(normalized.enhancedGeneralFeedback)}` },
+                    ];
+                    messages.forEach((m, idx) =>
+                        addMessage({
+                            id: String(now + idx),
+                            content: m.content,
+                            role: 'assistant',
+                            timestamp: new Date(),
+                            category: 'chat',
+                            threadId,
+                        }),
+                    );
+                    if (threadId) {
+                        try {
+                            setTimeout(() => setActiveThread(threadId), 30);
+                        } catch {}
+                    }
                 } catch {}
                 // success
                 break;

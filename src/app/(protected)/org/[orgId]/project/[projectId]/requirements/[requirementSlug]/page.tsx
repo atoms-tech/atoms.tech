@@ -162,12 +162,15 @@ export default function RequirementPage() {
 
     // New handleAnalyze logic without Gumloop pipeline
     const handleAnalyze = async () => {
+        const niceTitle = requirement?.name || params?.requirementSlug || 'Analysis';
         await handleAnalyzeAPI({
             reqText,
             selectedFiles: selectedFiles as unknown as { [key: string]: { file?: File } },
             setAnalysisData,
             setIsAnalysing,
             apiUrl: '/api/ai',
+            orgId: organizationId,
+            threadTitle: niceTitle,
         });
     };
 
