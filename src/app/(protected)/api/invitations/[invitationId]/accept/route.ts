@@ -24,6 +24,12 @@ export async function POST(
     }
 
     const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) {
+        return NextResponse.json(
+            { error: 'Supabase service client unavailable' },
+            { status: 500 },
+        );
+    }
 
     try {
         // Fetch the invitation

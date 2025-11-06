@@ -23,6 +23,12 @@ export async function GET() {
     }
 
     const supabase = getSupabaseServiceRoleClient();
+    if (!supabase) {
+        return NextResponse.json(
+            { error: 'Supabase service client unavailable' },
+            { status: 500 },
+        );
+    }
 
     try {
         // Fetch invitations with organization data via join
