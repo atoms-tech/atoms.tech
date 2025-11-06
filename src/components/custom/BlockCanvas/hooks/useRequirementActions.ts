@@ -596,6 +596,27 @@ export const useRequirementActions = ({
 
             const supabase = getClientOrThrow();
 
+            // Check for existing relationships (depth > 0) before deletion
+            const { data: relationships, error: checkError } = await supabase
+                .from('requirements_closure')
+                .select('ancestor_id, descendant_id, depth')
+                .or(`ancestor_id.eq.${dynamicReq.id},descendant_id.eq.${dynamicReq.id}`)
+                .gt('depth', 0)
+                .limit(1);
+
+            if (checkError) {
+                deletedRowIdsRef.current.delete(dynamicReq.id);
+                console.error('Error checking relationships:', checkError);
+                throw new Error('Failed to check relationships before deletion');
+            }
+
+            if (relationships && relationships.length > 0) {
+                deletedRowIdsRef.current.delete(dynamicReq.id);
+                throw new Error(
+                    'Cannot delete requirement with existing relationships. Please disconnect all relationships first on the Traceability page.',
+                );
+            }
+
             // Soft delete the requirement
             const { error: reqError } = await supabase
                 .from('requirements')
