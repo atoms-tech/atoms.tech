@@ -136,14 +136,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 return;
             }
 
-            const confirmDelete = confirm(
-                `Are you sure you want to disconnect "${node.title}" from its parent?\n\n` +
-                    `This will break the hierarchy connection and make it an independent node.\n` +
-                    `The node itself will NOT be deleted.`,
-            );
-
-            if (!confirmDelete) return;
-
             const deleteRequest = {
                 ancestorId: node.parent_id,
                 descendantId: node.requirement_id,
@@ -151,7 +143,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             try {
                 await deleteRelationshipMutation.mutateAsync(deleteRequest);
-                alert('Connection successfully disconnected!');
                 // Tree will automatically refetch due to cache invalidation
             } catch (error) {
                 console.error('Failed to delete relationship:', error);
