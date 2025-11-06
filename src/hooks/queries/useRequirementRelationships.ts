@@ -40,7 +40,7 @@ export interface RequirementRelationshipCheck {
     relatedRequirements: Array<{
         id: string;
         name: string;
-        external_id: string;
+        external_id: string | null;
     }>;
 }
 

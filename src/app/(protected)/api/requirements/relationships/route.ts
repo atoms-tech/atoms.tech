@@ -634,7 +634,7 @@ export async function GET(request: NextRequest) {
             let relatedRequirements: Array<{
                 id: string;
                 name: string;
-                external_id: string;
+                external_id: string | null;
             }> = [];
             if (relatedIds.size > 0) {
                 const { data: reqData, error: reqDataError } = await serviceClient
