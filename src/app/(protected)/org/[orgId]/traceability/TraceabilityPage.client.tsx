@@ -10,8 +10,8 @@ import {
     Unlink,
     Zap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,8 +58,16 @@ type RequirementWithDocuments = Requirement & {
 
 export default function TraceabilityPageClient({ orgId }: TraceabilityPageClientProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useUser();
-    const [selectedProject, setSelectedProject] = useState<string>('');
+
+    // Initialize from URL params
+    const [selectedProject, setSelectedProject] = useState<string>(
+        searchParams.get('projectId') || '',
+    );
+    const [activeTab, setActiveTab] = useState<string>(
+        searchParams.get('tab') || 'hierarchy',
+    );
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
@@ -103,6 +111,37 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const availableChildren = filteredRequirements.filter(
         (req) => req.id !== selectedParent,
     );
+
+    // Update URL when project or tab changes
+    const updateURL = useCallback(
+        (projectId: string, tab: string) => {
+            const params = new URLSearchParams();
+            if (projectId) params.set('projectId', projectId);
+            if (tab) params.set('tab', tab);
+            router.replace(`/org/${orgId}/traceability?${params.toString()}`, {
+                scroll: false,
+            });
+        },
+        [router, orgId],
+    );
+
+    // Sync URL when state changes
+    useEffect(() => {
+        if (selectedProject || activeTab !== 'hierarchy') {
+            updateURL(selectedProject, activeTab);
+        }
+    }, [selectedProject, activeTab, updateURL]);
+
+    const handleProjectChange = useCallback(
+        (newProjectId: string) => {
+            setSelectedProject(newProjectId);
+        },
+        [],
+    );
+
+    const handleTabChange = useCallback((newTab: string) => {
+        setActiveTab(newTab);
+    }, []);
 
     const handleParentSelect = useCallback((reqId: string) => {
         setSelectedParent(reqId);
@@ -203,7 +242,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     return (
         <LayoutView>
             <div className="flex h-full w-full flex-col p-4">
-                <Tabs defaultValue="hierarchy" className="flex h-full flex-col gap-4">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="flex h-full flex-col gap-4"
+                >
                     <div className="flex items-center gap-4">
                         {/* Organization Selector */}
                         <Select
@@ -211,6 +254,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             onValueChange={(newOrgId) => {
                                 // reset local state when switching orgs
                                 setSelectedProject('');
+                                setActiveTab('hierarchy');
                                 setSelectedParent('');
                                 setSelectedChildren([]);
                                 setSearchTerm('');
@@ -239,9 +283,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         {/* Project Selector */}
                         <Select
                             value={selectedProject}
-                            onValueChange={(projectId) => {
-                                setSelectedProject(projectId);
-                            }}
+                            onValueChange={handleProjectChange}
                             disabled={projectsLoading}
                         >
                             <SelectTrigger className="w-72">
