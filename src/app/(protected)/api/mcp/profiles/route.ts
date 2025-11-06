@@ -23,7 +23,7 @@ export async function GET() {
             return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
         }
 
-        const supabase = getSupabaseServiceRoleClient() as any;
+        const supabase = getSupabaseServiceRoleClient() as { from: (table: string) => unknown; };
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const supabase = getSupabaseServiceRoleClient() as any;
+        const supabase = getSupabaseServiceRoleClient() as { from: (table: string) => unknown; };
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });

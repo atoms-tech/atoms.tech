@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { withAuth } from '@workos-inc/authkit-nextjs';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
                 .select('organization_id')
                 .eq('user_id', profile.id);
             
-            const userOrgIds = new Set((memberships || []).map((m: any) => m.organization_id));
+            const userOrgIds = new Set((memberships || []).map((m: { organization_id: string }) => m.organization_id));
 
             // Use multiple queries and combine results since Supabase doesn't support complex OR easily
             const [userPrompts, orgPrompts, systemPrompts] = await Promise.all([
@@ -109,12 +110,12 @@ export async function GET(request: NextRequest) {
             ]);
 
             // Combine and deduplicate
-            const allPrompts: any[] = [];
+            const allPrompts: { id: string; name: string }[] = [];
             const seenIds = new Set<string>();
 
             // Process user prompts
             if (userPrompts.data) {
-                userPrompts.data.forEach((prompt: any) => {
+                userPrompts.data.forEach((prompt: { id: string; name: string }) => {
                     if (!seenIds.has(prompt.id)) {
                         allPrompts.push(prompt);
                         seenIds.add(prompt.id);
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
 
             // Process organization prompts (RLS filters by membership)
             if (orgPrompts.data) {
-                orgPrompts.data.forEach((prompt: any) => {
+                orgPrompts.data.forEach((prompt: { id: string; name: string }) => {
                     if (!seenIds.has(prompt.id)) {
                         // Only include prompts from organizations the user is a member of
                         if (prompt.organization_id && userOrgIds.has(prompt.organization_id)) {
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
 
             // Process system prompts
             if (systemPrompts.data) {
-                systemPrompts.data.forEach((prompt: any) => {
+                systemPrompts.data.forEach((prompt: { id: string; name: string }) => {
                     if (!seenIds.has(prompt.id)) {
                         // Additional check: if not admin, only include public prompts
                         if (prompt.scope === 'system') {
@@ -282,7 +283,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Prepare insert data
-        const insertData: any = {
+        const insertData: Record<string, unknown> = {
             name,
             description,
             content,

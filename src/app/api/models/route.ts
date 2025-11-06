@@ -76,7 +76,7 @@ export async function GET() {
                 const data = await response.json();
 
                 // Filter to only allowed models
-                const filteredModels = data.data?.filter((model: any) =>
+                const filteredModels = data.data?.filter((model: { id: string }) =>
                     allowedModels.some(allowed => model.id === allowed.id)
                 ) || [];
 

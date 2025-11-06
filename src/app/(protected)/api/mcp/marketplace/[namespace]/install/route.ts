@@ -131,15 +131,15 @@ export async function POST(
     // Get transport info
     const transport = server.packages?.[0]?.transport || server.transport || { type: 'stdio' };
 
-    // Prepare server configuration
-    // const serverConfig: Record<string, unknown> = { // Unused
+    // Create server record for database
+    const baseServerRecord = {
       name: config?.name || server.name,
       description: server.description || '',
       namespace: decodedNamespace,
       version: server.version || '1.0.0',
       transport_type: transport.type || 'stdio',
       enabled: config?.enabled !== false,
-      user_id: userId,
+      config: config || {},
       user_id: userId,
       scope: scope || 'user',
       organization_id: scope === 'organization' ? organizationId : null,
@@ -195,7 +195,7 @@ export async function POST(
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
     // Source: 'registry' for MCP registry servers (now allowed after constraint update)
     // Tier: 'community' for marketplace servers (user risk)
-    const baseServerRecord: Record<string, any> = {
+    const baseServerRecord: Record<string, unknown> = {
       namespace: decodedNamespace,
       name: server.name,
       description: server.description || '',

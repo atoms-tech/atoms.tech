@@ -26,7 +26,7 @@ export async function POST(
             return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
         }
 
-        const supabase = getSupabaseServiceRoleClient() as { from: (table: string) => any; };
+        const supabase = getSupabaseServiceRoleClient() as { from: (table: string) => unknown; };
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });

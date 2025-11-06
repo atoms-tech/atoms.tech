@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to flatten server info
-    const servers = (userServers || []).map((us: any) => ({
+    const servers = (userServers || []).map((us: { [key: string]: unknown }) => ({
       id: us.id,
       namespace: us.server?.namespace,
       name: us.server?.name,

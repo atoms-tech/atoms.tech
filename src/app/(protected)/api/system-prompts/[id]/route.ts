@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { name, description, content, tags, is_default, is_public } = body;
 
         // Prepare update data
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
             updated_by: profile.id,
         };
 
