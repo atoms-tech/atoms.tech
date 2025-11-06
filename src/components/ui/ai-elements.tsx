@@ -31,9 +31,7 @@ if (typeof document !== 'undefined') {
     }
 }
 
-interface ConversationRootProps extends React.HTMLAttributes<HTMLDivElement> {
-    // Additional props can be added here if needed
-}
+type ConversationRootProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>;
 
 export const Conversation = React.forwardRef<HTMLDivElement, ConversationRootProps>(
     ({ className, ...props }, ref) => (
@@ -46,16 +44,12 @@ export const Conversation = React.forwardRef<HTMLDivElement, ConversationRootPro
 );
 Conversation.displayName = 'ConversationRoot';
 
-interface ConversationHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-    // Additional props can be added here if needed
-}
+type ConversationHeaderProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>;
 export const ConversationHeader = ({ className, ...props }: ConversationHeaderProps) => (
     <div className={cn('border-b px-4 py-3', className)} {...props} />
 );
 
-interface ConversationBodyProps extends React.HTMLAttributes<HTMLDivElement> {
-    // Additional props can be added here if needed
-}
+type ConversationBodyProps = React.PropsWithChildren<React.HTMLAttributes<HTMLDivElement>>;
 export const ConversationBody = ({ className, ...props }: ConversationBodyProps) => (
     <div className={cn('flex-1 px-3 py-4', className)} {...props} />
 );
@@ -66,12 +60,10 @@ interface ConversationMessagesProps extends React.HTMLAttributes<HTMLDivElement>
 
 export const ConversationMessages = React.forwardRef<HTMLDivElement, ConversationMessagesProps>(
     ({ children, className, scrollable = true, ...props }, ref) => {
-        // Filter out conflicting props for ScrollArea
-        const { dir, ...scrollAreaProps } = props;
-        
         if (scrollable) {
+            const scrollAreaProps = props as React.ComponentPropsWithoutRef<typeof ScrollArea>;
             return (
-                <ScrollArea ref={ref} className={cn('h-full pr-2', className)} dir={dir as any} {...scrollAreaProps}>
+                <ScrollArea ref={ref} className={cn('h-full pr-2', className)} {...scrollAreaProps}>
                     <div className="space-y-4">{children}</div>
                 </ScrollArea>
             );
@@ -86,9 +78,7 @@ export const ConversationMessages = React.forwardRef<HTMLDivElement, Conversatio
 );
 ConversationMessages.displayName = 'ConversationMessages';
 
-interface ConversationFooterProps extends React.HTMLAttributes<HTMLDivElement> {
-    // Additional props can be added here if needed
-}
+type ConversationFooterProps = React.HTMLAttributes<HTMLDivElement>;
 export const ConversationFooter = ({ className, ...props }: ConversationFooterProps) => (
     <div className={cn('border-t px-4 py-3', className)} {...props} />
 );
@@ -130,11 +120,11 @@ export const ConversationMessage: React.FC<ConversationMessageProps> = ({
         if (React.isValidElement(children)) {
             // Check if the element has text content
             const textContent = React.Children.toArray(children)
-                .map(child => {
+                .map((child) => {
                     if (typeof child === 'string') return child;
-                    if (React.isValidElement(child)) {
+                    if (React.isValidElement<{ children?: React.ReactNode }>(child)) {
                         // Try to extract text from props
-                        return (child.props as any)?.children || '';
+                        return child.props.children ?? '';
                     }
                     return '';
                 })

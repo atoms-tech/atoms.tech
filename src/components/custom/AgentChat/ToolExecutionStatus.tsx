@@ -10,8 +10,8 @@ export interface ToolExecution {
     id: string;
     tool_name: string;
     status: 'pending' | 'running' | 'success' | 'error' | 'denied';
-    input?: Record<string, any>;
-    output?: any;
+    input?: Record<string, unknown>;
+    output?: unknown;
     error?: string;
     timestamp: string;
     duration?: number;

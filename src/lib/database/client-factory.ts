@@ -18,7 +18,6 @@ import {
     generateTokenKey,
     getSupabaseConfig,
     getSupabaseServiceRoleConfig,
-    isBuildTime,
     isServer,
 } from './utils';
 

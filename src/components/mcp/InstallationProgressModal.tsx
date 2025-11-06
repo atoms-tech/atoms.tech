@@ -49,11 +49,11 @@ interface InstallationProgressModalProps {
 export function InstallationProgressModal({
   open,
   serverName,
-  transportType,
-  requiresAuth,
-  authType,
+  transportType: _transportType,
+  requiresAuth: _requiresAuth,
+  authType: _authType,
   steps,
-  currentStep,
+  currentStep: _currentStep,
   error,
   onClose,
 }: InstallationProgressModalProps) {
@@ -101,7 +101,7 @@ export function InstallationProgressModal({
 
           {/* Steps List */}
           <div className="space-y-2">
-            {steps.map((step, index) => (
+            {steps.map((step) => (
               <div
                 key={step.step}
                 className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${

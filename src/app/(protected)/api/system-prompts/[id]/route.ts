@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@workos-inc/authkit-nextjs';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient as _createClient } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';

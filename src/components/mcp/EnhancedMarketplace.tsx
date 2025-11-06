@@ -47,7 +47,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<string>('all');
     const [selectedAuth, setSelectedAuth] = useState<string>('all');
-    const [transports, setTransports] = useState<string[]>([]);
+    const [_transports, _setTransports] = useState<string[]>([]);
     const [_authTypes, _setAuthTypes] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState<string>('quality');
     
@@ -146,12 +146,11 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
         } finally {
             setLoading(false);
         }
-    }, [sourceFilter, verifiedOnly, llmInstallOnly, minQualityScore, categoryFilter, searchQuery, selectedTransport, selectedAuth, currentPage, pageSize, sortBy, toast]);
+    }, [sourceFilter, verifiedOnly, llmInstallOnly, minQualityScore, categoryFilter, searchQuery, selectedTransport, selectedAuth, currentPage, pageSize, toast]);
 
     // Generate installation steps based on server type
     const generateInstallationSteps = useCallback((
-        server: UnifiedMCPServer,
-        scope: 'user' | 'organization'
+        server: UnifiedMCPServer
     ): InstallationStepStatus[] => {
         const steps: InstallationStepStatus[] = [];
         const transportType = server.transport?.type || 'stdio';
@@ -254,7 +253,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
         if (!serverNamespace) return;
 
         // Initialize progress modal
-        const steps = generateInstallationSteps(server, scope);
+        const steps = generateInstallationSteps(server);
         setInstallationProgress({
             server,
             steps,
@@ -276,7 +275,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
                     mcpNamespace: server.namespace,
                     organizationId: scope === 'organization' ? orgId : undefined,
                     scopes: server.auth?.scopes,
-                    authMetadata: (server.auth as any)?.raw ?? server.auth,
+                    authMetadata: (server.auth as { raw?: unknown })?.raw ?? server.auth,
                 });
 
                 if (oauthResult.status !== 'authorized') {
@@ -346,7 +345,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
 
             try {
                 result = await response.json();
-            } catch (jsonError) {
+            } catch {
                 const text = await responseClone.text();
                 const errorMsg = `Server returned invalid response: ${text.substring(0, 200)}`;
                 updateStepStatus(transportType === 'stdio' ? 'configure' : 'validate', 'error', errorMsg);
@@ -418,7 +417,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
                 });
             }, 2000);
         }
-    }, [toast, onServerInstalled, fetchServers, generateInstallationSteps, updateStepStatus]);
+    }, [onServerInstalled, fetchServers, generateInstallationSteps, updateStepStatus]);
 
     // Handle server installation with progress tracking
     const handleInstall = useCallback(async (
@@ -692,7 +691,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
                         {servers.map((server) => (
                             <ServerCard
                                 key={server.id}
-                                server={server as any} // UnifiedMCPServer is compatible with CuratedServer
+                                server={server as unknown} // UnifiedMCPServer is compatible with CuratedServer
                                 isInstalled={installedServers.includes(server.namespace)}
                                 isInstalling={installingServers.has(server.namespace)}
                                 onViewDetails={() => handleViewDetails(server)}
@@ -718,7 +717,7 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
 
             {/* Server Detail Modal */}
             <ServerDetailModal
-                server={selectedServer as any} // UnifiedMCPServer is compatible with CuratedServer
+                server={selectedServer as unknown} // UnifiedMCPServer is compatible with CuratedServer
                 open={detailModalOpen}
                 onClose={() => setDetailModalOpen(false)}
                 onInstall={handleInstall}

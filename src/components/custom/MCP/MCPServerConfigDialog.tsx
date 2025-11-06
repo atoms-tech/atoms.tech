@@ -68,7 +68,7 @@ export function MCPServerConfigDialog({
             let parsedConfig: Record<string, unknown>;
             try {
                 parsedConfig = JSON.parse(formData.config);
-            } catch (err) {
+            } catch {
                 throw new Error('Invalid JSON in configuration field');
             }
 

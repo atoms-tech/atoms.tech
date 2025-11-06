@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient as _createClient } from '@/lib/utils/supabase/server';
+import { createServerClient } from '@/lib/database';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(

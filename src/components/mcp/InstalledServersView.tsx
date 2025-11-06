@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Server,
     Power,
-    PowerOff,
     Settings,
     Trash2,
     CheckCircle2,
@@ -67,11 +66,7 @@ export function InstalledServersView({ compact = false }: InstalledServersViewPr
     const [configServer, setConfigServer] = useState<MCPServer | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    useEffect(() => {
-        fetchServers();
-    }, []);
-
-    const fetchServers = async () => {
+    const fetchServers = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -96,7 +91,11 @@ export function InstalledServersView({ compact = false }: InstalledServersViewPr
         } finally {
             setLoading(false);
         }
-    };
+    }, [setError, setLoading, toast]);
+
+    useEffect(() => {
+        fetchServers();
+    }, [fetchServers]);
 
     const toggleServerEnabled = async (serverId: string, currentEnabled: boolean) => {
         try {

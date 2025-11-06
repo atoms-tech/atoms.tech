@@ -7,7 +7,7 @@ import {
     isBuildTime,
     isProduction,
     isServer,
-} from '../utils';
+} from '@/lib/database/utils';
 
 describe('Database Utils', () => {
     describe('generateTokenKey', () => {

@@ -131,20 +131,6 @@ export async function POST(
     // Get transport info
     const transport = server.packages?.[0]?.transport || server.transport || { type: 'stdio' };
 
-    // Create server record for database
-    const baseServerRecord = {
-      name: config?.name || server.name,
-      description: server.description || '',
-      namespace: decodedNamespace,
-      version: server.version || '1.0.0',
-      transport_type: transport.type || 'stdio',
-      enabled: config?.enabled !== false,
-      config: config || {},
-      user_id: userId,
-      scope: scope || 'user',
-      organization_id: scope === 'organization' ? organizationId : null,
-    };
-
     // Use service role client for admin operations
     const supabase = getServiceRoleClient();
 
@@ -195,7 +181,7 @@ export async function POST(
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
     // Source: 'registry' for MCP registry servers (now allowed after constraint update)
     // Tier: 'community' for marketplace servers (user risk)
-    const baseServerRecord: Record<string, unknown> = {
+    const serverUpsertPayload: Record<string, unknown> = {
       namespace: decodedNamespace,
       name: server.name,
       description: server.description || '',
@@ -222,7 +208,7 @@ export async function POST(
     const upsertServer = async () =>
       supabase
         .from('mcp_servers')
-        .upsert(baseServerRecord as Record<string, unknown>, {
+        .upsert(serverUpsertPayload as Record<string, unknown>, {
           onConflict: 'namespace',
           ignoreDuplicates: false,
         })
@@ -233,7 +219,7 @@ export async function POST(
 
     const retryIfMissing = async (column: string, key: string) => {
       if (mcpServerError && String(mcpServerError.message ?? '').includes(column)) {
-        delete baseServerRecord[key];
+        delete serverUpsertPayload[key];
         ({ data: mcpServer, error: mcpServerError } = await upsertServer());
       }
     };

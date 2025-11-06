@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Settings, Save, RefreshCw } from 'lucide-react';
+import { Save, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ interface MCPSystemSettingsProps {
     compact?: boolean;
 }
 
-export function MCPSystemSettings({ compact = false }: MCPSystemSettingsProps) {
+export function MCPSystemSettings({ _compact = false }: MCPSystemSettingsProps) {
     const { toast } = useToast();
     const [settings, setSettings] = useState({
         autoStartServers: true,
@@ -39,7 +39,8 @@ export function MCPSystemSettings({ compact = false }: MCPSystemSettingsProps) {
                 title: 'Settings Saved',
                 description: 'MCP system settings have been updated successfully.',
             });
-        } catch (error) {
+        } catch (_error) {
+            console.error('Failed to save MCP system settings:', _error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -51,7 +52,7 @@ export function MCPSystemSettings({ compact = false }: MCPSystemSettingsProps) {
     };
 
     return (
-        <div className="space-y-6">
+        <div className={compact ? 'space-y-4' : 'space-y-6'}>
             {/* General Settings */}
             <Card>
                 <CardHeader>

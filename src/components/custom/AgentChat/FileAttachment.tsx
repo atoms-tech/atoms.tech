@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Upload, X, File, Image as ImageIcon, FileText } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -181,7 +182,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({ file, onRemove }) => {
     return (
         <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-2">
             {file.preview ? (
-                <img
+                <Image
                     src={file.preview}
                     alt={file.file.name}
                     className="h-12 w-12 rounded object-cover"

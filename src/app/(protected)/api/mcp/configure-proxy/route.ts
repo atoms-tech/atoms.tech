@@ -2,7 +2,7 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient as _createClient } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 /**
  * POST /api/mcp/configure-proxy

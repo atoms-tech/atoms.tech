@@ -1,7 +1,7 @@
 import { withAuth } from '@workos-inc/authkit-nextjs';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 export const getUserProfileServer = async (userId: string) => {
     const supabase = await createServerClient();

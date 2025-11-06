@@ -45,12 +45,38 @@ import {
   Loader2,
 } from 'lucide-react';
 
+type PromptArgument = {
+  name: string;
+  description?: string;
+  type?: string;
+  required?: boolean;
+};
+
+type ServerPrompt = {
+  name?: string;
+  description?: string;
+  arguments?: PromptArgument[];
+};
+
+type ServerTool = {
+  name?: string;
+  description?: string;
+  inputSchema?: { type?: string };
+};
+
+type ServerResource = {
+  name?: string;
+  description?: string;
+  uri?: string;
+  mimeType?: string;
+};
+
 // Helper type to access dynamic properties on server
 type ServerWithExtras = CuratedServer & {
   documentation?: { url?: string };
-  tools?: Array<{ name?: string; description?: string }>;
-  prompts?: Array<{ name?: string; description?: string }>;
-  resources?: Array<{ name?: string; description?: string }>;
+  tools?: ServerTool[];
+  prompts?: ServerPrompt[];
+  resources?: ServerResource[];
 };
 
 interface ServerDetailModalProps {
@@ -500,15 +526,15 @@ export function ServerDetailModal({
                             {prompt.description}
                           </p>
                         )}
-                        {prompt.arguments && prompt.arguments.length > 0 && (
-                          <div className="flex gap-1 mt-2">
-                            {(prompt.arguments || []).map((arg: any, argIdx: number) => (
-                              <Badge key={argIdx} variant="secondary" className="text-xs">
-                                {arg.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                          {prompt.arguments && prompt.arguments.length > 0 && (
+                            <div className="flex gap-1 mt-2">
+                              {prompt.arguments.map((arg, argIdx) => (
+                                <Badge key={argIdx} variant="secondary" className="text-xs">
+                                  {arg.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                       </div>
                     ))}
                   </div>

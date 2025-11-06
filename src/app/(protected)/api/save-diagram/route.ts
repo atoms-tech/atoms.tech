@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient as _createClient } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     console.log('request');

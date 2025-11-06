@@ -226,7 +226,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
         }
 
         try {
-            const body: any = {
+            const body: Record<string, unknown> = {
                 name: formData.name,
                 description: formData.description || null,
                 content: formData.content,
@@ -261,7 +261,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
             resetForm();
             loadPrompts();
             loadMergedPreview();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error creating prompt:', error);
             toast({
                 variant: 'destructive',
@@ -276,7 +276,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
         if (!editingPrompt) return;
 
         try {
-            const body: any = {
+            const body: Record<string, unknown> = {
                 name: formData.name,
                 description: formData.description || null,
                 content: formData.content,
@@ -310,7 +310,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
             resetForm();
             loadPrompts();
             loadMergedPreview();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error updating prompt:', error);
             toast({
                 variant: 'destructive',
@@ -344,7 +344,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
 
             loadPrompts();
             loadMergedPreview();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error deleting prompt:', error);
             toast({
                 variant: 'destructive',
@@ -751,7 +751,7 @@ export const SystemPromptManager: React.FC<SystemPromptManagerProps> = ({
                             <Label htmlFor="scope">Scope *</Label>
                             <Select
                                 value={formData.scope}
-                                onValueChange={(value: any) =>
+                                onValueChange={(value: string) =>
                                     setFormData({ ...formData, scope: value })
                                 }
                             >

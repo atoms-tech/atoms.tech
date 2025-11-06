@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Copy, Settings as SettingsIcon, Layers } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -88,8 +88,8 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
 
             const data = await response.json();
             setProfiles(data.profiles || []);
-        } catch (error) {
-            console.error('Error fetching profiles:', error);
+        } catch (_error) {
+            console.error('Error fetching profiles:', _error);
             setProfiles([]);
         } finally {
             setLoading(false);
@@ -104,8 +104,8 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
 
             const data = await response.json();
             setAvailableServers(data.servers || []);
-        } catch (error) {
-            console.error('Error fetching servers:', error);
+        } catch (_error) {
+            console.error('Error fetching servers:', _error);
             setAvailableServers([]);
         } finally {
             setLoadingServers(false);
@@ -207,7 +207,8 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
             });
             setShowCreateDialog(false);
             fetchProfiles();
-        } catch (error) {
+        } catch (_error) {
+            console.error('Error saving profile:', _error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -234,7 +235,8 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
             setShowDeleteDialog(false);
             setDeletingProfileId(null);
             fetchProfiles();
-        } catch (error) {
+        } catch (_error) {
+            console.error('Error deleting profile:', _error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -257,7 +259,8 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
                 description: 'Profile activated successfully',
             });
             fetchProfiles();
-        } catch (error) {
+        } catch (_error) {
+            console.error('Error activating profile:', _error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
@@ -307,7 +310,7 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className={compact ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}>
                         {profiles.map((profile) => (
                             <Card key={profile.id} className={profile.isActive ? 'border-primary' : ''}>
                                 <CardHeader>

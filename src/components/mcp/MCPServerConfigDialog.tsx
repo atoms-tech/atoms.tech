@@ -47,7 +47,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
-import { cn } from '@/lib/utils';
 
 // Types
 type TransportType = 'sse' | 'http' | 'stdio';
@@ -361,17 +360,6 @@ export function MCPServerConfigDialog({
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getScopeIcon = (scope: ServerScope) => {
-    switch (scope) {
-      case 'user':
-        return User;
-      case 'organization':
-        return Building;
-      case 'system':
-        return Globe;
     }
   };
 

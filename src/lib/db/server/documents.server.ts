@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/database';
+import { createServerClient } from '@/lib/database';
 
 export const getProjectDocumentsServer = async (projectId: string) => {
     const supabase = await createServerClient();

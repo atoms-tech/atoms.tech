@@ -6,7 +6,7 @@ import {
     gumloopService,
 } from '@/lib/services/gumloop';
 
-// import { createClient } from '@/lib/database';
+// import { createServerClient } from '@/lib/database';
 
 export async function POST(request: NextRequest) {
     try {

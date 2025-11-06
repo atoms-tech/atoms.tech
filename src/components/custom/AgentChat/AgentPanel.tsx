@@ -534,7 +534,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         }
 
         await appendWithMetadata(message, filesToSend);
-    }, [appendWithMetadata, inputValue, attachedFiles, isLoading, append, sendMessage, hiddenAfterIndex, editingMessageId, sdkMessages]);
+    }, [appendWithMetadata, inputValue, attachedFiles, isLoading, append, sendMessage, hiddenAfterIndex, editingMessageId, sdkMessages, setMessages]);
 
     // NEW: Tool approval handlers
     const handleApprove = useCallback((requestId: string) => {

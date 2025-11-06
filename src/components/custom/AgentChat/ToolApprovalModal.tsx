@@ -18,7 +18,7 @@ export interface ToolApprovalRequest {
     request_id: string;
     tool_name: string;
     tool_description: string;
-    tool_input: Record<string, any>;
+    tool_input: Record<string, unknown>;
     approval_message: string;
     risk_level: 'low' | 'medium' | 'high';
     timestamp: string;
