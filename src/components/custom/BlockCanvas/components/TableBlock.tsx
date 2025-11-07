@@ -264,6 +264,16 @@ export const TableBlock: React.FC<BlockProps> = ({
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [requirementToDelete, setRequirementToDelete] =
         useState<DynamicRequirement | null>(null);
+    const [relationshipCheck, setRelationshipCheck] = useState<{
+        hasRelationships: boolean;
+        relationshipCount: number;
+        relatedRequirements: Array<{
+            id: string;
+            name: string;
+            external_id: string | null;
+        }>;
+    } | null>(null);
+    const [isCheckingRelationships, setIsCheckingRelationships] = useState(false);
 
     // Use the document store for edit mode state
     const { isEditMode, useTanStackTables, useGlideTables } = useDocumentStore();
@@ -476,9 +486,35 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const handleDeleteRequirement = useCallback(
         async (dynamicReq: DynamicRequirement) => {
-            // Open the delete dialog instead of deleting immediately
+            // Check for relationships first before opening the dialog
+            setIsCheckingRelationships(true);
             setRequirementToDelete(dynamicReq);
-            setDeleteDialogOpen(true);
+
+            try {
+                const params = new URLSearchParams({
+                    requirementId: dynamicReq.id,
+                    type: 'check'
+                });
+                const response = await fetch(`/api/requirements/relationships?${params}`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to check requirement relationships');
+                }
+
+                const checkResult = await response.json();
+                setRelationshipCheck(checkResult);
+            } catch (error) {
+                console.error('Error checking relationships:', error);
+                // On error, treat as if relationships exist (safer approach)
+                setRelationshipCheck({
+                    hasRelationships: true,
+                    relationshipCount: 0,
+                    relatedRequirements: [],
+                });
+            } finally {
+                setIsCheckingRelationships(false);
+                setDeleteDialogOpen(true);
+            }
         },
         [],
     );
@@ -492,6 +528,7 @@ export const TableBlock: React.FC<BlockProps> = ({
         );
         setDeleteDialogOpen(false);
         setRequirementToDelete(null);
+        setRelationshipCheck(null);
     }, [requirementToDelete, deleteRequirement, userProfile?.id]);
 
     const handleNameChange = useCallback(
@@ -997,7 +1034,13 @@ export const TableBlock: React.FC<BlockProps> = ({
             {requirementToDelete && (
                 <DeleteRequirementDialog
                     open={deleteDialogOpen}
-                    onOpenChange={setDeleteDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeleteDialogOpen(open);
+                        if (!open) {
+                            setRequirementToDelete(null);
+                            setRelationshipCheck(null);
+                        }
+                    }}
                     requirementId={requirementToDelete.id}
                     requirementName={
                         (requirementToDelete.Name as string) ||
@@ -1005,6 +1048,8 @@ export const TableBlock: React.FC<BlockProps> = ({
                         'Unnamed Requirement'
                     }
                     onConfirmDelete={handleConfirmDelete}
+                    relationshipCheck={relationshipCheck}
+                    isCheckingRelationships={isCheckingRelationships}
                 />
             )}
         </div>
