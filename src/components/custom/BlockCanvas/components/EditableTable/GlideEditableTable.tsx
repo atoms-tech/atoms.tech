@@ -2142,11 +2142,16 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     .filter(Boolean);
                 if (rowsToDeleteLocal.length > 0) {
                     setRowsToDelete(rowsToDeleteLocal);
-                    setRowDeleteConfirmOpen(true);
+                    if (props.skipDeleteConfirm) {
+                        // Skip confirmation dialog and delete directly
+                        setTimeout(() => handleRowDeleteConfirm(), 0);
+                    } else {
+                        setRowDeleteConfirmOpen(true);
+                    }
                 }
             }
         },
-        [isEditMode, gridSelection, sortedData],
+        [isEditMode, gridSelection, sortedData, props.skipDeleteConfirm, handleRowDeleteConfirm],
     );
 
     // handle cell activation and track selected position
@@ -3300,7 +3305,11 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                   <button
                                                       onClick={() => {
                                                           setRowsToDelete(rowsToDelete);
-                                                          setRowDeleteConfirmOpen(true);
+                                                          if (props.skipDeleteConfirm) {
+                                                              setTimeout(() => handleRowDeleteConfirm(), 0);
+                                                          } else {
+                                                              setRowDeleteConfirmOpen(true);
+                                                          }
                                                       }}
                                                       style={{
                                                           height: 42,
