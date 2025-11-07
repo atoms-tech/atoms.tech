@@ -493,7 +493,7 @@ export const TableBlock: React.FC<BlockProps> = ({
             try {
                 const params = new URLSearchParams({
                     requirementId: dynamicReq.id,
-                    type: 'check'
+                    type: 'check',
                 });
                 const response = await fetch(`/api/requirements/relationships?${params}`);
 

@@ -2458,7 +2458,13 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }
             }
         },
-        [isEditMode, sortedData, props.rowDetailPanel, props.onLinksColumnClick, localColumns],
+        [
+            isEditMode,
+            sortedData,
+            props.rowDetailPanel,
+            props.onLinksColumnClick,
+            localColumns,
+        ],
     );
 
     // enhanced selection tracking

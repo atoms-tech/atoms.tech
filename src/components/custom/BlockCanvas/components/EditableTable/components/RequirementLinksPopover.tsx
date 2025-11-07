@@ -1,8 +1,8 @@
 'use client';
 
-import { Link2, ExternalLink } from 'lucide-react';
+import { ExternalLink, Link2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -157,11 +157,7 @@ export function RequirementLinksPopover({
                     )}
 
                     <div className="flex justify-end pt-2 border-t">
-                        <Button
-                            onClick={handleGoToTrace}
-                            className="gap-2"
-                            size="sm"
-                        >
+                        <Button onClick={handleGoToTrace} className="gap-2" size="sm">
                             Go to Trace
                             <ExternalLink className="h-4 w-4" />
                         </Button>
