@@ -145,6 +145,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 showFilter: false,
                 isEditMode,
                 alwaysShowAddRow,
+                skipDeleteConfirm: true, // Requirements use DeleteRequirementDialog instead
                 blockId,
                 tableMetadata,
                 onDeleteColumn,

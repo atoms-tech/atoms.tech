@@ -90,6 +90,7 @@ export interface EditableTableProps<T extends BaseRow> {
     filterComponent?: React.ReactNode;
     isEditMode?: boolean;
     alwaysShowAddRow?: boolean; // Always show the "Add New Row" row, even when there are no items
+    skipDeleteConfirm?: boolean; // Skip delete confirmation dialog and call onDelete directly
     blockId?: string;
     tableMetadata?: BlockTableMetadata | null;
 }

@@ -591,69 +591,57 @@ export const useRequirementActions = ({
 
     // Delete a requirement
     const deleteRequirement = async (dynamicReq: DynamicRequirement, userId: string) => {
-        try {
-            deletedRowIdsRef.current.add(dynamicReq.id); // Track deleted reqs locally to fix sync issues.
+        const supabase = getClientOrThrow();
 
-            const supabase = getClientOrThrow();
+        // Check for existing relationships (depth > 0) before deletion
+        const { data: relationships, error: checkError } = await supabase
+            .from('requirements_closure')
+            .select('ancestor_id, descendant_id, depth')
+            .or(`ancestor_id.eq.${dynamicReq.id},descendant_id.eq.${dynamicReq.id}`)
+            .gt('depth', 0)
+            .limit(1);
 
-            // Check for existing relationships (depth > 0) before deletion
-            const { data: relationships, error: checkError } = await supabase
-                .from('requirements_closure')
-                .select('ancestor_id, descendant_id, depth')
-                .or(`ancestor_id.eq.${dynamicReq.id},descendant_id.eq.${dynamicReq.id}`)
-                .gt('depth', 0)
-                .limit(1);
-
-            if (checkError) {
-                deletedRowIdsRef.current.delete(dynamicReq.id);
-                console.error('Error checking relationships:', checkError);
-                throw new Error('Failed to check relationships before deletion');
-            }
-
-            if (relationships && relationships.length > 0) {
-                deletedRowIdsRef.current.delete(dynamicReq.id);
-                throw new Error(
-                    'Cannot delete requirement with existing relationships. Please disconnect all relationships first on the Traceability page.',
-                );
-            }
-
-            // Soft delete the requirement
-            const { error: reqError } = await supabase
-                .from('requirements')
-                .update({
-                    is_deleted: true,
-                    deleted_at: new Date().toISOString(),
-                    deleted_by: userId,
-                })
-                .eq('id', dynamicReq.id);
-
-            if (reqError) {
-                deletedRowIdsRef.current.delete(dynamicReq.id);
-                throw reqError;
-            }
-
-            // Delete the closure table self-reference (depth=0)
-            // NOTE: closure table doesn't have is_deleted field, so we hard delete
-            const { error: closureError } = await supabase
-                .from('requirements_closure')
-                .delete()
-                .eq('ancestor_id', dynamicReq.id)
-                .eq('descendant_id', dynamicReq.id)
-                .eq('depth', 0);
-
-            if (closureError) {
-                console.error('Error deleting closure table entry:', closureError);
-                // Don't throw - requirement is already deleted, just log the error
-            }
-
-            // Update local state by removing the deleted requirement immediately without refetching
-            setLocalRequirements((prev) =>
-                prev.filter((req) => req.id !== dynamicReq.id),
-            );
-        } catch (error) {
-            console.error('Error deleting requirement:', error);
-            throw error;
+        if (checkError) {
+            console.error('Error checking relationships:', checkError);
+            throw new Error('Failed to check relationships before deletion');
         }
+
+        if (relationships && relationships.length > 0) {
+            throw new Error(
+                'Cannot delete requirement with existing relationships. Please disconnect all relationships first on the Traceability page.',
+            );
+        }
+
+        // Soft delete the requirement
+        const { error: reqError } = await supabase
+            .from('requirements')
+            .update({
+                is_deleted: true,
+                deleted_at: new Date().toISOString(),
+                deleted_by: userId,
+            })
+            .eq('id', dynamicReq.id);
+
+        if (reqError) {
+            throw reqError;
+        }
+
+        // Delete the closure table self-reference (depth=0)
+        // NOTE: closure table doesn't have is_deleted field, so we hard delete
+        const { error: closureError } = await supabase
+            .from('requirements_closure')
+            .delete()
+            .eq('ancestor_id', dynamicReq.id)
+            .eq('descendant_id', dynamicReq.id)
+            .eq('depth', 0);
+
+        if (closureError) {
+            console.error('Error deleting closure table entry:', closureError);
+            // Don't throw - requirement is already deleted, just log the error
+        }
+
+        // Note: UI state update happens in the caller (handleConfirmDelete)
+        // to ensure proper error handling and rollback
     };
 
     return {
