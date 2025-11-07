@@ -7,7 +7,7 @@
         "dev:clean": "rm -rf .next && next dev --turbopack",
         "dev:reset": "rm -rf node_modules/.cache && rm -rf .next && next dev --turbopack",
         "clean:all": "rm -rf node_modules/.cache && rm -rf .next && rm -rf node_modules && bun install",
-        "build": "next build --turbopack",
+        "build": "next build",
         "start": "next start",
         "lint": "next lint",
         "test": "jest --config jest.config.mjs",

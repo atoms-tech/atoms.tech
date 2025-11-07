@@ -1,20 +1,12 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query'; // Import useQuery and useQueryClient
-
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, X } from 'lucide-react';
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import {
-    useCreateOrgMember,
-    useSetOrgMemberCount,
-} from '@/hooks/mutations/useOrgMemberMutation';
-// Import useCreateOrgMember and useSetOrgMemberCount
 import { useOrgInvitation } from '@/hooks/queries/useOrganization';
-import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
-import { OrganizationRole } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/constants/queryKeys';
 import { useUser } from '@/lib/providers/user.provider';
 import { InvitationStatus } from '@/types/base/enums.types';
@@ -22,55 +14,19 @@ import { Invitation } from '@/types/base/invitations.types';
 
 export default function UserInvitations({ onAccept }: { onAccept?: () => void }) {
     const { user } = useUser();
-    const queryClient = useQueryClient(); // Initialize queryClient
-    const router = useRouter(); // Initialize router
+    const queryClient = useQueryClient();
+    const router = useRouter();
     const {
         data: allInvitations,
         isLoading,
         refetch,
     } = useOrgInvitation(user?.email || '');
-    const { mutateAsync: addOrgMember } = useCreateOrgMember();
-    const { mutateAsync: setOrgMemberCount } = useSetOrgMemberCount(); // Initialize useSetOrgMemberCount
     const { toast } = useToast();
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: authError,
-        getClientOrThrow,
-    } = useAuthenticatedSupabase();
 
     // Filter invitations to only include pending ones
     const invitations = allInvitations?.filter(
-        (invitation) => invitation.status === InvitationStatus.pending,
+        (invitation: Invitation) => invitation.status === InvitationStatus.pending,
     );
-
-    // Prefetch organization data for all invitations
-    const organizationIds =
-        invitations?.map((invitation) => invitation.organization_id) || [];
-    const { data: organizations } = useQuery({
-        queryKey: queryKeys.organizations.list(),
-        queryFn: async () => {
-            const client = getClientOrThrow();
-            const { data, error } = await client
-                .from('organizations')
-                .select('id, name')
-                .in('id', organizationIds);
-
-            if (error) {
-                console.error('Error fetching organizations:', error);
-                throw error;
-            }
-
-            return data.reduce(
-                (acc, org) => {
-                    acc[org.id] = org.name;
-                    return acc;
-                },
-                {} as Record<string, string>,
-            );
-        },
-        enabled: organizationIds.length > 0 && !!supabase && !authLoading && !authError,
-    });
 
     const handleAccept = async (invitation: Invitation) => {
         if (!user?.id) {
@@ -83,36 +39,22 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
         }
 
         try {
-            const client = getClientOrThrow();
-            // Add the user to the organization_members table
-            await addOrgMember({
-                organization_id: invitation.organization_id,
-                user_id: user.id,
-                role: invitation.role as OrganizationRole | undefined,
-                status: 'active',
-                last_active_at: new Date().toISOString(),
+            // Call the new API route to accept invitation
+            const response = await fetch(`/api/invitations/${invitation.id}/accept`, {
+                method: 'POST',
+                cache: 'no-store',
             });
 
-            // Update the invitation status to accepted
-            const { error } = await client
-                .from('organization_invitations')
-                .update({
-                    status: InvitationStatus.accepted,
-                    updated_by: user.id,
-                })
-                .eq('id', invitation.id);
-
-            if (error) {
-                console.error('Error accepting invitation:', error);
-                throw error;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to accept invitation');
             }
 
-            // Update the member count for the organization
-            await setOrgMemberCount(invitation.organization_id);
+            const result = await response.json();
 
             toast({
                 title: 'Success',
-                description: 'Invitation accepted successfully!',
+                description: `Invitation accepted! Added to ${result.projects_added} project(s).`,
                 variant: 'default',
             });
 
@@ -120,11 +62,11 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             refetch();
             queryClient.invalidateQueries({
                 queryKey: queryKeys.organizations.byMembership(user.id),
-            }); // Refresh organizations
+            });
 
             queryClient.invalidateQueries({
                 queryKey: queryKeys.organizations.list(),
-            }); // Refresh the list of organizations
+            });
 
             // Call the onAccept callback after the render cycle
             if (onAccept) {
@@ -137,7 +79,10 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             console.error('Error accepting invitation:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to accept invitation.',
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to accept invitation.',
                 variant: 'destructive',
             });
         }
@@ -154,18 +99,17 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
         }
 
         try {
-            const client = getClientOrThrow();
-            const { error } = await client
-                .from('organization_invitations')
-                .update({
-                    status: InvitationStatus.rejected,
-                    updated_by: user.id,
-                })
-                .eq('id', invitation.id);
+            const response = await fetch(
+                `/api/user/invitations/${invitation.id}/reject`,
+                {
+                    method: 'POST',
+                    cache: 'no-store',
+                },
+            );
 
-            if (error) {
-                console.error('Error rejecting invitation:', error);
-                throw error;
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to reject invitation');
             }
 
             toast({
@@ -178,7 +122,10 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
             console.error('Error rejecting invitation:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to reject invitation.',
+                description:
+                    error instanceof Error
+                        ? error.message
+                        : 'Failed to reject invitation.',
                 variant: 'destructive',
             });
         }
@@ -194,7 +141,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
                     <p>Loading invitations...</p>
                 ) : invitations?.length ? (
                     <ul className="space-y-2">
-                        {invitations.map((invitation) => (
+                        {invitations.map((invitation: Invitation) => (
                             <li
                                 key={invitation.id}
                                 className="flex justify-between items-center"
@@ -202,7 +149,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
                                 <span className="font-small">
                                     Invitation to join{' '}
                                     <span className="text-primary">
-                                        {organizations?.[invitation.organization_id] ||
+                                        {invitation.organizations?.name ||
                                             'Unknown Organization'}
                                     </span>
                                 </span>
