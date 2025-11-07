@@ -1,11 +1,10 @@
+#!/usr/bin/env sh
+set -e
+
 echo "🔍 Running pre-commit checks..."
 
-# Lint Check
-echo "📝 Linting staged files..."
-bun run lint
-
-# Format check
-echo "🔍 Formatting staged files..."
-bun prettier src --check
+# Lint & format only STAGED files
+echo "🧹 Formatting & linting staged files with lint-staged..."
+bunx lint-staged
 
 echo "✅ Pre-commit checks passed!"
