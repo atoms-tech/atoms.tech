@@ -1126,6 +1126,23 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 } as TextCell;
             }
 
+            // Special handling for Links column (system column)
+            if (column.accessor === '__links__') {
+                return {
+                    kind: GridCellKind.Text,
+                    allowOverlay: false,
+                    readonly: true,
+                    data: '🔗',
+                    displayData: '🔗',
+                    themeOverride: {
+                        textDark: '#2563eb', // blue-600
+                        bgCell: '#eff6ff', // blue-50
+                        accentColor: '#3b82f6', // blue-500
+                    },
+                    cursor: 'pointer',
+                } as TextCell;
+            }
+
             const value = rowData?.[column.accessor];
             const columnOptions = Array.isArray(column.options) ? column.options : [];
 
@@ -2413,6 +2430,16 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 row: cell[1],
             });
 
+            const [colIndex, rowIndex] = cell;
+            const column = localColumns[colIndex];
+            const rowData = sortedData[rowIndex];
+
+            // Handle Links column click
+            if (column?.accessor === '__links__' && rowData && props.onLinksColumnClick) {
+                props.onLinksColumnClick(rowData.id, rowData);
+                return;
+            }
+
             if (isEditMode) {
                 // entering popup edit mode: temporarily disable blur-based deselection
                 (isEditingCellRef as React.RefObject<boolean>).current = true;
@@ -2431,7 +2458,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }
             }
         },
-        [isEditMode, sortedData, props.rowDetailPanel],
+        [isEditMode, sortedData, props.rowDetailPanel, props.onLinksColumnClick, localColumns],
     );
 
     // enhanced selection tracking

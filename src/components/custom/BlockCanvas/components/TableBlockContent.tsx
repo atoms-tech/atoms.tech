@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import {
     EditableTable,
@@ -6,6 +6,7 @@ import {
     TanStackEditableTable,
 } from '@/components/custom/BlockCanvas/components/EditableTable';
 import { RequirementAnalysisSidebar } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementAnalysisSidebar';
+import { RequirementLinksPopover } from '@/components/custom/BlockCanvas/components/EditableTable/components/RequirementLinksPopover';
 import {
     EditableColumn,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -77,6 +78,11 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
         dataAdapter,
         rowMetadataKey,
     }) => {
+        // State for Links popover
+        const [linksPopoverOpen, setLinksPopoverOpen] = useState(false);
+        const [selectedRequirement, setSelectedRequirement] =
+            useState<DynamicRequirement | null>(null);
+
         // Get global setting from doc store as fallback
         const {
             useTanStackTables: globalUseTanStackTables = false,
@@ -91,6 +97,15 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
 
         // Default to requirement analysis (via adapter) if none provided
         const EffectiveRowDetailPanel = rowDetailPanel ?? RequirementPanelAdapter;
+
+        // Handle Links column click
+        const handleLinksColumnClick = useCallback(
+            (requirementId: string, rowData: DynamicRequirement) => {
+                setSelectedRequirement(rowData);
+                setLinksPopoverOpen(true);
+            },
+            [],
+        );
 
         // Memoize the table component selection
         const TableComponent = useMemo(() => {
@@ -153,6 +168,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 rowDetailPanel: EffectiveRowDetailPanel,
                 dataAdapter,
                 rowMetadataKey,
+                onLinksColumnClick: handleLinksColumnClick,
             }),
             [
                 dynamicRequirements,
@@ -169,6 +185,7 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                 EffectiveRowDetailPanel,
                 dataAdapter,
                 rowMetadataKey,
+                handleLinksColumnClick,
             ],
         );
 
@@ -179,6 +196,19 @@ export const TableBlockContent: React.FC<TableBlockContentProps> = React.memo(
                         <TableComponent {...tableProps} />
                     </div>
                 </div>
+                {/* Links dialog - rendered at table level */}
+                {selectedRequirement && (
+                    <RequirementLinksPopover
+                        requirementId={selectedRequirement.id}
+                        requirementName={
+                            (selectedRequirement.Name as string) ||
+                            (selectedRequirement.name as string) ||
+                            'Unnamed Requirement'
+                        }
+                        open={linksPopoverOpen}
+                        onOpenChange={setLinksPopoverOpen}
+                    />
+                )}
             </div>
         );
     },
