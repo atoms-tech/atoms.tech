@@ -2,22 +2,8 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
-import { createClient } from '@/lib/supabase/supabaseServer';
-
-// Minimal Supabase types to avoid using `any` for RPCs and generic selects
-type RPCResponse<T = unknown> = { data: T; error: unknown };
-type QueryBuilder = {
-    select: (columns: string) => QueryBuilder;
-    or: (cond: string) => QueryBuilder;
-    eq: (
-        col: string,
-        val: string | number | boolean | null,
-    ) => Promise<RPCResponse<unknown>>;
-};
-type SupabaseMinimal = {
-    rpc: (fn: string, args: Record<string, unknown>) => Promise<RPCResponse<unknown>>;
-    from: (table: string) => QueryBuilder;
-};
+import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
+import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
 
 interface CreateRelationshipRequest {
     ancestorId: string;
@@ -33,7 +19,7 @@ interface DeleteRelationshipRequest {
 export async function POST(request: NextRequest) {
     try {
         // Get authenticated user and token from WorkOS
-        const { user } = await withAuth();
+        const { user, accessToken } = await withAuth();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -47,7 +33,17 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const supabase = (await createClient()) as unknown as SupabaseMinimal;
+        if (!accessToken) {
+            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+        }
+
+        const serviceClient = getSupabaseServiceRoleClient();
+        if (!serviceClient) {
+            return NextResponse.json(
+                { error: 'Supabase service client unavailable' },
+                { status: 500 },
+            );
+        }
 
         const body = (await request.json()) as CreateRelationshipRequest;
         const { ancestorId, descendantId } = body;
@@ -60,8 +56,74 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Call database function to create relationship with cycle detection
-        const { data, error } = await supabase.rpc('create_requirement_relationship', {
+        // Resolve project via requirements -> documents
+        const { data: ancReq, error: ancErr } = await serviceClient
+            .from('requirements')
+            .select('id, document_id, documents!inner(id, project_id)')
+            .eq('id', ancestorId)
+            .eq('is_deleted', false)
+            .maybeSingle();
+        if (ancErr) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to resolve ancestor requirement',
+                    details: ancErr.message,
+                },
+                { status: 500 },
+            );
+        }
+        const { data: descReq, error: descErr } = await serviceClient
+            .from('requirements')
+            .select('id, document_id, documents!inner(id, project_id)')
+            .eq('id', descendantId)
+            .eq('is_deleted', false)
+            .maybeSingle();
+        if (descErr) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to resolve descendant requirement',
+                    details: descErr.message,
+                },
+                { status: 500 },
+            );
+        }
+
+        const projectId = (ancReq as unknown as { documents?: { project_id?: string } })
+            ?.documents?.project_id;
+        const projectId2 = (descReq as unknown as { documents?: { project_id?: string } })
+            ?.documents?.project_id;
+        if (!projectId || !projectId2 || projectId !== projectId2) {
+            return NextResponse.json(
+                { error: 'Ancestor and descendant must belong to the same project' },
+                { status: 400 },
+            );
+        }
+
+        // Membership enforcement
+        const { data: membership, error: membershipError } = await serviceClient
+            .from('project_members')
+            .select('role')
+            .eq('project_id', projectId)
+            .eq('user_id', profile.id)
+            .eq('status', 'active')
+            .maybeSingle();
+        if (membershipError) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to verify project membership',
+                    details: membershipError.message,
+                },
+                { status: 500 },
+            );
+        }
+        if (!membership) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const userClient = createSupabaseClientWithToken(accessToken);
+
+        // Call database function to create relationship with cycle detection (user-scoped)
+        const { data, error } = await userClient.rpc('create_requirement_relationship', {
             p_ancestor_id: ancestorId,
             p_descendant_id: descendantId,
             p_created_by: profile.id,
@@ -109,7 +171,7 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
     try {
         // Get authenticated user and token from WorkOS
-        const { user } = await withAuth();
+        const { user, accessToken } = await withAuth();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -123,10 +185,26 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        const supabase = (await createClient()) as unknown as SupabaseMinimal;
+        if (!accessToken) {
+            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+        }
+
+        const serviceClient = getSupabaseServiceRoleClient();
+        if (!serviceClient) {
+            return NextResponse.json(
+                { error: 'Supabase service client unavailable' },
+                { status: 500 },
+            );
+        }
 
         const body = (await request.json()) as DeleteRelationshipRequest;
         const { ancestorId, descendantId } = body;
+        console.log('[Relationships API] DELETE payload', {
+            ancestorId,
+            descendantId,
+            userId: user.id,
+            profileId: profile.id,
+        });
 
         // Validate input
         if (!ancestorId || !descendantId) {
@@ -136,11 +214,74 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        // Call database function to delete relationship
-        const { data, error } = await supabase.rpc('delete_requirement_relationship', {
+        // Resolve project and enforce membership
+        const { data: ancReq, error: ancErr } = await serviceClient
+            .from('requirements')
+            .select('id, document_id, documents!inner(id, project_id)')
+            .eq('id', ancestorId)
+            .eq('is_deleted', false)
+            .maybeSingle();
+        if (ancErr) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to resolve ancestor requirement',
+                    details: ancErr.message,
+                },
+                { status: 500 },
+            );
+        }
+        const { data: descReq, error: descErr } = await serviceClient
+            .from('requirements')
+            .select('id, document_id, documents!inner(id, project_id)')
+            .eq('id', descendantId)
+            .eq('is_deleted', false)
+            .maybeSingle();
+        if (descErr) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to resolve descendant requirement',
+                    details: descErr.message,
+                },
+                { status: 500 },
+            );
+        }
+        const projectId = (ancReq as unknown as { documents?: { project_id?: string } })
+            ?.documents?.project_id;
+        const projectId2 = (descReq as unknown as { documents?: { project_id?: string } })
+            ?.documents?.project_id;
+        if (!projectId || !projectId2 || projectId !== projectId2) {
+            return NextResponse.json(
+                { error: 'Ancestor and descendant must belong to the same project' },
+                { status: 400 },
+            );
+        }
+        const { data: membership, error: membershipError } = await serviceClient
+            .from('project_members')
+            .select('role')
+            .eq('project_id', projectId)
+            .eq('user_id', profile.id)
+            .eq('status', 'active')
+            .maybeSingle();
+        if (membershipError) {
+            return NextResponse.json(
+                {
+                    error: 'Failed to verify project membership',
+                    details: membershipError.message,
+                },
+                { status: 500 },
+            );
+        }
+        if (!membership) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const userClient = createSupabaseClientWithToken(accessToken);
+
+        // Call database function to delete relationship (user-scoped)
+        const { data, error } = await userClient.rpc('delete_requirement_relationship', {
             p_ancestor_id: ancestorId,
             p_descendant_id: descendantId,
-            p_deleted_by: profile.id,
+            p_updated_by: profile.id,
         });
 
         if (error) {
@@ -156,8 +297,16 @@ export async function DELETE(request: NextRequest) {
                   success: boolean;
                   message?: string;
                   error_code?: string;
+                  relationships_deleted?: number;
               })
             : undefined;
+
+        console.log('[Relationships API] DELETE RPC result', {
+            success: result?.success,
+            relationships_deleted: result?.relationships_deleted,
+            message: result?.message,
+            error_code: result?.error_code,
+        });
 
         if (!result?.success) {
             return NextResponse.json(
@@ -172,6 +321,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: result?.message,
+            relationshipsDeleted: result?.relationships_deleted ?? null,
         });
     } catch (error) {
         console.error('DELETE /api/requirements/relationships error:', error);
@@ -183,7 +333,7 @@ export async function DELETE(request: NextRequest) {
 export async function GET(request: NextRequest) {
     try {
         // Authenticate via WorkOS
-        const { user } = await withAuth();
+        const { user, accessToken } = await withAuth();
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -197,7 +347,18 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const supabase = (await createClient()) as unknown as SupabaseMinimal;
+        if (!accessToken) {
+            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
+        }
+
+        const userClient = createSupabaseClientWithToken(accessToken);
+        const serviceClient = getSupabaseServiceRoleClient();
+        if (!serviceClient) {
+            return NextResponse.json(
+                { error: 'Supabase service client unavailable' },
+                { status: 500 },
+            );
+        }
 
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type');
@@ -211,7 +372,28 @@ export async function GET(request: NextRequest) {
                 );
             }
 
-            const { data, error } = await supabase.rpc('get_requirement_tree', {
+            // Membership enforcement for project
+            const { data: membership, error: membershipError } = await serviceClient
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', profile.id)
+                .eq('status', 'active')
+                .maybeSingle();
+            if (membershipError) {
+                return NextResponse.json(
+                    {
+                        error: 'Failed to verify project membership',
+                        details: membershipError.message,
+                    },
+                    { status: 500 },
+                );
+            }
+            if (!membership) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            const { data, error } = await userClient.rpc('get_requirement_tree', {
                 p_project_id: projectId,
             });
 
@@ -236,9 +418,51 @@ export async function GET(request: NextRequest) {
                 );
             }
 
-            const { data, error } = await supabase.rpc('get_requirement_descendants', {
+            // Resolve project via requirement -> document
+            const { data: reqRow, error: reqErr } = await serviceClient
+                .from('requirements')
+                .select('id, document_id, documents!inner(id, project_id)')
+                .eq('id', requirementId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (reqErr) {
+                return NextResponse.json(
+                    { error: 'Failed to resolve requirement', details: reqErr.message },
+                    { status: 500 },
+                );
+            }
+            const projectId = (
+                reqRow as unknown as { documents?: { project_id?: string } }
+            )?.documents?.project_id;
+            if (!projectId) {
+                return NextResponse.json(
+                    { error: 'Requirement missing project context' },
+                    { status: 500 },
+                );
+            }
+            const { data: membership, error: membershipError } = await serviceClient
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', profile.id)
+                .eq('status', 'active')
+                .maybeSingle();
+            if (membershipError) {
+                return NextResponse.json(
+                    {
+                        error: 'Failed to verify project membership',
+                        details: membershipError.message,
+                    },
+                    { status: 500 },
+                );
+            }
+            if (!membership) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            const { data, error } = await userClient.rpc('get_requirement_descendants', {
                 p_ancestor_id: requirementId,
-                p_max_depth: maxDepth ? Number(maxDepth) : null,
+                p_max_depth: maxDepth ? Number(maxDepth) : undefined,
             });
 
             if (error) {
@@ -262,9 +486,51 @@ export async function GET(request: NextRequest) {
                 );
             }
 
-            const { data, error } = await supabase.rpc('get_requirement_ancestors', {
+            // Resolve project and enforce membership
+            const { data: reqRow, error: reqErr } = await serviceClient
+                .from('requirements')
+                .select('id, document_id, documents!inner(id, project_id)')
+                .eq('id', requirementId)
+                .eq('is_deleted', false)
+                .maybeSingle();
+            if (reqErr) {
+                return NextResponse.json(
+                    { error: 'Failed to resolve requirement', details: reqErr.message },
+                    { status: 500 },
+                );
+            }
+            const projectId = (
+                reqRow as unknown as { documents?: { project_id?: string } }
+            )?.documents?.project_id;
+            if (!projectId) {
+                return NextResponse.json(
+                    { error: 'Requirement missing project context' },
+                    { status: 500 },
+                );
+            }
+            const { data: membership, error: membershipError } = await serviceClient
+                .from('project_members')
+                .select('role')
+                .eq('project_id', projectId)
+                .eq('user_id', profile.id)
+                .eq('status', 'active')
+                .maybeSingle();
+            if (membershipError) {
+                return NextResponse.json(
+                    {
+                        error: 'Failed to verify project membership',
+                        details: membershipError.message,
+                    },
+                    { status: 500 },
+                );
+            }
+            if (!membership) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            const { data, error } = await userClient.rpc('get_requirement_ancestors', {
                 p_descendant_id: requirementId,
-                p_max_depth: maxDepth ? Number(maxDepth) : null,
+                p_max_depth: maxDepth ? Number(maxDepth) : undefined,
             });
 
             if (error) {
