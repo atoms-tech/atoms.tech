@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Server, Store, Settings, Layers } from 'lucide-react';
 import { EnhancedMarketplace } from './EnhancedMarketplace';
-import { InstalledServersView } from './InstalledServersView';
+import { EnhancedInstalledServersView } from './EnhancedInstalledServersView';
 import { MCPSystemSettings } from './MCPSystemSettings';
 import { MCPProfiles } from './MCPProfiles';
 
@@ -21,12 +21,14 @@ interface MCPPanelProps {
     organizations?: Array<{ id: string; name: string }>;
     installedServers?: string[];
     onServerInstalled?: (serverId: string) => void;
+    isAdmin?: boolean;
 }
 
 export function MCPPanel({
     organizations = [],
     installedServers = [],
     onServerInstalled,
+    isAdmin = false,
 }: MCPPanelProps) {
     const [activeTab, setActiveTab] = useState<'installed' | 'marketplace' | 'profiles' | 'settings'>('marketplace');
 
@@ -55,7 +57,7 @@ export function MCPPanel({
 
                 {/* Installed Tab */}
                 <TabsContent value="installed" className="mt-4">
-                    <InstalledServersView compact={true} />
+                    <EnhancedInstalledServersView compact={true} isAdmin={isAdmin} />
                 </TabsContent>
 
                 {/* Marketplace Tab */}

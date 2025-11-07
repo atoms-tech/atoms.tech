@@ -250,6 +250,9 @@ export interface PromptInputProps {
     textareaRef?: React.Ref<HTMLTextAreaElement>;
     maxHeightPercentage?: number; // Percentage of chat height (default 35%)
     attachButton?: React.ReactNode; // Optional attach files button to include in the row
+    isGenerating?: boolean;
+    onStop?: () => Promise<void> | void;
+    stopLabel?: string;
 }
 
 export const PromptInput: React.FC<PromptInputProps> = ({
@@ -263,6 +266,9 @@ export const PromptInput: React.FC<PromptInputProps> = ({
     textareaRef,
     maxHeightPercentage = 35,
     attachButton,
+    isGenerating = false,
+    onStop,
+    stopLabel = 'Stop',
 }) => {
     const textareaInternalRef = React.useRef<HTMLTextAreaElement>(null);
     const containerRef = React.useRef<HTMLDivElement>(null);
@@ -379,18 +385,33 @@ export const PromptInput: React.FC<PromptInputProps> = ({
                     disabled={disabled}
                     rows={1}
                 />
-                <Button
-                    type="submit"
-                    size="sm"
-                    disabled={disabled || value.trim().length === 0}
-                    className="h-[44px] px-4 shrink-0"
-                >
-                    {disabled ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        submitLabel
-                    )}
-                </Button>
+                {isGenerating && onStop ? (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-[44px] px-4 shrink-0"
+                        onClick={() => {
+                            void onStop();
+                        }}
+                    >
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {stopLabel}
+                    </Button>
+                ) : (
+                    <Button
+                        type="submit"
+                        size="sm"
+                        disabled={disabled || value.trim().length === 0}
+                        className="h-[44px] px-4 shrink-0"
+                    >
+                        {disabled ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            submitLabel
+                        )}
+                    </Button>
+                )}
             </form>
         </div>
     );

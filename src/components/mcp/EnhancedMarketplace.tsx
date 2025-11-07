@@ -47,8 +47,6 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [selectedTransport, setSelectedTransport] = useState<string>('all');
     const [selectedAuth, setSelectedAuth] = useState<string>('all');
-    const [_transports, _setTransports] = useState<string[]>([]);
-    const [_authTypes, _setAuthTypes] = useState<string[]>([]);
     const [sortBy, setSortBy] = useState<string>('quality');
     
     // Installation loading state - track by server namespace
@@ -89,25 +87,6 @@ export function EnhancedMarketplace({ organizations = [], installedServers = [],
                 ) as string[];
                 setCategories(uniqueCategories);
 
-                // Extract unique transports
-                const trans = Array.from(
-                    new Set(
-                        allServers
-                            .map((s: UnifiedMCPServer) => s.transport?.type)
-                            .filter(Boolean)
-                    )
-                ) as string[];
-                setTransports(trans);
-
-                // Extract unique auth types
-                const auths = Array.from(
-                    new Set(
-                        allServers
-                            .map((s: UnifiedMCPServer) => s.auth?.type || 'none')
-                            .filter(Boolean)
-                    )
-                ) as string[];
-                setAuthTypes(auths);
             }
         } catch (error) {
             console.error('Error fetching filter options:', error);

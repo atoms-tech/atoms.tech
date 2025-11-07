@@ -1350,6 +1350,44 @@ export type Database = {
         }
         Relationships: []
       }
+      mcp_server_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          level: string
+          message: string
+          metadata: Json | null
+          server_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level: string
+          message: string
+          metadata?: Json | null
+          server_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json | null
+          server_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_server_logs_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "mcp_servers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mcp_server_security_reviews: {
         Row: {
           auth_review_notes: string | null
@@ -1521,6 +1559,7 @@ export type Database = {
           downloads: number | null
           enabled: boolean | null
           env: Json | null
+          health_check_error: string | null
           health_status: string | null
           homepage_url: string | null
           id: string
@@ -1546,6 +1585,7 @@ export type Database = {
           security_reviewed_by: string | null
           source: string
           stars: number | null
+          status: string | null
           sync_source: string | null
           tags: string[] | null
           tier: string
@@ -1572,6 +1612,7 @@ export type Database = {
           downloads?: number | null
           enabled?: boolean | null
           env?: Json | null
+          health_check_error?: string | null
           health_status?: string | null
           homepage_url?: string | null
           id?: string
@@ -1597,6 +1638,7 @@ export type Database = {
           security_reviewed_by?: string | null
           source: string
           stars?: number | null
+          status?: string | null
           sync_source?: string | null
           tags?: string[] | null
           tier?: string
@@ -1623,6 +1665,7 @@ export type Database = {
           downloads?: number | null
           enabled?: boolean | null
           env?: Json | null
+          health_check_error?: string | null
           health_status?: string | null
           homepage_url?: string | null
           id?: string
@@ -1648,6 +1691,7 @@ export type Database = {
           security_reviewed_by?: string | null
           source?: string
           stars?: number | null
+          status?: string | null
           sync_source?: string | null
           tags?: string[] | null
           tier?: string
@@ -3261,14 +3305,18 @@ export type Database = {
           custom_config: Json | null
           enabled: boolean | null
           error_count: number | null
+          health_check_error: string | null
           id: string
           installed_at: string
           last_error: string | null
           last_error_at: string | null
+          last_health_check: string | null
           last_used_at: string | null
           oauth_tokens_encrypted: string | null
           organization_id: string | null
           server_id: string
+          status: string | null
+          tool_permissions: Json | null
           updated_at: string
           usage_count: number | null
           user_id: string
@@ -3278,14 +3326,18 @@ export type Database = {
           custom_config?: Json | null
           enabled?: boolean | null
           error_count?: number | null
+          health_check_error?: string | null
           id?: string
           installed_at?: string
           last_error?: string | null
           last_error_at?: string | null
+          last_health_check?: string | null
           last_used_at?: string | null
           oauth_tokens_encrypted?: string | null
           organization_id?: string | null
           server_id: string
+          status?: string | null
+          tool_permissions?: Json | null
           updated_at?: string
           usage_count?: number | null
           user_id: string
@@ -3295,14 +3347,18 @@ export type Database = {
           custom_config?: Json | null
           enabled?: boolean | null
           error_count?: number | null
+          health_check_error?: string | null
           id?: string
           installed_at?: string
           last_error?: string | null
           last_error_at?: string | null
+          last_health_check?: string | null
           last_used_at?: string | null
           oauth_tokens_encrypted?: string | null
           organization_id?: string | null
           server_id?: string
+          status?: string | null
+          tool_permissions?: Json | null
           updated_at?: string
           usage_count?: number | null
           user_id?: string
@@ -3824,6 +3880,16 @@ export type Database = {
       is_valid_slug: { Args: { slug: string }; Returns: boolean }
       isnt_empty: { Args: { "": string }; Returns: string }
       lives_ok: { Args: { "": string }; Returns: string }
+      log_mcp_server_event: {
+        Args: {
+          p_level: string
+          p_message: string
+          p_metadata?: Json
+          p_server_id: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       log_resource_usage: {
         Args: {
           feature: string
@@ -4470,3 +4536,5 @@ export const Constants = {
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.54.11 (currently installed v2.51.0)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

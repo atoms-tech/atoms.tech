@@ -26,44 +26,62 @@ export async function POST(
             return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
         }
 
-        const supabase = getServiceRoleClient() as { from: (table: string) => unknown; };
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
         }
 
-        // Deactivate all profiles for this user
-        await supabase
-            .from('mcp_profiles')
-            .update({ is_active: false })
-            .eq('user_id', profile.id);
+        const profileId = (await context.params).id;
 
-        // Activate the selected profile
-        const { data: activatedProfile, error } = await supabase
+        // Verify the profile exists and belongs to the user
+        const { data: mcpProfile, error: profileError } = await supabase
             .from('mcp_profiles')
-            .update({
-                is_active: true,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', (await context.params).id)
+            .select('id')
+            .eq('id', profileId)
             .eq('user_id', profile.id)
-            .select()
             .single();
 
-        if (error) {
-            console.error('Error activating MCP profile:', error);
+        if (profileError || !mcpProfile) {
+            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+        }
+
+        // Get current user preferences
+        const { data: currentProfile } = await supabase
+            .from('profiles')
+            .select('preferences')
+            .eq('id', profile.id)
+            .single();
+
+        const currentPreferences = (currentProfile?.preferences as Record<string, any>) || {};
+
+        // Update user preferences to set active MCP profile
+        const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+                preferences: {
+                    ...currentPreferences,
+                    activeMcpProfileId: profileId,
+                },
+            })
+            .eq('id', profile.id);
+
+        if (updateError) {
+            console.error('Error updating user preferences:', updateError);
             return NextResponse.json(
-                { error: 'Failed to activate profile', details: error.message },
+                { error: 'Failed to activate profile', details: updateError.message },
                 { status: 500 }
             );
         }
 
-        if (!activatedProfile) {
-            return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-        }
+        // Also update the profile timestamp
+        await supabase
+            .from('mcp_profiles')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', profileId);
 
         return NextResponse.json({
-            profile: activatedProfile,
+            profileId,
             message: 'Profile activated successfully',
         });
     } catch (error) {

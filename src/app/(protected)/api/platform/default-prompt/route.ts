@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
             'get_merged_system_prompt',
             {
                 p_user_id: profile.id,
-                p_organization_id: organizationId,
+              p_organization_id: organizationId ?? undefined,
             },
         );
 

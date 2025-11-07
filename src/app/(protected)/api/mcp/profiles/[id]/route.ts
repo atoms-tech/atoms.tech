@@ -30,7 +30,7 @@ export async function PUT(
         const body = await request.json();
         const { name, description, servers } = body;
 
-        const supabase = getServiceRoleClient() as { from: (table: string) => unknown; };
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
@@ -99,7 +99,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
         }
 
-        const supabase = getServiceRoleClient() as { from: (table: string) => unknown; };
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });

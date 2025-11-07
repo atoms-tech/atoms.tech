@@ -40,6 +40,7 @@ import {
     // ConversationMessage, // Will be used when rendering messages
     PromptInput,
 } from '@/components/ui/ai-elements';
+import { TypingIndicatorMessage } from '@/components/ui/typing-indicator';
 
 import { AgentPanelHeader } from './AgentPanelHeader';
 import { ChatHistoryPage } from './ChatHistoryPage';
@@ -168,18 +169,21 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
     // Type definition for dynamic chat helpers
     type ChatHelpers = {
-        append: (message: any) => void;
+        append?: (message: any) => void;
         sendMessage: (message: any) => void;
         setMessages: (messages: any[]) => void;
-        isLoading: boolean;
-        error: any;
+        status?: 'submitted' | 'streaming' | 'ready' | 'error';
+        error?: any;
+        stop?: () => Promise<void>;
     };
 
     // Type assertions for v6 migration
     const append = (chatHelpers as ChatHelpers).append;
     const sendMessage = (chatHelpers as ChatHelpers).sendMessage;
     const setMessages = (chatHelpers as ChatHelpers).setMessages;
-    const isLoading = (chatHelpers as ChatHelpers).isLoading;
+    const status = (chatHelpers as ChatHelpers).status ?? 'ready';
+    const stop = (chatHelpers as ChatHelpers).stop;
+    const isGenerating = status === 'submitted' || status === 'streaming';
     const error = (chatHelpers as ChatHelpers).error;
 
     // Force re-render during streaming
@@ -210,7 +214,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         const isAssistantMessage = message.role === 'assistant';
         // Show streaming if loading AND last message is assistant (even if empty)
         // Also show if message has delta property (actively streaming)
-        const isStreaming = isLoading && isLastMessage && isAssistantMessage;
+        const isStreaming = isGenerating && isLastMessage && isAssistantMessage;
 
         return {
             id: message.id || `message-${index}`,
@@ -219,7 +223,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             isStreaming,
             createdAt: (message as any).createdAt ? new Date((message as any).createdAt) : undefined,
         };
-    }, [isLoading, sdkMessages]);
+    }, [isGenerating, sdkMessages]);
 
     const displayMessages = React.useMemo(
         () => {
@@ -232,7 +236,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
             // If loading and last visible message is user (or no messages), add a placeholder assistant message for streaming
             const lastNormalized = normalized[normalized.length - 1];
-            if (isLoading && (!lastNormalized || lastNormalized.role === 'user')) {
+            if (isGenerating && (!lastNormalized || lastNormalized.role === 'user')) {
                 normalized.push({
                     id: 'streaming-placeholder',
                     role: 'assistant',
@@ -254,7 +258,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
 
             return normalized;
         },
-        [sdkMessages, normalizeMessage, hiddenAfterIndex, isLoading, messageQueue],
+        [sdkMessages, normalizeMessage, hiddenAfterIndex, isGenerating, messageQueue],
     );
 
     // Track last message content for smooth streaming updates
@@ -263,7 +267,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     React.useEffect(() => {
         // Force re-render when messages change during streaming
         // This ensures token-by-token updates are visible
-        if (isLoading && sdkMessages.length > 0) {
+        if (isGenerating && sdkMessages.length > 0) {
             const lastMessage = sdkMessages[sdkMessages.length - 1];
             let currentContent = '';
             
@@ -287,7 +291,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         } else {
             lastStreamingContentRef.current = '';
         }
-    }, [isLoading, sdkMessages]);
+    }, [isGenerating, sdkMessages]);
 
     // Track last message content for smooth scrolling
     const lastMessageContentRef = useRef<string>('');
@@ -418,10 +422,10 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
     }, [appendWithMetadata, messageQueue]);
 
     useEffect(() => {
-        if (!isLoading) {
+        if (!isGenerating) {
             void processQueue();
         }
-    }, [isLoading, processQueue]);
+    }, [isGenerating, processQueue]);
 
     useEffect(() => {
         branchSnapshotsRef.current[activeBranchIndex] = sdkMessages;
@@ -528,13 +532,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         setAttachedFiles([]);
         setShowFileAttachment(false);
 
-        if (isLoading) {
+        if (isGenerating) {
             setMessageQueue((prev) => [...prev, message]);
             return;
         }
 
         await appendWithMetadata(message, filesToSend);
-    }, [appendWithMetadata, inputValue, attachedFiles, isLoading, append, sendMessage, hiddenAfterIndex, editingMessageId, sdkMessages, setMessages]);
+    }, [appendWithMetadata, inputValue, attachedFiles, isGenerating, append, sendMessage, hiddenAfterIndex, editingMessageId, sdkMessages, setMessages]);
 
     // NEW: Tool approval handlers
     const handleApprove = useCallback((requestId: string) => {
@@ -766,7 +770,20 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                                         const isLastUserMessage = message.role === 'user' && message.id === lastUserMessage?.id;
                                         const isEditing = editingMessageId === message.id;
                                         const hasBranch = branchPointsRef.current.has(message.id);
+                                        const isEmptyStreamingAssistant =
+                                            message.role === 'assistant' &&
+                                            message.isStreaming &&
+                                            (message.content ?? '').trim().length === 0;
                                         
+                                        if (isEmptyStreamingAssistant) {
+                                            return (
+                                                <TypingIndicatorMessage
+                                                    key={message.id}
+                                                    className="animate-in fade-in"
+                                                />
+                                            );
+                                        }
+
                                         return (
                                             <div
                                                 key={message.id}
@@ -780,10 +797,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                                                     branchCount={branchCount}
                                                     activeBranchIndex={activeBranchIndex}
                                                     onSwitchBranch={handleSwitchBranch}
-                                                    showRetry={isLastUserMessage && !!lastAssistantMessage && !isLoading}
+                                                    showRetry={isLastUserMessage && !!lastAssistantMessage && !isGenerating}
                                                     onRetry={handleRetry}
                                                     showBranchNav={hasBranch && !isEditing}
                                                     className={cn(
+                                                        message.role === 'assistant' && message.isStreaming && 'border border-primary/40 bg-primary/5 shadow-sm animate-pulse',
                                                         isEditing && 'ring-2 ring-primary/60',
                                                     )}
                                                 />
@@ -838,9 +856,11 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                             onChange={setInputValue}
                             onSubmit={() => void submitMessage()}
                             placeholder={editingMessageId ? "Edit your message..." : "Type a message?"}
-                            disabled={isLoading}
+                            disabled={isGenerating}
                             textareaRef={textareaRef}
                             maxHeightPercentage={35}
+                            isGenerating={isGenerating}
+                            onStop={stop}
                             attachButton={
                                 <Button
                                     type="button"

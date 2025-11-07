@@ -23,11 +23,21 @@ export async function GET() {
             return NextResponse.json({ error: 'Profile not provisioned' }, { status: 409 });
         }
 
-        const supabase = getServiceRoleClient() as { from: (table: string) => unknown; };
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
         }
+
+        // Fetch user's preferences to get active profile
+        const { data: userProfile } = await supabase
+            .from('profiles')
+            .select('preferences')
+            .eq('id', profile.id)
+            .single();
+
+        const preferences = (userProfile?.preferences as Record<string, any>) || {};
+        const activeMcpProfileId = preferences.activeMcpProfileId;
 
         // Fetch user's MCP profiles
         const { data: profiles, error } = await supabase
@@ -44,9 +54,15 @@ export async function GET() {
             );
         }
 
+        // Mark the active profile
+        const profilesWithActiveFlag = (profiles || []).map(p => ({
+            ...p,
+            isActive: p.id === activeMcpProfileId,
+        }));
+
         return NextResponse.json({
-            profiles: profiles || [],
-            count: profiles?.length || 0,
+            profiles: profilesWithActiveFlag,
+            count: profilesWithActiveFlag.length,
         });
     } catch (error) {
         console.error('Error in GET /api/mcp/profiles:', error);
@@ -87,13 +103,14 @@ export async function POST(request: Request) {
             );
         }
 
-        const supabase = getServiceRoleClient() as { from: (table: string) => unknown; };
+        const supabase = getServiceRoleClient();
 
         if (!supabase) {
             return NextResponse.json({ error: 'Database client unavailable' }, { status: 500 });
         }
 
         // Create profile
+        // Note: is_active column doesn't exist in cloud schema
         const { data: newProfile, error } = await supabase
             .from('mcp_profiles')
             .insert({
@@ -101,7 +118,7 @@ export async function POST(request: Request) {
                 name,
                 description: description || '',
                 servers,
-                is_active: false,
+                // Removed: is_active (doesn't exist in schema)
             })
             .select()
             .single();

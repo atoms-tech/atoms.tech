@@ -9,12 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import { FixTransportButton } from './FixTransportButton';
 
 interface MCPSystemSettingsProps {
     compact?: boolean;
 }
 
-export function MCPSystemSettings({ _compact = false }: MCPSystemSettingsProps) {
+export function MCPSystemSettings({ compact = false }: MCPSystemSettingsProps) {
     const { toast } = useToast();
     const [settings, setSettings] = useState({
         autoStartServers: true,
@@ -53,6 +54,19 @@ export function MCPSystemSettings({ _compact = false }: MCPSystemSettingsProps) 
 
     return (
         <div className={compact ? 'space-y-4' : 'space-y-6'}>
+            {/* Migration Tools */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Migration Tools</CardTitle>
+                    <CardDescription>
+                        One-time fixes for MCP server configuration
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FixTransportButton />
+                </CardContent>
+            </Card>
+
             {/* General Settings */}
             <Card>
                 <CardHeader>
@@ -197,4 +211,3 @@ export function MCPSystemSettings({ _compact = false }: MCPSystemSettingsProps) 
         </div>
     );
 }
-

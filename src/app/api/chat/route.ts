@@ -72,6 +72,7 @@ async function createChatSession(params: {
         tokens_in: 0,
         tokens_out: 0,
         tokens_total: 0,
+        archived: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     });
@@ -115,13 +116,14 @@ async function ensureChatSession(params: {
     const { error: insertError } = await (supabase.from('chat_sessions' as any)).insert({
         id: params.sessionId,
         user_id: normalizedUserId,
-        organization_id: normalizedOrgId,
+        org_id: normalizedOrgId,
         model: params.model,
         title: params.title || 'New Chat',
         message_count: 0,
         tokens_in: 0,
         tokens_out: 0,
         tokens_total: 0,
+        archived: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
     });
@@ -307,6 +309,19 @@ async function persistAssistantVariant(params: {
         let inserted: any = existingMessage;
 
         if (!existingMessage) {
+            // Get the next message_index for this session
+            const { data: lastMessage } = await (supabase
+                .from('chat_messages' as any))
+                .select('message_index')
+                .eq('session_id', params.sessionId)
+                .order('message_index', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            const nextMessageIndex = (lastMessage as any)?.message_index !== undefined
+                ? (lastMessage as any).message_index + 1
+                : 0;
+
             const insertPayload = {
                 id: responseMessageId,
                 session_id: params.sessionId,
@@ -319,6 +334,8 @@ async function persistAssistantVariant(params: {
                 parent_id: resolvedParentId,
                 variant_index: nextVariantIndex,
                 is_active: true,
+                message_index: nextMessageIndex,
+                sequence: nextMessageIndex,
                 created_at: new Date().toISOString(),
             };
 
@@ -490,6 +507,10 @@ export async function POST(request: Request) {
             ?? requestMetadata?.atomsagent?.parent_message_id
             ?? requestMetadata?.atomsagent?.parentMessageId
             ?? null;
+
+        // Note: MCP tools are now handled by atomsAgent backend
+        // The backend reads the active profile and composes MCP servers
+        // We just use the built-in tools here for the UI
 
         const result = streamText({
             model: chatModel,

@@ -38,43 +38,45 @@ export async function POST(request: NextRequest) {
       .from('mcp_servers')
       .select('*')
       .eq('id', serverId)
-      .eq('is_deleted', false)
       .single();
 
     if (error || !server) {
       return NextResponse.json({ error: 'Server not found' }, { status: 404 });
     }
 
-    // Check permissions based on scope
-    if (server.scope === 'user' && server.user_id !== profile.id) {
-      return NextResponse.json(
-        { error: 'Only the owner can configure proxy settings' },
-        { status: 403 }
-      );
-    }
-
-    if ((server as { scope?: string }).scope === 'organization') {
-      if (!(server as { organization_id?: string }).organization_id) {
-        console.error('Server missing organization_id for organization scope', { serverId });
+      // Check permissions based on scope
+      if (server.scope === 'user' && server.user_id !== profile.id) {
         return NextResponse.json(
-          { error: 'Server organization is not configured' },
-          { status: 500 }
-        );
-      }
-      const { data: membership } = await supabase
-        .from('organization_members')
-        .select('role')
-        .eq('organization_id', server.organization_id)
-        .eq('user_id', profile.id)
-        .single();
-
-      if (!membership || membership.role !== 'admin') {
-        return NextResponse.json(
-          { error: 'Only organization admins can configure proxy settings' },
+          { error: 'Only the owner can configure proxy settings' },
           { status: 403 }
         );
       }
-    }
+
+      if (server.scope === 'organization') {
+        const organizationId = server.organization_id;
+
+        if (!organizationId) {
+          console.error('Server missing organization_id for organization scope', { serverId });
+          return NextResponse.json(
+            { error: 'Server organization is not configured' },
+            { status: 500 }
+          );
+        }
+
+        const { data: membership } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('organization_id', organizationId)
+          .eq('user_id', profile.id)
+          .single();
+
+        if (!membership || membership.role !== 'admin') {
+          return NextResponse.json(
+            { error: 'Only organization admins can configure proxy settings' },
+            { status: 403 }
+          );
+        }
+      }
 
     if (server.scope === 'system') {
       const { data: adminCheck } = await supabase
@@ -121,12 +123,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update server with proxy configuration
+    // Update server with transport_config (proxy_config doesn't exist)
+    const currentTransportConfig = (server.transport_config as Record<string, any>) || {};
+    const updatedTransportConfig = {
+      ...currentTransportConfig,
+      proxy: proxyConfig || null,
+    };
+
     const { data: updatedServer, error: updateError } = await supabase
       .from('mcp_servers')
       .update({
-        proxy_config: proxyConfig || null,
-        updated_by: profile.id,
+        transport_config: updatedTransportConfig,
         updated_at: new Date().toISOString(),
       })
       .eq('id', serverId)
@@ -189,9 +196,8 @@ export async function GET(request: NextRequest) {
     // Fetch the server
     const { data: server, error } = await supabase
       .from('mcp_servers')
-      .select('id, scope, user_id, organization_id, proxy_config')
+      .select('*')
       .eq('id', serverId)
-      .eq('is_deleted', false)
       .single();
 
     if (error || !server) {
@@ -199,29 +205,36 @@ export async function GET(request: NextRequest) {
     }
 
     // Check access based on scope
-    if ((server as { scope?: string }).scope === 'user' && (server as { user_id?: string }).user_id !== profile.id) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    if ((server as { scope?: string }).scope === 'organization') {
-      if (!(server as { organization_id?: string }).organization_id) {
-        console.error('Server missing organization_id for organization scope', { serverId });
+      if (server.scope === 'user' && server.user_id !== profile.id) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
-      const { data: membership } = await supabase
-        .from('organization_members')
-        .select('id')
-        .eq('organization_id', server.organization_id)
-        .eq('user_id', profile.id)
-        .single();
 
-      if (!membership) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      if (server.scope === 'organization') {
+        const organizationId = server.organization_id;
+
+        if (!organizationId) {
+          console.error('Server missing organization_id for organization scope', { serverId });
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
+
+        const { data: membership } = await supabase
+          .from('organization_members')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .eq('user_id', profile.id)
+          .single();
+
+        if (!membership) {
+          return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+        }
       }
-    }
+
+    // Extract proxy config from transport_config
+    const transportConfig = (server.transport_config as Record<string, any>) || {};
+    const proxyConfig = transportConfig.proxy || null;
 
     return NextResponse.json({
-      proxyConfig: server.proxy_config || null,
+      proxyConfig,
     });
   } catch (error) {
     console.error('Get proxy config error:', error);

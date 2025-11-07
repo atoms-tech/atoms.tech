@@ -1,12 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Chat Session Detail API Route
  * 
  * Gets detailed chat session with messages
  */
 
+import { withAuth } from '@workos-inc/authkit-nextjs';
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@/lib/database';
+import { agentAPIService } from '@/lib/services/agentapi.service';
+import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { logger } from '@/lib/utils/logger';
 
 export async function GET(
@@ -14,153 +15,101 @@ export async function GET(
     context: { params: { sessionId: string } },
 ) {
     const { params } = context;
+    const sessionId = params.sessionId;
 
     try {
-        // Get authenticated user
-        const supabase = await createServerClient();
-        const {
-            data: { user },
-            error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError || !user) {
-            logger.warn('Unauthorized chat session request', { authError });
+        // Authenticate user with WorkOS
+        let user;
+        try {
+            const authResult = await withAuth();
+            user = authResult.user;
+        } catch (authError) {
+            logger.error('Auth error in session detail API', authError, {
+                route: '/api/history/[sessionId]',
+                sessionId,
+            });
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
             );
         }
 
-        const { data: session, error: sessionError } = await supabase
-            .from('chat_sessions' as any)
-            .select('*')
-            .eq('id', params.sessionId)
-            .maybeSingle();
-
-        if (sessionError) {
-            logger.error('Failed to fetch chat session metadata', sessionError, {
+        if (\!user) {
+            logger.warn('Unauthorized chat session request', {
                 route: '/api/history/[sessionId]',
-                sessionId: params.sessionId,
+                sessionId,
             });
             return NextResponse.json(
-                {
-                    error: 'Failed to fetch chat session',
-                    details: sessionError.message,
-                },
-                { status: 500 },
+                { error: 'Unauthorized' },
+                { status: 401 }
             );
         }
 
-        if (!session || (session as any).user_id !== user.id) {
-            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-        }
-
-        const { data: messageRows, error: messageError } = await supabase
-            .from('chat_messages' as any)
-            .select('id, role, content, metadata, tokens, created_at, parent_id, variant_index, is_active')
-            .eq('session_id', params.sessionId)
-            .order('created_at', { ascending: true })
-            .order('variant_index', { ascending: true, nullsFirst: true });
-
-        if (messageError) {
-            logger.error('Failed to load chat messages', messageError, {
+        // Get or create profile
+        let profile;
+        try {
+            profile = await getOrCreateProfileForWorkOSUser(user);
+        } catch (profileError) {
+            logger.error('Profile sync failed in session detail API', profileError, {
                 route: '/api/history/[sessionId]',
-                sessionId: params.sessionId,
+                sessionId,
             });
             return NextResponse.json(
-                {
-                    error: 'Failed to fetch chat session',
-                    details: messageError.message,
-                },
-                { status: 500 },
+                { error: 'Profile sync failed' },
+                { status: 500 }
             );
         }
 
-        const assistantMap = new Map<string, any>();
-        const orderedMessages: any[] = [];
-
-        const pushAssistantVariant = (row: any) => {
-            const parentKey = row.parent_id ?? row.id;
-            let entry = assistantMap.get(parentKey);
-
-            if (!entry) {
-                entry = {
-                    id: parentKey,
-                    role: 'assistant',
-                    content: row.content,
-                    metadata: row.metadata,
-                    created_at: row.created_at,
-                    tokens: row.tokens,
-                    variants: [] as any[],
-                    activeVariantIndex: row.is_active ? row.variant_index ?? 0 : 0,
-                };
-                assistantMap.set(parentKey, entry);
-                orderedMessages.push(entry);
-            }
-
-            entry.variants.push({
-                id: row.id,
-                parent_id: parentKey,
-                content: row.content,
-                metadata: row.metadata,
-                tokens: (row as any).tokens,
-                created_at: (row as any).created_at,
-                variant_index: row.variant_index ?? 0,
-                is_active: row.is_active,
+        if (\!profile) {
+            logger.warn('Profile not found for user', {
+                route: '/api/history/[sessionId]',
+                sessionId,
+                userId: user.id,
             });
-
-            if (row.is_active) {
-                entry.activeVariantIndex = row.variant_index ?? 0;
-                entry.content = row.content;
-                entry.metadata = row.metadata;
-                entry.tokens = row.tokens;
-            }
-
-            if (entry.created_at && row.created_at && new Date(row.created_at) < new Date(entry.created_at)) {
-                entry.created_at = row.created_at;
-            }
-        };
-
-        for (const row of messageRows ?? []) {
-            if ((row as any).role === 'assistant') {
-                pushAssistantVariant(row as any);
-                continue;
-            }
-
-            orderedMessages.push({
-                id: (row as any).id,
-                role: (row as any).role,
-                content: (row as any).content,
-                metadata: (row as any).metadata,
-                tokens: (row as any).tokens,
-                created_at: (row as any).created_at,
-            });
+            return NextResponse.json(
+                { error: 'Profile not found' },
+                { status: 404 }
+            );
         }
 
-        for (const entry of assistantMap.values()) {
-            entry.variants.sort((a: any, b: any) => (a.variant_index ?? 0) - (b.variant_index ?? 0));
-            if (entry.variants.length === 0) {
-                continue;
+        // Fetch chat session detail from agentapi
+        try {
+            const data = await agentAPIService.getChatSession(sessionId, profile.id);
+            
+            // Transform the response to match the expected format
+            // The agentapi returns { session, messages }
+            // We need to ensure messages have the right structure
+            return NextResponse.json({
+                session: data.session,
+                messages: data.messages,
+            });
+        } catch (serviceError) {
+            logger.error('AgentAPI service error', serviceError, {
+                route: '/api/history/[sessionId]',
+                sessionId,
+                userId: profile.id,
+            });
+
+            // Check if it's a 404 (session not found)
+            if (serviceError instanceof Error && serviceError.message.includes('404')) {
+                return NextResponse.json(
+                    { error: 'Session not found' },
+                    { status: 404 }
+                );
             }
 
-            if (entry.activeVariantIndex < 0 || entry.activeVariantIndex >= entry.variants.length) {
-                entry.activeVariantIndex = 0;
-            }
-
-            const activeVariant = entry.variants[entry.activeVariantIndex] ?? entry.variants[0];
-            entry.content = activeVariant?.content ?? null;
-            entry.metadata = activeVariant?.metadata ?? null;
-            entry.tokens = activeVariant?.tokens ?? null;
+            return NextResponse.json(
+                {
+                    error: 'Failed to fetch chat session',
+                    details: serviceError instanceof Error ? serviceError.message : 'Unknown error',
+                },
+                { status: 500 }
+            );
         }
-
-        return NextResponse.json({
-            session,
-            messages: orderedMessages,
-        });
     } catch (error) {
         logger.error('Error fetching chat session', error, {
             route: '/api/history/[sessionId]',
-            sessionId: params.sessionId,
+            sessionId,
         });
         return NextResponse.json(
             {

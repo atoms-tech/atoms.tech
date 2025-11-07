@@ -7,18 +7,18 @@ declare module '@trpc/client' {
 declare module '@trpc/react-query' {
   type TRPCClientOptions = Record<string, unknown>;
 
-  type TRPCReactProviderProps<TRouter = unknown> = PropsWithChildren<{
+  type TRPCReactProviderProps<_TRouter = unknown> = PropsWithChildren<{
     client: unknown;
     queryClient?: unknown;
   }>;
 
-  interface TRPCReactInstance<TRouter = unknown> {
-    Provider: ComponentType<TRPCReactProviderProps<TRouter>>;
+    interface TRPCReactInstance<_TRouter = unknown> {
+      Provider: ComponentType<TRPCReactProviderProps<_TRouter>>;
     createClient: (options: TRPCClientOptions) => unknown;
     useContext: () => unknown;
   }
 
-  export function createTRPCReact<TRouter = unknown>(): TRPCReactInstance<TRouter>;
+    export function createTRPCReact<_TRouter = unknown>(): TRPCReactInstance<_TRouter>;
 }
 
 declare module 'superjson' {

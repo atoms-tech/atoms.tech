@@ -45,17 +45,30 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
         return !!data;
     }
 
-    async addAdmin(workosUserId: string, email: string, name?: string, addedBy?: string): Promise<PlatformAdmin> {
+    async addAdmin(workosUserId: string, email: string, name?: string, addedByWorkosId?: string): Promise<PlatformAdmin> {
         const client = this.getClient();
         if (!client) {
             throw new Error('Supabase service role client unavailable');
+        }
+
+        // If addedBy is provided, look up their platform_admin UUID
+        let addedByUuid: string | null = null;
+        if (addedByWorkosId) {
+            const { data: addedByAdmin } = await client
+                .from('platform_admins')
+                .select('id')
+                .eq('workos_user_id', addedByWorkosId)
+                .eq('is_active', true)
+                .maybeSingle();
+
+            addedByUuid = addedByAdmin?.id || null;
         }
 
         const insertData: PlatformAdminInsert = {
             workos_user_id: workosUserId,
             email,
             name: name || null,
-            added_by: addedBy || null,
+            added_by: addedByUuid,
             is_active: true,
         };
 
@@ -70,9 +83,9 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
             throw new Error(`Failed to add platform admin: ${error.message}`);
         }
 
-        // Log audit event
-        if (addedBy) {
-            await this.logAuditEvent(addedBy, 'added_admin', undefined, workosUserId, {
+        // Log audit event using the UUID we just created
+        if (addedByUuid) {
+            await this.logAuditEvent(addedByUuid, 'added_admin', undefined, workosUserId, {
                 email,
                 name: name || null,
             });
@@ -81,7 +94,7 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
         return data as PlatformAdmin;
     }
 
-    async removeAdmin(email: string, removedBy: string): Promise<void> {
+    async removeAdmin(email: string, removedByWorkosId: string): Promise<void> {
         const client = this.getClient();
         if (!client) {
             throw new Error('Supabase service role client unavailable');
@@ -104,6 +117,14 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
             throw new Error('Admin not found');
         }
 
+        // Look up the UUID of the admin who is removing
+        const { data: removedByAdmin } = await client
+            .from('platform_admins')
+            .select('id')
+            .eq('workos_user_id', removedByWorkosId)
+            .eq('is_active', true)
+            .maybeSingle();
+
         // Deactivate the admin
         const { error } = await client
             .from('platform_admins')
@@ -115,10 +136,12 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
             throw new Error(`Failed to remove platform admin: ${error.message}`);
         }
 
-        // Log audit event
-        await this.logAuditEvent(removedBy, 'removed_admin', undefined, adminToRemove.workos_user_id || undefined, {
-            email,
-        });
+        // Log audit event using the UUID (only if we found the admin)
+        if (removedByAdmin?.id) {
+            await this.logAuditEvent(removedByAdmin.id, 'removed_admin', undefined, adminToRemove.workos_user_id || undefined, {
+                email,
+            });
+        }
     }
 
     async listAdmins(): Promise<PlatformAdmin[]> {
@@ -148,25 +171,30 @@ export class PlatformAdminServiceImpl implements PlatformAdminService {
         targetUserId?: string,
         details?: Record<string, unknown>
     ): Promise<void> {
-        const client = this.getClient();
-        if (!client) {
-            console.warn('Supabase service role client unavailable - cannot log audit event');
-            return;
-        }
+        try {
+            const client = this.getClient();
+            if (!client) {
+                console.warn('Supabase service role client unavailable - cannot log audit event');
+                return;
+            }
 
-        const payload: AdminAuditLogInsert = {
-            admin_id: adminId,
-            action,
-            target_org_id: targetOrgId || null,
-            target_user_id: targetUserId || null,
-            details: (details ?? null) as Json | null,
-        };
+            const payload: AdminAuditLogInsert = {
+                admin_id: adminId,
+                action,
+                target_org_id: targetOrgId || null,
+                target_user_id: targetUserId || null,
+                details: (details ?? null) as Json | null,
+            };
 
-        const { error } = await client.from('admin_audit_log').insert(payload);
+            const { error } = await client.from('admin_audit_log').insert(payload);
 
-        if (error) {
-            console.error('Failed to log audit event:', error);
-            // Don't throw here as audit logging is not critical
+            if (error) {
+                console.error('Failed to log audit event:', error);
+                // Don't throw here as audit logging is not critical
+            }
+        } catch (err) {
+            // Catch any unexpected errors to prevent audit logging from breaking the main flow
+            console.error('Unexpected error logging audit event:', err);
         }
     }
 }

@@ -4,6 +4,7 @@ import { withAuth } from '@workos-inc/authkit-nextjs';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { createServerClient } from '@/lib/database';
+import type { Database } from '@/types/base/database.types';
 import { logger } from '@/lib/utils/logger';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,9 @@ export const dynamic = 'force-dynamic';
  * - organization_id: filter by organization (for organization scope)
  * - include_public: include public system prompts
  */
+type SystemPromptRow = Database['public']['Tables']['system_prompts']['Row'];
+type SystemPromptInsert = Database['public']['Tables']['system_prompts']['Insert'];
+
 export async function GET(request: NextRequest) {
     try {
         const { user } = await withAuth();
@@ -110,12 +114,12 @@ export async function GET(request: NextRequest) {
             ]);
 
             // Combine and deduplicate
-            const allPrompts: { id: string; name: string }[] = [];
+              const allPrompts: SystemPromptRow[] = [];
             const seenIds = new Set<string>();
 
             // Process user prompts
-            if (userPrompts.data) {
-                userPrompts.data.forEach((prompt: { id: string; name: string }) => {
+              if (userPrompts.data) {
+                  userPrompts.data.forEach((prompt) => {
                     if (!seenIds.has(prompt.id)) {
                         allPrompts.push(prompt);
                         seenIds.add(prompt.id);
@@ -125,10 +129,10 @@ export async function GET(request: NextRequest) {
 
             // Process organization prompts (RLS filters by membership)
             if (orgPrompts.data) {
-                orgPrompts.data.forEach((prompt: { id: string; name: string }) => {
+                  orgPrompts.data.forEach((prompt) => {
                     if (!seenIds.has(prompt.id)) {
                         // Only include prompts from organizations the user is a member of
-                        if (prompt.organization_id && userOrgIds.has(prompt.organization_id)) {
+                          if (prompt.organization_id && userOrgIds.has(prompt.organization_id)) {
                             allPrompts.push(prompt);
                             seenIds.add(prompt.id);
                         }
@@ -138,11 +142,11 @@ export async function GET(request: NextRequest) {
 
             // Process system prompts
             if (systemPrompts.data) {
-                systemPrompts.data.forEach((prompt: { id: string; name: string }) => {
+                  systemPrompts.data.forEach((prompt) => {
                     if (!seenIds.has(prompt.id)) {
                         // Additional check: if not admin, only include public prompts
                         if (prompt.scope === 'system') {
-                            if (isPlatformAdmin || prompt.is_public) {
+                              if (isPlatformAdmin || prompt.is_public) {
                                 allPrompts.push(prompt);
                                 seenIds.add(prompt.id);
                             }
@@ -166,9 +170,9 @@ export async function GET(request: NextRequest) {
             }
 
             // Sort by created_at desc
-            allPrompts.sort((a, b) => {
-                const dateA = new Date(a.created_at || 0).getTime();
-                const dateB = new Date(b.created_at || 0).getTime();
+              allPrompts.sort((a, b) => {
+                  const dateA = new Date(a.created_at ?? 0).getTime();
+                  const dateB = new Date(b.created_at ?? 0).getTime();
                 return dateB - dateA;
             });
 
@@ -283,23 +287,25 @@ export async function POST(request: NextRequest) {
         }
 
         // Prepare insert data
-        const insertData: Record<string, unknown> = {
-            name,
-            description,
-            content,
-            scope,
-            tags: tags || [],
-            is_default: is_default || false,
-            is_public: scope === 'system' ? is_public || false : false,
-            created_by: profile.id,
-            updated_by: profile.id,
-        };
+          const insertData: SystemPromptInsert = {
+              name,
+              description: description ?? null,
+              content,
+              scope,
+              tags: tags ?? [],
+              is_default: is_default ?? false,
+              is_public: scope === 'system' ? Boolean(is_public) : false,
+              created_by: profile.id,
+              updated_by: profile.id,
+              enabled: true,
+              priority: 0,
+          };
 
         // Add scope-specific fields
         if (scope === 'user') {
-            insertData.user_id = profile.id;
+              insertData.user_id = profile.id;
         } else if (scope === 'organization') {
-            insertData.organization_id = organization_id;
+              insertData.organization_id = organization_id;
         }
 
         // If setting as default, unset other defaults in the same scope

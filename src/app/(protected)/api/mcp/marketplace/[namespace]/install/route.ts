@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server';
 import { withAuth } from '@workos-inc/authkit-nextjs';
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getServiceRoleClient } from '@/lib/database';
+import type { Database } from '@/types/base/database.types';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,6 +31,9 @@ interface InstallRequest {
     env?: Record<string, string>;
   };
 }
+
+type MCPServerInsert = Database['public']['Tables']['mcp_servers']['Insert'];
+type UserMcpServerInsert = Database['public']['Tables']['user_mcp_servers']['Insert'];
 
 export async function POST(
   request: Request,
@@ -128,8 +132,30 @@ export async function POST(
       );
     }
 
-    // Get transport info
-    const transport = server.packages?.[0]?.transport || server.transport || { type: 'stdio' };
+    // Get transport info - support both old and new registry formats
+    // New format uses remotes[], old format uses packages[].transport
+    let transport: any;
+    let serverUrl: string | null = null;
+
+    if (server.remotes && Array.isArray(server.remotes) && server.remotes.length > 0) {
+        // New registry format with remotes
+        const remote = server.remotes[0];
+        const remoteType = remote.type;
+        serverUrl = remote.url || null;
+
+        // Map remote type to transport type
+        if (remoteType === 'streamable-http' || remoteType === 'http') {
+            transport = { type: 'http' };
+        } else if (remoteType === 'sse') {
+            transport = { type: 'sse' };
+        } else {
+            transport = { type: 'stdio' };
+        }
+    } else {
+        // Old format with packages
+        transport = server.packages?.[0]?.transport ?? server.transport ?? { type: 'stdio' };
+        serverUrl = (transport as any).url || null;
+    }
 
     // Use service role client for admin operations
     const supabase = getServiceRoleClient();
@@ -168,67 +194,91 @@ export async function POST(
       );
     }
 
-    // Normalize auth_type: database only allows 'oauth' or 'bearer'
-    // Default to 'bearer' for servers without auth (most flexible)
-    const normalizeAuthType = (authType: string | undefined | null): string => {
-      if (!authType || authType === 'none') return 'bearer';
-      if (authType === 'oauth') return 'oauth';
-      if (authType === 'api_key' || authType === 'bearer') return 'bearer';
-      return 'bearer'; // Default to 'bearer' for unknown types
-    };
+    // Normalize auth_type: database allows 'oauth', 'bearer', 'none', or 'api_key'
+    // Default to 'none' for servers without auth
+      const normalizeAuthType = (authType: string | undefined | null): string => {
+        if (!authType || authType === 'none') return 'none';
+        if (authType === 'oauth') return 'oauth';
+        if (authType === 'api_key' || authType === 'bearer') return 'bearer';
+        return 'none';
+      };
 
     // First, ensure the server exists in mcp_servers table
     // Note: We need to set scope='user' and user_id to satisfy the valid_scope constraint
-    // Source: 'registry' for MCP registry servers (now allowed after constraint update)
+    // Source: 'anthropic' for MCP registry servers
     // Tier: 'community' for marketplace servers (user risk)
-    const serverUpsertPayload: Record<string, unknown> = {
-      namespace: decodedNamespace,
-      name: server.name,
-      description: server.description || '',
-      version: server.version || '1.0.0',
-      transport_type: transport.type || 'stdio',
-      transport: transport || { type: 'stdio' }, // JSONB object, not string
-      source: 'registry',
-      tier: 'community',
-      enabled: true,
-      url: server.repository || server.homepage || `https://github.com/${decodedNamespace}`,
-      auth_type: normalizeAuthType(server.auth?.type),
-      repository_url: server.repository || null,
-      homepage_url: server.homepage || null,
-      documentation_url: server.documentation || null,
-      license: server.license || null,
-      tags: server.tags || [],
-      category: server.category || null,
-      scope: 'user',
-      user_id: userId,
-      organization_id: null,
-      project_id: null,
+    const transportObject: Record<string, unknown> =
+        typeof transport === 'object' && transport !== null ? { ...transport } : { type: 'stdio' };
+
+    const normalizeTransportType = (value: unknown): 'stdio' | 'sse' | 'http' => {
+        if (value === 'sse' || value === 'http') {
+            return value;
+        }
+
+        return 'stdio';
+    };
+
+    // Normalize transport to string (database expects 'stdio', 'sse', or 'http')
+    const normalizeTransport = (type: unknown): string => {
+        if (type === 'http') return 'http';
+        if (type === 'sse') return 'sse';
+        return 'stdio'; // Default for stdio
+    };
+
+    let serverUpsertPayload: MCPServerInsert = {
+        namespace: decodedNamespace,
+        name: server.name,
+        description: server.description ?? null,
+        version: server.version ?? '1.0.0',
+        transport_type: normalizeTransportType(transportObject.type),
+        transport: transportObject, // Store full transport object, not just type
+        url: serverUrl || server.repository || server.homepage || `https://github.com/${decodedNamespace}`, // Actual MCP endpoint or repository
+        source: 'anthropic',
+        tier: 'community',
+        enabled: true,
+        auth_type: normalizeAuthType(server.auth?.type),
+        repository_url: server.repository ?? null,
+        homepage_url: server.homepage ?? null,
+        documentation_url: server.documentation ?? null,
+        license: server.license ?? null,
+        tags: Array.isArray(server.tags) ? server.tags : [],
+        category: server.category ?? null,
+        scope: 'user',
+        user_id: userId,
+        organization_id: null,
+        // Store transport config if it's stdio
+        transport_config: transportObject.type === 'stdio' ? {
+            command: transportObject.command,
+            args: transportObject.args,
+        } : null,
     };
 
     const upsertServer = async () =>
-      supabase
-        .from('mcp_servers')
-        .upsert(serverUpsertPayload as Record<string, unknown>, {
-          onConflict: 'namespace',
-          ignoreDuplicates: false,
-        })
-        .select('id')
-        .single();
+        supabase
+            .from('mcp_servers')
+            .upsert(serverUpsertPayload, {
+                onConflict: 'namespace',
+                ignoreDuplicates: false,
+            })
+            .select('id')
+            .single();
 
     let { data: mcpServer, error: mcpServerError } = await upsertServer();
 
-    const retryIfMissing = async (column: string, key: string) => {
-      if (mcpServerError && String(mcpServerError.message ?? '').includes(column)) {
-        delete serverUpsertPayload[key];
-        ({ data: mcpServer, error: mcpServerError } = await upsertServer());
-      }
+    const retryIfMissing = async <K extends keyof MCPServerInsert>(column: string, key: K) => {
+        if (mcpServerError && String(mcpServerError.message ?? '').includes(column)) {
+            serverUpsertPayload = {
+                ...serverUpsertPayload,
+                [key]: undefined as MCPServerInsert[K],
+            };
+            ({ data: mcpServer, error: mcpServerError } = await upsertServer());
+        }
     };
 
     await retryIfMissing("'project_id'", 'project_id');
     await retryIfMissing("'tier'", 'tier');
     await retryIfMissing("'transport_type'", 'transport_type');
     await retryIfMissing("'transport'", 'transport');
-    await retryIfMissing("'source'", 'source');
 
     if (mcpServerError || !mcpServer) {
       console.error('Error upserting MCP server:', mcpServerError);
@@ -245,22 +295,43 @@ export async function POST(
       );
     }
 
-    // Now create the user_mcp_servers junction record
-    const { data: installedServer, error: insertError } = await supabase
-      .from('user_mcp_servers')
-      .insert({
+    const targetScope = scope ?? 'user';
+    const userServerPayload: UserMcpServerInsert = {
         user_id: userId,
         server_id: mcpServer.id,
         enabled: config?.enabled !== false,
-        scope: scope || 'user',
-        config: config || {},
-        organization_id: scope === 'organization' ? organizationId : null,
-      } as { id: string; [key: string]: unknown })
-      .select()
-      .single();
+        custom_config: config ?? {},
+        organization_id: targetScope === 'organization' ? organizationId ?? null : null,
+    };
+
+    // Now create the user_mcp_servers junction record
+    const { data: installedServer, error: insertError } = await supabase
+        .from('user_mcp_servers')
+        .insert(userServerPayload)
+        .select()
+        .single();
 
     if (insertError) {
       console.error('Error installing server:', insertError);
+
+      if ((insertError as { code?: string })?.code === '23505') {
+        const { data: existingServer } = await supabase
+          .from('user_mcp_servers')
+          .select()
+          .eq('user_id', userId)
+          .eq('server_id', mcpServer.id)
+          .maybeSingle();
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            server: existingServer ?? null,
+            message: 'Server was already installed',
+            alreadyInstalled: true,
+          },
+        });
+      }
+
       return NextResponse.json(
         {
           success: false,

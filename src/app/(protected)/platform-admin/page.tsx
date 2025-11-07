@@ -1,6 +1,16 @@
 'use client';
 
-import { Shield, Users, Settings, Database, Plus, Trash2, RefreshCw, FileText, RefreshCcw } from 'lucide-react';
+import {
+    Database,
+    FileText,
+    Plus,
+    RefreshCcw,
+    RefreshCw,
+    Settings,
+    Shield,
+    Trash2,
+    Users,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +49,11 @@ interface PlatformAdmin {
 }
 
 export default function PlatformAdminPage() {
-    const { isPlatformAdmin, isLoading: adminLoading, error: adminError } = usePlatformAdmin();
+    const {
+        isPlatformAdmin,
+        isLoading: adminLoading,
+        error: adminError,
+    } = usePlatformAdmin();
     const [admins, setAdmins] = useState<PlatformAdmin[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -48,6 +62,10 @@ export default function PlatformAdminPage() {
     const [newAdminEmail, setNewAdminEmail] = useState('');
     const [newAdminName, setNewAdminName] = useState('');
     const [newAdminWorkosId, setNewAdminWorkosId] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<any>(null);
 
     // Define fetchAdmins before useEffect
     const fetchAdmins = useCallback(async () => {
@@ -96,28 +114,77 @@ export default function PlatformAdminPage() {
         );
     }
 
-    const addAdmin = async () => {
-        if (!newAdminEmail || !newAdminWorkosId) {
-            setError('Email and WorkOS User ID are required');
+    // Search for users
+    const searchUsers = useCallback(async (query: string) => {
+        if (query.length < 2) {
+            setSearchResults([]);
             return;
         }
 
         try {
-            const response = await fetch('/api/platform/admin/add', {
+            setIsSearching(true);
+            const response = await fetch(
+                `/api/platform/admin/search-users?q=${encodeURIComponent(query)}`,
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to search users');
+            }
+
+            const data = await response.json();
+            setSearchResults(data.users || []);
+        } catch (err) {
+            console.error('Error searching users:', err);
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    }, []);
+
+    // Debounced search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery) {
+                void searchUsers(searchQuery);
+            } else {
+                setSearchResults([]);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, searchUsers]);
+
+    const selectUser = (user: any) => {
+        setSelectedUser(user);
+        setNewAdminEmail(user.email);
+        setNewAdminName(user.name || '');
+        setNewAdminWorkosId(user.workosUserId || '');
+        setSearchQuery('');
+        setSearchResults([]);
+    };
+
+    const addAdmin = async () => {
+        if (!newAdminEmail) {
+            setError('Email is required');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/platform/admin/add-by-email', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    workosUserId: newAdminWorkosId,
                     email: newAdminEmail,
-                    name: newAdminName || null,
                 }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.details || 'Failed to add admin');
+                throw new Error(
+                    errorData.error || errorData.message || 'Failed to add admin',
+                );
             }
 
             // Reset form and close dialog
@@ -125,7 +192,10 @@ export default function PlatformAdminPage() {
             setNewAdminName('');
             setNewAdminWorkosId('');
             setIsAddDialogOpen(false);
-            
+            setSearchQuery('');
+            setSearchResults([]);
+            setSelectedUser(null);
+
             // Refresh admin list
             await fetchAdmins();
         } catch (err) {
@@ -140,9 +210,12 @@ export default function PlatformAdminPage() {
         }
 
         try {
-            const response = await fetch(`/api/platform/admin/remove?email=${encodeURIComponent(email)}`, {
-                method: 'DELETE',
-            });
+            const response = await fetch(
+                `/api/platform/admin/remove?email=${encodeURIComponent(email)}`,
+                {
+                    method: 'DELETE',
+                },
+            );
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -205,7 +278,9 @@ export default function PlatformAdminPage() {
                         <CardContent className="flex flex-col items-center justify-center py-12">
                             <Shield className="h-12 w-12 text-destructive mb-4" />
                             <h2 className="text-2xl font-bold mb-2">Error</h2>
-                            <p className="text-muted-foreground text-center">{adminError}</p>
+                            <p className="text-muted-foreground text-center">
+                                {adminError}
+                            </p>
                         </CardContent>
                     </Card>
                 </div>
@@ -233,7 +308,9 @@ export default function PlatformAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Platform Admins</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                Platform Admins
+                            </CardTitle>
                             <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
@@ -246,11 +323,15 @@ export default function PlatformAdminPage() {
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                System Status
+                            </CardTitle>
                             <Database className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold text-green-600">Online</div>
+                            <div className="text-2xl font-bold text-green-600">
+                                Online
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 All systems operational
                             </p>
@@ -259,7 +340,9 @@ export default function PlatformAdminPage() {
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Admin Features</CardTitle>
+                            <CardTitle className="text-sm font-medium">
+                                Admin Features
+                            </CardTitle>
                             <Settings className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
@@ -275,61 +358,148 @@ export default function PlatformAdminPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle className="text-xl">Platform Administrators</CardTitle>
+                            <CardTitle className="text-xl">
+                                Platform Administrators
+                            </CardTitle>
                             <CardDescription>
                                 Manage users with platform-wide administrative privileges
                             </CardDescription>
                         </div>
                         <div className="flex gap-2">
-                            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                            <Dialog
+                                open={isAddDialogOpen}
+                                onOpenChange={setIsAddDialogOpen}
+                            >
                                 <DialogTrigger asChild>
                                     <Button>
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Admin
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent>
+                                <DialogContent className="max-w-2xl">
                                     <DialogHeader>
                                         <DialogTitle>Add Platform Admin</DialogTitle>
                                         <DialogDescription>
-                                            Add a new user as a platform administrator.
+                                            Search for a user by email or name, then add
+                                            them as a platform administrator.
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="space-y-4">
+                                        {/* Search Box */}
+                                        <div>
+                                            <Label htmlFor="search">Search Users</Label>
+                                            <Input
+                                                id="search"
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) =>
+                                                    setSearchQuery(e.target.value)
+                                                }
+                                                placeholder="Search by email or name..."
+                                                className="mb-2"
+                                            />
+                                            {isSearching && (
+                                                <p className="text-sm text-muted-foreground">
+                                                    Searching...
+                                                </p>
+                                            )}
+                                            {searchResults.length > 0 && (
+                                                <div className="border rounded-md max-h-60 overflow-y-auto">
+                                                    {searchResults.map((user) => (
+                                                        <button
+                                                            key={user.id}
+                                                            onClick={() =>
+                                                                selectUser(user)
+                                                            }
+                                                            className="w-full text-left px-4 py-3 hover:bg-accent border-b last:border-b-0 transition-colors"
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <p className="font-medium">
+                                                                        {user.email}
+                                                                    </p>
+                                                                    {user.name && (
+                                                                        <p className="text-sm text-muted-foreground">
+                                                                            {user.name}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                {user.isAdmin && (
+                                                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                                                                        Already Admin
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {searchQuery.length >= 2 &&
+                                                !isSearching &&
+                                                searchResults.length === 0 && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        No users found
+                                                    </p>
+                                                )}
+                                        </div>
+
+                                        {/* Selected User / Manual Entry */}
+                                        {selectedUser && (
+                                            <div className="p-4 bg-accent rounded-md">
+                                                <p className="text-sm font-medium mb-1">
+                                                    Selected User:
+                                                </p>
+                                                <p className="font-medium">
+                                                    {selectedUser.email}
+                                                </p>
+                                                {selectedUser.name && (
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {selectedUser.name}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <div>
                                             <Label htmlFor="email">Email Address</Label>
                                             <Input
                                                 id="email"
                                                 type="email"
                                                 value={newAdminEmail}
-                                                onChange={(e) => setNewAdminEmail(e.target.value)}
+                                                onChange={(e) =>
+                                                    setNewAdminEmail(e.target.value)
+                                                }
                                                 placeholder="admin@example.com"
+                                                disabled={!!selectedUser}
                                             />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="name">Full Name (Optional)</Label>
-                                            <Input
-                                                id="name"
-                                                value={newAdminName}
-                                                onChange={(e) => setNewAdminName(e.target.value)}
-                                                placeholder="John Doe"
-                                            />
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="workosId">WorkOS User ID</Label>
-                                            <Input
-                                                id="workosId"
-                                                value={newAdminWorkosId}
-                                                onChange={(e) => setNewAdminWorkosId(e.target.value)}
-                                                placeholder="user_01ABC123..."
-                                            />
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {selectedUser
+                                                    ? 'Selected from search'
+                                                    : 'Or enter email manually'}
+                                            </p>
                                         </div>
                                     </div>
                                     <DialogFooter>
-                                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => {
+                                                setIsAddDialogOpen(false);
+                                                setSearchQuery('');
+                                                setSearchResults([]);
+                                                setSelectedUser(null);
+                                                setNewAdminEmail('');
+                                                setNewAdminName('');
+                                                setNewAdminWorkosId('');
+                                            }}
+                                        >
                                             Cancel
                                         </Button>
-                                        <Button onClick={addAdmin}>Add Admin</Button>
+                                        <Button
+                                            onClick={addAdmin}
+                                            disabled={!newAdminEmail}
+                                        >
+                                            Add Admin
+                                        </Button>
                                     </DialogFooter>
                                 </DialogContent>
                             </Dialog>
@@ -378,12 +548,18 @@ export default function PlatformAdminPage() {
                                                     {admin.email}
                                                 </div>
                                                 <div className="text-xs text-muted-foreground">
-                                                    Added: {new Date(admin.added_at).toLocaleDateString()}
+                                                    Added:{' '}
+                                                    {new Date(
+                                                        admin.added_at,
+                                                    ).toLocaleDateString()}
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="bg-green-50 text-green-700">
+                                            <Badge
+                                                variant="outline"
+                                                className="bg-green-50 text-green-700"
+                                            >
                                                 Active
                                             </Badge>
                                             <Button
@@ -401,7 +577,9 @@ export default function PlatformAdminPage() {
                         ) : (
                             <div className="text-center py-8">
                                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                <h3 className="text-lg font-medium mb-2">No platform admins found</h3>
+                                <h3 className="text-lg font-medium mb-2">
+                                    No platform admins found
+                                </h3>
                                 <p className="text-muted-foreground">
                                     Add administrators to manage the platform.
                                 </p>
@@ -420,23 +598,88 @@ export default function PlatformAdminPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <Button variant="outline" className="h-20 flex flex-col gap-2" asChild>
-                                <a href="/admin">
+                            <Button
+                                variant="outline"
+                                className="h-20 flex flex-col gap-2"
+                                asChild
+                            >
+                                <a href="/platform-admin/users">
                                     <Users className="h-6 w-6" />
                                     <span>User Management</span>
                                 </a>
                             </Button>
-                            <Button variant="outline" className="h-20 flex flex-col gap-2" asChild>
+                            <Button
+                                variant="outline"
+                                className="h-20 flex flex-col gap-2"
+                                asChild
+                            >
                                 <a href="/platform-admin/system-prompts">
                                     <FileText className="h-6 w-6" />
                                     <span>System Prompts</span>
                                 </a>
                             </Button>
-                            <Button variant="outline" className="h-20 flex flex-col gap-2" asChild>
+                            <Button
+                                variant="outline"
+                                className="h-20 flex flex-col gap-2"
+                                asChild
+                            >
                                 <a href="/platform-admin/mcp-management">
                                     <Settings className="h-6 w-6" />
                                     <span>MCP Management</span>
                                 </a>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Maintenance Operations */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Maintenance Operations</CardTitle>
+                        <CardDescription>
+                            Run maintenance tasks and cleanup operations
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div>
+                                <h3 className="font-medium">Clean Up MCP Servers</h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Remove misconfigured servers (invalid URLs, GitHub repos, missing URLs)
+                                </p>
+                            </div>
+                            <Button
+                                variant="outline"
+                                onClick={async () => {
+                                    if (confirm('Run cleanup in dry-run mode to see what would be deleted?')) {
+                                        try {
+                                            const response = await fetch('/api/platform/admin/cleanup-mcp-servers', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ dryRun: true }),
+                                            });
+                                            const data = await response.json();
+                                            alert(`Dry run completed:\n\nTotal servers: ${data.summary.total}\nWould delete: ${data.summary.skipped}\n\nCheck browser console for full details.`);
+                                            console.log('Cleanup dry run results:', data);
+
+                                            if (data.summary.skipped > 0 && confirm(`Found ${data.summary.skipped} misconfigured servers. Run actual cleanup now?`)) {
+                                                const cleanupResponse = await fetch('/api/platform/admin/cleanup-mcp-servers', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ dryRun: false }),
+                                                });
+                                                const cleanupData = await cleanupResponse.json();
+                                                alert(`Cleanup completed:\n\nDeleted: ${cleanupData.summary.deleted}\nSkipped: ${cleanupData.summary.skipped}`);
+                                                console.log('Cleanup results:', cleanupData);
+                                            }
+                                        } catch (error) {
+                                            alert('Failed to run cleanup');
+                                            console.error(error);
+                                        }
+                                    }
+                                }}
+                            >
+                                Run Cleanup
                             </Button>
                         </div>
                     </CardContent>

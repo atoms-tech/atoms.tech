@@ -128,22 +128,50 @@ export function MCPProfiles({ compact = false }: MCPProfilesProps) {
         setShowCreateDialog(true);
     };
 
-    const toggleServerSelection = (server: InstalledServer) => {
+    const toggleServerSelection = async (server: InstalledServer) => {
         const existing = selectedServers.find(s => s.serverId === server.id);
 
         if (existing) {
             // Remove server
             setSelectedServers(prev => prev.filter(s => s.serverId !== server.id));
         } else {
-            // Add server with all tools enabled by default
-            // TODO: Fetch actual tools from server
-            setSelectedServers(prev => [...prev, {
-                serverId: server.id,
-                serverName: server.name,
-                namespace: server.namespace,
-                enabled: true,
-                tools: [], // Will be populated when we fetch server details
-            }]);
+            // Add server and fetch its tools
+            try {
+                const response = await fetch(`/api/mcp/servers/${server.id}/tools`);
+                let tools: MCPTool[] = [];
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Convert tool names to MCPTool objects with all tools enabled by default
+                    if (data.toolDetails && Array.isArray(data.toolDetails)) {
+                        tools = data.toolDetails.map((tool: any) => ({
+                            name: tool.name,
+                            description: tool.description,
+                            enabled: true,
+                        }));
+                    }
+                } else {
+                    console.warn(`Failed to fetch tools for server ${server.id}`);
+                }
+
+                setSelectedServers(prev => [...prev, {
+                    serverId: server.id,
+                    serverName: server.name,
+                    namespace: server.namespace,
+                    enabled: true,
+                    tools,
+                }]);
+            } catch (error) {
+                console.error('Error fetching server tools:', error);
+                // Add server without tools on error
+                setSelectedServers(prev => [...prev, {
+                    serverId: server.id,
+                    serverName: server.name,
+                    namespace: server.namespace,
+                    enabled: true,
+                    tools: [],
+                }]);
+            }
         }
     };
 

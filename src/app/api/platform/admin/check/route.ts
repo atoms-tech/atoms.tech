@@ -16,6 +16,16 @@ export async function GET(_request: NextRequest) {
     try {
         const { user, organizationId, role } = await withAuth();
 
+        logger.info('Platform admin check - withAuth result', {
+            route: '/api/platform/admin/check',
+            hasUser: !!user,
+            userId: user?.id,
+            email: user?.email,
+            organizationId,
+            role,
+            expectedOrgId: PLATFORM_ADMIN_ORG_ID,
+        });
+
         if (!user) {
             return NextResponse.json({ isPlatformAdmin: false }, { status: 200 });
         }
@@ -24,8 +34,24 @@ export async function GET(_request: NextRequest) {
         // Accept both 'admin' and 'member' roles in the platform admin org
         const isInPlatformAdminOrg = organizationId === PLATFORM_ADMIN_ORG_ID && (role === 'admin' || role === 'member');
 
+        logger.info('Platform admin check - org comparison', {
+            route: '/api/platform/admin/check',
+            organizationId,
+            PLATFORM_ADMIN_ORG_ID,
+            orgMatches: organizationId === PLATFORM_ADMIN_ORG_ID,
+            role,
+            roleMatches: role === 'admin' || role === 'member',
+            isInPlatformAdminOrg,
+        });
+
         // Check database status
         const isInDatabase = await platformAdminService.isPlatformAdmin(user.id);
+
+        logger.info('Platform admin check - database result', {
+            route: '/api/platform/admin/check',
+            userId: user.id,
+            isInDatabase,
+        });
 
         // If user is in WorkOS org but not in database, auto-sync them
         if (isInPlatformAdminOrg && !isInDatabase) {
@@ -55,6 +81,16 @@ export async function GET(_request: NextRequest) {
 
         // User is platform admin if they're in the WorkOS org OR in the database
         const isPlatformAdmin = isInPlatformAdminOrg || isInDatabase;
+
+        logger.info('Platform admin check - final result', {
+            route: '/api/platform/admin/check',
+            isPlatformAdmin,
+            isInPlatformAdminOrg,
+            isInDatabase,
+            workosUserId: user.id,
+            organizationId,
+            role,
+        });
 
         return NextResponse.json({
             isPlatformAdmin,
