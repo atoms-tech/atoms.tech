@@ -754,7 +754,9 @@ export const TableBlock: React.FC<BlockProps> = ({
                     projectId={projectId}
                     documentId={params.documentId as string}
                 />
-                <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0">
+                <div
+                    className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300 min-w-0"
+                >
                     {isGenericTable ? (
                         <GenericTableBlockContent
                             blockId={block.id}
@@ -765,7 +767,8 @@ export const TableBlock: React.FC<BlockProps> = ({
                                     .filter((col) => {
                                         if (!col.property) return false;
                                         const prop = col.property as Property;
-                                        return !prop.is_base; // hide organization base properties in generic tables
+                                        // hide organization base properties in generic tables
+                                        return !prop.is_base;
                                     })
                                     .map((col, index) => {
                                         const _property = col.property as Property;
