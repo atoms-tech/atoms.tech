@@ -818,13 +818,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 return updated;
             });
 
-            // force grid to recalculate row heights after column resize
-            // ensures text wrapping adjusts properly to new column width
+            // Force grid to recalculate row heights after column resize
+            // Ensures text wrapping adjusts properly to new column width
+            // Triggers dynamic reflow of wrapped text with unlimited wrapping
             setTimeout(() => {
                 if (gridRef.current) {
+                    // Update all cells to trigger row height recalculation
                     gridRef.current.updateCells(
                         sortedData.map((_, rowIndex) => ({ cell: [0, rowIndex] })),
                     );
+                    // Force a repaint to ensure smooth animation
+                    gridRef.current.updateCells([]);
                 }
             }, 50);
         },
@@ -871,7 +875,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         (cell: Item): GridCell => {
             const [col, row] = cell;
 
-            // SAFETY CHECK: Ensure column exists
+            // Ensure column exists
             const column = localColumns[col];
             if (!column) {
                 console.warn(`[getCellContent] Column at index ${col} not found`);
@@ -1012,19 +1016,22 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }
                 case 'text':
                 default:
+                    // Row height calculated dynamically to include padding via calculateMinRowHeight
+                    const textValue = value?.toString() ?? '';
                     return {
                         kind: GridCellKind.Text,
                         allowOverlay: isEditMode,
-                        data: value?.toString() ?? '',
-                        displayData: value?.toString() ?? '',
+                        data: textValue,
+                        displayData: textValue,
                         allowWrapping: true,
+                        // Copy as flat single-line text (replace newlines with spaces)
+                        copyData: textValue.replace(/\n/g, ' '),
                     } as TextCell;
             }
         },
         [sortedData, localColumns, isEditMode, peopleNames],
     );
 
-    // Copy support: provide cells for the current selection so Ctrl/Cmd+C works
     const { getCellsForSelection } = useGlideCopy(getCellContent);
 
     const onCellEdited = useCallback(
@@ -1252,13 +1259,13 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 return;
             }
 
-            // 1) Flush any pending edits so they are persisted before we add a new row
+            // Flush any pending edits so they are persisted before we add a new row
             // Do not await metadata save to avoid blocking UI
             saveTableMetadataRef.current?.();
             // Persist buffered cell edits synchronously
             await handleSaveAllRef.current?.();
 
-            // 2) Create the new row at the end (position = max + 1)
+            // Create the new row at the end (position = max + 1)
             const maxPosition = Math.max(0, ...localData.map((d) => d.position ?? 0));
             const newRow = {
                 ...columns.reduce(
@@ -1283,7 +1290,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 });
             }
 
-            // 3) Persist the new row; avoid immediate full refresh to reduce flicker
+            // Persist the new row; avoid immediate full refresh to reduce flicker
             await saveRow(newRow, true);
             // Opportunistically update metadata (non-blocking)
             saveTableMetadataRef.current?.();
@@ -1423,41 +1430,72 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         [],
     );
 
-    // calculate min row height based on text content and column width
+    // Calculate row height dynamically based on text content and column width
+    // Unlimited wrapping - all text is always visible, no line limits
     const calculateMinRowHeight = useCallback(
         (rowData: T, columnWidths: Record<string, number>) => {
-            const baseHeight = 43; // default row height
-            const lineHeight = 16; // approximate height per line of text
-            const padding = 12; // cell padding
-            const maxLines = 3; // max lines to show when wrapping
+            const baseHeight = 43;
+
+            const lineHeight = 16;
+
+            // values are enforced consistently across all cells and resize states
+            const paddingTop = 6;
+            const paddingBottom = 6;
+            const paddingLeft = 8;
+            const paddingRight = 8;
+            const totalVerticalPadding = paddingTop + paddingBottom;
+            const totalHorizontalPadding = paddingLeft + paddingRight;
 
             let maxRequiredHeight = baseHeight;
 
-            // check each column to see if it needs more height for wrapped text
+            // Check each column to calculate required height for wrapped text
             localColumns.forEach((column) => {
+                // Only apply dynamic wrapping to text columns TBD
+                if (column.type !== 'text' && column.type !== undefined) return;
+
                 const value = rowData?.[column.accessor]?.toString() || '';
                 if (value.length === 0) return;
 
                 const columnWidth =
                     columnWidths[column.accessor as string] || column.width || 120;
-                const availableTextWidth = columnWidth - padding;
 
-                // estimate characters per line based on average character width
-                const avgCharWidth = 8; // approximate character width in pixels
+                // Calculate available text width: column width minus horizontal padding
+                // Ensure minimum available width even for very narrow columns
+                const availableTextWidth = Math.max(
+                    columnWidth - totalHorizontalPadding,
+                    20,
+                );
+
+                // Estimate characters per line based on average character width
+                const avgCharWidth = 8;
                 const charsPerLine = Math.floor(availableTextWidth / avgCharWidth);
 
                 if (charsPerLine > 0) {
+                    // Calculate total lines needed - no cap, unlimited wrapping
                     const estimatedLines = Math.ceil(value.length / charsPerLine);
-                    const cappedLines = Math.min(estimatedLines, maxLines);
-                    const requiredHeight = cappedLines * lineHeight + padding;
+                    // Account for existing newlines in the text
+                    const existingNewlines = (value.match(/\n/g) || []).length;
+                    const totalLines = Math.max(estimatedLines, existingNewlines + 1);
+
+                    // Calculate required height with explicit padding:
+                    const textHeight = totalLines * lineHeight;
+                    const requiredHeight = textHeight + totalVerticalPadding;
 
                     if (requiredHeight > maxRequiredHeight) {
                         maxRequiredHeight = requiredHeight;
                     }
+                } else {
+                    // Even with no text or very narrow columns, ensure minimum height with padding
+                    const minHeightWithPadding = lineHeight + totalVerticalPadding;
+                    if (minHeightWithPadding > maxRequiredHeight) {
+                        maxRequiredHeight = minHeightWithPadding;
+                    }
                 }
             });
 
-            return maxRequiredHeight;
+            // Ensure the calculated height is at least the base height
+            // maintains consistency with single-line cells
+            return Math.max(maxRequiredHeight, baseHeight);
         },
         [localColumns],
     );
@@ -1496,7 +1534,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 (col) => col.id !== columnToDelete,
             );
 
-            // CRITICAL: Clean up data for the deleted column
+            // clean up data for the deleted column
             if (columnAccessor) {
                 // Remove this column's data from localData
                 setLocalData((prevData) =>
@@ -1549,7 +1587,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             const oldName = columnToRename.currentName;
 
             try {
-                // Update column definition locally - DO NOT touch data
                 setLocalColumns((prev) => {
                     const updated = prev.map((col) => {
                         if (col.id === columnToRename.id) {
@@ -3124,6 +3161,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     display: 'flex',
                     flexDirection: 'column',
                     minWidth: '100%',
+                    position: 'relative',
                 }}
             >
                 <div style={{ width: '100%' }}>
@@ -3162,6 +3200,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 500, // max height before scrolling
                             ),
                             minHeight: 89,
+                            // Smooth row height transitions
+                            transition: 'height 0.35s ease-in-out',
                         }}
                     >
                         <DataEditor

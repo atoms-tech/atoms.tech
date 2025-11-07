@@ -4,4 +4,9 @@ export interface Invitation {
     email: string;
     role: string;
     status: string;
+    organizations?: {
+        id: string;
+        name: string;
+        slug: string;
+    };
 }

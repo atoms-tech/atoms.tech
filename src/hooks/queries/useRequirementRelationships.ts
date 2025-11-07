@@ -218,6 +218,10 @@ export function useDeleteRelationship() {
             queryClient.refetchQueries({
                 queryKey: queryKeys.requirements.ancestors(variables.descendantId),
             });
+            // Force refetch tree queries to ensure hierarchy view updates immediately
+            queryClient.refetchQueries({
+                queryKey: ['requirements', 'tree'],
+            });
         },
         onError: (error) => {
             console.error('Failed to delete relationship:', error);

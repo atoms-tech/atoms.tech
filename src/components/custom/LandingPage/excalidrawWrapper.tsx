@@ -24,31 +24,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { useUser } from '@/lib/providers/user.provider';
 
 const LAST_DIAGRAM_ID_KEY = 'lastExcalidrawDiagramId';
-
-// Define Supabase JSON-compatible type
-type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 // Add a type definition for diagram data from Supabase
 interface ExcalidrawDiagramData {
     elements: ExcalidrawElement[];
     appState: Partial<AppState>;
     files: BinaryFiles;
-}
-
-// Define the type for diagram records in the database
-interface DiagramRecord {
-    id: string;
-    diagram_data: Json; // Changed to match Supabase's JSON type
-    updated_at: string;
-    updated_by: string | undefined;
-    created_by: string | undefined;
-    organization_id: string | undefined;
-    project_id: string | undefined;
-    name: string;
-    thumbnail_url: string | null;
 }
 
 // Get the type for NormalizedZoomValue from @excalidraw/excalidraw
@@ -124,15 +107,11 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         setIsDarkMode(theme === 'dark' || resolvedTheme === 'dark');
     }, [theme, resolvedTheme]);
 
-    const { user } = useUser();
     const organizationId = usePathname().split('/')[2];
     const projectId = usePathname().split('/')[4];
     const router = useRouter();
-    const {
-        isLoading: supabaseLoading,
-        error: supabaseError,
-        getClientOrThrow,
-    } = useAuthenticatedSupabase();
+    const { isLoading: supabaseLoading, error: supabaseError } =
+        useAuthenticatedSupabase();
 
     // Tooltip state for selected requirement-linked element
     const [linkTooltip, setLinkTooltip] = useState<{
@@ -210,17 +189,14 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     return false;
                 }
 
-                const supabase = getClientOrThrow();
                 // Fetch existing diagram data with authorization check
-                const { data, error } = await supabase
-                    .from('excalidraw_diagrams')
-                    .select('diagram_data, project_id, name')
-                    .eq('id', id)
-                    .single();
+                const response = await fetch(`/api/diagrams/${id}`, {
+                    method: 'GET',
+                    cache: 'no-store',
+                });
 
-                if (error) {
-                    console.error('Error loading diagram:', error);
-                    if (error.message.includes('multiple (or no) rows returned')) {
+                if (!response.ok) {
+                    if (response.status === 404) {
                         console.log(
                             'No diagram found with ID:',
                             id,
@@ -229,10 +205,16 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                         return false;
                     }
 
-                    //handle it as a real error
-                    setAuthError('Error loading diagram: ' + error.message);
+                    // Handle it as a real error
+                    const errorData = await response.json();
+                    setAuthError(
+                        'Error loading diagram: ' +
+                            (errorData.error || response.statusText),
+                    );
                     return false;
                 }
+
+                const { diagram: data } = await response.json();
 
                 if (data && data.diagram_data) {
                     // Verify diagram belongs to current project
@@ -306,7 +288,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 setIsLoading(false);
             }
         },
-        [getClientOrThrow, isDarkMode, projectId, supabaseError, supabaseLoading],
+        [isDarkMode, projectId, supabaseError, supabaseLoading],
     );
 
     // Function to refresh just the diagram name from the database
@@ -320,17 +302,17 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                 return;
             }
 
-            const supabase = getClientOrThrow();
-            const { data, error } = await supabase
-                .from('excalidraw_diagrams')
-                .select('name')
-                .eq('id', diagramId)
-                .single();
+            const response = await fetch(`/api/diagrams/${diagramId}`, {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            if (error) {
-                console.error('Error refreshing diagram name:', error);
+            if (!response.ok) {
+                console.error('Error refreshing diagram name:', response.statusText);
                 return;
             }
+
+            const { diagram: data } = await response.json();
 
             if (data && data.name !== diagramName) {
                 console.log('Updating diagram name from database:', data.name);
@@ -339,7 +321,7 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
         } catch (err) {
             console.error('Error in refreshDiagramName:', err);
         }
-    }, [diagramId, diagramName, getClientOrThrow, supabaseError, supabaseLoading]);
+    }, [diagramId, diagramName, supabaseError, supabaseLoading]);
 
     // Periodically check for name updates in the database
     useEffect(() => {
@@ -678,7 +660,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     return;
                 }
 
-                const supabase = getClientOrThrow();
                 setIsAutoSaving(true);
 
                 const diagramData = {
@@ -689,33 +670,31 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
                     files: files,
                 };
 
-                const now = new Date().toISOString();
-
                 // Generate thumbnail
                 const thumbnailUrl = await generateThumbnail(elements, appState);
 
-                // Serialize the diagram data to ensure it's JSON compatible
-                const serializedData = JSON.stringify(diagramData);
+                // Save diagram via API route
+                const response = await fetch('/api/save-diagram', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        diagramId: idToUse,
+                        projectId: projectId,
+                        organizationId: organizationId,
+                        diagramData: diagramData,
+                        name: nameToUse,
+                        thumbnailUrl: thumbnailUrl,
+                    }),
+                });
 
-                // Create the record to upsert
-                const diagramRecord: DiagramRecord = {
-                    id: idToUse,
-                    diagram_data: JSON.parse(serializedData),
-                    updated_at: now,
-                    updated_by: user?.id,
-                    created_by: user?.id,
-                    organization_id: organizationId,
-                    project_id: projectId,
-                    name: nameToUse,
-                    thumbnail_url: thumbnailUrl,
-                };
-
-                const { error } = await supabase
-                    .from('excalidraw_diagrams')
-                    .upsert(diagramRecord);
-
-                if (error) {
-                    console.error('Error saving diagram:', error);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error(
+                        'Error saving diagram:',
+                        errorData.error || response.statusText,
+                    );
                     return;
                 }
 
@@ -763,7 +742,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             diagramId,
             diagramName,
             generateThumbnail,
-            getClientOrThrow,
             hasChanges,
             isAutoSaving,
             isExistingDiagram,
@@ -772,7 +750,6 @@ const ExcalidrawWrapper: React.FC<ExcalidrawWrapperProps> = ({
             projectId,
             supabaseError,
             supabaseLoading,
-            user?.id,
         ],
     );
 

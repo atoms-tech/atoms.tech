@@ -30,6 +30,7 @@ import { useOrganization } from '@/lib/providers/organization.provider';
 import { useUser } from '@/lib/providers/user.provider';
 import { useContextStore } from '@/store/context.store';
 import { InvitationStatus, OrganizationType } from '@/types/base/enums.types';
+import { Invitation } from '@/types/base/invitations.types';
 import { Organization } from '@/types/base/organizations.types';
 
 export default function UserDashboard() {
@@ -45,7 +46,7 @@ export default function UserDashboard() {
 
     // Filter the invitations to only include pending ones
     const invitations = allInvitations?.filter(
-        (invitation) => invitation.status === InvitationStatus.pending,
+        (invitation: Invitation) => invitation.status === InvitationStatus.pending,
     );
 
     const [searchTerm, setSearchTerm] = useState(''); // Ensure the initial state is an empty string
@@ -100,8 +101,12 @@ export default function UserDashboard() {
         if (!organizations) return [];
         if (!profile?.pinned_organization_id) return organizations;
         return [
-            ...organizations.filter((org) => org.id === profile?.pinned_organization_id),
-            ...organizations.filter((org) => org.id !== profile?.pinned_organization_id),
+            ...organizations.filter(
+                (org: Organization) => org.id === profile?.pinned_organization_id,
+            ),
+            ...organizations.filter(
+                (org: Organization) => org.id !== profile?.pinned_organization_id,
+            ),
         ];
     }, [organizations, profile?.pinned_organization_id]);
 
@@ -148,10 +153,10 @@ export default function UserDashboard() {
 
     // Get counts for each organization type
     const enterpriseCount = sortedOrganizations.filter(
-        (org) => org.type === OrganizationType.enterprise,
+        (org: Organization) => org.type === OrganizationType.enterprise,
     ).length;
     const teamCount = sortedOrganizations.filter(
-        (org) =>
+        (org: Organization) =>
             org.type !== OrganizationType.personal &&
             org.type !== OrganizationType.enterprise,
     ).length;
