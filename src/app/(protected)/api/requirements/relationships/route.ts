@@ -596,7 +596,8 @@ export async function GET(request: NextRequest) {
             }
 
             // Check for relationships in closure table (depth > 0)
-            const { data: relationships, error: relationshipsError } = await serviceClient
+            // Use userClient to respect RLS policies
+            const { data: relationships, error: relationshipsError } = await userClient
                 .from('requirements_closure')
                 .select(
                     `

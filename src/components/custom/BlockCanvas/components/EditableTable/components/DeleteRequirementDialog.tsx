@@ -33,11 +33,17 @@ export function DeleteRequirementDialog({
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const params = useParams();
 
-    const { data: relationshipCheck, isLoading: isCheckingRelationships } =
-        useCheckRequirementRelationships(requirementId);
+    const {
+        data: relationshipCheck,
+        isLoading: isCheckingRelationships,
+        error: relationshipCheckError,
+    } = useCheckRequirementRelationships(requirementId);
 
     const hasRelationships = relationshipCheck?.hasRelationships || false;
     const relatedRequirements = relationshipCheck?.relatedRequirements || [];
+
+    // If there's an error checking relationships, treat it as if relationships exist (safer)
+    const cannotDelete = hasRelationships || !!relationshipCheckError;
 
     const handleConfirm = async () => {
         try {
@@ -85,6 +91,23 @@ export function DeleteRequirementDialog({
                             </div>
                         ) : isCheckingRelationships ? (
                             <span>Checking for relationships...</span>
+                        ) : relationshipCheckError ? (
+                            <div className="space-y-3">
+                                <p className="text-red-600 font-semibold">
+                                    Unable to verify relationships
+                                </p>
+                                <p>
+                                    Failed to check if this requirement has
+                                    relationships. Please check the Traceability page
+                                    to ensure no connections exist before deleting.
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    Error:{' '}
+                                    {relationshipCheckError instanceof Error
+                                        ? relationshipCheckError.message
+                                        : 'Unknown error'}
+                                </p>
+                            </div>
                         ) : hasRelationships ? (
                             <div className="space-y-3">
                                 <p className="text-red-600 font-semibold">
@@ -117,7 +140,7 @@ export function DeleteRequirementDialog({
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    {deleteError || hasRelationships ? (
+                    {cannotDelete || deleteError ? (
                         <>
                             <AlertDialogCancel disabled={isDeleting}>
                                 Cancel
