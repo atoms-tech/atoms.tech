@@ -579,8 +579,36 @@ export const TableBlock: React.FC<BlockProps> = ({
                 return columnDef;
             })
             .sort((a, b) => a.position - b.position);
+
+        // Add system "Links" column if there are requirements
+        // This column shows relationship counts and is always placed after the first column (usually External_ID or Name)
+        if (mapped.length > 0 && localRequirements.length > 0) {
+            const linksColumn = {
+                id: '__system_links__',
+                header: 'Links',
+                accessor: '__links__' as keyof DynamicRequirement,
+                type: 'text' as EditableColumnType,
+                width: 80,
+                position: 1, // Place after first column
+                required: false,
+                isSortable: false,
+            };
+
+            // Insert Links column at position 1 and adjust other positions
+            const withLinks = [
+                mapped[0], // Keep first column at position 0
+                linksColumn,
+                ...mapped.slice(1).map((col) => ({
+                    ...col,
+                    position: (col.position ?? 0) + 1,
+                })),
+            ];
+
+            return withLinks;
+        }
+
         return mapped;
-    }, [effectiveColumnsRaw, tableContentMetadata?.columns]);
+    }, [effectiveColumnsRaw, tableContentMetadata?.columns, localRequirements.length]);
 
     // Memoize dynamicRequirements to avoid recreating every render unless localRequirements changes
     const dynamicRequirements = useMemo(() => {
@@ -600,6 +628,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     ...req,
                     position: meta?.position ?? req.position ?? idx,
                     height: meta?.height,
+                    __links__: '🔗', // Add links indicator for system column
                 };
             })
             .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
