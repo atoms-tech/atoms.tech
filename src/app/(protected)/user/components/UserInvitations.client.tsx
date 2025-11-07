@@ -25,7 +25,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
 
     // Filter invitations to only include pending ones
     const invitations = allInvitations?.filter(
-        (invitation) => invitation.status === InvitationStatus.pending,
+        (invitation: Invitation) => invitation.status === InvitationStatus.pending,
     );
 
     const handleAccept = async (invitation: Invitation) => {
@@ -141,7 +141,7 @@ export default function UserInvitations({ onAccept }: { onAccept?: () => void })
                     <p>Loading invitations...</p>
                 ) : invitations?.length ? (
                     <ul className="space-y-2">
-                        {invitations.map((invitation) => (
+                        {invitations.map((invitation: Invitation) => (
                             <li
                                 key={invitation.id}
                                 className="flex justify-between items-center"
