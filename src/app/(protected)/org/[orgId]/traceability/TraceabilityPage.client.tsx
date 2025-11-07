@@ -132,12 +132,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         }
     }, [selectedProject, activeTab, updateURL]);
 
-    const handleProjectChange = useCallback(
-        (newProjectId: string) => {
-            setSelectedProject(newProjectId);
-        },
-        [],
-    );
+    const handleProjectChange = useCallback((newProjectId: string) => {
+        setSelectedProject(newProjectId);
+    }, []);
 
     const handleTabChange = useCallback((newTab: string) => {
         setActiveTab(newTab);

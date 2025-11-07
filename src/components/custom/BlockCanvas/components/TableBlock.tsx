@@ -473,9 +473,7 @@ export const TableBlock: React.FC<BlockProps> = ({
         } catch (error) {
             console.error('Failed to delete requirement:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to delete requirement';
+                error instanceof Error ? error.message : 'Failed to delete requirement';
             alert(errorMessage);
         }
     }, [requirementToDelete, deleteRequirement, userProfile?.id]);
