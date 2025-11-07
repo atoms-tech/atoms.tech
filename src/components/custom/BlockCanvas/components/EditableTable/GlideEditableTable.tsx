@@ -2151,7 +2151,13 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }
             }
         },
-        [isEditMode, gridSelection, sortedData, props.skipDeleteConfirm, handleRowDeleteConfirm],
+        [
+            isEditMode,
+            gridSelection,
+            sortedData,
+            props.skipDeleteConfirm,
+            handleRowDeleteConfirm,
+        ],
     );
 
     // handle cell activation and track selected position
@@ -3306,9 +3312,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                       onClick={() => {
                                                           setRowsToDelete(rowsToDelete);
                                                           if (props.skipDeleteConfirm) {
-                                                              setTimeout(() => handleRowDeleteConfirm(), 0);
+                                                              setTimeout(
+                                                                  () =>
+                                                                      handleRowDeleteConfirm(),
+                                                                  0,
+                                                              );
                                                           } else {
-                                                              setRowDeleteConfirmOpen(true);
+                                                              setRowDeleteConfirmOpen(
+                                                                  true,
+                                                              );
                                                           }
                                                       }}
                                                       style={{

@@ -54,9 +54,7 @@ export function DeleteRequirementDialog({
         } catch (error) {
             console.error('Error during requirement deletion:', error);
             const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : 'Failed to delete requirement';
+                error instanceof Error ? error.message : 'Failed to delete requirement';
             setDeleteError(errorMessage);
         } finally {
             setIsDeleting(false);
@@ -97,9 +95,9 @@ export function DeleteRequirementDialog({
                                     Unable to verify relationships
                                 </p>
                                 <p>
-                                    Failed to check if this requirement has
-                                    relationships. Please check the Traceability page
-                                    to ensure no connections exist before deleting.
+                                    Failed to check if this requirement has relationships.
+                                    Please check the Traceability page to ensure no
+                                    connections exist before deleting.
                                 </p>
                                 <p className="text-sm text-gray-600">
                                     Error:{' '}
