@@ -22,6 +22,8 @@ import {
     buildCsv,
     saveCsvWithPicker,
 } from '@/components/custom/BlockCanvas/utils/exportCsv';
+import { saveExcel } from '@/components/custom/BlockCanvas/utils/exportExcel';
+import { saveReqIF } from '@/components/custom/BlockCanvas/utils/exportReqIF';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -801,13 +803,42 @@ export const TableBlock: React.FC<BlockProps> = ({
     ]);
 
     const handleConfirmExport = useCallback(
-        async ({ includeHeader }: { includeHeader: boolean }) => {
+        async ({
+            includeHeader,
+            format,
+        }: {
+            includeHeader: boolean;
+            format: 'csv' | 'excel' | 'reqif';
+        }) => {
             const { headers, rows } = await collectExportData();
-            const csv = buildCsv(headers, rows, includeHeader);
             const safeName =
                 (blockName || 'table').replace(/[^a-zA-Z0-9-_]+/g, '_') || 'table';
-            const suggested = `${safeName}_${new Date().toISOString().slice(0, 10)}.csv`;
-            await saveCsvWithPicker(csv, suggested);
+            const dateStr = new Date().toISOString().slice(0, 10);
+
+            if (format === 'csv') {
+                const csv = buildCsv(headers, rows, includeHeader);
+                await saveCsvWithPicker(csv, `${safeName}_${dateStr}.csv`);
+                return;
+            }
+            if (format === 'excel') {
+                await saveExcel(
+                    headers,
+                    rows,
+                    includeHeader,
+                    `${safeName}_${dateStr}.xlsx`,
+                );
+                return;
+            }
+            if (format === 'reqif') {
+                // includeHeader is used only to synthesize headers if needed within util
+                await saveReqIF(
+                    headers,
+                    rows,
+                    { includeHeader, specificationName: blockName || 'Specification' },
+                    `${safeName}_${dateStr}.reqif`,
+                );
+                return;
+            }
         },
         [collectExportData, blockName],
     );

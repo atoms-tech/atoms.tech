@@ -32,6 +32,11 @@ export async function saveCsvWithPicker(
     suggestedName: string,
 ): Promise<void> {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    await saveWithPicker(blob, suggestedName);
+}
+
+// Generic file save with picker (cancel-safe) with fallback download
+export async function saveWithPicker(blob: Blob, suggestedName: string): Promise<void> {
     const w = (typeof window !== 'undefined' ? window : {}) as unknown as {
         showSaveFilePicker?: (options?: unknown) => Promise<{
             createWritable: () => Promise<{
@@ -53,12 +58,6 @@ export async function saveCsvWithPicker(
         try {
             const handle = await w.showSaveFilePicker({
                 suggestedName,
-                types: [
-                    {
-                        description: 'CSV file',
-                        accept: { 'text/csv': ['.csv'] },
-                    },
-                ],
                 excludeAcceptAllOption: false,
             } as unknown);
             // @ts-expect-error - createWritable exists on file handle in supporting browsers
