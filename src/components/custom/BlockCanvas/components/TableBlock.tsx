@@ -463,19 +463,12 @@ export const TableBlock: React.FC<BlockProps> = ({
     const handleConfirmDelete = useCallback(async () => {
         if (!requirementToDelete || !userProfile?.id) return;
 
-        try {
-            await deleteRequirement(requirementToDelete, userProfile.id);
-            setLocalRequirements((prev) =>
-                prev.filter((req) => req.id !== requirementToDelete.id),
-            );
-            setDeleteDialogOpen(false);
-            setRequirementToDelete(null);
-        } catch (error) {
-            console.error('Failed to delete requirement:', error);
-            const errorMessage =
-                error instanceof Error ? error.message : 'Failed to delete requirement';
-            alert(errorMessage);
-        }
+        await deleteRequirement(requirementToDelete, userProfile.id);
+        setLocalRequirements((prev) =>
+            prev.filter((req) => req.id !== requirementToDelete.id),
+        );
+        setDeleteDialogOpen(false);
+        setRequirementToDelete(null);
     }, [requirementToDelete, deleteRequirement, userProfile?.id]);
 
     const handleNameChange = useCallback(

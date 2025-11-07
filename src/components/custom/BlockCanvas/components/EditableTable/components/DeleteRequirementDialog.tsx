@@ -30,6 +30,7 @@ export function DeleteRequirementDialog({
     onConfirmDelete,
 }: DeleteRequirementDialogProps) {
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
     const params = useParams();
 
     const { data: relationshipCheck, isLoading: isCheckingRelationships } =
@@ -41,10 +42,16 @@ export function DeleteRequirementDialog({
     const handleConfirm = async () => {
         try {
             setIsDeleting(true);
+            setDeleteError(null);
             await onConfirmDelete();
             onOpenChange(false);
         } catch (error) {
             console.error('Error during requirement deletion:', error);
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'Failed to delete requirement';
+            setDeleteError(errorMessage);
         } finally {
             setIsDeleting(false);
         }
@@ -66,7 +73,17 @@ export function DeleteRequirementDialog({
                 <AlertDialogHeader>
                     <AlertDialogTitle>Delete Requirement?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        {isCheckingRelationships ? (
+                        {deleteError ? (
+                            <div className="space-y-3">
+                                <p className="text-red-600 font-semibold">
+                                    {deleteError}
+                                </p>
+                                <p>
+                                    Please disconnect all relationships on the
+                                    Traceability page, then try deleting again.
+                                </p>
+                            </div>
+                        ) : isCheckingRelationships ? (
                             <span>Checking for relationships...</span>
                         ) : hasRelationships ? (
                             <div className="space-y-3">
@@ -100,7 +117,7 @@ export function DeleteRequirementDialog({
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    {hasRelationships ? (
+                    {deleteError || hasRelationships ? (
                         <>
                             <AlertDialogCancel disabled={isDeleting}>
                                 Cancel
