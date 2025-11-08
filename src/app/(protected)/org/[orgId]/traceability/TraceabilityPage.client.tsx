@@ -850,7 +850,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                             </div>
                                         ) : requirementTree &&
                                           requirementTree.length > 0 ? (
-                                            <div className="space-y-2">
+                                            <div className="space-y-1">
                                                 {visibleTree.map((node, index) => {
                                                     const requirement =
                                                         requirements?.find(
@@ -867,14 +867,42 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                   ),
                                                               )
                                                             : 1;
-                                                    const isTopLevel =
-                                                        node.depth === minDepth;
+                                                    const relativeDepth = node.depth - minDepth;
+                                                    const isTopLevel = relativeDepth === 0;
+
+                                                    // Depth-based colors for visual hierarchy
+                                                    const depthColors = [
+                                                        'border-l-blue-500',
+                                                        'border-l-green-500',
+                                                        'border-l-purple-500',
+                                                        'border-l-orange-500',
+                                                        'border-l-pink-500',
+                                                    ];
+                                                    const borderColor = isTopLevel
+                                                        ? 'border-l-4 border-l-blue-600 dark:border-l-blue-400'
+                                                        : `border-l-2 ${depthColors[relativeDepth % depthColors.length]}`;
+
+                                                    // Get document info for navigation
+                                                    const documentId =
+                                                        requirement?.document_id;
+                                                    const projectId = (
+                                                        requirement as RequirementWithDocuments
+                                                    )?.documents?.project_id;
+
+                                                    const handleCardClick = () => {
+                                                        if (documentId && projectId) {
+                                                            router.push(
+                                                                `/org/${orgId}/project/${projectId}/documents/${documentId}`,
+                                                            );
+                                                        }
+                                                    };
+
                                                     return (
                                                         <div
                                                             key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                            className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border cursor-pointer"
+                                                            className="relative"
                                                             style={{
-                                                                marginLeft: `${(node.depth - minDepth) * 24}px`,
+                                                                marginLeft: `${relativeDepth * 32}px`,
                                                             }}
                                                             onClick={() =>
                                                                 openInManage(
@@ -882,144 +910,146 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                 )
                                                             }
                                                         >
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                        {node.has_children ? (
-                                                                            <button
-                                                                                type="button"
-                                                                                aria-label={
-                                                                                    collapsedNodes.has(
+                                                            {/* Tree connection lines */}
+                                                            {!isTopLevel && (
+                                                                <>
+                                                                    {/* Vertical line from parent */}
+                                                                    <div
+                                                                        className="absolute left-[-16px] top-0 bottom-1/2 w-px bg-border"
+                                                                        style={{ left: '-16px' }}
+                                                                    />
+                                                                    {/* Horizontal line to node */}
+                                                                    <div
+                                                                        className="absolute left-[-16px] top-1/2 w-4 h-px bg-border"
+                                                                        style={{ left: '-16px' }}
+                                                                    />
+                                                                </>
+                                                            )}
+
+                                                            <div
+                                                                onClick={handleCardClick}
+                                                                className={`
+                                                                    group relative p-4 border rounded-lg transition-all
+                                                                    ${borderColor}
+                                                                    ${documentId && projectId ? 'cursor-pointer hover:shadow-md hover:border-primary' : ''}
+                                                                    ${isTopLevel ? 'bg-muted/30' : 'bg-background'}
+                                                                    hover:bg-muted/50
+                                                                `}
+                                                            >
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            {/* Expand/Collapse button */}
+                                                                            {node.has_children ? (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    aria-label={
+                                                                                        collapsedNodes.has(
+                                                                                            node.requirement_id,
+                                                                                        )
+                                                                                            ? 'Expand node'
+                                                                                            : 'Collapse node'
+                                                                                    }
+                                                                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        toggleNodeCollapse(node.requirement_id);
+                                                                                    }}
+                                                                                >
+                                                                                    {collapsedNodes.has(
                                                                                         node.requirement_id,
-                                                                                    )
-                                                                                        ? 'Expand node'
-                                                                                        : 'Collapse node'
-                                                                                }
-                                                                                className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
-                                                                                onMouseDown={(
-                                                                                    e,
-                                                                                ) => {
-                                                                                    // Prevent parent click handler from firing
-                                                                                    e.stopPropagation();
-                                                                                }}
-                                                                                onClick={(
-                                                                                    e,
-                                                                                ) => {
-                                                                                    // Only toggle collapse/expand; do not navigate
-                                                                                    e.stopPropagation();
-                                                                                    toggleNodeCollapse(
-                                                                                        node.requirement_id,
-                                                                                    );
-                                                                                }}
-                                                                            >
-                                                                                {collapsedNodes.has(
-                                                                                    node.requirement_id,
-                                                                                ) ? (
-                                                                                    <ChevronRight className="h-4 w-4" />
-                                                                                ) : (
-                                                                                    <ChevronDown className="h-4 w-4" />
-                                                                                )}
-                                                                            </button>
-                                                                        ) : !isTopLevel ? (
-                                                                            <ArrowRight className="h-4 w-4 text-blue-400" />
-                                                                        ) : (
-                                                                            <span className="inline-block w-5" />
-                                                                        )}
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className="text-xs font-mono"
-                                                                        >
-                                                                            {requirement?.external_id ||
-                                                                                node.title ||
-                                                                                node.requirement_id?.slice(
-                                                                                    0,
-                                                                                    8,
-                                                                                )}
-                                                                        </Badge>
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="text-xs"
-                                                                        >
-                                                                            {isTopLevel
-                                                                                ? 'PARENT'
-                                                                                : `CHILD-L${node.depth - minDepth + 1}`}
-                                                                        </Badge>
-                                                                        <h3 className="font-medium text-sm">
-                                                                            {requirement?.name ||
-                                                                                node.title}
-                                                                        </h3>
-                                                                        {requirement?.documents && (
+                                                                                    ) ? (
+                                                                                        <ChevronRight className="h-4 w-4" />
+                                                                                    ) : (
+                                                                                        <ChevronDown className="h-4 w-4" />
+                                                                                    )}
+                                                                                </button>
+                                                                            ) : !isTopLevel ? (
+                                                                                <div className="inline-flex h-5 w-5 items-center justify-center">
+                                                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="inline-block w-5" />
+                                                                            )}
+
                                                                             <Badge
                                                                                 variant="outline"
+                                                                                className="text-xs font-mono"
+                                                                            >
+                                                                                {requirement?.external_id ||
+                                                                                    node.title ||
+                                                                                    node.requirement_id?.slice(
+                                                                                        0,
+                                                                                        8,
+                                                                                    )}
+                                                                            </Badge>
+                                                                            <Badge
+                                                                                variant={isTopLevel ? "default" : "secondary"}
                                                                                 className="text-xs"
                                                                             >
-                                                                                {' '}
-                                                                                {
-                                                                                    requirement
-                                                                                        .documents
-                                                                                        .name
-                                                                                }
+                                                                                {isTopLevel
+                                                                                    ? 'PARENT'
+                                                                                    : `CHILD-L${relativeDepth}`}
                                                                             </Badge>
-                                                                        )}
-                                                                    </div>
-                                                                    {requirement?.description && (
-                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
-                                                                            {
-                                                                                requirement.description
-                                                                            }
-                                                                        </p>
-                                                                    )}
-                                                                    {node.path &&
-                                                                        node.depth >
-                                                                            0 && (
-                                                                            <p className="text-xs text-muted-foreground truncate mt-1">
-                                                                                Path:{' '}
-                                                                                {
-                                                                                    node.path
-                                                                                }
+                                                                            <h3 className="font-medium text-sm truncate">
+                                                                                {requirement?.name ||
+                                                                                    node.title}
+                                                                            </h3>
+                                                                            {requirement?.documents && (
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className="text-xs truncate max-w-[120px]"
+                                                                                >
+                                                                                    {requirement.documents.name}
+                                                                                </Badge>
+                                                                            )}
+                                                                            {node.has_children && (
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                                                                >
+                                                                                    <Network className="h-3 w-3 mr-1" />
+                                                                                    {visibleTree.filter(n => n.parent_id === node.requirement_id).length} child
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        {requirement?.description && (
+                                                                            <p className="text-xs text-muted-foreground line-clamp-2 ml-7">
+                                                                                {requirement.description}
                                                                             </p>
                                                                         )}
-                                                                </div>
-                                                                {node.depth > 0 && (
-                                                                    <div className="ml-4">
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                handleDeleteRelationship(
-                                                                                    {
-                                                                                        requirement_id:
-                                                                                            node.requirement_id,
-                                                                                        title:
-                                                                                            requirement?.name ||
-                                                                                            node.title ||
-                                                                                            node.requirement_id.slice(
-                                                                                                0,
-                                                                                                8,
-                                                                                            ),
-                                                                                        parent_id:
-                                                                                            node.parent_id,
-                                                                                    },
-                                                                                )
-                                                                            }
-                                                                            className="text-xs h-8 px-3"
-                                                                            // Prevent opening Manage when clicking this button
-                                                                            onMouseDown={(
-                                                                                e,
-                                                                            ) =>
-                                                                                e.stopPropagation()
-                                                                            }
-                                                                            onClickCapture={(
-                                                                                e,
-                                                                            ) =>
-                                                                                e.stopPropagation()
-                                                                            }
-                                                                        >
-                                                                            <Unlink className="h-4 w-4 mr-1" />{' '}
-                                                                            Disconnect
-                                                                        </Button>
                                                                     </div>
-                                                                )}
+                                                                    <div className="flex items-center gap-2 ml-4">
+                                                                        {/* Open document indicator */}
+                                                                        {documentId && projectId && (
+                                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground flex items-center gap-1">
+                                                                                <ArrowRight className="h-3 w-3" />
+                                                                                Open
+                                                                            </div>
+                                                                        )}
+                                                                        {/* Disconnect button - only for children */}
+                                                                        {!isTopLevel && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteRelationship({
+                                                                                        requirement_id: node.requirement_id,
+                                                                                        title: requirement?.name ||
+                                                                                            node.title ||
+                                                                                            node.requirement_id.slice(0, 8),
+                                                                                        parent_id: node.parent_id,
+                                                                                    });
+                                                                                }}
+                                                                                className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            >
+                                                                                <Unlink className="h-4 w-4 mr-1" />
+                                                                                Unlink
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     );

@@ -475,7 +475,7 @@ export async function GET(request: NextRequest) {
 
             // Filter out self-references (depth = 0)
             const filteredData = Array.isArray(data)
-                ? data.filter((item: any) => item.depth > 0)
+                ? data.filter((item: { depth?: number }) => (item.depth ?? 0) > 0)
                 : data;
 
             return NextResponse.json({ data: filteredData });
@@ -548,7 +548,7 @@ export async function GET(request: NextRequest) {
 
             // Filter out self-references (depth = 0)
             const filteredData = Array.isArray(data)
-                ? data.filter((item: any) => item.depth > 0)
+                ? data.filter((item: { depth?: number }) => (item.depth ?? 0) > 0)
                 : data;
 
             return NextResponse.json({ data: filteredData });
