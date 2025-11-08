@@ -213,11 +213,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const sortedTree: TreeNode[] = useMemo(() => {
         const nodes = (requirementTree as unknown as TreeNode[]) || [];
 
-        // Filter out depth=0 (self-references)
-        const filteredNodes = nodes.filter((node) => node.depth > 0);
+        // Filter to show only nodes that are part of the hierarchy:
+        // - has_children: parent nodes with children
+        // - depth > 0: child nodes at any level
+        // This includes all nodes in the tree structure
+        const filteredNodes = nodes.filter((node) => node.has_children || node.depth > 0);
 
-        // Remove duplicate parents: keep only unique requirement_id
-        // This prevents showing the same parent multiple times when it has multiple children
+        // Remove duplicate nodes: keep only unique requirement_id
+        // This prevents showing the same node multiple times
         const uniqueNodes = Array.from(
             new Map(
                 filteredNodes.map((node) => [node.requirement_id, node])
@@ -225,7 +228,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         );
 
         return uniqueNodes.sort((a, b) => (a.path || '').localeCompare(b.path || ''));
-        // Filter out self-references (depth=0); only show actual relationships
     }, [requirementTree]);
 
     const visibleTree: TreeNode[] = useMemo(() => {
