@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, Link2, Plus, X } from 'lucide-react';
+import { ExternalLink, Link2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -12,7 +12,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 
 interface RequirementLinksPopoverProps {
     requirementId: string;
