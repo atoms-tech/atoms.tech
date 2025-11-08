@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink, Link2 } from 'lucide-react';
+import { ExternalLink, Link2, Plus, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -12,6 +12,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 interface RequirementLinksPopoverProps {
     requirementId: string;
@@ -41,21 +42,7 @@ export function RequirementLinksPopover({
     const [error, setError] = useState<string | null>(null);
     const params = useParams();
 
-    // Fetch relationships when dialog opens or requirementId changes
-    useEffect(() => {
-        if (open && !data && !loading) {
-            fetchRelationships();
-        }
-    }, [open, data, loading, fetchRelationships]);
-
-    // Reset data when dialog closes
-    useEffect(() => {
-        if (!open) {
-            setData(null);
-            setError(null);
-        }
-    }, [open]);
-
+    // Define fetchRelationships first (before useEffect that uses it)
     const fetchRelationships = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -81,6 +68,21 @@ export function RequirementLinksPopover({
             setLoading(false);
         }
     }, [requirementId]);
+
+    // Fetch relationships when dialog opens or requirementId changes
+    useEffect(() => {
+        if (open && !data && !loading) {
+            fetchRelationships();
+        }
+    }, [open, data, loading, fetchRelationships]);
+
+    // Reset data when dialog closes
+    useEffect(() => {
+        if (!open) {
+            setData(null);
+            setError(null);
+        }
+    }, [open]);
 
     const handleGoToTrace = () => {
         const orgId = params.orgId as string;
