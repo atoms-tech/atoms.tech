@@ -213,9 +213,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const sortedTree: TreeNode[] = useMemo(() => {
         const nodes = (requirementTree as unknown as TreeNode[]) || [];
         return [...nodes]
-            .filter(() => true)
+            .filter((node) => node.depth > 0)
             .sort((a, b) => (a.path || '').localeCompare(b.path || ''));
-        // Note: keeping all depths; visibility handled downstream
+        // Filter out self-references (depth=0); only show actual relationships
     }, [requirementTree]);
 
     const visibleTree: TreeNode[] = useMemo(() => {
@@ -244,15 +244,17 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     }, []);
 
     const collapseAllToTopLevel = useCallback(() => {
-        if (!requirementTree) return;
+        if (!sortedTree || sortedTree.length === 0) return;
+        // Find minimum depth in the filtered tree (top-level after filtering out depth=0)
+        const minDepth = Math.min(...sortedTree.map((n) => n.depth ?? 1));
         const next = new Set<string>();
-        for (const n of requirementTree) {
-            if ((n.depth ?? 0) === 0 && n.has_children) {
+        for (const n of sortedTree) {
+            if ((n.depth ?? 1) === minDepth && n.has_children) {
                 next.add(n.requirement_id);
             }
         }
         setCollapsedNodes(next);
-    }, [requirementTree]);
+    }, [sortedTree]);
 
     const expandAll = useCallback(() => {
         setCollapsedNodes(new Set());
@@ -856,12 +858,17 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                 r.id ===
                                                                 node.requirement_id,
                                                         );
+                                                    // Determine minimum depth for labeling
+                                                    const minDepth = sortedTree.length > 0
+                                                        ? Math.min(...sortedTree.map(n => n.depth ?? 1))
+                                                        : 1;
+                                                    const isTopLevel = node.depth === minDepth;
                                                     return (
                                                         <div
                                                             key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
                                                             className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border cursor-pointer"
                                                             style={{
-                                                                marginLeft: `${node.depth * 24}px`,
+                                                                marginLeft: `${(node.depth - minDepth) * 24}px`,
                                                             }}
                                                             onClick={() =>
                                                                 openInManage(
@@ -907,8 +914,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                     <ChevronDown className="h-4 w-4" />
                                                                                 )}
                                                                             </button>
-                                                                        ) : node.depth >
-                                                                          0 ? (
+                                                                        ) : !isTopLevel ? (
                                                                             <ArrowRight className="h-4 w-4 text-blue-400" />
                                                                         ) : (
                                                                             <span className="inline-block w-5" />
@@ -928,10 +934,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                             variant="secondary"
                                                                             className="text-xs"
                                                                         >
-                                                                            {node.depth ===
-                                                                            0
+                                                                            {isTopLevel
                                                                                 ? 'PARENT'
-                                                                                : `CHILD-L${node.depth}`}
+                                                                                : `CHILD-L${node.depth - minDepth + 1}`}
                                                                         </Badge>
                                                                         <h3 className="font-medium text-sm">
                                                                             {requirement?.name ||
