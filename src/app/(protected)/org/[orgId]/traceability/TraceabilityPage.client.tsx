@@ -867,8 +867,10 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                   ),
                                                               )
                                                             : 1;
-                                                    const relativeDepth = node.depth - minDepth;
-                                                    const isTopLevel = relativeDepth === 0;
+                                                    const relativeDepth =
+                                                        node.depth - minDepth;
+                                                    const isTopLevel =
+                                                        relativeDepth === 0;
 
                                                     // Depth-based colors for visual hierarchy
                                                     const depthColors = [
@@ -916,12 +918,16 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                     {/* Vertical line from parent */}
                                                                     <div
                                                                         className="absolute left-[-16px] top-0 bottom-1/2 w-px bg-border"
-                                                                        style={{ left: '-16px' }}
+                                                                        style={{
+                                                                            left: '-16px',
+                                                                        }}
                                                                     />
                                                                     {/* Horizontal line to node */}
                                                                     <div
                                                                         className="absolute left-[-16px] top-1/2 w-4 h-px bg-border"
-                                                                        style={{ left: '-16px' }}
+                                                                        style={{
+                                                                            left: '-16px',
+                                                                        }}
                                                                     />
                                                                 </>
                                                             )}
@@ -951,9 +957,13 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                             : 'Collapse node'
                                                                                     }
                                                                                     className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10"
-                                                                                    onClick={(e) => {
+                                                                                    onClick={(
+                                                                                        e,
+                                                                                    ) => {
                                                                                         e.stopPropagation();
-                                                                                        toggleNodeCollapse(node.requirement_id);
+                                                                                        toggleNodeCollapse(
+                                                                                            node.requirement_id,
+                                                                                        );
                                                                                     }}
                                                                                 >
                                                                                     {collapsedNodes.has(
@@ -984,7 +994,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                     )}
                                                                             </Badge>
                                                                             <Badge
-                                                                                variant={isTopLevel ? "default" : "secondary"}
+                                                                                variant={
+                                                                                    isTopLevel
+                                                                                        ? 'default'
+                                                                                        : 'secondary'
+                                                                                }
                                                                                 className="text-xs"
                                                                             >
                                                                                 {isTopLevel
@@ -1000,7 +1014,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                     variant="outline"
                                                                                     className="text-xs truncate max-w-[120px]"
                                                                                 >
-                                                                                    {requirement.documents.name}
+                                                                                    {
+                                                                                        requirement
+                                                                                            .documents
+                                                                                            .name
+                                                                                    }
                                                                                 </Badge>
                                                                             )}
                                                                             {node.has_children && (
@@ -1009,38 +1027,61 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                     className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
                                                                                 >
                                                                                     <Network className="h-3 w-3 mr-1" />
-                                                                                    {visibleTree.filter(n => n.parent_id === node.requirement_id).length} child
+                                                                                    {
+                                                                                        visibleTree.filter(
+                                                                                            (
+                                                                                                n,
+                                                                                            ) =>
+                                                                                                n.parent_id ===
+                                                                                                node.requirement_id,
+                                                                                        )
+                                                                                            .length
+                                                                                    }{' '}
+                                                                                    child
                                                                                 </Badge>
                                                                             )}
                                                                         </div>
                                                                         {requirement?.description && (
                                                                             <p className="text-xs text-muted-foreground line-clamp-2 ml-7">
-                                                                                {requirement.description}
+                                                                                {
+                                                                                    requirement.description
+                                                                                }
                                                                             </p>
                                                                         )}
                                                                     </div>
                                                                     <div className="flex items-center gap-2 ml-4">
                                                                         {/* Open document indicator */}
-                                                                        {documentId && projectId && (
-                                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground flex items-center gap-1">
-                                                                                <ArrowRight className="h-3 w-3" />
-                                                                                Open
-                                                                            </div>
-                                                                        )}
+                                                                        {documentId &&
+                                                                            projectId && (
+                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground flex items-center gap-1">
+                                                                                    <ArrowRight className="h-3 w-3" />
+                                                                                    Open
+                                                                                </div>
+                                                                            )}
                                                                         {/* Disconnect button - only for children */}
                                                                         {!isTopLevel && (
                                                                             <Button
                                                                                 variant="ghost"
                                                                                 size="sm"
-                                                                                onClick={(e) => {
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
                                                                                     e.stopPropagation();
-                                                                                    handleDeleteRelationship({
-                                                                                        requirement_id: node.requirement_id,
-                                                                                        title: requirement?.name ||
-                                                                                            node.title ||
-                                                                                            node.requirement_id.slice(0, 8),
-                                                                                        parent_id: node.parent_id,
-                                                                                    });
+                                                                                    handleDeleteRelationship(
+                                                                                        {
+                                                                                            requirement_id:
+                                                                                                node.requirement_id,
+                                                                                            title:
+                                                                                                requirement?.name ||
+                                                                                                node.title ||
+                                                                                                node.requirement_id.slice(
+                                                                                                    0,
+                                                                                                    8,
+                                                                                                ),
+                                                                                            parent_id:
+                                                                                                node.parent_id,
+                                                                                        },
+                                                                                    );
                                                                                 }}
                                                                                 className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                             >
