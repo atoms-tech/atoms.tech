@@ -859,10 +859,16 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                 node.requirement_id,
                                                         );
                                                     // Determine minimum depth for labeling
-                                                    const minDepth = sortedTree.length > 0
-                                                        ? Math.min(...sortedTree.map(n => n.depth ?? 1))
-                                                        : 1;
-                                                    const isTopLevel = node.depth === minDepth;
+                                                    const minDepth =
+                                                        sortedTree.length > 0
+                                                            ? Math.min(
+                                                                  ...sortedTree.map(
+                                                                      (n) => n.depth ?? 1,
+                                                                  ),
+                                                              )
+                                                            : 1;
+                                                    const isTopLevel =
+                                                        node.depth === minDepth;
                                                     return (
                                                         <div
                                                             key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
