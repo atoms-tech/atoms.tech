@@ -473,7 +473,12 @@ export async function GET(request: NextRequest) {
                 );
             }
 
-            return NextResponse.json({ data });
+            // Filter out self-references (depth = 0)
+            const filteredData = Array.isArray(data)
+                ? data.filter((item: any) => item.depth > 0)
+                : data;
+
+            return NextResponse.json({ data: filteredData });
         }
 
         if (type === 'ancestors') {
@@ -541,7 +546,12 @@ export async function GET(request: NextRequest) {
                 );
             }
 
-            return NextResponse.json({ data });
+            // Filter out self-references (depth = 0)
+            const filteredData = Array.isArray(data)
+                ? data.filter((item: any) => item.depth > 0)
+                : data;
+
+            return NextResponse.json({ data: filteredData });
         }
 
         if (type === 'check') {
