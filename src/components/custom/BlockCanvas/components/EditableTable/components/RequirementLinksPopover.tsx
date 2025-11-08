@@ -110,42 +110,56 @@ export function RequirementLinksPopover({
 
                 <div className="space-y-4">
                     {loading && (
-                        <div className="text-sm text-gray-500 text-center py-4">
-                            Loading relationships...
+                        <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                                <p>Loading relationships...</p>
+                            </div>
                         </div>
                     )}
 
                     {error && (
-                        <div className="text-sm text-red-600 text-center py-4">
-                            Error: {error}
+                        <div className="text-sm text-red-600 dark:text-red-400 text-center py-4 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                            <p className="font-semibold">Error</p>
+                            <p className="mt-1">{error}</p>
                         </div>
                     )}
 
                     {!loading && !error && data && (
                         <>
                             {!hasRelationships ? (
-                                <div className="text-sm text-gray-500 text-center py-4">
-                                    <p>No relationships yet.</p>
-                                    <p className="text-xs mt-2">
-                                        Click &quot;Go to Trace&quot; below to add links.
-                                    </p>
+                                <div className="text-center py-6 space-y-4">
+                                    <div className="flex justify-center">
+                                        <div className="rounded-full bg-blue-100 dark:bg-blue-900/30 p-4">
+                                            <Link2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                                            No relationships yet
+                                        </p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                            Create traceability links to connect this requirement with others
+                                        </p>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    <p className="text-sm text-gray-600">
-                                        {relationshipCount} relationship
-                                        {relationshipCount !== 1 ? 's' : ''} found
-                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            {relationshipCount} linked requirement{relationshipCount !== 1 ? 's' : ''}
+                                        </p>
+                                    </div>
                                     <div className="max-h-80 overflow-y-auto space-y-2">
                                         {data.relatedRequirements.map((req) => (
                                             <div
                                                 key={req.id}
-                                                className="rounded-lg border border-gray-200 bg-gray-50 p-3 hover:bg-gray-100 transition-colors"
+                                                className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                                             >
-                                                <div className="font-medium text-gray-900">
+                                                <div className="font-medium text-gray-900 dark:text-gray-100">
                                                     {req.external_id || 'No ID'}
                                                 </div>
-                                                <div className="text-sm text-gray-600 mt-1">
+                                                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                                     {req.name || 'Unnamed'}
                                                 </div>
                                             </div>
@@ -156,9 +170,13 @@ export function RequirementLinksPopover({
                         </>
                     )}
 
-                    <div className="flex justify-end pt-2 border-t">
-                        <Button onClick={handleGoToTrace} className="gap-2" size="sm">
-                            Go to Trace
+                    <div className="flex justify-end pt-2 border-t dark:border-gray-700">
+                        <Button
+                            onClick={handleGoToTrace}
+                            className="gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                            size="sm"
+                        >
+                            {hasRelationships ? 'View in Traceability' : 'Create Links'}
                             <ExternalLink className="h-4 w-4" />
                         </Button>
                     </div>

@@ -1128,6 +1128,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Special handling for Links column (system column)
             if (column.accessor === '__links__') {
+                const isDark = resolvedTheme === 'dark';
                 return {
                     kind: GridCellKind.Text,
                     allowOverlay: false,
@@ -1135,9 +1136,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     data: '🔗',
                     displayData: '🔗',
                     themeOverride: {
-                        textDark: '#2563eb', // blue-600
-                        bgCell: '#eff6ff', // blue-50
-                        accentColor: '#3b82f6', // blue-500
+                        textDark: isDark ? '#60a5fa' : '#2563eb', // blue-400 (dark) / blue-600 (light)
+                        bgCell: isDark ? '#1e3a8a' : '#dbeafe', // blue-900 (dark) / blue-100 (light)
+                        accentColor: isDark ? '#3b82f6' : '#2563eb', // blue-500 (dark) / blue-600 (light)
                     },
                     cursor: 'pointer',
                 } as TextCell;
@@ -2436,6 +2437,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Handle Links column click
             if (column?.accessor === '__links__' && rowData && props.onLinksColumnClick) {
+                console.log('[Links Column] Clicked:', { requirementId: rowData.id, rowData });
                 props.onLinksColumnClick(rowData.id, rowData);
                 return;
             }
