@@ -2,7 +2,7 @@
 
 import { ExternalLink, Link2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -41,12 +41,12 @@ export function RequirementLinksPopover({
     const [error, setError] = useState<string | null>(null);
     const params = useParams();
 
-    // Fetch relationships when dialog opens
+    // Fetch relationships when dialog opens or requirementId changes
     useEffect(() => {
         if (open && !data && !loading) {
             fetchRelationships();
         }
-    }, [open]);
+    }, [open, data, loading, fetchRelationships]);
 
     // Reset data when dialog closes
     useEffect(() => {
@@ -56,7 +56,7 @@ export function RequirementLinksPopover({
         }
     }, [open]);
 
-    const fetchRelationships = async () => {
+    const fetchRelationships = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -80,7 +80,7 @@ export function RequirementLinksPopover({
         } finally {
             setLoading(false);
         }
-    };
+    }, [requirementId]);
 
     const handleGoToTrace = () => {
         const orgId = params.orgId as string;

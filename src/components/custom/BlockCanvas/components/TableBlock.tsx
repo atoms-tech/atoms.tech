@@ -583,20 +583,21 @@ export const TableBlock: React.FC<BlockProps> = ({
         // Add system "Links" column if there are requirements
         // This column shows relationship counts and is always placed after the first column (usually External_ID or Name)
         if (mapped.length > 0 && localRequirements.length > 0) {
+            const firstColPosition = mapped[0].position ?? 0;
             const linksColumn = {
                 id: '__system_links__',
                 header: 'Links',
                 accessor: '__links__' as keyof DynamicRequirement,
                 type: 'text' as EditableColumnType,
                 width: 80,
-                position: 1, // Place after first column
+                position: firstColPosition + 1, // Place after first column
                 required: false,
                 isSortable: false,
             };
 
-            // Insert Links column at position 1 and adjust other positions
+            // Insert Links column after first column and adjust positions of remaining columns
             const withLinks = [
-                mapped[0], // Keep first column at position 0
+                mapped[0], // Keep first column at its original position
                 linksColumn,
                 ...mapped.slice(1).map((col) => ({
                     ...col,
