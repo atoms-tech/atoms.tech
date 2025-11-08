@@ -212,9 +212,19 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
     const sortedTree: TreeNode[] = useMemo(() => {
         const nodes = (requirementTree as unknown as TreeNode[]) || [];
-        return [...nodes]
-            .filter((node) => node.depth > 0)
-            .sort((a, b) => (a.path || '').localeCompare(b.path || ''));
+
+        // Filter out depth=0 (self-references)
+        const filteredNodes = nodes.filter((node) => node.depth > 0);
+
+        // Remove duplicate parents: keep only unique requirement_id
+        // This prevents showing the same parent multiple times when it has multiple children
+        const uniqueNodes = Array.from(
+            new Map(
+                filteredNodes.map((node) => [node.requirement_id, node])
+            ).values()
+        );
+
+        return uniqueNodes.sort((a, b) => (a.path || '').localeCompare(b.path || ''));
         // Filter out self-references (depth=0); only show actual relationships
     }, [requirementTree]);
 
