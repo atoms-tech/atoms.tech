@@ -462,14 +462,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     {/* Requirements Area */}
                     {selectedProject && (
                         <>
-                            <TabsContent value="hierarchy" className="flex-1">
-                                <Card className="h-full">
-                                    <CardHeader className="py-4">
+                            <TabsContent value="hierarchy" className="flex-1 h-full">
+                                <Card className="h-full flex flex-col">
+                                    <CardHeader className="py-4 flex-shrink-0">
                                         <CardTitle className="text-lg font-bold">
                                             Requirements Hierarchy
                                         </CardTitle>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
+                                    <CardContent className="space-y-4 flex-1 overflow-y-auto">
                                         <div className="relative">
                                             <Input
                                                 placeholder="Search requirements by name, ID, or description..."
@@ -824,9 +824,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                 </Card>
                             </TabsContent>
 
-                            <TabsContent value="matrix" className="flex-1">
-                                <Card className="h-full">
-                                    <CardHeader className="py-4">
+                            <TabsContent value="matrix" className="flex-1 h-full">
+                                <Card className="h-full flex flex-col">
+                                    <CardHeader className="py-4 flex-shrink-0">
                                         <div className="flex items-center justify-between gap-4">
                                             <div>
                                                 <CardTitle className="text-lg font-bold">
@@ -855,7 +855,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-4">
+                                    <CardContent className="space-y-4 flex-1 overflow-y-auto">
                                         {treeLoading ? (
                                             <div className="flex items-center justify-center py-12 text-muted-foreground">
                                                 Loading tree structure...
@@ -1124,7 +1124,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                 </Card>
                             </TabsContent>
 
-                            <TabsContent value="manage" className="flex-1">
+                            <TabsContent value="manage" className="flex-1 h-full">
                                 {(() => {
                                     const requirementId =
                                         searchParams.get('requirementId') ||
@@ -1134,8 +1134,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
                                     if (!requirementId) {
                                         return (
-                                            <Card className="h-full">
-                                                <CardHeader>
+                                            <Card className="h-full flex flex-col">
+                                                <CardHeader className="flex-shrink-0">
                                                     <CardTitle>
                                                         Manage Trace Links
                                                     </CardTitle>
@@ -1145,7 +1145,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                         requirement below to get started.
                                                     </CardDescription>
                                                 </CardHeader>
-                                                <CardContent>
+                                                <CardContent className="flex-1 overflow-y-auto">
                                                     <div className="text-center py-8 text-muted-foreground">
                                                         <Network className="h-12 w-12 mx-auto mb-4" />
                                                         <p>
