@@ -2437,7 +2437,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Handle Links column click
             if (column?.accessor === '__links__' && rowData && props.onLinksColumnClick) {
-                console.log('[Links Column] Clicked:', { requirementId: rowData.id, rowData });
+                console.log('[Links Column] Clicked:', {
+                    requirementId: rowData.id,
+                    rowData,
+                });
                 props.onLinksColumnClick(rowData.id, rowData);
                 return;
             }

@@ -140,7 +140,8 @@ export function RequirementLinksPopover({
                                             No relationships yet
                                         </p>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            Create traceability links to connect this requirement with others
+                                            Create traceability links to connect this
+                                            requirement with others
                                         </p>
                                     </div>
                                 </div>
@@ -148,7 +149,8 @@ export function RequirementLinksPopover({
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            {relationshipCount} linked requirement{relationshipCount !== 1 ? 's' : ''}
+                                            {relationshipCount} linked requirement
+                                            {relationshipCount !== 1 ? 's' : ''}
                                         </p>
                                     </div>
                                     <div className="max-h-80 overflow-y-auto space-y-2">
