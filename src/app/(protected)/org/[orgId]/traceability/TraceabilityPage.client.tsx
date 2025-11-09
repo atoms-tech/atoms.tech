@@ -368,22 +368,47 @@ interface DraggableRequirementCardProps {
     requirement: RequirementWithDocuments;
     inTree: boolean;
     isOrphan: boolean;
+    activeId: string | null;
+    overId: string | null;
 }
 
 function DraggableRequirementCard({
     requirement,
     inTree,
     isOrphan,
+    activeId,
+    overId,
 }: DraggableRequirementCardProps) {
-    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    // Make it draggable
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDragRef,
+        transform,
+        isDragging,
+    } = useDraggable({
         id: requirement.id,
         data: { requirement, source: 'available' },
     });
+
+    // Make it droppable too (so orphans can be dropped onto orphans)
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+        id: requirement.id,
+        data: { requirement, source: 'available' },
+    });
+
+    // Combine refs
+    const setNodeRef = (element: HTMLElement | null) => {
+        setDragRef(element);
+        setDropRef(element);
+    };
 
     const style = {
         transform: CSS.Transform.toString(transform),
         opacity: isDragging ? 0.3 : 1,
     };
+
+    const isDropTarget = isOver && overId === requirement.id && activeId;
 
     return (
         <div
@@ -395,6 +420,7 @@ function DraggableRequirementCard({
                 p-3 border rounded-lg transition-all cursor-grab active:cursor-grabbing
                 ${inTree ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/50' : 'border-border'}
                 ${isDragging ? 'shadow-lg' : 'hover:border-primary hover:bg-accent/50'}
+                ${isDropTarget ? 'border-primary border-2 bg-primary/10 shadow-lg' : ''}
             `}
         >
             <div className="flex items-start gap-2">
@@ -1807,6 +1833,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                         isOrphan={
                                                                             isOrphan
                                                                         }
+                                                                        activeId={activeId}
+                                                                        overId={overId}
                                                                     />
                                                                 );
                                                             })
