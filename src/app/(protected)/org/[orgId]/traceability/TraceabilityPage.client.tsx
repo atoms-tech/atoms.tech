@@ -1833,7 +1833,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                         isOrphan={
                                                                             isOrphan
                                                                         }
-                                                                        activeId={activeId}
+                                                                        activeId={
+                                                                            activeId
+                                                                        }
                                                                         overId={overId}
                                                                     />
                                                                 );
