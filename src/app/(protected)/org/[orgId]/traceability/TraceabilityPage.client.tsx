@@ -794,17 +794,27 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             // Check if dragged from right panel (available requirements)
             const fromRightPanel = active.data.current?.source === 'available';
 
-            // Root zone drop: Remove parent relationship (promote to root)
+            // Root zone drop: Create self-reference or remove parent
             if (droppedOnRootZone) {
-                // Orphans from right panel are already root (no parent)
+                // Orphans from right panel: Create self-reference to add to tree as root
                 if (fromRightPanel) {
-                    alert(
-                        'ℹ️ This requirement is already orphan (no parent). Drag it onto another node to create a relationship.',
-                    );
+                    try {
+                        // Create self-reference (parent_id = child_id) for root nodes
+                        await createRelationshipMutation.mutateAsync({
+                            ancestorId: draggedId,
+                            descendantId: draggedId,
+                        });
+                        alert('✅ Added as root node!');
+                    } catch (error) {
+                        console.error('Failed to add root node:', error);
+                        alert(
+                            `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                        );
+                    }
                     return;
                 }
 
-                // Check if node is actually in the tree
+                // Tree nodes: Remove parent relationship (promote to root)
                 const draggedNode = visibleTree.find(
                     (n) => n.requirement_id === draggedId,
                 );
