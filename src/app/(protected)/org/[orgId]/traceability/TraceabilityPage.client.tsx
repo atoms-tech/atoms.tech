@@ -801,9 +801,10 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
             const targetNode = visibleTree.find((n) => n.requirement_id === targetId);
 
-            // If dragging from right panel and target is not in tree, return
-            if (!targetNode) {
-                alert('⚠️ Drop target must be a node in the tree');
+            // Validate target exists as a requirement (not necessarily in tree)
+            const targetRequirement = requirements?.find((r) => r.id === targetId);
+            if (!targetRequirement) {
+                alert('⚠️ Invalid drop target');
                 return;
             }
 
