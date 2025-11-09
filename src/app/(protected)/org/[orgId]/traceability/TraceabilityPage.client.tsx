@@ -3,6 +3,7 @@
 import {
     DndContext,
     DragEndEvent,
+    DragOverEvent,
     DragOverlay,
     DragStartEvent,
     useDraggable,
@@ -738,7 +739,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     }, []);
 
     const handleDragOver = useCallback(
-        (event: { over: { id: string } | null }) => {
+        (event: DragOverEvent) => {
             setOverId(event.over?.id as string | null);
         },
         [],
