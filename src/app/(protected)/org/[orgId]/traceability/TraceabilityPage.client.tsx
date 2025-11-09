@@ -350,9 +350,14 @@ function RootZone({
                 }
             `}
         >
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Plus className="h-4 w-4" />
-                <span>Drop tree nodes here to remove parent (promote to root)</span>
+            <div className="flex flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    <span className="font-medium">Root Zone</span>
+                </div>
+                <span className="text-xs">
+                    Drop tree nodes here to remove their parent relationship
+                </span>
             </div>
         </div>
     );
@@ -794,23 +799,13 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             // Check if dragged from right panel (available requirements)
             const fromRightPanel = active.data.current?.source === 'available';
 
-            // Root zone drop: Create self-reference or remove parent
+            // Root zone drop: Remove parent to promote to root (tree nodes only)
             if (droppedOnRootZone) {
-                // Orphans from right panel: Create self-reference to add to tree as root
+                // Orphans cannot be dropped on root zone - they need a relationship target
                 if (fromRightPanel) {
-                    try {
-                        // Create self-reference (parent_id = child_id) for root nodes
-                        await createRelationshipMutation.mutateAsync({
-                            ancestorId: draggedId,
-                            descendantId: draggedId,
-                        });
-                        alert('✅ Added as root node!');
-                    } catch (error) {
-                        console.error('Failed to add root node:', error);
-                        alert(
-                            `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                        );
-                    }
+                    alert(
+                        'ℹ️ Drag this onto another requirement to create a parent-child relationship.\n\nTip: The requirement you drop onto becomes the child.',
+                    );
                     return;
                 }
 
