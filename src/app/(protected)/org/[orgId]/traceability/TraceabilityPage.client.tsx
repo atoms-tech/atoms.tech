@@ -1,10 +1,24 @@
 'use client';
 
 import {
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    useDraggable,
+    useDroppable,
+    closestCenter,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
+import {
     ArrowRight,
     ChevronDown,
     ChevronRight,
     GitBranch,
+    GripVertical,
     Network,
     Plus,
     Search,
@@ -60,6 +74,229 @@ type RequirementWithDocuments = Requirement & {
     };
 };
 
+// Tree node type
+type TreeNode = {
+    requirement_id: string;
+    parent_id: string | null;
+    depth: number;
+    has_children?: boolean;
+    path?: string;
+    title?: string;
+};
+
+// Draggable Tree Node Component
+interface DraggableTreeNodeProps {
+    node: TreeNode;
+    requirement: RequirementWithDocuments | undefined;
+    minDepth: number;
+    isTopLevel: boolean;
+    relativeDepth: number;
+    orgId: string;
+    visibleTree: TreeNode[];
+    collapsedNodes: Set<string>;
+    activeId: string | null;
+    overId: string | null;
+    onToggleCollapse: (id: string) => void;
+    onDeleteRelationship: (node: {
+        requirement_id: string;
+        title: string;
+        parent_id: string | null;
+    }) => void;
+}
+
+function DraggableTreeNode({
+    node,
+    requirement,
+    minDepth,
+    isTopLevel,
+    relativeDepth,
+    orgId,
+    visibleTree,
+    collapsedNodes,
+    activeId,
+    overId,
+    onToggleCollapse,
+    onDeleteRelationship,
+}: DraggableTreeNodeProps) {
+    const router = useRouter();
+
+    // Draggable
+    const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
+        id: node.requirement_id,
+        data: { node },
+    });
+
+    // Droppable
+    const { setNodeRef: setDropRef, isOver } = useDroppable({
+        id: node.requirement_id,
+        data: { node },
+    });
+
+    // Combine refs
+    const setNodeRef = (element: HTMLElement | null) => {
+        setDragRef(element);
+        setDropRef(element);
+    };
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+        marginLeft: `${relativeDepth * 32}px`,
+    };
+
+    // Depth-based colors
+    const depthColors = [
+        'border-l-blue-500',
+        'border-l-green-500',
+        'border-l-purple-500',
+        'border-l-orange-500',
+        'border-l-pink-500',
+    ];
+
+    const borderColor = isTopLevel
+        ? 'border-l-4 border-l-blue-600 dark:border-l-blue-400'
+        : `border-l-2 ${depthColors[relativeDepth % depthColors.length]}`;
+
+    // Drop zone styling
+    const isValidDrop = isOver && overId === node.requirement_id && activeId !== node.requirement_id;
+    const dropZoneClass = isValidDrop ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : '';
+
+    const documentId = requirement?.document_id;
+    const projectId = (requirement as RequirementWithDocuments)?.documents?.project_id;
+
+    const handleCardClick = () => {
+        if (documentId && projectId) {
+            router.push(`/org/${orgId}/project/${projectId}/documents/${documentId}`);
+        }
+    };
+
+    return (
+        <div ref={setNodeRef} className="relative" style={style}>
+            {/* Tree connection lines */}
+            {!isTopLevel && (
+                <>
+                    <div
+                        className="absolute left-[-16px] top-0 bottom-1/2 w-px bg-border"
+                        style={{ left: '-16px' }}
+                    />
+                    <div
+                        className="absolute left-[-16px] top-1/2 w-4 h-px bg-border"
+                        style={{ left: '-16px' }}
+                    />
+                </>
+            )}
+
+            <div
+                onClick={handleCardClick}
+                className={`
+                    group relative p-4 border rounded-lg transition-all
+                    ${borderColor}
+                    ${dropZoneClass}
+                    ${documentId && projectId ? 'cursor-pointer hover:shadow-md hover:border-primary' : ''}
+                    ${isTopLevel ? 'bg-muted/30' : 'bg-background'}
+                    hover:bg-muted/50
+                `}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                            {/* Drag handle */}
+                            <button
+                                {...listeners}
+                                {...attributes}
+                                className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded touch-none"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </button>
+
+                            {/* Expand/Collapse */}
+                            {node.has_children ? (
+                                <button
+                                    type="button"
+                                    aria-label={collapsedNodes.has(node.requirement_id) ? 'Expand' : 'Collapse'}
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleCollapse(node.requirement_id);
+                                    }}
+                                >
+                                    {collapsedNodes.has(node.requirement_id) ? (
+                                        <ChevronRight className="h-4 w-4" />
+                                    ) : (
+                                        <ChevronDown className="h-4 w-4" />
+                                    )}
+                                </button>
+                            ) : !isTopLevel ? (
+                                <div className="inline-flex h-5 w-5 items-center justify-center">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                                </div>
+                            ) : (
+                                <span className="inline-block w-5" />
+                            )}
+
+                            <Badge variant="outline" className="text-xs font-mono">
+                                {requirement?.external_id || node.title || node.requirement_id?.slice(0, 8)}
+                            </Badge>
+                            <Badge variant={isTopLevel ? 'default' : 'secondary'} className="text-xs">
+                                {isTopLevel ? 'PARENT' : `CHILD-L${relativeDepth}`}
+                            </Badge>
+                            <h3 className="font-medium text-sm truncate">
+                                {requirement?.name || node.title}
+                            </h3>
+                            {requirement?.documents && (
+                                <Badge variant="outline" className="text-xs truncate max-w-[120px]">
+                                    {requirement.documents.name}
+                                </Badge>
+                            )}
+                            {node.has_children && (
+                                <Badge
+                                    variant="outline"
+                                    className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                                >
+                                    <Network className="h-3 w-3 mr-1" />
+                                    {visibleTree.filter((n) => n.parent_id === node.requirement_id).length} child
+                                </Badge>
+                            )}
+                        </div>
+                        {requirement?.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 ml-7">
+                                {requirement.description}
+                            </p>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                        {documentId && projectId && (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground flex items-center gap-1">
+                                <ArrowRight className="h-3 w-3" />
+                                Open
+                            </div>
+                        )}
+                        {!isTopLevel && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteRelationship({
+                                        requirement_id: node.requirement_id,
+                                        title: requirement?.name || node.title || node.requirement_id.slice(0, 8),
+                                        parent_id: node.parent_id,
+                                    });
+                                }}
+                                className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                                <Unlink className="h-4 w-4 mr-1" />
+                                Unlink
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function TraceabilityPageClient({ orgId }: TraceabilityPageClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -80,6 +317,19 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     // Track requirementId locally to avoid race conditions with URL updates
     const [currentRequirementId, setCurrentRequirementId] = useState<string>(
         searchParams.get('requirementId') || '',
+    );
+
+    // Drag and Drop state
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [overId, setOverId] = useState<string | null>(null);
+
+    // DnD sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // 8px movement required to start drag
+            },
+        }),
     );
 
     // Mutations for creating and deleting relationships
@@ -201,15 +451,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     }, []);
 
     // Tree view helpers
-    type TreeNode = {
-        requirement_id: string;
-        parent_id: string | null;
-        depth: number;
-        has_children?: boolean;
-        path?: string;
-        title?: string;
-    };
-
     const sortedTree: TreeNode[] = useMemo(() => {
         const nodes = (requirementTree as unknown as TreeNode[]) || [];
 
@@ -368,14 +609,111 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         }
     }, [selectedParent, selectedChildren, createRelationshipMutation, toast]);
 
+    // Check if dropping would create a cycle
+    const wouldCreateCycle = useCallback(
+        (draggedId: string, targetId: string): boolean => {
+            if (draggedId === targetId) return true;
+
+            // Check if target is a descendant of dragged node
+            const checkDescendants = (nodeId: string): boolean => {
+                const children = visibleTree.filter((n) => n.parent_id === nodeId);
+                for (const child of children) {
+                    if (child.requirement_id === targetId) return true;
+                    if (checkDescendants(child.requirement_id)) return true;
+                }
+                return false;
+            };
+
+            return checkDescendants(draggedId);
+        },
+        [visibleTree],
+    );
+
+    // Drag handlers
+    const handleDragStart = useCallback((event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    }, []);
+
+    const handleDragOver = useCallback(
+        (event: { over: { id: string } | null }) => {
+            setOverId(event.over?.id as string | null);
+        },
+        [],
+    );
+
+    const handleDragEnd = useCallback(
+        async (event: DragEndEvent) => {
+            const { active, over } = event;
+            setActiveId(null);
+            setOverId(null);
+
+            if (!over || active.id === over.id) return;
+
+            const draggedId = active.id as string;
+            const targetId = over.id as string;
+
+            // Cycle detection
+            if (wouldCreateCycle(draggedId, targetId)) {
+                alert('⚠️ Cannot create cycle: Target is a descendant of the dragged node');
+                return;
+            }
+
+            // Find nodes
+            const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
+            const targetNode = visibleTree.find((n) => n.requirement_id === targetId);
+
+            if (!draggedNode || !targetNode) return;
+
+            try {
+                // Delete old relationship (if exists)
+                if (draggedNode.parent_id) {
+                    await deleteRelationshipMutation.mutateAsync({
+                        ancestorId: draggedNode.parent_id,
+                        descendantId: draggedId,
+                    });
+                }
+
+                // Create new relationship
+                await createRelationshipMutation.mutateAsync({
+                    ancestorId: targetId,
+                    descendantId: draggedId,
+                });
+
+                alert('✅ Successfully moved node!');
+            } catch (error) {
+                console.error('Failed to move node:', error);
+                alert(`❌ Failed to move node: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        },
+        [
+            visibleTree,
+            wouldCreateCycle,
+            deleteRelationshipMutation,
+            createRelationshipMutation,
+        ],
+    );
+
+    const handleDragCancel = useCallback(() => {
+        setActiveId(null);
+        setOverId(null);
+    }, []);
+
     return (
         <LayoutView>
-            <div className="flex h-full w-full flex-col p-4">
-                <Tabs
-                    value={activeTab}
-                    onValueChange={handleTabChange}
-                    className="flex h-full flex-col gap-4"
-                >
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
+            >
+                <div className="flex h-full w-full flex-col p-4">
+                    <Tabs
+                        value={activeTab}
+                        onValueChange={handleTabChange}
+                        className="flex h-full flex-col gap-4"
+                    >
                     <div className="flex items-center gap-4">
                         {/* Organization Selector */}
                         <Select
@@ -868,7 +1206,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                 r.id ===
                                                                 node.requirement_id,
                                                         );
-                                                    // Determine minimum depth for labeling
                                                     const minDepth =
                                                         sortedTree.length > 0
                                                             ? Math.min(
@@ -882,227 +1219,22 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                     const isTopLevel =
                                                         relativeDepth === 0;
 
-                                                    // Depth-based colors for visual hierarchy
-                                                    const depthColors = [
-                                                        'border-l-blue-500',
-                                                        'border-l-green-500',
-                                                        'border-l-purple-500',
-                                                        'border-l-orange-500',
-                                                        'border-l-pink-500',
-                                                    ];
-                                                    const borderColor = isTopLevel
-                                                        ? 'border-l-4 border-l-blue-600 dark:border-l-blue-400'
-                                                        : `border-l-2 ${depthColors[relativeDepth % depthColors.length]}`;
-
-                                                    // Get document info for navigation
-                                                    const documentId =
-                                                        requirement?.document_id;
-                                                    const projectId = (
-                                                        requirement as RequirementWithDocuments
-                                                    )?.documents?.project_id;
-
-                                                    const handleCardClick = () => {
-                                                        if (documentId && projectId) {
-                                                            router.push(
-                                                                `/org/${orgId}/project/${projectId}/documents/${documentId}`,
-                                                            );
-                                                        }
-                                                    };
-
                                                     return (
-                                                        <div
+                                                        <DraggableTreeNode
                                                             key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                            className="relative"
-                                                            style={{
-                                                                marginLeft: `${relativeDepth * 32}px`,
-                                                            }}
-                                                            onClick={() =>
-                                                                openInManage(
-                                                                    node.requirement_id,
-                                                                )
-                                                            }
-                                                        >
-                                                            {/* Tree connection lines */}
-                                                            {!isTopLevel && (
-                                                                <>
-                                                                    {/* Vertical line from parent */}
-                                                                    <div
-                                                                        className="absolute left-[-16px] top-0 bottom-1/2 w-px bg-border"
-                                                                        style={{
-                                                                            left: '-16px',
-                                                                        }}
-                                                                    />
-                                                                    {/* Horizontal line to node */}
-                                                                    <div
-                                                                        className="absolute left-[-16px] top-1/2 w-4 h-px bg-border"
-                                                                        style={{
-                                                                            left: '-16px',
-                                                                        }}
-                                                                    />
-                                                                </>
-                                                            )}
-
-                                                            <div
-                                                                onClick={handleCardClick}
-                                                                className={`
-                                                                    group relative p-4 border rounded-lg transition-all
-                                                                    ${borderColor}
-                                                                    ${documentId && projectId ? 'cursor-pointer hover:shadow-md hover:border-primary' : ''}
-                                                                    ${isTopLevel ? 'bg-muted/30' : 'bg-background'}
-                                                                    hover:bg-muted/50
-                                                                `}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                            {/* Expand/Collapse button */}
-                                                                            {node.has_children ? (
-                                                                                <button
-                                                                                    type="button"
-                                                                                    aria-label={
-                                                                                        collapsedNodes.has(
-                                                                                            node.requirement_id,
-                                                                                        )
-                                                                                            ? 'Expand node'
-                                                                                            : 'Collapse node'
-                                                                                    }
-                                                                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10"
-                                                                                    onClick={(
-                                                                                        e,
-                                                                                    ) => {
-                                                                                        e.stopPropagation();
-                                                                                        toggleNodeCollapse(
-                                                                                            node.requirement_id,
-                                                                                        );
-                                                                                    }}
-                                                                                >
-                                                                                    {collapsedNodes.has(
-                                                                                        node.requirement_id,
-                                                                                    ) ? (
-                                                                                        <ChevronRight className="h-4 w-4" />
-                                                                                    ) : (
-                                                                                        <ChevronDown className="h-4 w-4" />
-                                                                                    )}
-                                                                                </button>
-                                                                            ) : !isTopLevel ? (
-                                                                                <div className="inline-flex h-5 w-5 items-center justify-center">
-                                                                                    <div className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-                                                                                </div>
-                                                                            ) : (
-                                                                                <span className="inline-block w-5" />
-                                                                            )}
-
-                                                                            <Badge
-                                                                                variant="outline"
-                                                                                className="text-xs font-mono"
-                                                                            >
-                                                                                {requirement?.external_id ||
-                                                                                    node.title ||
-                                                                                    node.requirement_id?.slice(
-                                                                                        0,
-                                                                                        8,
-                                                                                    )}
-                                                                            </Badge>
-                                                                            <Badge
-                                                                                variant={
-                                                                                    isTopLevel
-                                                                                        ? 'default'
-                                                                                        : 'secondary'
-                                                                                }
-                                                                                className="text-xs"
-                                                                            >
-                                                                                {isTopLevel
-                                                                                    ? 'PARENT'
-                                                                                    : `CHILD-L${relativeDepth}`}
-                                                                            </Badge>
-                                                                            <h3 className="font-medium text-sm truncate">
-                                                                                {requirement?.name ||
-                                                                                    node.title}
-                                                                            </h3>
-                                                                            {requirement?.documents && (
-                                                                                <Badge
-                                                                                    variant="outline"
-                                                                                    className="text-xs truncate max-w-[120px]"
-                                                                                >
-                                                                                    {
-                                                                                        requirement
-                                                                                            .documents
-                                                                                            .name
-                                                                                    }
-                                                                                </Badge>
-                                                                            )}
-                                                                            {node.has_children && (
-                                                                                <Badge
-                                                                                    variant="outline"
-                                                                                    className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                                                                                >
-                                                                                    <Network className="h-3 w-3 mr-1" />
-                                                                                    {
-                                                                                        visibleTree.filter(
-                                                                                            (
-                                                                                                n,
-                                                                                            ) =>
-                                                                                                n.parent_id ===
-                                                                                                node.requirement_id,
-                                                                                        )
-                                                                                            .length
-                                                                                    }{' '}
-                                                                                    child
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                        {requirement?.description && (
-                                                                            <p className="text-xs text-muted-foreground line-clamp-2 ml-7">
-                                                                                {
-                                                                                    requirement.description
-                                                                                }
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 ml-4">
-                                                                        {/* Open document indicator */}
-                                                                        {documentId &&
-                                                                            projectId && (
-                                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground flex items-center gap-1">
-                                                                                    <ArrowRight className="h-3 w-3" />
-                                                                                    Open
-                                                                                </div>
-                                                                            )}
-                                                                        {/* Disconnect button - only for children */}
-                                                                        {!isTopLevel && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={(
-                                                                                    e,
-                                                                                ) => {
-                                                                                    e.stopPropagation();
-                                                                                    handleDeleteRelationship(
-                                                                                        {
-                                                                                            requirement_id:
-                                                                                                node.requirement_id,
-                                                                                            title:
-                                                                                                requirement?.name ||
-                                                                                                node.title ||
-                                                                                                node.requirement_id.slice(
-                                                                                                    0,
-                                                                                                    8,
-                                                                                                ),
-                                                                                            parent_id:
-                                                                                                node.parent_id,
-                                                                                        },
-                                                                                    );
-                                                                                }}
-                                                                                className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            >
-                                                                                <Unlink className="h-4 w-4 mr-1" />
-                                                                                Unlink
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                            node={node}
+                                                            requirement={requirement}
+                                                            minDepth={minDepth}
+                                                            isTopLevel={isTopLevel}
+                                                            relativeDepth={relativeDepth}
+                                                            orgId={orgId}
+                                                            visibleTree={visibleTree}
+                                                            collapsedNodes={collapsedNodes}
+                                                            activeId={activeId}
+                                                            overId={overId}
+                                                            onToggleCollapse={toggleNodeCollapse}
+                                                            onDeleteRelationship={handleDeleteRelationship}
+                                                        />
                                                     );
                                                 })}
                                             </div>
@@ -1190,6 +1322,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     )}
                 </Tabs>
             </div>
+            </DndContext>
         </LayoutView>
     );
 }
