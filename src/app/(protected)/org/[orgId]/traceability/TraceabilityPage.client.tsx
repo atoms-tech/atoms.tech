@@ -6,10 +6,10 @@ import {
     DragOverEvent,
     DragOverlay,
     DragStartEvent,
+    PointerSensor,
+    closestCenter,
     useDraggable,
     useDroppable,
-    closestCenter,
-    PointerSensor,
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
