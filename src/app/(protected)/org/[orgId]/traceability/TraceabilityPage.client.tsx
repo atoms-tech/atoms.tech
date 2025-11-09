@@ -297,6 +297,80 @@ function DraggableTreeNode({
     );
 }
 
+// Draggable Requirement Card (for right panel)
+interface DraggableRequirementCardProps {
+    requirement: RequirementWithDocuments;
+    inTree: boolean;
+    isOrphan: boolean;
+}
+
+function DraggableRequirementCard({
+    requirement,
+    inTree,
+    isOrphan,
+}: DraggableRequirementCardProps) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: requirement.id,
+        data: { requirement, source: 'available' },
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`
+                p-3 border rounded-lg transition-all
+                ${inTree ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/50' : 'border-border'}
+                ${isDragging ? 'shadow-lg' : 'hover:border-primary hover:bg-accent/50'}
+            `}
+        >
+            <div className="flex items-start gap-2">
+                <button
+                    {...listeners}
+                    {...attributes}
+                    className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-accent rounded touch-none"
+                >
+                    <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <Badge variant="outline" className="text-xs font-mono">
+                            {requirement.external_id || requirement.id.slice(0, 8)}
+                        </Badge>
+                        {isOrphan ? (
+                            <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
+                                🆓 Not linked
+                            </Badge>
+                        ) : (
+                            <Badge variant="default" className="text-xs">
+                                🔗 In tree
+                            </Badge>
+                        )}
+                    </div>
+                    <h4 className="text-sm font-medium line-clamp-1 mb-1">
+                        {requirement.name}
+                    </h4>
+                    {requirement.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                            {requirement.description}
+                        </p>
+                    )}
+                    <div className="mt-1">
+                        <Badge variant="outline" className="text-xs">
+                            {requirement.documents?.name || 'Unknown doc'}
+                        </Badge>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function TraceabilityPageClient({ orgId }: TraceabilityPageClientProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -322,6 +396,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     // Drag and Drop state
     const [activeId, setActiveId] = useState<string | null>(null);
     const [overId, setOverId] = useState<string | null>(null);
+
+    // Right panel filter state
+    const [reqFilter, setReqFilter] = useState<'all' | 'orphans' | 'linked'>('all');
 
     // DnD sensors
     const sensors = useSensors(
@@ -652,8 +729,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const draggedId = active.id as string;
             const targetId = over.id as string;
 
-            // Cycle detection
-            if (wouldCreateCycle(draggedId, targetId)) {
+            // Check if dragged from right panel (available requirements)
+            const fromRightPanel = active.data.current?.source === 'available';
+
+            // Cycle detection (only for nodes already in tree)
+            if (!fromRightPanel && wouldCreateCycle(draggedId, targetId)) {
                 alert('⚠️ Cannot create cycle: Target is a descendant of the dragged node');
                 return;
             }
@@ -662,11 +742,15 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
             const targetNode = visibleTree.find((n) => n.requirement_id === targetId);
 
-            if (!draggedNode || !targetNode) return;
+            // If dragging from right panel and target is not in tree, return
+            if (!targetNode) {
+                alert('⚠️ Drop target must be a node in the tree');
+                return;
+            }
 
             try {
-                // Delete old relationship (if exists)
-                if (draggedNode.parent_id) {
+                // Delete old relationship (if exists and node is in tree)
+                if (draggedNode && draggedNode.parent_id) {
                     await deleteRelationshipMutation.mutateAsync({
                         ancestorId: draggedNode.parent_id,
                         descendantId: draggedId,
@@ -679,10 +763,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     descendantId: draggedId,
                 });
 
-                alert('✅ Successfully moved node!');
+                if (fromRightPanel) {
+                    alert('✅ Successfully added requirement to tree!');
+                } else {
+                    alert('✅ Successfully moved node!');
+                }
             } catch (error) {
-                console.error('Failed to move node:', error);
-                alert(`❌ Failed to move node: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                console.error('Failed to move/add node:', error);
+                alert(`❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
             }
         },
         [
@@ -1169,8 +1257,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                     Requirements Tree View
                                                 </CardTitle>
                                                 <CardDescription>
-                                                    Toggle nodes to collapse/expand. Use
-                                                    actions to change the whole view.
+                                                    Drag nodes to reorganize or drag from available requirements
                                                 </CardDescription>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -1191,14 +1278,20 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="space-y-4 flex-1 overflow-y-auto">
-                                        {treeLoading ? (
-                                            <div className="flex items-center justify-center py-12 text-muted-foreground">
-                                                Loading tree structure...
-                                            </div>
-                                        ) : requirementTree &&
-                                          requirementTree.length > 0 ? (
-                                            <div className="space-y-1">
+                                    <CardContent className="flex-1 overflow-hidden flex gap-4 p-4">
+                                        {/* Left: Tree View (60%) */}
+                                        <div className="w-[60%] flex flex-col">
+                                            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+                                                Hierarchy Tree
+                                            </h3>
+                                            <div className="flex-1 overflow-y-auto pr-2">
+                                                {treeLoading ? (
+                                                    <div className="flex items-center justify-center py-12 text-muted-foreground">
+                                                        Loading tree structure...
+                                                    </div>
+                                                ) : requirementTree &&
+                                                  requirementTree.length > 0 ? (
+                                                    <div className="space-y-1">
                                                 {visibleTree.map((node, index) => {
                                                     const requirement =
                                                         requirements?.find(
@@ -1250,6 +1343,81 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                 </p>
                                             </div>
                                         )}
+                                            </div>
+                                        </div>
+
+                                        {/* Right: Available Requirements (40%) */}
+                                        <div className="w-[40%] flex flex-col border-l pl-4">
+                                            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+                                                Available Requirements
+                                            </h3>
+
+                                            {/* Search */}
+                                            <div className="mb-3">
+                                                <div className="relative">
+                                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Search requirements..."
+                                                        value={searchTerm}
+                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                        className="pl-9 h-9 text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Filter */}
+                                            <div className="mb-3">
+                                                <Select
+                                                    value={reqFilter}
+                                                    onValueChange={(value) => setReqFilter(value as 'all' | 'orphans' | 'linked')}
+                                                >
+                                                    <SelectTrigger className="h-9 text-sm">
+                                                        <SelectValue placeholder="Filter" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">All Requirements</SelectItem>
+                                                        <SelectItem value="orphans">Orphans Only</SelectItem>
+                                                        <SelectItem value="linked">Already Linked</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+
+                                            {/* Requirements List */}
+                                            <div className="flex-1 overflow-y-auto space-y-2">
+                                                {requirementsLoading ? (
+                                                    <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                                                        Loading requirements...
+                                                    </div>
+                                                ) : filteredRequirements && filteredRequirements.length > 0 ? (
+                                                    filteredRequirements
+                                                        .filter((req) => {
+                                                            const inTree = visibleTree.some((n) => n.requirement_id === req.id);
+                                                            if (reqFilter === 'orphans') return !inTree;
+                                                            if (reqFilter === 'linked') return inTree;
+                                                            return true; // 'all'
+                                                        })
+                                                        .map((req) => {
+                                                            const inTree = visibleTree.some(
+                                                                (n) => n.requirement_id === req.id
+                                                            );
+                                                            const isOrphan = !inTree;
+
+                                                            return (
+                                                                <DraggableRequirementCard
+                                                                    key={req.id}
+                                                                    requirement={req}
+                                                                    inTree={inTree}
+                                                                    isOrphan={isOrphan}
+                                                                />
+                                                            );
+                                                        })
+                                                ) : (
+                                                    <div className="text-center py-8 text-muted-foreground text-sm">
+                                                        <p>No requirements found</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </TabsContent>
