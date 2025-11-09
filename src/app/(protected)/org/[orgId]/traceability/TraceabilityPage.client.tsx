@@ -222,9 +222,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         // Remove duplicate nodes: keep only unique requirement_id
         // This prevents showing the same node multiple times
         const uniqueNodes = Array.from(
-            new Map(
-                filteredNodes.map((node) => [node.requirement_id, node])
-            ).values()
+            new Map(filteredNodes.map((node) => [node.requirement_id, node])).values(),
         );
 
         return uniqueNodes.sort((a, b) => (a.path || '').localeCompare(b.path || ''));
