@@ -350,20 +350,18 @@ function DraggableRequirementCard({
         <div
             ref={setNodeRef}
             style={style}
+            {...listeners}
+            {...attributes}
             className={`
-                p-3 border rounded-lg transition-all
+                p-3 border rounded-lg transition-all cursor-grab active:cursor-grabbing
                 ${inTree ? 'border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/50' : 'border-border'}
                 ${isDragging ? 'shadow-lg' : 'hover:border-primary hover:bg-accent/50'}
             `}
         >
             <div className="flex items-start gap-2">
-                <button
-                    {...listeners}
-                    {...attributes}
-                    className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-accent rounded touch-none"
-                >
+                <div className="p-0.5">
                     <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                </button>
+                </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <Badge variant="outline" className="text-xs font-mono">
@@ -764,19 +762,22 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             // Root zone drop: Remove parent relationship (promote to root)
             if (droppedOnRootZone) {
-                if (fromRightPanel) {
-                    alert('ℹ️ This requirement is already orphan (no parent)');
+                // Check if node is actually in the tree
+                const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
+
+                if (!draggedNode) {
+                    // Not in tree at all (true orphan with no relationships)
+                    alert('ℹ️ This requirement is not in the hierarchy tree yet');
                     return;
                 }
-
-                const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
-                if (!draggedNode) return;
 
                 if (!draggedNode.parent_id) {
-                    alert('ℹ️ This node is already a root parent');
+                    // Already a root parent (no parent to remove)
+                    alert('ℹ️ This node is already a root parent (no parent relationship)');
                     return;
                 }
 
+                // Has a parent - remove the relationship
                 try {
                     await deleteRelationshipMutation.mutateAsync({
                         ancestorId: draggedNode.parent_id,
