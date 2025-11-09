@@ -1827,37 +1827,41 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                       filteredRequirements.length > 0 ? (
                                                         filteredRequirements
                                                             .filter((req) => {
-                                                                // Use full requirementTree to check if requirement has any relationships
-                                                                const inTree =
+                                                                // Check if requirement has real relationships (depth > 0)
+                                                                // depth=0 is self-reference, meaning orphan
+                                                                const hasRealRelationships =
                                                                     (
                                                                         requirementTree as unknown as TreeNode[]
                                                                     )?.some(
                                                                         (n) =>
                                                                             n.requirement_id ===
-                                                                            req.id,
+                                                                                req.id &&
+                                                                            n.depth > 0,
                                                                     );
                                                                 if (
                                                                     reqFilter ===
                                                                     'orphans'
                                                                 )
-                                                                    return !inTree;
+                                                                    return !hasRealRelationships;
                                                                 if (
                                                                     reqFilter === 'linked'
                                                                 )
-                                                                    return inTree;
+                                                                    return hasRealRelationships;
                                                                 return true; // 'all'
                                                             })
                                                             .map((req) => {
-                                                                // Use full requirementTree to check if requirement has any relationships
-                                                                const inTree =
+                                                                // Check if requirement has real relationships (depth > 0)
+                                                                const hasRealRelationships =
                                                                     (
                                                                         requirementTree as unknown as TreeNode[]
                                                                     )?.some(
                                                                         (n) =>
                                                                             n.requirement_id ===
-                                                                            req.id,
+                                                                                req.id &&
+                                                                            n.depth > 0,
                                                                     );
-                                                                const isOrphan = !inTree;
+                                                                const isOrphan =
+                                                                    !hasRealRelationships;
 
                                                                 return (
                                                                     <DraggableRequirementCard
