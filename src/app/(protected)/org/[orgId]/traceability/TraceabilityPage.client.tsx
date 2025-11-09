@@ -352,7 +352,7 @@ function RootZone({
         >
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <Plus className="h-4 w-4" />
-                <span>Drop here to create new parent (no parent relationship)</span>
+                <span>Drop tree nodes here to remove parent (promote to root)</span>
             </div>
         </div>
     );
@@ -796,13 +796,21 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             // Root zone drop: Remove parent relationship (promote to root)
             if (droppedOnRootZone) {
+                // Orphans from right panel are already root (no parent)
+                if (fromRightPanel) {
+                    alert(
+                        'ℹ️ This requirement is already orphan (no parent). Drag it onto another node to create a relationship.',
+                    );
+                    return;
+                }
+
                 // Check if node is actually in the tree
                 const draggedNode = visibleTree.find(
                     (n) => n.requirement_id === draggedId,
                 );
 
                 if (!draggedNode) {
-                    // Not in tree at all (true orphan with no relationships)
+                    // Not in tree at all (shouldn't happen for tree nodes)
                     alert('ℹ️ This requirement is not in the hierarchy tree yet');
                     return;
                 }
