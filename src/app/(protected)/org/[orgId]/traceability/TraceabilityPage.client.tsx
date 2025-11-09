@@ -140,7 +140,7 @@ function DraggableTreeNode({
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.3 : 1,
         marginLeft: `${relativeDepth * 32}px`,
     };
 
@@ -187,39 +187,36 @@ function DraggableTreeNode({
             )}
 
             <div
+                {...listeners}
+                {...attributes}
                 onClick={handleCardClick}
                 className={`
-                    group relative p-4 border rounded-lg transition-all
+                    group relative p-4 border rounded-lg transition-all cursor-grab active:cursor-grabbing
                     ${borderColor}
                     ${dropZoneClass}
-                    ${documentId && projectId ? 'cursor-pointer hover:shadow-md hover:border-primary' : ''}
                     ${isTopLevel ? 'bg-muted/30' : 'bg-background'}
-                    hover:bg-muted/50
+                    hover:bg-muted/50 hover:shadow-md hover:border-primary
                 `}
             >
                 <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                            {/* Drag handle */}
-                            <button
-                                {...listeners}
-                                {...attributes}
-                                className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded touch-none"
-                                onClick={(e) => e.stopPropagation()}
-                            >
+                            {/* Drag indicator */}
+                            <div className="p-1">
                                 <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            </button>
+                            </div>
 
                             {/* Expand/Collapse */}
                             {node.has_children ? (
                                 <button
                                     type="button"
                                     aria-label={collapsedNodes.has(node.requirement_id) ? 'Expand' : 'Collapse'}
-                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10"
+                                    className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10 cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         onToggleCollapse(node.requirement_id);
                                     }}
+                                    onPointerDown={(e) => e.stopPropagation()}
                                 >
                                     {collapsedNodes.has(node.requirement_id) ? (
                                         <ChevronRight className="h-4 w-4" />
@@ -284,7 +281,8 @@ function DraggableTreeNode({
                                         parent_id: node.parent_id,
                                     });
                                 }}
-                                className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                className="text-xs h-8 px-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                             >
                                 <Unlink className="h-4 w-4 mr-1" />
                                 Unlink
@@ -292,6 +290,34 @@ function DraggableTreeNode({
                         )}
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// Root Zone Component (drop to create new parent)
+function RootZone({ activeId, overId }: { activeId: string | null; overId: string | null }) {
+    const { setNodeRef, isOver } = useDroppable({
+        id: 'root-zone',
+        data: { isRootZone: true },
+    });
+
+    const isActive = isOver && overId === 'root-zone' && activeId;
+
+    return (
+        <div
+            ref={setNodeRef}
+            className={`
+                mb-3 p-4 border-2 border-dashed rounded-lg transition-all text-center
+                ${isActive
+                    ? 'border-primary bg-primary/10 shadow-lg'
+                    : 'border-muted-foreground/30 bg-muted/20'
+                }
+            `}
+        >
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Plus className="h-4 w-4" />
+                <span>Drop here to create new parent (no parent relationship)</span>
             </div>
         </div>
     );
@@ -316,7 +342,7 @@ function DraggableRequirementCard({
 
     const style = {
         transform: CSS.Transform.toString(transform),
-        opacity: isDragging ? 0.5 : 1,
+        opacity: isDragging ? 0.3 : 1,
     };
 
     return (
@@ -729,8 +755,39 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const draggedId = active.id as string;
             const targetId = over.id as string;
 
+            // Check if dropped on root zone
+            const droppedOnRootZone = targetId === 'root-zone';
+
             // Check if dragged from right panel (available requirements)
             const fromRightPanel = active.data.current?.source === 'available';
+
+            // Root zone drop: Remove parent relationship (promote to root)
+            if (droppedOnRootZone) {
+                if (fromRightPanel) {
+                    alert('ℹ️ This requirement is already orphan (no parent)');
+                    return;
+                }
+
+                const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
+                if (!draggedNode) return;
+
+                if (!draggedNode.parent_id) {
+                    alert('ℹ️ This node is already a root parent');
+                    return;
+                }
+
+                try {
+                    await deleteRelationshipMutation.mutateAsync({
+                        ancestorId: draggedNode.parent_id,
+                        descendantId: draggedId,
+                    });
+                    alert('✅ Node promoted to root (parent removed)!');
+                } catch (error) {
+                    console.error('Failed to promote to root:', error);
+                    alert(`❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+                return;
+            }
 
             // Cycle detection (only for nodes already in tree)
             if (!fromRightPanel && wouldCreateCycle(draggedId, targetId)) {
@@ -1285,6 +1342,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                 Hierarchy Tree
                                             </h3>
                                             <div className="flex-1 overflow-y-auto pr-2">
+                                                {/* Root Zone - Drop area for creating parentless nodes */}
+                                                <RootZone activeId={activeId} overId={overId} />
+
                                                 {treeLoading ? (
                                                     <div className="flex items-center justify-center py-12 text-muted-foreground">
                                                         Loading tree structure...
@@ -1490,6 +1550,68 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     )}
                 </Tabs>
             </div>
+
+                {/* DragOverlay - Shows preview of dragged item that follows cursor */}
+                <DragOverlay>
+                    {activeId ? (() => {
+                        // Find if it's a tree node or available requirement
+                        const treeNode = visibleTree.find(n => n.requirement_id === activeId);
+                        const requirement = requirements?.find(r => r.id === activeId);
+
+                        if (treeNode && requirement) {
+                            // Dragging from tree
+                            return (
+                                <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-4 cursor-grabbing max-w-md">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <GripVertical className="h-5 w-5 text-primary" />
+                                        <Badge variant="outline" className="text-xs font-mono">
+                                            {requirement.external_id || requirement.id.slice(0, 8)}
+                                        </Badge>
+                                        <Badge variant="secondary" className="text-xs">
+                                            Tree Node
+                                        </Badge>
+                                    </div>
+                                    <h4 className="text-sm font-semibold line-clamp-2">
+                                        {treeNode.title}
+                                    </h4>
+                                    {requirement.description && (
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                            {requirement.description}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        } else if (requirement) {
+                            // Dragging from available requirements
+                            return (
+                                <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-3 cursor-grabbing max-w-md">
+                                    <div className="flex items-start gap-2">
+                                        <GripVertical className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                <Badge variant="outline" className="text-xs font-mono">
+                                                    {requirement.external_id || requirement.id.slice(0, 8)}
+                                                </Badge>
+                                                <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
+                                                    🆓 Available
+                                                </Badge>
+                                            </div>
+                                            <h4 className="text-sm font-medium line-clamp-1 mb-1">
+                                                {requirement.name}
+                                            </h4>
+                                            {requirement.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                                    {requirement.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return null;
+                    })() : null}
+                </DragOverlay>
             </DndContext>
         </LayoutView>
     );
