@@ -827,10 +827,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             // Root zone drop: Remove parent to promote to root (tree nodes only)
             if (droppedOnRootZone) {
-                // Orphans cannot be dropped on root zone - they need a relationship target
+                // Orphans from right panel: Show helpful message
                 if (fromRightPanel) {
                     alert(
-                        'ℹ️ Drag this onto another requirement to create a parent-child relationship.\n\nTip: The requirement you drop onto becomes the child.',
+                        'To create first relationship:\n\n' +
+                            '1. Drag an orphan requirement from right panel\n' +
+                            '2. Drop it onto another orphan requirement\n' +
+                            '3. The one you drop onto becomes the PARENT (root)\n' +
+                            '4. The one you dragged becomes the CHILD',
                     );
                     return;
                 }
@@ -888,6 +892,15 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 return;
             }
 
+            // Check if dragged node already has this parent
+            if (draggedNode && draggedNode.parent_id === targetId) {
+                alert(
+                    'ℹ️ This relationship already exists!\n\n' +
+                        'This requirement is already a child of the target parent.',
+                );
+                return;
+            }
+
             try {
                 // Delete old relationship (if exists and node is in tree)
                 if (draggedNode && draggedNode.parent_id) {
@@ -898,6 +911,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 }
 
                 // Create new relationship
+                // Target becomes PARENT, Dragged becomes CHILD
                 await createRelationshipMutation.mutateAsync({
                     ancestorId: targetId,
                     descendantId: draggedId,
@@ -910,9 +924,22 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 }
             } catch (error) {
                 console.error('Failed to move/add node:', error);
-                alert(
-                    `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                );
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+                if (errorMessage.includes('Relationship already exists')) {
+                    alert(
+                        '⚠️ This relationship already exists!\n\n' +
+                            'These requirements are already connected.\n' +
+                            'Try dragging to a different requirement.',
+                    );
+                } else if (errorMessage.includes('Circular reference')) {
+                    alert(
+                        '⚠️ Cannot create circular reference!\n\n' +
+                            'This would create a loop in the hierarchy.',
+                    );
+                } else {
+                    alert(`❌ Failed: ${errorMessage}`);
+                }
             }
         },
         [
