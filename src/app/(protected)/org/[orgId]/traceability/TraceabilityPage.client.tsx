@@ -882,8 +882,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 return;
             }
 
-            // Find nodes
-            const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
+            // Find nodes in full tree (not just visible tree)
+            const allTreeNodes = (requirementTree as unknown as TreeNode[]) || [];
+            const draggedNode = allTreeNodes.find((n) => n.requirement_id === draggedId);
 
             // Validate target exists as a requirement (not necessarily in tree)
             const targetRequirement = requirements?.find((r) => r.id === targetId);
@@ -892,7 +893,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 return;
             }
 
-            // Check if dragged node already has this parent
+            // Check if this exact relationship already exists
             if (draggedNode && draggedNode.parent_id === targetId) {
                 alert(
                     'ℹ️ This relationship already exists!\n\n' +
@@ -1826,8 +1827,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                       filteredRequirements.length > 0 ? (
                                                         filteredRequirements
                                                             .filter((req) => {
+                                                                // Use full requirementTree to check if requirement has any relationships
                                                                 const inTree =
-                                                                    visibleTree.some(
+                                                                    (
+                                                                        requirementTree as unknown as TreeNode[]
+                                                                    )?.some(
                                                                         (n) =>
                                                                             n.requirement_id ===
                                                                             req.id,
@@ -1844,8 +1848,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                 return true; // 'all'
                                                             })
                                                             .map((req) => {
+                                                                // Use full requirementTree to check if requirement has any relationships
                                                                 const inTree =
-                                                                    visibleTree.some(
+                                                                    (
+                                                                        requirementTree as unknown as TreeNode[]
+                                                                    )?.some(
                                                                         (n) =>
                                                                             n.requirement_id ===
                                                                             req.id,
