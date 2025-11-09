@@ -89,7 +89,6 @@ type TreeNode = {
 interface DraggableTreeNodeProps {
     node: TreeNode;
     requirement: RequirementWithDocuments | undefined;
-    minDepth: number;
     isTopLevel: boolean;
     relativeDepth: number;
     orgId: string;
@@ -108,7 +107,6 @@ interface DraggableTreeNodeProps {
 function DraggableTreeNode({
     node,
     requirement,
-    minDepth,
     isTopLevel,
     relativeDepth,
     orgId,
@@ -122,7 +120,13 @@ function DraggableTreeNode({
     const router = useRouter();
 
     // Draggable
-    const { attributes, listeners, setNodeRef: setDragRef, transform, isDragging } = useDraggable({
+    const {
+        attributes,
+        listeners,
+        setNodeRef: setDragRef,
+        transform,
+        isDragging,
+    } = useDraggable({
         id: node.requirement_id,
         data: { node },
     });
@@ -159,8 +163,11 @@ function DraggableTreeNode({
         : `border-l-2 ${depthColors[relativeDepth % depthColors.length]}`;
 
     // Drop zone styling
-    const isValidDrop = isOver && overId === node.requirement_id && activeId !== node.requirement_id;
-    const dropZoneClass = isValidDrop ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' : '';
+    const isValidDrop =
+        isOver && overId === node.requirement_id && activeId !== node.requirement_id;
+    const dropZoneClass = isValidDrop
+        ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950'
+        : '';
 
     const documentId = requirement?.document_id;
     const projectId = (requirement as RequirementWithDocuments)?.documents?.project_id;
@@ -211,7 +218,11 @@ function DraggableTreeNode({
                             {node.has_children ? (
                                 <button
                                     type="button"
-                                    aria-label={collapsedNodes.has(node.requirement_id) ? 'Expand' : 'Collapse'}
+                                    aria-label={
+                                        collapsedNodes.has(node.requirement_id)
+                                            ? 'Expand'
+                                            : 'Collapse'
+                                    }
                                     className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-accent z-10 cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -234,16 +245,24 @@ function DraggableTreeNode({
                             )}
 
                             <Badge variant="outline" className="text-xs font-mono">
-                                {requirement?.external_id || node.title || node.requirement_id?.slice(0, 8)}
+                                {requirement?.external_id ||
+                                    node.title ||
+                                    node.requirement_id?.slice(0, 8)}
                             </Badge>
-                            <Badge variant={isTopLevel ? 'default' : 'secondary'} className="text-xs">
+                            <Badge
+                                variant={isTopLevel ? 'default' : 'secondary'}
+                                className="text-xs"
+                            >
                                 {isTopLevel ? 'PARENT' : `CHILD-L${relativeDepth}`}
                             </Badge>
                             <h3 className="font-medium text-sm truncate">
                                 {requirement?.name || node.title}
                             </h3>
                             {requirement?.documents && (
-                                <Badge variant="outline" className="text-xs truncate max-w-[120px]">
+                                <Badge
+                                    variant="outline"
+                                    className="text-xs truncate max-w-[120px]"
+                                >
                                     {requirement.documents.name}
                                 </Badge>
                             )}
@@ -253,7 +272,12 @@ function DraggableTreeNode({
                                     className="text-xs bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
                                 >
                                     <Network className="h-3 w-3 mr-1" />
-                                    {visibleTree.filter((n) => n.parent_id === node.requirement_id).length} child
+                                    {
+                                        visibleTree.filter(
+                                            (n) => n.parent_id === node.requirement_id,
+                                        ).length
+                                    }{' '}
+                                    child
                                 </Badge>
                             )}
                         </div>
@@ -278,7 +302,10 @@ function DraggableTreeNode({
                                     e.stopPropagation();
                                     onDeleteRelationship({
                                         requirement_id: node.requirement_id,
-                                        title: requirement?.name || node.title || node.requirement_id.slice(0, 8),
+                                        title:
+                                            requirement?.name ||
+                                            node.title ||
+                                            node.requirement_id.slice(0, 8),
                                         parent_id: node.parent_id,
                                     });
                                 }}
@@ -297,7 +324,13 @@ function DraggableTreeNode({
 }
 
 // Root Zone Component (drop to create new parent)
-function RootZone({ activeId, overId }: { activeId: string | null; overId: string | null }) {
+function RootZone({
+    activeId,
+    overId,
+}: {
+    activeId: string | null;
+    overId: string | null;
+}) {
     const { setNodeRef, isOver } = useDroppable({
         id: 'root-zone',
         data: { isRootZone: true },
@@ -310,9 +343,10 @@ function RootZone({ activeId, overId }: { activeId: string | null; overId: strin
             ref={setNodeRef}
             className={`
                 mb-3 p-4 border-2 border-dashed rounded-lg transition-all text-center
-                ${isActive
-                    ? 'border-primary bg-primary/10 shadow-lg'
-                    : 'border-muted-foreground/30 bg-muted/20'
+                ${
+                    isActive
+                        ? 'border-primary bg-primary/10 shadow-lg'
+                        : 'border-muted-foreground/30 bg-muted/20'
                 }
             `}
         >
@@ -368,7 +402,10 @@ function DraggableRequirementCard({
                             {requirement.external_id || requirement.id.slice(0, 8)}
                         </Badge>
                         {isOrphan ? (
-                            <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
+                            <Badge
+                                variant="secondary"
+                                className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300"
+                            >
                                 🆓 Not linked
                             </Badge>
                         ) : (
@@ -736,12 +773,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setActiveId(event.active.id as string);
     }, []);
 
-    const handleDragOver = useCallback(
-        (event: DragOverEvent) => {
-            setOverId(event.over?.id as string | null);
-        },
-        [],
-    );
+    const handleDragOver = useCallback((event: DragOverEvent) => {
+        setOverId(event.over?.id as string | null);
+    }, []);
 
     const handleDragEnd = useCallback(
         async (event: DragEndEvent) => {
@@ -763,7 +797,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             // Root zone drop: Remove parent relationship (promote to root)
             if (droppedOnRootZone) {
                 // Check if node is actually in the tree
-                const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
+                const draggedNode = visibleTree.find(
+                    (n) => n.requirement_id === draggedId,
+                );
 
                 if (!draggedNode) {
                     // Not in tree at all (true orphan with no relationships)
@@ -773,7 +809,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
                 if (!draggedNode.parent_id) {
                     // Already a root parent (no parent to remove)
-                    alert('ℹ️ This node is already a root parent (no parent relationship)');
+                    alert(
+                        'ℹ️ This node is already a root parent (no parent relationship)',
+                    );
                     return;
                 }
 
@@ -786,20 +824,23 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     alert('✅ Node promoted to root (parent removed)!');
                 } catch (error) {
                     console.error('Failed to promote to root:', error);
-                    alert(`❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    alert(
+                        `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    );
                 }
                 return;
             }
 
             // Cycle detection (only for nodes already in tree)
             if (!fromRightPanel && wouldCreateCycle(draggedId, targetId)) {
-                alert('⚠️ Cannot create cycle: Target is a descendant of the dragged node');
+                alert(
+                    '⚠️ Cannot create cycle: Target is a descendant of the dragged node',
+                );
                 return;
             }
 
             // Find nodes
             const draggedNode = visibleTree.find((n) => n.requirement_id === draggedId);
-            const targetNode = visibleTree.find((n) => n.requirement_id === targetId);
 
             // Validate target exists as a requirement (not necessarily in tree)
             const targetRequirement = requirements?.find((r) => r.id === targetId);
@@ -830,11 +871,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 }
             } catch (error) {
                 console.error('Failed to move/add node:', error);
-                alert(`❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                alert(
+                    `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                );
             }
         },
         [
             visibleTree,
+            requirements,
             wouldCreateCycle,
             deleteRelationshipMutation,
             createRelationshipMutation,
@@ -862,209 +906,141 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         onValueChange={handleTabChange}
                         className="flex h-full flex-col gap-4"
                     >
-                    <div className="flex items-center gap-4">
-                        {/* Organization Selector */}
-                        <Select
-                            value={orgId}
-                            onValueChange={(newOrgId) => {
-                                // reset local state when switching orgs
-                                setSelectedProject('');
-                                setActiveTab('hierarchy');
-                                setSelectedParent('');
-                                setSelectedChildren([]);
-                                setSearchTerm('');
-                                router.push(`/org/${newOrgId}/traceability`);
-                            }}
-                            disabled={orgsLoading}
-                        >
-                            <SelectTrigger className="w-72">
-                                <SelectValue
-                                    placeholder={
-                                        orgsLoading
-                                            ? 'Loading organizations...'
-                                            : 'Select Organization'
-                                    }
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {organizations?.map((org) => (
-                                    <SelectItem key={org.id} value={org.id}>
-                                        {org.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        {/* Project Selector */}
-                        <Select
-                            value={selectedProject}
-                            onValueChange={handleProjectChange}
-                            disabled={projectsLoading}
-                        >
-                            <SelectTrigger className="w-72">
-                                <SelectValue
-                                    placeholder={
-                                        projectsLoading
-                                            ? 'Loading projects...'
-                                            : 'Select Project'
-                                    }
-                                />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {projects?.map((project) => (
-                                    <SelectItem key={project.id} value={project.id}>
-                                        {project.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <TabsList className="w-fit">
-                            <TabsTrigger
-                                value="hierarchy"
-                                className="flex items-center gap-1"
+                        <div className="flex items-center gap-4">
+                            {/* Organization Selector */}
+                            <Select
+                                value={orgId}
+                                onValueChange={(newOrgId) => {
+                                    // reset local state when switching orgs
+                                    setSelectedProject('');
+                                    setActiveTab('hierarchy');
+                                    setSelectedParent('');
+                                    setSelectedChildren([]);
+                                    setSearchTerm('');
+                                    router.push(`/org/${newOrgId}/traceability`);
+                                }}
+                                disabled={orgsLoading}
                             >
-                                <GitBranch className="h-4 w-4" />
-                                <span className="font-semibold">Hierarchy</span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="matrix"
-                                className="flex items-center gap-1"
+                                <SelectTrigger className="w-72">
+                                    <SelectValue
+                                        placeholder={
+                                            orgsLoading
+                                                ? 'Loading organizations...'
+                                                : 'Select Organization'
+                                        }
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {organizations?.map((org) => (
+                                        <SelectItem key={org.id} value={org.id}>
+                                            {org.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {/* Project Selector */}
+                            <Select
+                                value={selectedProject}
+                                onValueChange={handleProjectChange}
+                                disabled={projectsLoading}
                             >
-                                <Network className="h-4 w-4" />
-                                <span className="font-semibold">Tree View</span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="manage"
-                                className="flex items-center gap-1"
-                            >
-                                <Zap className="h-4 w-4" />
-                                <span className="font-semibold">Manage</span>
-                            </TabsTrigger>
-                        </TabsList>
-                    </div>
+                                <SelectTrigger className="w-72">
+                                    <SelectValue
+                                        placeholder={
+                                            projectsLoading
+                                                ? 'Loading projects...'
+                                                : 'Select Project'
+                                        }
+                                    />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {projects?.map((project) => (
+                                        <SelectItem key={project.id} value={project.id}>
+                                            {project.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <TabsList className="w-fit">
+                                <TabsTrigger
+                                    value="hierarchy"
+                                    className="flex items-center gap-1"
+                                >
+                                    <GitBranch className="h-4 w-4" />
+                                    <span className="font-semibold">Hierarchy</span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="matrix"
+                                    className="flex items-center gap-1"
+                                >
+                                    <Network className="h-4 w-4" />
+                                    <span className="font-semibold">Tree View</span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="manage"
+                                    className="flex items-center gap-1"
+                                >
+                                    <Zap className="h-4 w-4" />
+                                    <span className="font-semibold">Manage</span>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
 
-                    {/* Requirements Area */}
-                    {selectedProject && (
-                        <>
-                            <TabsContent value="hierarchy" className="flex-1 h-full">
-                                <Card className="h-full flex flex-col">
-                                    <CardHeader className="py-4 flex-shrink-0">
-                                        <CardTitle className="text-lg font-bold">
-                                            Requirements Hierarchy
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4 flex-1 overflow-y-auto">
-                                        <div className="relative">
-                                            <Input
-                                                placeholder="Search requirements by name, ID, or description..."
-                                                value={searchTerm}
-                                                onChange={(e) =>
-                                                    setSearchTerm(e.target.value)
-                                                }
-                                                className="pl-9"
-                                            />
-                                            <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                                            {searchTerm && (
-                                                <button
-                                                    onClick={() => setSearchTerm('')}
-                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                                    aria-label="Clear search"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            )}
-                                        </div>
+                        {/* Requirements Area */}
+                        {selectedProject && (
+                            <>
+                                <TabsContent value="hierarchy" className="flex-1 h-full">
+                                    <Card className="h-full flex flex-col">
+                                        <CardHeader className="py-4 flex-shrink-0">
+                                            <CardTitle className="text-lg font-bold">
+                                                Requirements Hierarchy
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4 flex-1 overflow-y-auto">
+                                            <div className="relative">
+                                                <Input
+                                                    placeholder="Search requirements by name, ID, or description..."
+                                                    value={searchTerm}
+                                                    onChange={(e) =>
+                                                        setSearchTerm(e.target.value)
+                                                    }
+                                                    className="pl-9"
+                                                />
+                                                <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                                {searchTerm && (
+                                                    <button
+                                                        onClick={() => setSearchTerm('')}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                                        aria-label="Clear search"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                )}
+                                            </div>
 
-                                        <Card className="border-dashed">
-                                            <CardHeader className="py-3">
-                                                <CardTitle className="text-base">
-                                                    1. Select Parent Requirement
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3">
-                                                <Select
-                                                    value={selectedParent}
-                                                    onValueChange={handleParentSelect}
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Choose parent requirement..." />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {filteredRequirements.map(
-                                                            (req) => (
-                                                                <SelectItem
-                                                                    key={req.id}
-                                                                    value={req.id}
-                                                                >
-                                                                    <div className="flex items-center gap-2">
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className="text-xs"
-                                                                        >
-                                                                            {req.external_id ||
-                                                                                req.id.slice(
-                                                                                    0,
-                                                                                    8,
-                                                                                )}
-                                                                        </Badge>
-                                                                        <span className="text-sm">
-                                                                            {req.name}
-                                                                        </span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                            ),
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                            </CardContent>
-                                        </Card>
-
-                                        {selectedParent && (
                                             <Card className="border-dashed">
                                                 <CardHeader className="py-3">
                                                     <CardTitle className="text-base">
-                                                        2. Select Child Requirements
+                                                        1. Select Parent Requirement
                                                     </CardTitle>
                                                 </CardHeader>
                                                 <CardContent className="space-y-3">
-                                                    <div className="text-sm text-muted-foreground">
-                                                        <span className="mr-2">
-                                                            Parent:
-                                                        </span>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="mr-2"
-                                                        >
-                                                            {requirements?.find(
-                                                                (r) =>
-                                                                    r.id ===
-                                                                    selectedParent,
-                                                            )?.external_id ||
-                                                                selectedParent.slice(
-                                                                    0,
-                                                                    8,
-                                                                )}
-                                                        </Badge>
-                                                        <span className="font-medium text-foreground">
-                                                            {
-                                                                requirements?.find(
-                                                                    (r) =>
-                                                                        r.id ===
-                                                                        selectedParent,
-                                                                )?.name
-                                                            }
-                                                        </span>
-                                                    </div>
-
-                                                    {selectedChildren.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {selectedChildren.map(
-                                                                (childId) => (
-                                                                    <Badge
-                                                                        key={childId}
-                                                                        className="text-xs"
-                                                                        variant="secondary"
+                                                    <Select
+                                                        value={selectedParent}
+                                                        onValueChange={handleParentSelect}
+                                                    >
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Choose parent requirement..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {filteredRequirements.map(
+                                                                (req) => (
+                                                                    <SelectItem
+                                                                        key={req.id}
+                                                                        value={req.id}
                                                                     >
+<<<<<<< HEAD
                                                                         {requirements?.find(
                                                                             (r) =>
                                                                                 r.id ===
@@ -1269,6 +1245,296 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                 }
                                                                             </Badge>
                                                                         )}
+                                                                    </div>
+                                                                    {requirement.description && (
+                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                            {
+                                                                                requirement.description
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="ml-auto">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() =>
+                                                                            openInManage(
+                                                                                requirement.id,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        View in
+                                                                        Manage
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                {searchTerm
+                                                    ? 'No requirements match your search'
+                                                    : 'No requirements found'}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                                            {selectedParent && (
+                                                <Card className="border-dashed">
+                                                    <CardHeader className="py-3">
+                                                        <CardTitle className="text-base">
+                                                            2. Select Child Requirements
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent className="space-y-3">
+                                                        <div className="text-sm text-muted-foreground">
+                                                            <span className="mr-2">
+                                                                Parent:
+                                                            </span>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="mr-2"
+                                                            >
+                                                                {requirements?.find(
+                                                                    (r) =>
+                                                                        r.id ===
+                                                                        selectedParent,
+                                                                )?.external_id ||
+                                                                    selectedParent.slice(
+                                                                        0,
+                                                                        8,
+                                                                    )}
+                                                            </Badge>
+                                                            <span className="font-medium text-foreground">
+                                                                {
+                                                                    requirements?.find(
+                                                                        (r) =>
+                                                                            r.id ===
+                                                                            selectedParent,
+                                                                    )?.name
+                                                                }
+                                                            </span>
+                                                        </div>
+
+                                                        {selectedChildren.length > 0 && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {selectedChildren.map(
+                                                                    (childId) => (
+                                                                        <Badge
+                                                                            key={childId}
+                                                                            className="text-xs"
+                                                                            variant="secondary"
+                                                                        >
+                                                                            {requirements?.find(
+                                                                                (r) =>
+                                                                                    r.id ===
+                                                                                    childId,
+                                                                            )
+                                                                                ?.external_id ||
+                                                                                childId.slice(
+                                                                                    0,
+                                                                                    8,
+                                                                                )}
+                                                                        </Badge>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex items-center gap-2">
+                                                            <Button
+                                                                onClick={
+                                                                    createParentChildRelationship
+                                                                }
+                                                                disabled={
+                                                                    selectedChildren.length ===
+                                                                        0 ||
+                                                                    createRelationshipMutation.isPending
+                                                                }
+                                                            >
+                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                {createRelationshipMutation.isPending
+                                                                    ? 'Creating...'
+                                                                    : `Create Relationships (${selectedChildren.length})`}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={
+                                                                    handleClearSelection
+                                                                }
+                                                            >
+                                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                                Clear All
+                                                            </Button>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+
+                                            {selectedParent ? (
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                        <Search className="h-4 w-4" />
+                                                        <span>
+                                                            Available Child Requirements
+                                                        </span>
+                                                        <span>
+                                                            — Click to select/deselect
+                                                        </span>
+                                                    </div>
+                                                    {requirementsLoading ? (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            Loading requirements...
+                                                        </div>
+                                                    ) : availableChildren.length > 0 ? (
+                                                        <div className="space-y-2">
+                                                            {availableChildren.map(
+                                                                (requirement) => (
+                                                                    <div
+                                                                        key={
+                                                                            requirement.id
+                                                                        }
+                                                                        className={`p-3 border rounded-md cursor-pointer transition-colors ${
+                                                                            selectedChildren.includes(
+                                                                                requirement.id,
+                                                                            )
+                                                                                ? 'border-primary bg-muted'
+                                                                                : 'hover:bg-muted/50'
+                                                                        }`}
+                                                                        onClick={() =>
+                                                                            handleChildSelect(
+                                                                                requirement.id,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex-1">
+                                                                                <div className="flex items-center gap-2 mb-1">
+                                                                                    <Badge
+                                                                                        variant={
+                                                                                            selectedChildren.includes(
+                                                                                                requirement.id,
+                                                                                            )
+                                                                                                ? 'default'
+                                                                                                : 'outline'
+                                                                                        }
+                                                                                        className="text-xs font-mono"
+                                                                                    >
+                                                                                        {requirement.external_id ||
+                                                                                            requirement.id.slice(
+                                                                                                0,
+                                                                                                8,
+                                                                                            )}
+                                                                                    </Badge>
+                                                                                    <h3 className="font-medium text-sm">
+                                                                                        {
+                                                                                            requirement.name
+                                                                                        }
+                                                                                    </h3>
+                                                                                    {requirement.documents && (
+                                                                                        <Badge
+                                                                                            variant="outline"
+                                                                                            className="text-xs"
+                                                                                        >
+                                                                                            {' '}
+                                                                                            {
+                                                                                                requirement
+                                                                                                    .documents
+                                                                                                    .name
+                                                                                            }
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                                {requirement.description && (
+                                                                                    <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                                        {
+                                                                                            requirement.description
+                                                                                        }
+                                                                                    </p>
+                                                                                )}
+                                                                            </div>
+                                                                            {selectedChildren.includes(
+                                                                                requirement.id,
+                                                                            ) && (
+                                                                                <ArrowRight className="h-4 w-4 text-muted-foreground ml-4" />
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            {searchTerm
+                                                                ? 'No requirements match your search'
+                                                                : 'No available child requirements'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div>
+                                                    <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+                                                        All Requirements (select parent
+                                                        first):
+                                                    </h4>
+                                                    {requirementsLoading ? (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            Loading requirements...
+                                                        </div>
+                                                    ) : filteredRequirements.length >
+                                                      0 ? (
+                                                        <div className="space-y-2">
+                                                            {filteredRequirements.map(
+                                                                (requirement) => (
+                                                                    <div
+                                                                        key={
+                                                                            requirement.id
+                                                                        }
+                                                                        className="p-3 border rounded-md"
+                                                                    >
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className="text-xs font-mono"
+                                                                            >
+                                                                                {requirement.external_id ||
+                                                                                    requirement.id.slice(
+                                                                                        0,
+                                                                                        8,
+                                                                                    )}
+                                                                            </Badge>
+                                                                            <h3 className="font-medium text-sm">
+                                                                                {
+                                                                                    requirement.name
+                                                                                }
+                                                                            </h3>
+                                                                            {requirement.documents && (
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className="text-xs"
+                                                                                >
+                                                                                    {' '}
+                                                                                    {
+                                                                                        requirement
+                                                                                            .documents
+                                                                                            .name
+                                                                                    }
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                        {requirement.description && (
+                                                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                                {
+                                                                                    requirement.description
+                                                                                }
+                                                                            </p>
+                                                                        )}
                                                                         <div className="ml-auto">
                                                                             <Button
                                                                                 variant="outline"
@@ -1284,207 +1550,265 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                             </Button>
                                                                         </div>
                                                                     </div>
-                                                                    {requirement.description && (
-                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
-                                                                            {
-                                                                                requirement.description
-                                                                            }
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            ),
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <div className="text-center py-8 text-muted-foreground">
-                                                        {searchTerm
-                                                            ? 'No requirements match your search'
-                                                            : 'No requirements found'}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                                                ),
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-8 text-muted-foreground">
+                                                            {searchTerm
+                                                                ? 'No requirements match your search'
+                                                                : 'No requirements found'}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
 
-                            <TabsContent value="matrix" className="flex-1 h-full">
-                                <Card className="h-full flex flex-col">
-                                    <CardHeader className="py-4 flex-shrink-0">
-                                        <div className="flex items-center justify-between gap-4">
-                                            <div>
-                                                <CardTitle className="text-lg font-bold">
-                                                    Requirements Tree View
-                                                </CardTitle>
-                                                <CardDescription>
-                                                    Drag nodes to reorganize or drag from available requirements
-                                                </CardDescription>
+                                <TabsContent value="matrix" className="flex-1 h-full">
+                                    <Card className="h-full flex flex-col">
+                                        <CardHeader className="py-4 flex-shrink-0">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div>
+                                                    <CardTitle className="text-lg font-bold">
+                                                        Requirements Tree View
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        Drag nodes to reorganize or drag
+                                                        from available requirements
+                                                    </CardDescription>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={collapseAllToTopLevel}
+                                                    >
+                                                        Collapse to top-level
+                                                    </Button>
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        onClick={expandAll}
+                                                    >
+                                                        Expand all
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={collapseAllToTopLevel}
-                                                >
-                                                    Collapse to top-level
-                                                </Button>
-                                                <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    onClick={expandAll}
-                                                >
-                                                    Expand all
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="flex-1 overflow-hidden flex gap-4 p-4">
-                                        {/* Left: Tree View (60%) */}
-                                        <div className="w-[60%] flex flex-col">
-                                            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
-                                                Hierarchy Tree
-                                            </h3>
-                                            <div className="flex-1 overflow-y-auto pr-2">
-                                                {/* Root Zone - Drop area for creating parentless nodes */}
-                                                <RootZone activeId={activeId} overId={overId} />
-
-                                                {treeLoading ? (
-                                                    <div className="flex items-center justify-center py-12 text-muted-foreground">
-                                                        Loading tree structure...
-                                                    </div>
-                                                ) : requirementTree &&
-                                                  requirementTree.length > 0 ? (
-                                                    <div className="space-y-1">
-                                                {visibleTree.map((node, index) => {
-                                                    const requirement =
-                                                        requirements?.find(
-                                                            (r) =>
-                                                                r.id ===
-                                                                node.requirement_id,
-                                                        );
-                                                    const minDepth =
-                                                        sortedTree.length > 0
-                                                            ? Math.min(
-                                                                  ...sortedTree.map(
-                                                                      (n) => n.depth ?? 1,
-                                                                  ),
-                                                              )
-                                                            : 1;
-                                                    const relativeDepth =
-                                                        node.depth - minDepth;
-                                                    const isTopLevel =
-                                                        relativeDepth === 0;
-
-                                                    return (
-                                                        <DraggableTreeNode
-                                                            key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                            node={node}
-                                                            requirement={requirement}
-                                                            minDepth={minDepth}
-                                                            isTopLevel={isTopLevel}
-                                                            relativeDepth={relativeDepth}
-                                                            orgId={orgId}
-                                                            visibleTree={visibleTree}
-                                                            collapsedNodes={collapsedNodes}
-                                                            activeId={activeId}
-                                                            overId={overId}
-                                                            onToggleCollapse={toggleNodeCollapse}
-                                                            onDeleteRelationship={handleDeleteRelationship}
-                                                        />
-                                                    );
-                                                })}
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-muted-foreground">
-                                                <Network className="h-12 w-12 mx-auto mb-4" />
-                                                <p className="font-medium">
-                                                    No hierarchy found
-                                                </p>
-                                                <p className="text-sm">
-                                                    Create some relationships to see the
-                                                    tree structure
-                                                </p>
-                                            </div>
-                                        )}
-                                            </div>
-                                        </div>
-
-                                        {/* Right: Available Requirements (40%) */}
-                                        <div className="w-[40%] flex flex-col border-l pl-4">
-                                            <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
-                                                Available Requirements
-                                            </h3>
-
-                                            {/* Search */}
-                                            <div className="mb-3">
-                                                <div className="relative">
-                                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        placeholder="Search requirements..."
-                                                        value={searchTerm}
-                                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                                        className="pl-9 h-9 text-sm"
+                                        </CardHeader>
+                                        <CardContent className="flex-1 overflow-hidden flex gap-4 p-4">
+                                            {/* Left: Tree View (60%) */}
+                                            <div className="w-[60%] flex flex-col">
+                                                <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+                                                    Hierarchy Tree
+                                                </h3>
+                                                <div className="flex-1 overflow-y-auto pr-2">
+                                                    {/* Root Zone - Drop area for creating parentless nodes */}
+                                                    <RootZone
+                                                        activeId={activeId}
+                                                        overId={overId}
                                                     />
+
+                                                    {treeLoading ? (
+                                                        <div className="flex items-center justify-center py-12 text-muted-foreground">
+                                                            Loading tree structure...
+                                                        </div>
+                                                    ) : requirementTree &&
+                                                      requirementTree.length > 0 ? (
+                                                        <div className="space-y-1">
+                                                            {visibleTree.map(
+                                                                (node, index) => {
+                                                                    const requirement =
+                                                                        requirements?.find(
+                                                                            (r) =>
+                                                                                r.id ===
+                                                                                node.requirement_id,
+                                                                        );
+                                                                    const minDepth =
+                                                                        sortedTree.length >
+                                                                        0
+                                                                            ? Math.min(
+                                                                                  ...sortedTree.map(
+                                                                                      (
+                                                                                          n,
+                                                                                      ) =>
+                                                                                          n.depth ??
+                                                                                          1,
+                                                                                  ),
+                                                                              )
+                                                                            : 1;
+                                                                    const relativeDepth =
+                                                                        node.depth -
+                                                                        minDepth;
+                                                                    const isTopLevel =
+                                                                        relativeDepth ===
+                                                                        0;
+
+                                                                    return (
+                                                                        <DraggableTreeNode
+                                                                            key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
+                                                                            node={node}
+                                                                            requirement={
+                                                                                requirement
+                                                                            }
+                                                                            isTopLevel={
+                                                                                isTopLevel
+                                                                            }
+                                                                            relativeDepth={
+                                                                                relativeDepth
+                                                                            }
+                                                                            orgId={orgId}
+                                                                            visibleTree={
+                                                                                visibleTree
+                                                                            }
+                                                                            collapsedNodes={
+                                                                                collapsedNodes
+                                                                            }
+                                                                            activeId={
+                                                                                activeId
+                                                                            }
+                                                                            overId={
+                                                                                overId
+                                                                            }
+                                                                            onToggleCollapse={
+                                                                                toggleNodeCollapse
+                                                                            }
+                                                                            onDeleteRelationship={
+                                                                                handleDeleteRelationship
+                                                                            }
+                                                                        />
+                                                                    );
+                                                                },
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-12 text-muted-foreground">
+                                                            <Network className="h-12 w-12 mx-auto mb-4" />
+                                                            <p className="font-medium">
+                                                                No hierarchy found
+                                                            </p>
+                                                            <p className="text-sm">
+                                                                Create some relationships
+                                                                to see the tree structure
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Filter */}
-                                            <div className="mb-3">
-                                                <Select
-                                                    value={reqFilter}
-                                                    onValueChange={(value) => setReqFilter(value as 'all' | 'orphans' | 'linked')}
-                                                >
-                                                    <SelectTrigger className="h-9 text-sm">
-                                                        <SelectValue placeholder="Filter" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="all">All Requirements</SelectItem>
-                                                        <SelectItem value="orphans">Orphans Only</SelectItem>
-                                                        <SelectItem value="linked">Already Linked</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
+                                            {/* Right: Available Requirements (40%) */}
+                                            <div className="w-[40%] flex flex-col border-l pl-4">
+                                                <h3 className="text-sm font-semibold mb-2 text-muted-foreground">
+                                                    Available Requirements
+                                                </h3>
 
-                                            {/* Requirements List */}
-                                            <div className="flex-1 overflow-y-auto space-y-2">
-                                                {requirementsLoading ? (
-                                                    <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-                                                        Loading requirements...
+                                                {/* Search */}
+                                                <div className="mb-3">
+                                                    <div className="relative">
+                                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            placeholder="Search requirements..."
+                                                            value={searchTerm}
+                                                            onChange={(e) =>
+                                                                setSearchTerm(
+                                                                    e.target.value,
+                                                                )
+                                                            }
+                                                            className="pl-9 h-9 text-sm"
+                                                        />
                                                     </div>
-                                                ) : filteredRequirements && filteredRequirements.length > 0 ? (
-                                                    filteredRequirements
-                                                        .filter((req) => {
-                                                            const inTree = visibleTree.some((n) => n.requirement_id === req.id);
-                                                            if (reqFilter === 'orphans') return !inTree;
-                                                            if (reqFilter === 'linked') return inTree;
-                                                            return true; // 'all'
-                                                        })
-                                                        .map((req) => {
-                                                            const inTree = visibleTree.some(
-                                                                (n) => n.requirement_id === req.id
-                                                            );
-                                                            const isOrphan = !inTree;
+                                                </div>
 
-                                                            return (
-                                                                <DraggableRequirementCard
-                                                                    key={req.id}
-                                                                    requirement={req}
-                                                                    inTree={inTree}
-                                                                    isOrphan={isOrphan}
-                                                                />
-                                                            );
-                                                        })
-                                                ) : (
-                                                    <div className="text-center py-8 text-muted-foreground text-sm">
-                                                        <p>No requirements found</p>
-                                                    </div>
-                                                )}
+                                                {/* Filter */}
+                                                <div className="mb-3">
+                                                    <Select
+                                                        value={reqFilter}
+                                                        onValueChange={(value) =>
+                                                            setReqFilter(
+                                                                value as
+                                                                    | 'all'
+                                                                    | 'orphans'
+                                                                    | 'linked',
+                                                            )
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="h-9 text-sm">
+                                                            <SelectValue placeholder="Filter" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">
+                                                                All Requirements
+                                                            </SelectItem>
+                                                            <SelectItem value="orphans">
+                                                                Orphans Only
+                                                            </SelectItem>
+                                                            <SelectItem value="linked">
+                                                                Already Linked
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* Requirements List */}
+                                                <div className="flex-1 overflow-y-auto space-y-2">
+                                                    {requirementsLoading ? (
+                                                        <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                                                            Loading requirements...
+                                                        </div>
+                                                    ) : filteredRequirements &&
+                                                      filteredRequirements.length > 0 ? (
+                                                        filteredRequirements
+                                                            .filter((req) => {
+                                                                const inTree =
+                                                                    visibleTree.some(
+                                                                        (n) =>
+                                                                            n.requirement_id ===
+                                                                            req.id,
+                                                                    );
+                                                                if (
+                                                                    reqFilter ===
+                                                                    'orphans'
+                                                                )
+                                                                    return !inTree;
+                                                                if (
+                                                                    reqFilter === 'linked'
+                                                                )
+                                                                    return inTree;
+                                                                return true; // 'all'
+                                                            })
+                                                            .map((req) => {
+                                                                const inTree =
+                                                                    visibleTree.some(
+                                                                        (n) =>
+                                                                            n.requirement_id ===
+                                                                            req.id,
+                                                                    );
+                                                                const isOrphan = !inTree;
+
+                                                                return (
+                                                                    <DraggableRequirementCard
+                                                                        key={req.id}
+                                                                        requirement={req}
+                                                                        inTree={inTree}
+                                                                        isOrphan={
+                                                                            isOrphan
+                                                                        }
+                                                                    />
+                                                                );
+                                                            })
+                                                    ) : (
+                                                        <div className="text-center py-8 text-muted-foreground text-sm">
+                                                            <p>No requirements found</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
 
+<<<<<<< HEAD
                             <TabsContent value="manage" className="flex-1 h-full">
                                 {(() => {
                                     const requirementId =
@@ -1539,81 +1863,101 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         </>
                     )}
 
-                    {!selectedProject && !projectsLoading && (
-                        <div className="text-center py-12 text-muted-foreground">
-                            <GitBranch className="h-10 w-10 mx-auto mb-3" />
-                            <p className="text-base font-medium">
-                                Select a project to get started
-                            </p>
-                            <p className="text-sm">
-                                Choose a project to view and manage requirement
-                                relationships
-                            </p>
-                        </div>
-                    )}
-                </Tabs>
-            </div>
+                        {!selectedProject && !projectsLoading && (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <GitBranch className="h-10 w-10 mx-auto mb-3" />
+                                <p className="text-base font-medium">
+                                    Select a project to get started
+                                </p>
+                                <p className="text-sm">
+                                    Choose a project to view and manage requirement
+                                    relationships
+                                </p>
+                            </div>
+                        )}
+                    </Tabs>
+                </div>
 
                 {/* DragOverlay - Shows preview of dragged item that follows cursor */}
                 <DragOverlay>
-                    {activeId ? (() => {
-                        // Find if it's a tree node or available requirement
-                        const treeNode = visibleTree.find(n => n.requirement_id === activeId);
-                        const requirement = requirements?.find(r => r.id === activeId);
+                    {activeId
+                        ? (() => {
+                              // Find if it's a tree node or available requirement
+                              const treeNode = visibleTree.find(
+                                  (n) => n.requirement_id === activeId,
+                              );
+                              const requirement = requirements?.find(
+                                  (r) => r.id === activeId,
+                              );
 
-                        if (treeNode && requirement) {
-                            // Dragging from tree
-                            return (
-                                <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-4 cursor-grabbing max-w-md">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <GripVertical className="h-5 w-5 text-primary" />
-                                        <Badge variant="outline" className="text-xs font-mono">
-                                            {requirement.external_id || requirement.id.slice(0, 8)}
-                                        </Badge>
-                                        <Badge variant="secondary" className="text-xs">
-                                            Tree Node
-                                        </Badge>
-                                    </div>
-                                    <h4 className="text-sm font-semibold line-clamp-2">
-                                        {treeNode.title}
-                                    </h4>
-                                    {requirement.description && (
-                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                            {requirement.description}
-                                        </p>
-                                    )}
-                                </div>
-                            );
-                        } else if (requirement) {
-                            // Dragging from available requirements
-                            return (
-                                <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-3 cursor-grabbing max-w-md">
-                                    <div className="flex items-start gap-2">
-                                        <GripVertical className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                <Badge variant="outline" className="text-xs font-mono">
-                                                    {requirement.external_id || requirement.id.slice(0, 8)}
-                                                </Badge>
-                                                <Badge variant="secondary" className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300">
-                                                    🆓 Available
-                                                </Badge>
-                                            </div>
-                                            <h4 className="text-sm font-medium line-clamp-1 mb-1">
-                                                {requirement.name}
-                                            </h4>
-                                            {requirement.description && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                                    {requirement.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        }
-                        return null;
-                    })() : null}
+                              if (treeNode && requirement) {
+                                  // Dragging from tree
+                                  return (
+                                      <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-4 cursor-grabbing max-w-md">
+                                          <div className="flex items-center gap-2 mb-2">
+                                              <GripVertical className="h-5 w-5 text-primary" />
+                                              <Badge
+                                                  variant="outline"
+                                                  className="text-xs font-mono"
+                                              >
+                                                  {requirement.external_id ||
+                                                      requirement.id.slice(0, 8)}
+                                              </Badge>
+                                              <Badge
+                                                  variant="secondary"
+                                                  className="text-xs"
+                                              >
+                                                  Tree Node
+                                              </Badge>
+                                          </div>
+                                          <h4 className="text-sm font-semibold line-clamp-2">
+                                              {treeNode.title}
+                                          </h4>
+                                          {requirement.description && (
+                                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                                  {requirement.description}
+                                              </p>
+                                          )}
+                                      </div>
+                                  );
+                              } else if (requirement) {
+                                  // Dragging from available requirements
+                                  return (
+                                      <div className="opacity-90 shadow-2xl border-2 border-primary rounded-lg bg-background p-3 cursor-grabbing max-w-md">
+                                          <div className="flex items-start gap-2">
+                                              <GripVertical className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+                                              <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                      <Badge
+                                                          variant="outline"
+                                                          className="text-xs font-mono"
+                                                      >
+                                                          {requirement.external_id ||
+                                                              requirement.id.slice(0, 8)}
+                                                      </Badge>
+                                                      <Badge
+                                                          variant="secondary"
+                                                          className="text-xs bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300"
+                                                      >
+                                                          🆓 Available
+                                                      </Badge>
+                                                  </div>
+                                                  <h4 className="text-sm font-medium line-clamp-1 mb-1">
+                                                      {requirement.name}
+                                                  </h4>
+                                                  {requirement.description && (
+                                                      <p className="text-xs text-muted-foreground line-clamp-2">
+                                                          {requirement.description}
+                                                      </p>
+                                                  )}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  );
+                              }
+                              return null;
+                          })()
+                        : null}
                 </DragOverlay>
             </DndContext>
         </LayoutView>
