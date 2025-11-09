@@ -491,7 +491,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [overId, setOverId] = useState<string | null>(null);
 
     // Right panel filter state
-    const [reqFilter, setReqFilter] = useState<'all' | 'orphans' | 'linked'>('all');
+    const [reqFilter, setReqFilter] = useState<'all' | 'orphans' | 'linked'>('orphans');
 
     // DnD sensors
     const sensors = useSensors(
