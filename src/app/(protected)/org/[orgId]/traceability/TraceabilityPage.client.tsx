@@ -925,7 +925,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 }
             } catch (error) {
                 console.error('Failed to move/add node:', error);
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                const errorMessage =
+                    error instanceof Error ? error.message : 'Unknown error';
 
                 if (errorMessage.includes('Relationship already exists')) {
                     alert(
