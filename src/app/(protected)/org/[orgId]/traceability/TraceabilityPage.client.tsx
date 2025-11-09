@@ -1863,6 +1863,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                     );
                                                                 const isOrphan =
                                                                     !hasRealRelationships;
+                                                                const inTree =
+                                                                    hasRealRelationships;
 
                                                                 return (
                                                                     <DraggableRequirementCard
