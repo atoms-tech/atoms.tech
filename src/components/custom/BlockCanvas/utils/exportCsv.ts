@@ -60,7 +60,6 @@ export async function saveWithPicker(blob: Blob, suggestedName: string): Promise
                 suggestedName,
                 excludeAcceptAllOption: false,
             } as unknown);
-            // @ts-expect-error - createWritable exists on file handle in supporting browsers
             const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();
