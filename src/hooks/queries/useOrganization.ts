@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import { queryKeys } from '@/lib/constants/queryKeys';
-import { getUserOrganizations } from '@/lib/db/client';
 import { Organization, OrganizationType } from '@/types';
 import { QueryFilters } from '@/types/base/filters.types';
 
@@ -92,45 +91,25 @@ export function useOrganizationsWithFilters(filters?: QueryFilters) {
 }
 
 export function useOrganizationsByMembership(userId: string) {
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: authError,
-    } = useAuthenticatedSupabase();
-
     return useQuery({
         queryKey: queryKeys.organizations.byMembership(userId),
         queryFn: async () => {
-            if (!supabase) {
-                throw new Error(authError ?? 'Supabase client not available');
+            const response = await fetch('/api/user/organizations', {
+                method: 'GET',
+                cache: 'no-store',
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error fetching user organizations:', errorData);
+                throw new Error(errorData.error || 'Failed to fetch organizations');
             }
 
-            // Validate userId
-            if (
-                !userId ||
-                userId === 'user' ||
-                !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-                    userId,
-                )
-            ) {
-                console.log(
-                    'useOrganizationsByMembership called with invalid userId:',
-                    userId,
-                );
-                return [];
-            }
-
-            try {
-                const orgs = await getUserOrganizations(supabase, userId);
-                console.log(`Retrieved ${orgs.length} organizations for user ${userId}`);
-                return orgs;
-            } catch (error) {
-                console.error('Error in useOrganizationsByMembership:', error);
-                throw error;
-            }
+            const { organizations } = await response.json();
+            console.log(`Retrieved ${organizations.length} organizations for user`);
+            return organizations;
         },
-        enabled:
-            !!userId && userId !== '' && userId !== 'user' && !authLoading && !!supabase, // Only run the query if userId is valid
+        enabled: !!userId && userId !== '' && userId !== 'user',
     });
 }
 
@@ -222,39 +201,30 @@ export function usePersonalOrg(userId: string) {
 }
 
 export function useOrgInvitation(email: string) {
-    const {
-        supabase,
-        isLoading: authLoading,
-        error: authError,
-    } = useAuthenticatedSupabase();
-
     return useQuery({
         queryKey: queryKeys.organizationInvitations.byEmail(email),
         queryFn: async () => {
-            if (!supabase) {
-                throw new Error(authError ?? 'Supabase client not available');
-            }
-
             // Validate email
             if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 console.error('Invalid email format:', email);
                 throw new Error('Invalid email format');
             }
 
-            const { data, error } = await supabase
-                .from('organization_invitations')
-                .select('*')
-                .eq('email', email)
-                .neq('status', 'rejected'); // Exclude rejected invitations
+            const response = await fetch('/api/user/invitations', {
+                method: 'GET',
+                cache: 'no-store',
+            });
 
-            if (error) {
-                console.error('Error fetching organization invitations by email:', error);
-                throw error;
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error fetching invitations:', errorData);
+                throw new Error(errorData.error || 'Failed to fetch invitations');
             }
 
-            return data;
+            const { invitations } = await response.json();
+            return invitations;
         },
-        enabled: !!email && !authLoading && !!supabase,
+        enabled: !!email,
     });
 }
 

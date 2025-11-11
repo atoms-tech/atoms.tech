@@ -2,6 +2,8 @@
 
 import {
     ArrowRight,
+    ChevronDown,
+    ChevronRight,
     GitBranch,
     Network,
     Plus,
@@ -10,8 +12,8 @@ import {
     Unlink,
     Zap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,11 +60,20 @@ type RequirementWithDocuments = Requirement & {
 
 export default function TraceabilityPageClient({ orgId }: TraceabilityPageClientProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useUser();
-    const [selectedProject, setSelectedProject] = useState<string>('');
+
+    // Initialize from URL params
+    const [selectedProject, setSelectedProject] = useState<string>(
+        searchParams.get('projectId') || '',
+    );
+    const [activeTab, setActiveTab] = useState<string>(
+        searchParams.get('tab') || 'hierarchy',
+    );
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
+    const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
 
     // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
@@ -104,6 +115,34 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         (req) => req.id !== selectedParent,
     );
 
+    // Update URL when project or tab changes
+    const updateURL = useCallback(
+        (projectId: string, tab: string) => {
+            const params = new URLSearchParams();
+            if (projectId) params.set('projectId', projectId);
+            if (tab) params.set('tab', tab);
+            router.replace(`/org/${orgId}/traceability?${params.toString()}`, {
+                scroll: false,
+            });
+        },
+        [router, orgId],
+    );
+
+    // Sync URL when state changes
+    useEffect(() => {
+        if (selectedProject || activeTab !== 'hierarchy') {
+            updateURL(selectedProject, activeTab);
+        }
+    }, [selectedProject, activeTab, updateURL]);
+
+    const handleProjectChange = useCallback((newProjectId: string) => {
+        setSelectedProject(newProjectId);
+    }, []);
+
+    const handleTabChange = useCallback((newTab: string) => {
+        setActiveTab(newTab);
+    }, []);
+
     const handleParentSelect = useCallback((reqId: string) => {
         setSelectedParent(reqId);
         setSelectedChildren([]); // Clear children when parent changes
@@ -124,6 +163,64 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         setSelectedChildren([]);
     }, []);
 
+    // Tree view helpers
+    type TreeNode = {
+        requirement_id: string;
+        parent_id: string | null;
+        depth: number;
+        has_children?: boolean;
+        path?: string;
+        title?: string;
+    };
+
+    const sortedTree: TreeNode[] = useMemo(() => {
+        const nodes = (requirementTree as unknown as TreeNode[]) || [];
+        return [...nodes]
+            .filter(() => true)
+            .sort((a, b) => (a.path || '').localeCompare(b.path || ''));
+        // Note: keeping all depths; visibility handled downstream
+    }, [requirementTree]);
+
+    const visibleTree: TreeNode[] = useMemo(() => {
+        const visible: TreeNode[] = [];
+        const stack: boolean[] = [];
+        for (const node of sortedTree) {
+            const depth = node.depth ?? 0;
+            while (stack.length > depth) stack.pop();
+            const hidden = stack.some(Boolean);
+            if (!hidden) {
+                visible.push(node);
+            }
+            const isCollapsed = collapsedNodes.has(node.requirement_id);
+            stack.push(isCollapsed);
+        }
+        return visible;
+    }, [sortedTree, collapsedNodes]);
+
+    const toggleNodeCollapse = useCallback((id: string) => {
+        setCollapsedNodes((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const collapseAllToTopLevel = useCallback(() => {
+        if (!requirementTree) return;
+        const next = new Set<string>();
+        for (const n of requirementTree) {
+            if ((n.depth ?? 0) === 0 && n.has_children) {
+                next.add(n.requirement_id);
+            }
+        }
+        setCollapsedNodes(next);
+    }, [requirementTree]);
+
+    const expandAll = useCallback(() => {
+        setCollapsedNodes(new Set());
+    }, []);
+
     // Handle deleting a relationship
     const handleDeleteRelationship = useCallback(
         async (node: {
@@ -136,14 +233,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 return;
             }
 
-            const confirmDelete = confirm(
-                `Are you sure you want to disconnect "${node.title}" from its parent?\n\n` +
-                    `This will break the hierarchy connection and make it an independent node.\n` +
-                    `The node itself will NOT be deleted.`,
-            );
-
-            if (!confirmDelete) return;
-
             const deleteRequest = {
                 ancestorId: node.parent_id,
                 descendantId: node.requirement_id,
@@ -151,7 +240,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             try {
                 await deleteRelationshipMutation.mutateAsync(deleteRequest);
-                alert('Connection successfully disconnected!');
                 // Tree will automatically refetch due to cache invalidation
             } catch (error) {
                 console.error('Failed to delete relationship:', error);
@@ -212,7 +300,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     return (
         <LayoutView>
             <div className="flex h-full w-full flex-col p-4">
-                <Tabs defaultValue="hierarchy" className="flex h-full flex-col gap-4">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={handleTabChange}
+                    className="flex h-full flex-col gap-4"
+                >
                     <div className="flex items-center gap-4">
                         {/* Organization Selector */}
                         <Select
@@ -220,6 +312,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             onValueChange={(newOrgId) => {
                                 // reset local state when switching orgs
                                 setSelectedProject('');
+                                setActiveTab('hierarchy');
                                 setSelectedParent('');
                                 setSelectedChildren([]);
                                 setSearchTerm('');
@@ -248,9 +341,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                         {/* Project Selector */}
                         <Select
                             value={selectedProject}
-                            onValueChange={(projectId) => {
-                                setSelectedProject(projectId);
-                            }}
+                            onValueChange={handleProjectChange}
                             disabled={projectsLoading}
                         >
                             <SelectTrigger className="w-72">
@@ -633,13 +724,33 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             <TabsContent value="matrix" className="flex-1">
                                 <Card className="h-full">
                                     <CardHeader className="py-4">
-                                        <CardTitle className="text-lg font-bold">
-                                            Requirements Tree View
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Click on any requirement to select it and
-                                            access Expand/Trace actions
-                                        </CardDescription>
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <CardTitle className="text-lg font-bold">
+                                                    Requirements Tree View
+                                                </CardTitle>
+                                                <CardDescription>
+                                                    Toggle nodes to collapse/expand. Use
+                                                    actions to change the whole view.
+                                                </CardDescription>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={collapseAllToTopLevel}
+                                                >
+                                                    Collapse to top-level
+                                                </Button>
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={expandAll}
+                                                >
+                                                    Expand all
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         {treeLoading ? (
@@ -649,116 +760,144 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                         ) : requirementTree &&
                                           requirementTree.length > 0 ? (
                                             <div className="space-y-2">
-                                                {requirementTree
-                                                    .filter(
-                                                        (node) =>
-                                                            node.has_children ||
-                                                            node.depth > 0,
-                                                    )
-                                                    .sort((a, b) =>
-                                                        (a.path || '').localeCompare(
-                                                            b.path || '',
-                                                        ),
-                                                    )
-                                                    .map((node, index) => {
-                                                        const requirement =
-                                                            requirements?.find(
-                                                                (r) =>
-                                                                    r.id ===
-                                                                    node.requirement_id,
-                                                            );
-                                                        return (
-                                                            <div
-                                                                key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                                className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border"
-                                                                style={{
-                                                                    marginLeft: `${node.depth * 24}px`,
-                                                                }}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="flex-1">
-                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                            {node.depth >
-                                                                                0 && (
-                                                                                <ArrowRight className="h-4 w-4 text-blue-400" />
-                                                                            )}
+                                                {visibleTree.map((node, index) => {
+                                                    const requirement =
+                                                        requirements?.find(
+                                                            (r) =>
+                                                                r.id ===
+                                                                node.requirement_id,
+                                                        );
+                                                    return (
+                                                        <div
+                                                            key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
+                                                            className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border"
+                                                            style={{
+                                                                marginLeft: `${node.depth * 24}px`,
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        {node.has_children ? (
+                                                                            <button
+                                                                                type="button"
+                                                                                aria-label={
+                                                                                    collapsedNodes.has(
+                                                                                        node.requirement_id,
+                                                                                    )
+                                                                                        ? 'Expand node'
+                                                                                        : 'Collapse node'
+                                                                                }
+                                                                                className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
+                                                                                onClick={() =>
+                                                                                    toggleNodeCollapse(
+                                                                                        node.requirement_id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {collapsedNodes.has(
+                                                                                    node.requirement_id,
+                                                                                ) ? (
+                                                                                    <ChevronRight className="h-4 w-4" />
+                                                                                ) : (
+                                                                                    <ChevronDown className="h-4 w-4" />
+                                                                                )}
+                                                                            </button>
+                                                                        ) : node.depth >
+                                                                          0 ? (
+                                                                            <ArrowRight className="h-4 w-4 text-blue-400" />
+                                                                        ) : (
+                                                                            <span className="inline-block w-5" />
+                                                                        )}
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="text-xs font-mono"
+                                                                        >
+                                                                            {requirement?.external_id ||
+                                                                                node.title ||
+                                                                                node.requirement_id?.slice(
+                                                                                    0,
+                                                                                    8,
+                                                                                )}
+                                                                        </Badge>
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="text-xs"
+                                                                        >
+                                                                            {node.depth ===
+                                                                            0
+                                                                                ? 'PARENT'
+                                                                                : `CHILD-L${node.depth}`}
+                                                                        </Badge>
+                                                                        <h3 className="font-medium text-sm">
+                                                                            {requirement?.name ||
+                                                                                node.title}
+                                                                        </h3>
+                                                                        {requirement?.documents && (
                                                                             <Badge
                                                                                 variant="outline"
-                                                                                className="text-xs font-mono"
-                                                                            >
-                                                                                {requirement?.external_id ||
-                                                                                    node.title ||
-                                                                                    node.requirement_id?.slice(
-                                                                                        0,
-                                                                                        8,
-                                                                                    )}
-                                                                            </Badge>
-                                                                            <Badge
-                                                                                variant="secondary"
                                                                                 className="text-xs"
                                                                             >
-                                                                                {node.depth ===
-                                                                                0
-                                                                                    ? 'PARENT'
-                                                                                    : `CHILD-L${node.depth}`}
-                                                                            </Badge>
-                                                                            <h3 className="font-medium text-sm">
-                                                                                {requirement?.name ||
-                                                                                    node.title}
-                                                                            </h3>
-                                                                            {requirement?.documents && (
-                                                                                <Badge
-                                                                                    variant="outline"
-                                                                                    className="text-xs"
-                                                                                >
-                                                                                    {' '}
-                                                                                    {
-                                                                                        requirement
-                                                                                            .documents
-                                                                                            .name
-                                                                                    }
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                        {requirement?.description && (
-                                                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                                {' '}
                                                                                 {
-                                                                                    requirement.description
+                                                                                    requirement
+                                                                                        .documents
+                                                                                        .name
+                                                                                }
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    {requirement?.description && (
+                                                                        <p className="text-xs text-muted-foreground line-clamp-2">
+                                                                            {
+                                                                                requirement.description
+                                                                            }
+                                                                        </p>
+                                                                    )}
+                                                                    {node.path &&
+                                                                        node.depth >
+                                                                            0 && (
+                                                                            <p className="text-xs text-muted-foreground truncate mt-1">
+                                                                                Path:{' '}
+                                                                                {
+                                                                                    node.path
                                                                                 }
                                                                             </p>
                                                                         )}
-                                                                        {node.path &&
-                                                                            node.depth >
-                                                                                0 && (
-                                                                                <p className="text-xs text-muted-foreground truncate mt-1">
-                                                                                    Path:{' '}
-                                                                                    {
-                                                                                        node.path
-                                                                                    }
-                                                                                </p>
-                                                                            )}
-                                                                    </div>
-                                                                    {node.depth > 0 && (
-                                                                        <div className="ml-4">
-                                                                            <Button
-                                                                                variant="outline"
-                                                                                size="sm"
-                                                                                onClick={() =>
-                                                                                    handleDeleteRelationship(
-                                                                                        node,
-                                                                                    )
-                                                                                }
-                                                                                className="text-xs h-8 px-3"
-                                                                            >
-                                                                                <Unlink className="h-4 w-4 mr-1" />{' '}
-                                                                                Disconnect
-                                                                            </Button>
-                                                                        </div>
-                                                                    )}
                                                                 </div>
+                                                                {node.depth > 0 && (
+                                                                    <div className="ml-4">
+                                                                        <Button
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                handleDeleteRelationship(
+                                                                                    {
+                                                                                        requirement_id:
+                                                                                            node.requirement_id,
+                                                                                        title:
+                                                                                            requirement?.name ||
+                                                                                            node.title ||
+                                                                                            node.requirement_id.slice(
+                                                                                                0,
+                                                                                                8,
+                                                                                            ),
+                                                                                        parent_id:
+                                                                                            node.parent_id,
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            className="text-xs h-8 px-3"
+                                                                        >
+                                                                            <Unlink className="h-4 w-4 mr-1" />{' '}
+                                                                            Disconnect
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        );
-                                                    })}
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <div className="text-center py-12 text-muted-foreground">

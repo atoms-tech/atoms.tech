@@ -44,9 +44,10 @@ export function useCreateProject() {
 
     return useMutation({
         mutationFn: async (input: CreateProjectInput) => {
-            // Start a Supabase transaction
             console.log('Creating project', input);
             const client = ensureSupabaseClient();
+
+            // Create the project
             const { data: project, error: projectError } = await client
                 .from('projects')
                 .insert({
@@ -71,6 +72,21 @@ export function useCreateProject() {
             }
             if (!project) {
                 throw new Error('Failed to create project, insert returned no data.');
+            }
+
+            // Add the creator as owner of the project in project_members
+            const { error: memberError } = await client.from('project_members').insert({
+                user_id: input.owned_by,
+                project_id: project.id,
+                role: 'owner',
+                org_id: input.organization_id,
+                status: 'active',
+            });
+
+            if (memberError) {
+                console.error('Failed to add creator as project member:', memberError);
+                // Don't throw - the project was created successfully
+                // The user can be added manually later if needed
             }
 
             return project;
