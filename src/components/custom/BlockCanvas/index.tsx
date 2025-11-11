@@ -22,6 +22,7 @@ import { useParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { AddTableDialog } from '@/components/custom/BlockCanvas/components/AddTableDialog';
+import { DeleteConfirmDialog } from '@/components/custom/BlockCanvas/components/EditableTable/components/DeleteConfirmDialog';
 import { SortableBlock } from '@/components/custom/BlockCanvas/components/SortableBlock';
 import { TableBlockLoadingState } from '@/components/custom/BlockCanvas/components/TableBlockLoadingState';
 import { useBlockActions } from '@/components/custom/BlockCanvas/hooks/useBlockActions';
@@ -336,6 +337,10 @@ export function BlockCanvas({
 
     // Table creation dialog state and handler must be declared before any early returns
     const [isAddTableOpen, setIsAddTableOpen] = useState(false);
+    const [isDeleteBlockOpen, setIsDeleteBlockOpen] = useState(false);
+    const [blockToDelete, setBlockToDelete] = useState<BlockWithRequirements | null>(
+        null,
+    );
 
     // Currently doesnt pass info, is getting hyjacked somewhere... Needs invesigation/rework.
     const createTableWithLayout = useCallback(
@@ -366,21 +371,16 @@ export function BlockCanvas({
                         canPerformAction('editBlock') &&
                         handleUpdateBlock(block.id, content)
                     }
-                    onDelete={() =>
-                        canPerformAction('deleteBlock') && handleDeleteBlock(block.id)
-                    }
+                    onDelete={() => {
+                        if (!canPerformAction('deleteBlock')) return;
+                        setBlockToDelete(block);
+                        setIsDeleteBlockOpen(true);
+                    }}
                     userProfile={userProfile} // Pass userprofile to table each block, prevent refetch for each table block.
                 />
             );
         },
-        [
-            overId,
-            linePosition,
-            userProfile,
-            canPerformAction,
-            handleUpdateBlock,
-            handleDeleteBlock,
-        ],
+        [overId, linePosition, userProfile, canPerformAction, handleUpdateBlock],
     );
 
     // Memoize the blocks to prevent unnecessary re-renders
@@ -513,6 +513,30 @@ export function BlockCanvas({
                 onCreate={async (layout, name) => {
                     await createTableWithLayout(layout, name);
                 }}
+            />
+            <DeleteConfirmDialog
+                open={isDeleteBlockOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteBlockOpen(open);
+                    if (!open) setBlockToDelete(null);
+                }}
+                onConfirm={() => {
+                    if (blockToDelete) {
+                        handleDeleteBlock(blockToDelete.id);
+                    }
+                    setIsDeleteBlockOpen(false);
+                    setBlockToDelete(null);
+                }}
+                title="Delete block?"
+                description={
+                    <>
+                        This action cannot be undone. This will permanently delete this{' '}
+                        <span className="font-semibold">entire block</span> and all of its
+                        contents.
+                    </>
+                }
+                confirmText="Delete"
+                cancelText="Cancel"
             />
         </div>
     );

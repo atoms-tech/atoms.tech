@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getOrCreateProfileForWorkOSUser } from '@/lib/auth/profile-sync';
 import { getDocumentDataServer } from '@/lib/db/server/documents.server';
-import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
+// import { createSupabaseClientWithToken } from '@/lib/supabase/supabase-authkit';
 import { getSupabaseServiceRoleClient } from '@/lib/supabase/supabase-service-role';
 import { Json } from '@/types/base/database.types';
 
@@ -31,7 +31,7 @@ export async function GET(
             );
         }
 
-        const { user, accessToken } = await withAuth();
+        const { user } = await withAuth();
         if (!user) {
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
         }
@@ -78,12 +78,8 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Use user-scoped client for row operations (RLS-compliant)
-        if (!accessToken) {
-            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-        }
-        const userClient = createSupabaseClientWithToken(accessToken);
-        const { data: rows, error: rowsError } = await userClient
+        // Use service role for reads after enforcing membership (bypass RLS safely)
+        const { data: rows, error: rowsError } = await supabase
             .from('table_rows')
             .select('*')
             .eq('document_id', documentId)
@@ -129,7 +125,7 @@ export async function POST(
             );
         }
 
-        const { user, accessToken } = await withAuth();
+        const { user } = await withAuth();
         if (!user)
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
@@ -185,11 +181,8 @@ export async function POST(
             updated_by: profile.id,
         };
 
-        if (!accessToken) {
-            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-        }
-        const userClient = createSupabaseClientWithToken(accessToken);
-        const { data, error } = await userClient
+        // Use service role for insert after enforcing membership (bypass RLS safely)
+        const { data, error } = await supabase
             .from('table_rows')
             .insert({
                 ...insertPayload,
@@ -236,7 +229,7 @@ export async function PATCH(
             );
         }
 
-        const { user, accessToken } = await withAuth();
+        const { user } = await withAuth();
         if (!user)
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
@@ -287,11 +280,8 @@ export async function PATCH(
         if (typeof body.position === 'number') updatePayload.position = body.position;
         if (body.rowData) updatePayload.row_data = body.rowData;
 
-        if (!accessToken) {
-            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-        }
-        const userClient = createSupabaseClientWithToken(accessToken);
-        const { data, error } = await userClient
+        // Use service role for update after enforcing membership (bypass RLS safely)
+        const { data, error } = await supabase
             .from('table_rows')
             .update(updatePayload)
             .eq('id', body.id)
@@ -332,7 +322,7 @@ export async function DELETE(
             );
         }
 
-        const { user, accessToken } = await withAuth();
+        const { user } = await withAuth();
         if (!user)
             return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
@@ -376,11 +366,8 @@ export async function DELETE(
         if (!membership)
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-        if (!accessToken) {
-            return NextResponse.json({ error: 'Missing access token' }, { status: 401 });
-        }
-        const userClient = createSupabaseClientWithToken(accessToken);
-        const { error } = await userClient
+        // Use service role for delete after enforcing membership (bypass RLS safely)
+        const { error } = await supabase
             .from('table_rows')
             .delete()
             .eq('id', body.id)

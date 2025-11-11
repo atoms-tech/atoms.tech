@@ -5,7 +5,9 @@ import {
     CellValue,
 } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 
-// Supabase client access removed in favor of API routes to avoid init races
+// Fetch-based API approach to avoid Supabase init races and align with server-side checks
+
+// Use authenticated Supabase client to align with RLS like requirements saving
 
 interface UseRowActionsProps {
     blockId: string;
@@ -26,12 +28,11 @@ export const useRowActions = ({
     const deletedRowIdsRef = useRef<Set<string>>(new Set());
     const isSavingRef = useRef(false);
     const pendingOpsRef = useRef<Array<() => Promise<void>>>([]);
-    // No direct Supabase dependency here; use API routes with server-side membership checks
+    // Server API handles membership checks and uses service role for CRUD
 
     const refreshRows = useCallback(async () => {
         console.log('[GenericRows] 🎯 refreshRows called', { blockId, documentId });
         try {
-            // Use API route to avoid auth race conditions
             const res = await fetch(
                 `/api/documents/${documentId}/rows?blockId=${blockId}`,
                 { method: 'GET', cache: 'no-store' },
@@ -100,7 +101,6 @@ export const useRowActions = ({
         async (row: BaseRow, isNew: boolean) => {
             console.log('[GenericRows] 🎯 saveRow called', { isNew, row });
             try {
-                // Create via API to avoid client init issues
                 // If another save is in progress, enqueue this operation to run after
                 if (isSavingRef.current) {
                     pendingOpsRef.current.push(async () => saveRow(row, isNew));
