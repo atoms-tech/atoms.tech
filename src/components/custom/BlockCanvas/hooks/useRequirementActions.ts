@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { v4 as _uuidv4 } from 'uuid';
 
-/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { CellValue } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { Property } from '@/components/custom/BlockCanvas/types';
@@ -204,8 +204,7 @@ export const useRequirementActions = ({
                 typeof val === 'string' ||
                 typeof val === 'number' ||
                 Array.isArray(val) ||
-                val === null ||
-                val === ''
+                val === null
             ) {
                 // Find the column in blockColumns to get metadata
                 const column = blockColumns?.find((col) => {
