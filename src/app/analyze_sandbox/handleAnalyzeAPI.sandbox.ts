@@ -41,8 +41,21 @@ export async function handleAnalyzeAPI({
             }
         } catch {}
         let attempt = 0;
-        while (attempt <= maxRetries) {
+        while (attempt <= 0) {
             try {
+                // /////****///// MODIFIED: Added JWT token retrieval from Supabase
+                // // Get JWT token from Supabase
+                // let jwtToken: string | null = null;
+                // try {
+                //     const { supabase } = await import('@/lib/supabase/supabaseBrowser');
+                //     const { data } = await supabase.auth.getSession();
+                //     jwtToken = data.session?.access_token ?? null;
+                //     console.log('[handleAnalyzeAPI] JWT token retrieved:', !!jwtToken);
+                // } catch (tokenErr) {
+                //     console.warn('[handleAnalyzeAPI] Failed to retrieve JWT token:', tokenErr);
+                // }
+                // /////****///// END MODIFIED
+
                 const formData = new FormData();
                 formData.append('user_input', reqText);
                 const firstFile = Object.values(selectedFiles)[0]?.file;
@@ -53,7 +66,21 @@ export async function handleAnalyzeAPI({
                     fullUrl,
                     `(attempt ${attempt + 1})`,
                 );
-                const res = await fetch(fullUrl, { method: 'POST', body: formData });
+                
+                /////****///// MODIFIED: Added JWT in Authorization header
+                // Build fetch options with JWT in Authorization header
+                const fetchOptions: RequestInit = {
+                    method: 'POST',
+                    body: formData,
+                };
+                // if (jwtToken) {
+                //     fetchOptions.headers = {
+                //         'Authorization': `Bearer ${jwtToken}`,
+                //     };
+                // }
+                
+                const res = await fetch(fullUrl, fetchOptions);
+                /////****///// END MODIFIED
                 const contentType = res.headers.get('content-type') || '';
                 if (!res.ok) {
                     const bodyText = await res.text();
