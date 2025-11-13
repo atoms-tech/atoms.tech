@@ -447,7 +447,13 @@ export const TableBlock: React.FC<BlockProps> = ({
             const foundId = userId ?? userProfile?.id;
             const foundName = userName ?? userProfile?.full_name;
             if (!foundId) return;
-            await saveRequirement(dynamicReq, isNew, foundId, foundName || '', skipRefresh ?? false);
+            await saveRequirement(
+                dynamicReq,
+                isNew,
+                foundId,
+                foundName || '',
+                skipRefresh ?? false,
+            );
         },
         [saveRequirement, userProfile?.id, userProfile?.full_name],
     );
@@ -714,9 +720,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                         throw renameError;
                     }
                 } else {
-                    const error = new Error(
-                        'renameProperty function not available',
-                    );
+                    const error = new Error('renameProperty function not available');
                     console.warn('[TableBlock]', error.message);
                     throw error;
                 }

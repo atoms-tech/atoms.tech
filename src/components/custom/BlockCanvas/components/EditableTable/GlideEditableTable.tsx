@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import '@/styles/globals.css';
@@ -97,7 +98,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
     const [selection, setSelection] = useState<GridSelection | undefined>(undefined);
     const selectionRef = useRef<GridSelection | undefined>(undefined);
-    
+
     type PasteState = {
         isPasting: boolean;
         pasteOperationActive: boolean;
@@ -108,11 +109,19 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         savePromises: Map<string, Promise<any>>;
         columnsConfirmed: boolean; // Tracks if columns have been confirmed for this table
         columnConfirmationPromise: Promise<boolean> | null;
-        columnCreationPromise: Promise<Array<{ success: boolean; columnId?: string; tempId: string; realAccessor?: string; error?: any }>> | null;
+        columnCreationPromise: Promise<
+            Array<{
+                success: boolean;
+                columnId?: string;
+                tempId: string;
+                realAccessor?: string;
+                error?: any;
+            }>
+        > | null;
     };
-    
+
     const pasteStateMapRef = useRef<Map<string, PasteState>>(new Map());
-    
+
     const getPasteState = useCallback((): PasteState => {
         const tableId = blockId || 'default';
         if (!pasteStateMapRef.current.has(tableId)) {
@@ -131,7 +140,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }
         return pasteStateMapRef.current.get(tableId)!;
     }, [blockId]);
-    
+
     useEffect(() => {
         return () => {
             if (blockId) {
@@ -161,7 +170,11 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
     const { updateBlockMetadata } = useBlockMetadataActions();
     const saveRow = useCallback(
-        async (item: T, isNew: boolean, context?: { blockId?: string; skipRefresh?: boolean }) => {
+        async (
+            item: T,
+            isNew: boolean,
+            context?: { blockId?: string; skipRefresh?: boolean },
+        ) => {
             if (dataAdapter) {
                 await dataAdapter.saveRow(item, isNew, { blockId, ...context });
             } else {
@@ -182,22 +195,27 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         [dataAdapter, blockId, onDelete],
     );
 
-    const refreshAfterSave = useCallback(async (skipIfPasting: boolean = false) => {
-        // Prevent premature refresh during paste operations
-        if (skipIfPasting) {
-            const pasteState = getPasteState();
-            if (pasteState.isPasting || pasteState.pasteOperationActive) {
-                console.debug('[refreshAfterSave] Skipping refresh - paste operation in progress');
-                return;
+    const refreshAfterSave = useCallback(
+        async (skipIfPasting: boolean = false) => {
+            // Prevent premature refresh during paste operations
+            if (skipIfPasting) {
+                const pasteState = getPasteState();
+                if (pasteState.isPasting || pasteState.pasteOperationActive) {
+                    console.debug(
+                        '[refreshAfterSave] Skipping refresh - paste operation in progress',
+                    );
+                    return;
+                }
             }
-        }
-        
-        if (dataAdapter?.postSaveRefresh) {
-            await dataAdapter.postSaveRefresh();
-        } else {
-            await onPostSave?.();
-        }
-    }, [dataAdapter, onPostSave, getPasteState]);
+
+            if (dataAdapter?.postSaveRefresh) {
+                await dataAdapter.postSaveRefresh();
+            } else {
+                await onPostSave?.();
+            }
+        },
+        [dataAdapter, onPostSave, getPasteState],
+    );
 
     const [columnToDelete, setColumnToDelete] = useState<string | null>(null);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -388,155 +406,163 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         getClientOrThrow,
     } = useAuthenticatedSupabase();
 
-    const waitForSupabaseClient = useCallback(async (maxRetries = 10, delayMs = 100): Promise<void> => {
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                getClientOrThrow();
-                return; // Client is ready
-            } catch (error) {
-                if (i < maxRetries - 1) {
-                    await new Promise((resolve) => setTimeout(resolve, delayMs));
-                } else {
-                    throw new Error('Supabase client failed to initialize after retries');
+    const waitForSupabaseClient = useCallback(
+        async (maxRetries = 10, delayMs = 100): Promise<void> => {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    getClientOrThrow();
+                    return; // Client is ready
+                } catch (error) {
+                    if (i < maxRetries - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                    } else {
+                        throw new Error(
+                            'Supabase client failed to initialize after retries',
+                        );
+                    }
                 }
             }
-        }
-    }, [getClientOrThrow]);
+        },
+        [getClientOrThrow],
+    );
 
-    const verifyColumnsExist = useCallback(async (
-        columnIds: string[],
-        maxRetries = 10,
-        initialDelayMs = 100,
-        maxDelayMs = 500
-    ): Promise<boolean> => {
-        if (columnIds.length === 0) return true;
-        
-        await waitForSupabaseClient();
-        const supabase = getClientOrThrow();
-        const tableId = blockId || 'default';
-        
-        let delayMs = initialDelayMs;
-        
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                const { data: columns, error } = await supabase
-                    .from('columns')
-                    .select('id, block_id')
-                    .in('id', columnIds)
-                    .eq('block_id', tableId);
-                
-                if (error) {
-                    console.warn(
-                        `[verifyColumnsExist] Query error on attempt ${attempt + 1}/${maxRetries} for table ${tableId}:`,
+    const verifyColumnsExist = useCallback(
+        async (
+            columnIds: string[],
+            maxRetries = 10,
+            initialDelayMs = 100,
+            maxDelayMs = 500,
+        ): Promise<boolean> => {
+            if (columnIds.length === 0) return true;
+
+            await waitForSupabaseClient();
+            const supabase = getClientOrThrow();
+            const tableId = blockId || 'default';
+
+            let delayMs = initialDelayMs;
+
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const { data: columns, error } = await supabase
+                        .from('columns')
+                        .select('id, block_id')
+                        .in('id', columnIds)
+                        .eq('block_id', tableId);
+
+                    if (error) {
+                        console.warn(
+                            `[verifyColumnsExist] Query error on attempt ${attempt + 1}/${maxRetries} for table ${tableId}:`,
+                            error,
+                        );
+                        if (attempt < maxRetries - 1) {
+                            await new Promise((resolve) => setTimeout(resolve, delayMs));
+                            delayMs = Math.min(delayMs * 1.5, maxDelayMs);
+                            continue;
+                        }
+                        return false;
+                    }
+
+                    const foundIds = new Set((columns || []).map((col) => col.id));
+                    const allFound = columnIds.every((id) => foundIds.has(id));
+
+                    if (allFound) {
+                        console.debug(
+                            `[verifyColumnsExist] All ${columnIds.length} columns verified in database for table ${tableId} after ${attempt + 1} attempt(s)`,
+                        );
+                        return true;
+                    }
+
+                    const missing = columnIds.filter((id) => !foundIds.has(id));
+                    console.debug(
+                        `[verifyColumnsExist] Attempt ${attempt + 1}/${maxRetries} for table ${tableId}: Found ${foundIds.size}/${columnIds.length} columns. Missing: ${missing.join(', ')}`,
+                    );
+
+                    if (attempt < maxRetries - 1) {
+                        await new Promise((resolve) => setTimeout(resolve, delayMs));
+                        delayMs = Math.min(delayMs * 1.5, maxDelayMs);
+                    } else {
+                        console.warn(
+                            `[verifyColumnsExist] Failed to verify all columns for table ${tableId} after ${maxRetries} attempts. Missing: ${missing.join(', ')}`,
+                        );
+                        return false;
+                    }
+                } catch (error) {
+                    console.error(
+                        `[verifyColumnsExist] Error on attempt ${attempt + 1}/${maxRetries} for table ${tableId}:`,
                         error,
                     );
                     if (attempt < maxRetries - 1) {
                         await new Promise((resolve) => setTimeout(resolve, delayMs));
-                        delayMs = Math.min(delayMs * 1.5, maxDelayMs);
-                        continue;
+                        delayMs = Math.min(delayMs * 1.5, maxDelayMs); // Exponential backoff
+                    } else {
+                        return false;
                     }
-                    return false;
-                }
-                
-                const foundIds = new Set((columns || []).map((col) => col.id));
-                const allFound = columnIds.every((id) => foundIds.has(id));
-                
-                if (allFound) {
-                    console.debug(
-                        `[verifyColumnsExist] All ${columnIds.length} columns verified in database for table ${tableId} after ${attempt + 1} attempt(s)`,
-                    );
-                    return true;
-                }
-                
-                const missing = columnIds.filter((id) => !foundIds.has(id));
-                console.debug(
-                    `[verifyColumnsExist] Attempt ${attempt + 1}/${maxRetries} for table ${tableId}: Found ${foundIds.size}/${columnIds.length} columns. Missing: ${missing.join(', ')}`,
-                );
-                
-                if (attempt < maxRetries - 1) {
-                    await new Promise((resolve) => setTimeout(resolve, delayMs));
-                    delayMs = Math.min(delayMs * 1.5, maxDelayMs);
-                } else {
-                    console.warn(
-                        `[verifyColumnsExist] Failed to verify all columns for table ${tableId} after ${maxRetries} attempts. Missing: ${missing.join(', ')}`,
-                    );
-                    return false;
-                }
-            } catch (error) {
-                console.error(
-                    `[verifyColumnsExist] Error on attempt ${attempt + 1}/${maxRetries} for table ${tableId}:`,
-                    error,
-                );
-                if (attempt < maxRetries - 1) {
-                    await new Promise((resolve) => setTimeout(resolve, delayMs));
-                    delayMs = Math.min(delayMs * 1.5, maxDelayMs); // Exponential backoff
-                } else {
-                    return false;
                 }
             }
-        }
-        
-        return false;
-    }, [waitForSupabaseClient, getClientOrThrow, blockId]);
 
-    const confirmColumnsForTable = useCallback(async (
-        columnIds: string[],
-        operationId: string
-    ): Promise<boolean> => {
-        const pasteState = getPasteState();
-        const tableId = blockId || 'default';
-        
-        if (pasteState.columnsConfirmed) {
+            return false;
+        },
+        [waitForSupabaseClient, getClientOrThrow, blockId],
+    );
+
+    const confirmColumnsForTable = useCallback(
+        async (columnIds: string[], operationId: string): Promise<boolean> => {
+            const pasteState = getPasteState();
+            const tableId = blockId || 'default';
+
+            if (pasteState.columnsConfirmed) {
+                console.debug(
+                    `[confirmColumnsForTable] Columns already confirmed for table ${tableId}, skipping`,
+                );
+                return true;
+            }
+
+            if (pasteState.columnConfirmationPromise) {
+                console.debug(
+                    `[confirmColumnsForTable] Column confirmation already in progress for table ${tableId}, waiting...`,
+                );
+                return await pasteState.columnConfirmationPromise;
+            }
+
             console.debug(
-                `[confirmColumnsForTable] Columns already confirmed for table ${tableId}, skipping`,
+                `[${operationId}] Starting column confirmation barrier for table ${tableId} with ${columnIds.length} columns...`,
             );
-            return true;
-        }
-        
-        if (pasteState.columnConfirmationPromise) {
-            console.debug(
-                `[confirmColumnsForTable] Column confirmation already in progress for table ${tableId}, waiting...`,
-            );
-            return await pasteState.columnConfirmationPromise;
-        }
-        
-        console.debug(
-            `[${operationId}] Starting column confirmation barrier for table ${tableId} with ${columnIds.length} columns...`,
-        );
-        
-        const confirmationPromise = (async (): Promise<boolean> => {
-            try {
-                const verified = await verifyColumnsExist(columnIds);
-                
-                if (verified) {
-                    pasteState.columnsConfirmed = true;
-                    console.debug(
-                        `[${operationId}] Column confirmation barrier PASSED for table ${tableId}. All columns verified.`,
-                    );
-                    return true;
-                } else {
-                    console.warn(
-                        `[${operationId}] Column confirmation barrier FAILED for table ${tableId}. Some columns not verified.`,
+
+            const confirmationPromise = (async (): Promise<boolean> => {
+                try {
+                    const verified = await verifyColumnsExist(columnIds);
+
+                    if (verified) {
+                        pasteState.columnsConfirmed = true;
+                        console.debug(
+                            `[${operationId}] Column confirmation barrier PASSED for table ${tableId}. All columns verified.`,
+                        );
+                        return true;
+                    } else {
+                        console.warn(
+                            `[${operationId}] Column confirmation barrier FAILED for table ${tableId}. Some columns not verified.`,
+                        );
+                        pasteState.columnsConfirmed = true;
+                        return false;
+                    }
+                } catch (error) {
+                    console.error(
+                        `[${operationId}] Column confirmation barrier ERROR for table ${tableId}:`,
+                        error,
                     );
                     pasteState.columnsConfirmed = true;
                     return false;
+                } finally {
+                    pasteState.columnConfirmationPromise = null;
                 }
-            } catch (error) {
-                console.error(
-                    `[${operationId}] Column confirmation barrier ERROR for table ${tableId}:`,
-                    error,
-                );
-                pasteState.columnsConfirmed = true;
-                return false;
-            } finally {
-                pasteState.columnConfirmationPromise = null;
-            }
-        })();
-        
-        pasteState.columnConfirmationPromise = confirmationPromise;
-        
-        return await confirmationPromise;
-    }, [getPasteState, blockId, verifyColumnsExist]);
+            })();
+
+            pasteState.columnConfirmationPromise = confirmationPromise;
+
+            return await confirmationPromise;
+        },
+        [getPasteState, blockId, verifyColumnsExist],
+    );
 
     const { data: peopleNames = [] } = usePeopleOptions(
         String(orgId) || undefined,
@@ -840,7 +866,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     useEffect(() => {
         const pasteState = getPasteState();
         if (pasteState.isPasting || pasteState.pasteOperationActive) {
-            console.debug(`[Data Sync] Skipping - paste in progress for table ${blockId || 'default'}`);
+            console.debug(
+                `[Data Sync] Skipping - paste in progress for table ${blockId || 'default'}`,
+            );
             return;
         }
         if (isSavingRef.current) {
@@ -851,7 +879,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         const syncTimer = setTimeout(() => {
             const pasteState = getPasteState();
             if (pasteState.isPasting || pasteState.pasteOperationActive) {
-                console.debug(`[Data Sync] Skipping after delay - paste now active for table ${blockId || 'default'}`);
+                console.debug(
+                    `[Data Sync] Skipping after delay - paste now active for table ${blockId || 'default'}`,
+                );
                 return;
             }
 
@@ -926,65 +956,82 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     useEffect(() => {
         const pasteState = getPasteState();
         if (pasteState.isPasting || pasteState.pasteOperationActive) {
-            console.debug(`[Data Rehydration] Skipping - paste in progress for table ${blockId || 'default'}`);
+            console.debug(
+                `[Data Rehydration] Skipping - paste in progress for table ${blockId || 'default'}`,
+            );
             return;
         }
-        
-        const dynamicColumns = localColumnsRef.current.filter((col: any) => col.isDynamic);
-        
-        if (dynamicColumns.length === 0) return;
-        
-        const rowsWithCustomProps = data.filter((row: any) => 
-            row.custom_properties && 
-            typeof row.custom_properties === 'object' &&
-            Object.keys(row.custom_properties).length > 0
+
+        const dynamicColumns = localColumnsRef.current.filter(
+            (col: any) => col.isDynamic,
         );
-        
+
+        if (dynamicColumns.length === 0) return;
+
+        const rowsWithCustomProps = data.filter(
+            (row: any) =>
+                row.custom_properties &&
+                typeof row.custom_properties === 'object' &&
+                Object.keys(row.custom_properties).length > 0,
+        );
+
         if (rowsWithCustomProps.length === 0) return;
-        
-        console.debug('[Data Rehydration] Restoring dynamic column data from custom_properties...', {
-            dynamicColumns: dynamicColumns.map(c => ({ 
-                id: c.id, 
-                accessor: String(c.accessor),
-                header: c.header 
-            })),
-            rowsWithData: rowsWithCustomProps.length
-        });
-        
-        setLocalData(prevData => {
+
+        console.debug(
+            '[Data Rehydration] Restoring dynamic column data from custom_properties...',
+            {
+                dynamicColumns: dynamicColumns.map((c) => ({
+                    id: c.id,
+                    accessor: String(c.accessor),
+                    header: c.header,
+                })),
+                rowsWithData: rowsWithCustomProps.length,
+            },
+        );
+
+        setLocalData((prevData) => {
             const customPropsMap = new Map(
-                rowsWithCustomProps.map(row => [row.id, (row as any).custom_properties])
+                rowsWithCustomProps.map((row) => [
+                    row.id,
+                    (row as any).custom_properties,
+                ]),
             );
-            
-            return prevData.map(row => {
+
+            return prevData.map((row) => {
                 const customProps = customPropsMap.get(row.id);
-                
+
                 if (!customProps || typeof customProps !== 'object') {
                     return row;
                 }
-                
+
                 const rehydratedRow = { ...row };
                 let hasChanges = false;
-                
-                dynamicColumns.forEach(col => {
+
+                dynamicColumns.forEach((col) => {
                     const accessor = String(col.accessor);
-                    
-                    const value = customProps[accessor] || 
-                                 customProps[col.id] ||
-                                 customProps[col.header] ||
-                                 customProps[`dynamic_${accessor}`];
-                    
-                    if (value !== undefined && (rehydratedRow as any)[col.accessor] !== value) {
+
+                    const value =
+                        customProps[accessor] ||
+                        customProps[col.id] ||
+                        customProps[col.header] ||
+                        customProps[`dynamic_${accessor}`];
+
+                    if (
+                        value !== undefined &&
+                        (rehydratedRow as any)[col.accessor] !== value
+                    ) {
                         (rehydratedRow as any)[col.accessor] = value;
                         hasChanges = true;
-                        console.debug(`[Data Rehydration] Restored ${accessor} = ${value} for row ${row.id}`);
+                        console.debug(
+                            `[Data Rehydration] Restored ${accessor} = ${value} for row ${row.id}`,
+                        );
                     }
                 });
-                
+
                 return hasChanges ? rehydratedRow : row;
             });
         });
-        
+
         console.debug('[Data Rehydration] Completed restoration of dynamic column data');
     }, [data]);
     const handleColumnResize = useCallback(
@@ -998,14 +1045,14 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 return updated;
             });
 
-                setLocalColumns((prev) => {
-                    const updated = prev.map((c) =>
-                        c.title === col.title ? { ...c, width: newSize } : c,
-                    );
+            setLocalColumns((prev) => {
+                const updated = prev.map((c) =>
+                    c.title === col.title ? { ...c, width: newSize } : c,
+                );
 
-                    debouncedSave();
-                    return updated;
-                });
+                debouncedSave();
+                return updated;
+            });
 
             setTimeout(() => {
                 if (gridRef.current) {
@@ -1218,7 +1265,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             // Ignore edits during paste for this table instance
             const pasteState = getPasteState();
             if (pasteState.isPasting) {
-                console.debug(`[onCellEdited] Ignoring during paste for table ${blockId || 'default'}`);
+                console.debug(
+                    `[onCellEdited] Ignoring during paste for table ${blockId || 'default'}`,
+                );
                 return;
             }
 
@@ -1834,7 +1883,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                 // Verify the metadata was saved correctly by checking the update succeeded
                 // The saveTableMetadata function updates blocks.content.columns with the new name
-
             } catch (err) {
                 console.error('[GlideEditableTable] Failed to rename column:', err);
                 // Revert changes on error
@@ -2394,7 +2442,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             // Get scoped paste state for this table instance
             const pasteState = getPasteState();
             const tableId = blockId || 'default';
-            
+
             // Exit if not in edit mode
             if (!isEditMode) return false;
 
@@ -2404,10 +2452,30 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             const operationId = `paste_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
             const t0 = Date.now();
             console.group(`[paste_sync][${operationId}] START paste (t=${t0})`);
-            console.debug(`[paste_sync][${operationId}] isEditMode=${isEditMode} isPasting=${pasteState.isPasting} pasteOpActive=${pasteState.pasteOperationActive}`);
-            
-            console.debug(`[paste_sync][${operationId}] currentColumns (localColumns.length) =`, localColumnsRef.current.length, localColumnsRef.current.map(c => ({id:c.id, accessor:String(c.accessor), header:c.header, position:c.position})));
-            console.debug(`[paste_sync][${operationId}] incoming prop columns.length =`, columns.length, columns.map(c => ({id:c.id, accessor:String(c.accessor), header:c.header, position:c.position})));
+            console.debug(
+                `[paste_sync][${operationId}] isEditMode=${isEditMode} isPasting=${pasteState.isPasting} pasteOpActive=${pasteState.pasteOperationActive}`,
+            );
+
+            console.debug(
+                `[paste_sync][${operationId}] currentColumns (localColumns.length) =`,
+                localColumnsRef.current.length,
+                localColumnsRef.current.map((c) => ({
+                    id: c.id,
+                    accessor: String(c.accessor),
+                    header: c.header,
+                    position: c.position,
+                })),
+            );
+            console.debug(
+                `[paste_sync][${operationId}] incoming prop columns.length =`,
+                columns.length,
+                columns.map((c) => ({
+                    id: c.id,
+                    accessor: String(c.accessor),
+                    header: c.header,
+                    position: c.position,
+                })),
+            );
 
             pasteState.isPasting = true;
             pasteState.pasteOperationActive = true;
@@ -2417,18 +2485,20 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             const startCell: Item = target;
             const startCol = Math.max(0, startCell[0]);
             const startRow = Math.max(0, startCell[1]);
-            
+
             // Convert cells array to clipboardRows format
             // Empty cells should be preserved to match Excel/Sheets behavior
             const clipboardRows = cells.map((row) => row.map((cell) => cell.trim()));
-            
-            const validClipboardRows = clipboardRows.filter((row) => 
-                row.some((cell) => cell.length > 0)
+
+            const validClipboardRows = clipboardRows.filter((row) =>
+                row.some((cell) => cell.length > 0),
             );
-            
+
             // Ensure clipboardRows is always a valid 2D array
             if (validClipboardRows.length === 0) {
-                console.debug(`[paste_sync][${operationId}] No valid clipboard rows, aborting`);
+                console.debug(
+                    `[paste_sync][${operationId}] No valid clipboard rows, aborting`,
+                );
                 console.groupEnd();
                 return false;
             }
@@ -2445,20 +2515,23 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             pasteStartCol = startCol;
             pasteStartRow = startRow;
             clipboardRowsForRestore = validClipboardRows;
-            pasteEndCol = validClipboardRows.length > 0 
-                ? startCol + Math.max(...validClipboardRows.map((r) => r.length)) - 1
-                : startCol;
+            pasteEndCol =
+                validClipboardRows.length > 0
+                    ? startCol + Math.max(...validClipboardRows.map((r) => r.length)) - 1
+                    : startCol;
             pasteEndRow = startRow + Math.max(0, validClipboardRows.length - 1);
 
             try {
-
                 // Store coordinates for reference (but don't clear selection yet)
                 pasteStartCol = startCol;
                 pasteStartRow = startRow;
                 clipboardRowsForRestore = validClipboardRows;
-                pasteEndCol = validClipboardRows.length > 0 
-                    ? startCol + Math.max(...validClipboardRows.map((r) => r.length)) - 1
-                    : startCol;
+                pasteEndCol =
+                    validClipboardRows.length > 0
+                        ? startCol +
+                          Math.max(...validClipboardRows.map((r) => r.length)) -
+                          1
+                        : startCol;
                 pasteEndRow = startRow + Math.max(0, validClipboardRows.length - 1);
 
                 const currentData = [...sortedData];
@@ -2481,7 +2554,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 }> = [];
                 if (columnsNeeded > currentColumns.length) {
                     const existingColumnCount = currentColumns.length;
-                    
+
                     // Find the highest numbered "Column X" to determine next index
                     let highestColumnNumber = 0;
                     currentColumns.forEach((col) => {
@@ -2502,7 +2575,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             }
                         }
                     });
-                    
+
                     // If no numeric columns found, use the current column count as base
                     if (highestColumnNumber === 0 && existingColumnCount > 0) {
                         highestColumnNumber = existingColumnCount;
@@ -2530,12 +2603,18 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                 // Process cell data after columns are confirmed in database
                 // Initialize results array - will be populated by async column creation
-                let columnCreationResults: Array<{ success: boolean; columnId?: string; tempId: string; realAccessor?: string; error?: any }> = [];
+                let columnCreationResults: Array<{
+                    success: boolean;
+                    columnId?: string;
+                    tempId: string;
+                    realAccessor?: string;
+                    error?: any;
+                }> = [];
                 let confirmedColumnIds: string[] = [];
                 // This map will be built synchronously from placeholder columns for immediate UI use
                 let tempAccessorToRealAccessor = new Map<string, string>();
                 const tempIdToTempAccessor = new Map<string, string>();
-                
+
                 if (newColumnsToCreate.length > 0 && blockId) {
                     // Create placeholder columns synchronously for immediate UI display
                     const placeholderColumns = newColumnsToCreate.map(
@@ -2553,135 +2632,167 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                     currentColumns.push(...placeholderColumns);
                     currentColumns.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-                    
+
                     // Update localColumns state immediately so UI shows new columns
                     setLocalColumns((prev) => {
                         const updated = [...prev, ...placeholderColumns];
-                        return updated.sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+                        return updated.sort(
+                            (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                        );
                     });
-                    
+
                     // Update ref immediately
-                    localColumnsRef.current = currentColumns as typeof localColumnsRef.current;
-                    
+                    localColumnsRef.current =
+                        currentColumns as typeof localColumnsRef.current;
+
                     console.debug(`[${operationId}] Placeholder columns created:`, {
                         count: placeholderColumns.length,
-                        columns: placeholderColumns.map(c => ({
+                        columns: placeholderColumns.map((c) => ({
                             id: c.id,
                             header: c.header,
                             accessor: c.accessor,
                             position: c.position,
                         })),
-                        allColumnAccessors: localColumnsRef.current.map(c => c.accessor),
+                        allColumnAccessors: localColumnsRef.current.map(
+                            (c) => c.accessor,
+                        ),
                     });
 
                     const columnCreationPromise = (async () => {
                         try {
                             await waitForSupabaseClient();
-                            
+
                             // Collect all column creation promises in an array
                             const columnCreationPromises: Promise<any>[] = [];
-                            
-                            // Fire all column creation requests in parallel and collect promises
-                            const columnPromises = newColumnsToCreate.map(async ({ name, position, tempId, index: arrayIndex }) => {
-                                try {
-                                    const tempAccessor = name.toLowerCase().replace(/\s+/g, '_');
-                                    console.debug(`[paste_sync][${operationId}] creating new column localId=${tempId} accessor=${tempAccessor} position=${position} name="${name}"`);
-                                    const createStart = Date.now();
-                                    
-                                    const columnPromise = createPropertyAndColumn(
-                                        name,
-                                        'text',
-                                        {
-                                            scope: ['document'],
-                                            is_base: false,
-                                            org_id: String(orgId),
-                                            project_id: String(projectId),
-                                            document_id: String(documentId),
-                                        },
-                                        '',
-                                        blockId,
-                                        userId || '',
-                                    );
-                                    
-                                    // Store promise in both the Map (for tracking) and array (for Promise.all)
-                                    pasteState.columnCreationPromises.set(tempId, columnPromise);
-                                    columnCreationPromises.push(columnPromise);
-                                    
-                                    const result = await columnPromise;
-                                    const createDuration = Date.now() - createStart;
-                                    console.debug(`[paste_sync][${operationId}] createPropertyAndColumn returned (duration=${createDuration}ms) ->`, {
-                                        success: !!(result?.column && result?.property),
-                                        columnId: result?.column?.id,
-                                        propertyName: result?.property?.name,
-                                        realAccessor: result?.property?.name,
-                                        tempId,
-                                    });
 
-                                    if (result?.column && result?.property) {
-                                        // Update placeholder with real column data
-                                        const placeholderIndex = currentColumns.findIndex(
-                                            (col) => col.id === tempId,
+                            // Fire all column creation requests in parallel and collect promises
+                            const columnPromises = newColumnsToCreate.map(
+                                async ({ name, position, tempId, index: arrayIndex }) => {
+                                    try {
+                                        const tempAccessor = name
+                                            .toLowerCase()
+                                            .replace(/\s+/g, '_');
+                                        console.debug(
+                                            `[paste_sync][${operationId}] creating new column localId=${tempId} accessor=${tempAccessor} position=${position} name="${name}"`,
                                         );
-                                        if (placeholderIndex !== -1) {
-                                            const updatedColumn = {
-                                                id: result.column.id,
-                                                header: name,
-                                                title: name,
-                                                accessor: result.property.name as keyof T,
-                                                type: 'text' as EditableColumnType,
-                                                width: 150,
-                                                position: position,
-                                                options: undefined,
+                                        const createStart = Date.now();
+
+                                        const columnPromise = createPropertyAndColumn(
+                                            name,
+                                            'text',
+                                            {
+                                                scope: ['document'],
+                                                is_base: false,
+                                                org_id: String(orgId),
+                                                project_id: String(projectId),
+                                                document_id: String(documentId),
+                                            },
+                                            '',
+                                            blockId,
+                                            userId || '',
+                                        );
+
+                                        // Store promise in both the Map (for tracking) and array (for Promise.all)
+                                        pasteState.columnCreationPromises.set(
+                                            tempId,
+                                            columnPromise,
+                                        );
+                                        columnCreationPromises.push(columnPromise);
+
+                                        const result = await columnPromise;
+                                        const createDuration = Date.now() - createStart;
+                                        console.debug(
+                                            `[paste_sync][${operationId}] createPropertyAndColumn returned (duration=${createDuration}ms) ->`,
+                                            {
+                                                success: !!(
+                                                    result?.column && result?.property
+                                                ),
+                                                columnId: result?.column?.id,
+                                                propertyName: result?.property?.name,
+                                                realAccessor: result?.property?.name,
+                                                tempId,
+                                            },
+                                        );
+
+                                        if (result?.column && result?.property) {
+                                            // Update placeholder with real column data
+                                            const placeholderIndex =
+                                                currentColumns.findIndex(
+                                                    (col) => col.id === tempId,
+                                                );
+                                            if (placeholderIndex !== -1) {
+                                                const updatedColumn = {
+                                                    id: result.column.id,
+                                                    header: name,
+                                                    title: name,
+                                                    accessor: result.property
+                                                        .name as keyof T,
+                                                    type: 'text' as EditableColumnType,
+                                                    width: 150,
+                                                    position: position,
+                                                    options: undefined,
+                                                };
+                                                currentColumns[placeholderIndex] =
+                                                    updatedColumn;
+
+                                                // Update local state with real column
+                                                setLocalColumns((prev) => {
+                                                    const updated = prev.map((col) =>
+                                                        col.id === tempId
+                                                            ? updatedColumn
+                                                            : col,
+                                                    );
+                                                    return updated.sort(
+                                                        (a, b) =>
+                                                            (a.position ?? 0) -
+                                                            (b.position ?? 0),
+                                                    );
+                                                });
+                                                localColumnsRef.current =
+                                                    currentColumns as typeof localColumnsRef.current;
+                                            }
+
+                                            return {
+                                                success: true,
+                                                columnId: result.column.id,
+                                                tempId: tempId,
+                                                realAccessor: result.property.name,
+                                                originalIndex: arrayIndex,
                                             };
-                                            currentColumns[placeholderIndex] = updatedColumn;
-                                            
-                                            // Update local state with real column
-                                            setLocalColumns((prev) => {
-                                                const updated = prev.map((col) =>
-                                                    col.id === tempId ? updatedColumn : col,
-                                                );
-                                                return updated.sort(
-                                                    (a, b) => (a.position ?? 0) - (b.position ?? 0),
-                                                );
-                                            });
-                                            localColumnsRef.current = currentColumns as typeof localColumnsRef.current;
+                                        } else {
+                                            return {
+                                                success: false,
+                                                name,
+                                                error: 'No result',
+                                                tempId: tempId,
+                                                originalIndex: arrayIndex,
+                                            };
                                         }
-                                        
-                                        return { 
-                                            success: true, 
-                                            columnId: result.column.id,
-                                            tempId: tempId,
-                                            realAccessor: result.property.name,
-                                            originalIndex: arrayIndex,
-                                        };
-                                    } else {
-                                        return { 
-                                            success: false, 
-                                            name, 
-                                            error: 'No result',
+                                    } catch (columnError) {
+                                        return {
+                                            success: false,
+                                            name,
+                                            error: columnError,
                                             tempId: tempId,
                                             originalIndex: arrayIndex,
                                         };
                                     }
-                                } catch (columnError) {
-                                    return { 
-                                        success: false, 
-                                        name, 
-                                        error: columnError,
-                                        tempId: tempId,
-                                        originalIndex: arrayIndex,
-                                    };
-                                }
-                            });
+                                },
+                            );
 
                             // ensures all columns exist in the database before we save any row data
-                            console.debug(`[paste_sync][${operationId}] Waiting for ${columnCreationPromises.length} column creation promises to complete...`);
+                            console.debug(
+                                `[paste_sync][${operationId}] Waiting for ${columnCreationPromises.length} column creation promises to complete...`,
+                            );
                             await Promise.all(columnCreationPromises);
-                            console.debug(`[paste_sync][${operationId}] All column creation promises resolved. Processing results...`);
-                            
+                            console.debug(
+                                `[paste_sync][${operationId}] All column creation promises resolved. Processing results...`,
+                            );
+
                             // Now process the results
-                            const settledResults = await Promise.allSettled(columnPromises);
-                            
+                            const settledResults =
+                                await Promise.allSettled(columnPromises);
+
                             // Extract results
                             const results = settledResults.map((result, index) => {
                                 if (result.status === 'fulfilled') {
@@ -2697,12 +2808,16 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             // Extract successful column IDs for confirmation
                             const successfulColumnIds = results
-                                .filter((r) => r.success && 'columnId' in r && !!r.columnId)
+                                .filter(
+                                    (r) => r.success && 'columnId' in r && !!r.columnId,
+                                )
                                 .map((r) => (r as { columnId: string }).columnId)
                                 .filter((id): id is string => !!id);
-                            
-                            console.debug(`[paste_sync][${operationId}] ALL createColumn promises resolved, totalNewColumns=${results.length}, successful=${successfulColumnIds.length}`);
-                            
+
+                            console.debug(
+                                `[paste_sync][${operationId}] ALL createColumn promises resolved, totalNewColumns=${results.length}, successful=${successfulColumnIds.length}`,
+                            );
+
                             // Confirm columns exist in database before proceeding
                             if (successfulColumnIds.length > 0) {
                                 const confirmed = await confirmColumnsForTable(
@@ -2710,46 +2825,80 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     operationId,
                                 );
                                 if (!confirmed) {
-                                    console.warn(`[paste_sync][${operationId}] Some columns failed confirmation, but proceeding with successful ones`);
+                                    console.warn(
+                                        `[paste_sync][${operationId}] Some columns failed confirmation, but proceeding with successful ones`,
+                                    );
                                 }
                             }
-                            
+
                             // Short pause to allow DB eventual consistency (if any)
-                            console.debug(`[paste_sync][${operationId}] Adding 100ms delay to ensure columns are registered in backend...`);
-                            await new Promise(r => setTimeout(r, 100));
-                            console.debug(`[paste_sync][${operationId}] Delay complete, columns should be ready for row data save`);
-                            
+                            console.debug(
+                                `[paste_sync][${operationId}] Adding 100ms delay to ensure columns are registered in backend...`,
+                            );
+                            await new Promise((r) => setTimeout(r, 100));
+                            console.debug(
+                                `[paste_sync][${operationId}] Delay complete, columns should be ready for row data save`,
+                            );
+
                             // Log current authoritative columns via props (after await)
-                            console.debug(`[paste_sync][${operationId}] after col-create, prop columns (len) =`, columns.length, columns.map(c=>({id:c.id, accessor:String(c.accessor)})).slice(0,20));
-                            
+                            console.debug(
+                                `[paste_sync][${operationId}] after col-create, prop columns (len) =`,
+                                columns.length,
+                                columns
+                                    .map((c) => ({
+                                        id: c.id,
+                                        accessor: String(c.accessor),
+                                    }))
+                                    .slice(0, 20),
+                            );
+
                             return results;
                         } catch (error) {
-                            console.error(`[paste_sync][${operationId}] Error creating columns:`, error);
+                            console.error(
+                                `[paste_sync][${operationId}] Error creating columns:`,
+                                error,
+                            );
                             return [];
                         }
                     })();
-                    
+
                     // Store the overall column creation promise for later use in save phase
-                    pasteState.columnCreationPromise = columnCreationPromise.then((results) => {
-                        // Update columnCreationResults for use in save phase
-                        columnCreationResults = results;
-                        
-                        // Build mapping from temp accessor to real accessor for save phase
-                        results.forEach((result) => {
-                            if (result.success && result.tempId && 'realAccessor' in result && result.realAccessor) {
-                                const placeholderCol = currentColumns.find((col) => col.id === result.tempId);
-                                if (placeholderCol) {
-                                    const tempAccessor = String(placeholderCol.accessor);
-                                    tempAccessorToRealAccessor.set(tempAccessor, result.realAccessor);
+                    pasteState.columnCreationPromise = columnCreationPromise.then(
+                        (results) => {
+                            // Update columnCreationResults for use in save phase
+                            columnCreationResults = results;
+
+                            // Build mapping from temp accessor to real accessor for save phase
+                            results.forEach((result) => {
+                                if (
+                                    result.success &&
+                                    result.tempId &&
+                                    'realAccessor' in result &&
+                                    result.realAccessor
+                                ) {
+                                    const placeholderCol = currentColumns.find(
+                                        (col) => col.id === result.tempId,
+                                    );
+                                    if (placeholderCol) {
+                                        const tempAccessor = String(
+                                            placeholderCol.accessor,
+                                        );
+                                        tempAccessorToRealAccessor.set(
+                                            tempAccessor,
+                                            result.realAccessor,
+                                        );
+                                    }
                                 }
-                            }
-                        });
-                        return results;
-                    });
-                    
+                            });
+                            return results;
+                        },
+                    );
+
                     // allows UI to display dynamic column data right away using temp accessors
                     newColumnsToCreate.forEach(({ tempId, name }) => {
-                        const placeholderCol = currentColumns.find((col) => col.id === tempId);
+                        const placeholderCol = currentColumns.find(
+                            (col) => col.id === tempId,
+                        );
                         if (placeholderCol) {
                             const tempAccessor = String(placeholderCol.accessor);
                             tempIdToTempAccessor.set(tempId, tempAccessor);
@@ -2760,11 +2909,14 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                 // Track changes to apply - split by standard vs dynamic columns
                 const updatedRows = new Map<string, T>();
-                const rowsWithDynamicColumns = new Map<string, {
-                    row: T;
-                    dynamicColumnData: Record<string, any>; // accessor -> value for dynamic columns
-                    tempColumnIds: string[]; // tempIds of dynamic columns in this row
-                }>();
+                const rowsWithDynamicColumns = new Map<
+                    string,
+                    {
+                        row: T;
+                        dynamicColumnData: Record<string, any>; // accessor -> value for dynamic columns
+                        tempColumnIds: string[]; // tempIds of dynamic columns in this row
+                    }
+                >();
                 newRowsToCreate = [];
                 const newRowsWithDynamicColumns: Array<{
                     row: T;
@@ -2777,7 +2929,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 // used to track which columns are dynamic during cell processing
                 const tempIdToAccessor = new Map<string, string>();
                 newColumnsToCreate.forEach(({ tempId, name }) => {
-                    const placeholderCol = currentColumns.find((col) => col.id === tempId);
+                    const placeholderCol = currentColumns.find(
+                        (col) => col.id === tempId,
+                    );
                     if (placeholderCol) {
                         const tempAccessor = String(placeholderCol.accessor);
                         tempIdToAccessor.set(tempId, tempAccessor);
@@ -2786,7 +2940,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                 // Calculate the maximum position for new rows from current data
                 const currentPositions = currentData.map((d) => d.position ?? 0);
-                let maxPosition = currentPositions.length > 0 ? Math.max(...currentPositions) : 0;
+                let maxPosition =
+                    currentPositions.length > 0 ? Math.max(...currentPositions) : 0;
 
                 for (
                     let clipboardRowIndex = 0;
@@ -2846,7 +3001,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         if (!targetColumn) {
                             console.warn(
                                 `[${operationId}] Column at index ${targetColIndex} not found for cell [${clipboardRowIndex}, ${cellIndex}]. ` +
-                                `Current columns: ${currentColumns.length}, needed: ${columnsNeeded}, startCol: ${startCol}`
+                                    `Current columns: ${currentColumns.length}, needed: ${columnsNeeded}, startCol: ${startCol}`,
                             );
                             continue;
                         }
@@ -2860,7 +3015,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         if (currentValue === trimmedValue && trimmedValue !== '') {
                             continue;
                         }
-                        
+
                         // Handle different column types with proper validation
                         let processedValue: any = trimmedValue;
 
@@ -2874,15 +3029,20 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 if (Array.isArray(targetColumn.options)) {
                                     validOptions = targetColumn.options.map((opt) => {
                                         if (typeof opt === 'string') return opt;
-                                        if (typeof opt === 'object' && opt !== null && 'label' in opt) {
+                                        if (
+                                            typeof opt === 'object' &&
+                                            opt !== null &&
+                                            'label' in opt
+                                        ) {
                                             return (opt as { label: string }).label;
                                         }
                                         return String(opt);
                                     });
                                 }
-                                processedValue = validOptions.length > 0
-                                    ? rawParts.filter((p) => validOptions.includes(p))
-                                    : rawParts;
+                                processedValue =
+                                    validOptions.length > 0
+                                        ? rawParts.filter((p) => validOptions.includes(p))
+                                        : rawParts;
                                 break;
                             }
                             case 'people': {
@@ -2894,27 +3054,44 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 if (Array.isArray(targetColumn.options)) {
                                     validOptions = targetColumn.options.map((opt) => {
                                         if (typeof opt === 'string') return opt;
-                                        if (typeof opt === 'object' && opt !== null && 'label' in opt) {
+                                        if (
+                                            typeof opt === 'object' &&
+                                            opt !== null &&
+                                            'label' in opt
+                                        ) {
                                             return (opt as { label: string }).label;
                                         }
                                         return String(opt);
                                     });
                                 }
-                                processedValue = validOptions.length > 0
-                                    ? rawParts.filter((p) => validOptions.includes(p))
-                                    : rawParts;
+                                processedValue =
+                                    validOptions.length > 0
+                                        ? rawParts.filter((p) => validOptions.includes(p))
+                                        : rawParts;
                                 break;
                             }
                             case 'select':
-                                if (Array.isArray(targetColumn.options) && targetColumn.options.length > 0) {
-                                    const validOptions = targetColumn.options.map((opt) => {
-                                        if (typeof opt === 'string') return opt;
-                                        if (typeof opt === 'object' && opt !== null && 'label' in opt) {
-                                            return (opt as { label: string }).label;
-                                        }
-                                        return String(opt);
-                                    });
-                                    if (trimmedValue && validOptions.includes(trimmedValue)) {
+                                if (
+                                    Array.isArray(targetColumn.options) &&
+                                    targetColumn.options.length > 0
+                                ) {
+                                    const validOptions = targetColumn.options.map(
+                                        (opt) => {
+                                            if (typeof opt === 'string') return opt;
+                                            if (
+                                                typeof opt === 'object' &&
+                                                opt !== null &&
+                                                'label' in opt
+                                            ) {
+                                                return (opt as { label: string }).label;
+                                            }
+                                            return String(opt);
+                                        },
+                                    );
+                                    if (
+                                        trimmedValue &&
+                                        validOptions.includes(trimmedValue)
+                                    ) {
                                         processedValue = trimmedValue;
                                     } else {
                                         processedValue = '';
@@ -2930,21 +3107,25 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         }
 
                         // Check if this is a dynamic column
-                        const isDynamicColumn = targetColumn.id && targetColumn.id.startsWith('temp-');
-                        
+                        const isDynamicColumn =
+                            targetColumn.id && targetColumn.id.startsWith('temp-');
+
                         if (isDynamicColumn) {
                             const tempAccessor = String(targetColumn.accessor);
-                            
+
                             // ensures dynamic column values appear instantly in the UI
                             (targetRow as any)[tempAccessor] = processedValue;
-                            
+
                             // track in dynamicColumnData for backend persistence
                             dynamicColumnData[tempAccessor] = processedValue;
-                            
-                            if (targetColumn.id && !tempColumnIds.includes(targetColumn.id)) {
+
+                            if (
+                                targetColumn.id &&
+                                !tempColumnIds.includes(targetColumn.id)
+                            ) {
                                 tempColumnIds.push(targetColumn.id);
                             }
-                            
+
                             console.debug(`[${operationId}] Added dynamic column data:`, {
                                 rowId: targetRow.id,
                                 columnId: targetColumn.id,
@@ -2966,8 +3147,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         if (tempColumnIds.length > 0) {
                             // New row with dynamic columns - track separately for deferred save
                             newRowsWithDynamicColumns.push({
-                                row: targetRow, 
-                                dynamicColumnData, 
+                                row: targetRow,
+                                dynamicColumnData,
                                 tempColumnIds,
                             });
                         } else {
@@ -2977,7 +3158,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     } else if (rowHasChanges) {
                         if (tempColumnIds.length > 0) {
                             rowsWithDynamicColumns.set(targetRow.id, {
-                                row: targetRow, 
+                                row: targetRow,
                                 dynamicColumnData,
                                 tempColumnIds,
                             });
@@ -2985,11 +3166,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             // Updated row with only standard columns
                             updatedRows.set(targetRow.id, targetRow);
                         }
-                        
+
                         // Track changes for editing buffer
                         // both standard and dynamic column data
                         const changes: Partial<T> = {};
-                        for (let cellIndex = 0; cellIndex < clipboardCells.length; cellIndex++) {
+                        for (
+                            let cellIndex = 0;
+                            cellIndex < clipboardCells.length;
+                            cellIndex++
+                        ) {
                             const targetColIndex = startCol + cellIndex;
                             const targetColumn = currentColumns[targetColIndex];
                             if (targetColumn) {
@@ -3001,773 +3186,1276 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     }
                 }
 
-            setLocalData((prevData) => {
-                const updatedData = [...prevData];
-                
-                console.debug(`[${operationId}] Updating localData:`, {
-                    prevCount: prevData.length,
-                    updatedRowsCount: updatedRows.size,
-                    rowsWithDynamicCount: rowsWithDynamicColumns.size,
-                    newRowsCount: newRowsToCreate.length,
-                    newRowsWithDynamicCount: newRowsWithDynamicColumns.length,
-                    columnsCount: localColumnsRef.current.length,
-                });
-                
-                // Update existing rows with standard columns only
-                updatedRows.forEach((updatedRow, rowId) => {
-                    const index = updatedData.findIndex((row) => row.id === rowId);
-                    if (index !== -1) {
-                        updatedData[index] = { ...updatedRow };
-                    } else {
-                        console.warn(`[${operationId}] Row ${rowId} not found in localData for update`);
-                    }
-                });
+                setLocalData((prevData) => {
+                    const updatedData = [...prevData];
 
-                // Update existing rows with dynamic columns (already includes dynamic column data in row object)
-                rowsWithDynamicColumns.forEach(({ row }, rowId) => {
-                    const index = updatedData.findIndex((r) => r.id === rowId);
-                    if (index !== -1) {
-                        const dynamicKeys = Object.keys(row).filter(key => 
-                            newColumnsToCreate.some(col => {
-                                const tempAccessor = col.name.toLowerCase().replace(/\s+/g, '_');
-                                return key === tempAccessor;
-                            })
-                        );
-                        if (dynamicKeys.length > 0) {
-                            console.debug(`[${operationId}] Row ${rowId} has dynamic column data:`, dynamicKeys, 
-                                dynamicKeys.map(k => ({ key: k, value: (row as any)[k] })));
-                        }
-                        updatedData[index] = { ...row };
-                    } else {
-                        console.warn(`[${operationId}] Row ${rowId} not found in localData for dynamic update`);
-                    }
-                });
-
-                // Append new rows with standard columns only
-                newRowsToCreate.forEach((newRow) => {
-                    if (!updatedData.some((row) => row.id === newRow.id)) {
-                        updatedData.push({ ...newRow });
-                    } else {
-                        console.warn(`[${operationId}] New row ${newRow.id} already exists in localData`);
-                    }
-                });
-
-                // Append new rows with dynamic columns
-                newRowsWithDynamicColumns.forEach(({ row }) => {
-                    if (!updatedData.some((r) => r.id === row.id)) {
-                        const dynamicKeys = Object.keys(row).filter(key => 
-                            newColumnsToCreate.some(col => {
-                                const tempAccessor = col.name.toLowerCase().replace(/\s+/g, '_');
-                                return key === tempAccessor;
-                            })
-                        );
-                        if (dynamicKeys.length > 0) {
-                            console.debug(`[${operationId}] New row ${row.id} has dynamic column data:`, 
-                                dynamicKeys, dynamicKeys.map(k => ({ key: k, value: (row as any)[k] })));
-                        }
-                        updatedData.push({ ...row });
-                    } else {
-                        console.warn(`[${operationId}] New row ${row.id} already exists in localData`);
-                    }
-                });
-
-                // Sort by position
-                const sorted = updatedData.sort((a, b) => {
-                    const posA = (a.position ?? 0);
-                    const posB = (b.position ?? 0);
-                    return posA - posB;
-                });
-                
-                console.debug(`[${operationId}] localData update complete:`, {
-                    finalCount: sorted.length,
-                    columnsCount: localColumnsRef.current.length,
-                });
-                
-                console.log(`[${operationId}] Columns:`, localColumnsRef.current.map(c => ({
-                    id: c.id,
-                    header: c.header,
-                    accessor: c.accessor,
-                    isDynamic: c.id?.startsWith('temp-'),
-                })));
-                
-                console.log(`[${operationId}] Row data (first 3 rows):`, sorted.slice(0, 3).map(r => ({
-                    id: r.id,
-                    keys: Object.keys(r),
-                    dynamicKeys: Object.keys(r).filter(k => 
-                        localColumnsRef.current.some(c => c.id?.startsWith('temp-') && c.accessor === k)
-                    ),
-                })));
-                
-                localColumnsRef.current
-                    .filter(c => c.id?.startsWith('temp-'))
-                    .forEach(c => {
-                        const accessor = String(c.accessor);
-                        const values = sorted.map(r => (r as any)[accessor]);
-                        console.log(`[${operationId}] Column ${c.header} (${accessor}):`, values);
+                    console.debug(`[${operationId}] Updating localData:`, {
+                        prevCount: prevData.length,
+                        updatedRowsCount: updatedRows.size,
+                        rowsWithDynamicCount: rowsWithDynamicColumns.size,
+                        newRowsCount: newRowsToCreate.length,
+                        newRowsWithDynamicCount: newRowsWithDynamicColumns.length,
+                        columnsCount: localColumnsRef.current.length,
                     });
-                
-                return sorted;
-            });
 
-            if (Object.keys(editingUpdates).length > 0) {
-                setEditingData((prev) => ({
-                    ...prev,
-                    ...editingUpdates,
-                }));
-                editingDataRef.current = {
-                    ...editingDataRef.current,
-                    ...editingUpdates,
-                };
-            }
-
-            setLocalColumns((prev) => {
-                const sorted = [...prev].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-                const normalized = sorted.map((col, idx) => ({
-                    ...col,
-                    position: idx,
-                }));
-                localColumnsRef.current = normalized as typeof localColumnsRef.current;
-                return normalized as typeof prev;
-            });
-
-            // ensures the DataEditor re-renders with new columns and data
-            requestAnimationFrame(() => {
-                if (gridRef.current) {
-                    // Update all cells to force grid refresh
-                    gridRef.current.updateCells([]);
-                    console.log(`[${operationId}] Grid invalidated after paste`);
-                }
-            });
-
-            // Clearing selection too early causes first-paste collapse
-            setSelection(undefined);
-            selectionRef.current = undefined;
-            setGridSelection({
-                rows: CompactSelection.empty(),
-                columns: CompactSelection.empty(),
-            });
-
-            // Start immediate save sequence
-            (async () => {
-                try {
-                    await waitForSupabaseClient();
-
-                    const BATCH_SIZE = 20;
-                    let tempAccessorToRealAccessorMap = new Map<string, string>();
-                    const hasDynamicColumns = rowsWithDynamicColumns.size > 0 || newRowsWithDynamicColumns.length > 0;
-                    let updatedLocalDataRows: T[] = [];
-                    let remappedRows: T[] = []; // Declare at function scope so it's available for save phase
-                    let remapEndTime: number | undefined; // Track when remap completes for timing comparison
-                    
-                    if (hasDynamicColumns && pasteState.columnCreationPromise) {
-                        console.log(`[paste_sync] Waiting for all dynamic columns to finish before remapping...`);
-                        
-                        const columnResults = await pasteState.columnCreationPromise;
-                        const successfulColumns = columnResults.filter(r => r.success).length;
-                        console.log(`[paste_sync][${operationId}] ✅ All dynamic columns created (${successfulColumns} columns)`);
-                        
-                        console.log(`[paste_sync][${operationId}] Adding 300ms delay to allow state to sync...`);
-                        await new Promise(r => setTimeout(r, 300));
-                        console.log(`[paste_sync][${operationId}] Delay complete, columns should be ready for row data save`);
-                        
-                        // Persist stable column order immediately after column creation
-                        console.log(`[paste_sync][${operationId}] Saving table metadata to persist column order...`);
-                        try {
-                            await saveTableMetadata();
-                            console.log(`[paste_sync][${operationId}] ✅ Table metadata saved (column order persisted)`);
-                        } catch (error) {
-                            console.error(`[paste_sync][${operationId}] ❌ Failed to save table metadata:`, error);
-                        }
-                        
-                        console.log(`[remap_debug][${operationId}] Validating column sync before remapping...`);
-                        console.log(`[remap_debug][${operationId}] localColumnsRef.length=${localColumnsRef.current.length} before remap`);
-                        console.log(`[remap_debug][${operationId}] columns prop.length=${columns.length} before remap`);
-                        console.log(`[remap_debug][${operationId}] Expected new columns=${successfulColumns}`);
-                        
-                        // Build mapping from temp accessor to real accessor for confirmed columns
-                        console.log(`[mapping_pairs][${operationId}] Building temp -> real accessor mapping from ${columnResults.length} column results...`);
-                        
-                        columnResults.forEach((result, index) => {
-                            if (result.success && result.tempId && 'realAccessor' in result && result.realAccessor) {
-                                // Get temp accessor from stored mapping (created when placeholder was made)
-                                const tempAccessor = tempIdToTempAccessor.get(result.tempId);
-                                
-                                if (tempAccessor) {
-                                    tempAccessorToRealAccessorMap.set(tempAccessor, result.realAccessor);
-                                    console.log(`[mapping_pairs][${operationId}] Pair ${index + 1}: "${tempAccessor}" → "${result.realAccessor}" (tempId: ${result.tempId})`);
-                                } else {
-                                    console.warn(`[mapping_pairs][${operationId}] ⚠️ No temp accessor found for tempId "${result.tempId}" when mapping to real accessor "${result.realAccessor}"`);
-                                    const placeholderCol = localColumnsRef.current.find((col) => col.id === result.tempId);
-                                    if (placeholderCol) {
-                                        const fallbackTempAccessor = String(placeholderCol.accessor);
-                                        tempAccessorToRealAccessorMap.set(fallbackTempAccessor, result.realAccessor);
-                                        console.log(`[mapping_pairs][${operationId}] Fallback Pair ${index + 1}: "${fallbackTempAccessor}" → "${result.realAccessor}"`);
-                                    }
-                                }
-                            } else {
-                                console.warn(`[mapping_pairs][${operationId}] ⚠️ Column creation result ${index + 1} missing required fields:`, {
-                                    success: result.success,
-                                    tempId: result.tempId,
-                                    hasRealAccessor: 'realAccessor' in result,
-                                    realAccessor: result.realAccessor,
-                                });
-                            }
-                        });
-                        
-                        // Log complete mapping with clear structure
-                        const mappingEntries = Array.from(tempAccessorToRealAccessorMap.entries());
-                        console.log(`[mapping_pairs][${operationId}] ========================================`);
-                        console.log(`[mapping_pairs][${operationId}] COMPLETE MAPPING (${mappingEntries.length} pairs):`);
-                        mappingEntries.forEach(([temp, real], idx) => {
-                            console.log(`[mapping_pairs][${operationId}]   ${idx + 1}. "${temp}" → "${real}"`);
-                        });
-                        console.log(`[mapping_pairs][${operationId}] ========================================`);
-                        
-                        const expectedTempAccessors = Array.from(tempIdToTempAccessor.values());
-                        const mappedTempAccessors = mappingEntries.map(([temp]) => temp);
-                        const missingMappings = expectedTempAccessors.filter(temp => !mappedTempAccessors.includes(temp));
-                        
-                        const incompleteRealAccessors = mappingEntries.filter(([temp, real]) => 
-                            real.startsWith('temp-') || real === temp
-                        );
-                        
-                        if (incompleteRealAccessors.length > 0) {
-                            console.warn(`[paste_sync] ❌ Some accessors still temporary, delaying remap...`, incompleteRealAccessors);
-                            // Wait additional time for columns to fully propagate
-                            await new Promise(r => setTimeout(r, 300));
-                            // Re-check after delay
-                            const recheckIncomplete = Array.from(tempAccessorToRealAccessorMap.entries()).filter(([temp, real]) => 
-                                real.startsWith('temp-') || real === temp
-                            );
-                            if (recheckIncomplete.length > 0) {
-                                console.error(`[paste_sync] ❌ Still incomplete after delay:`, recheckIncomplete);
-                            }
-                        }
-                        
-                        if (missingMappings.length > 0) {
-                            console.warn(`[${operationId}] Missing mappings for ${missingMappings.length} temp accessors:`, missingMappings);
-                        } else if (expectedTempAccessors.length > 0) {
-                            console.debug(`[${operationId}] All ${expectedTempAccessors.length} temp accessors have real accessor mappings.`);
-                        }
-                        
-                        if (successfulColumns === 0) {
-                            console.warn(`[${operationId}] No columns were created successfully. Dynamic column data may not be saved.`);
-                        }
-                        
-                        const finalMappingEntries = Array.from(tempAccessorToRealAccessorMap.entries());
-                        const finalExpectedTempAccessors = Array.from(tempIdToTempAccessor.values());
-                        const finalMappedTempAccessors = finalMappingEntries.map(([temp]) => temp);
-                        const finalMissingMappings = finalExpectedTempAccessors.filter(temp => !finalMappedTempAccessors.includes(temp));
-                        
-                        if (finalMissingMappings.length > 0) {
-                            console.error(`[paste_sync] ❌ Cannot proceed with remap: Missing ${finalMissingMappings.length} mappings:`, finalMissingMappings);
-                            console.error(`[paste_sync] Expected temp accessors:`, finalExpectedTempAccessors);
-                            console.error(`[paste_sync] Mapped temp accessors:`, finalMappedTempAccessors);
-                            return; // Exit early - don't proceed with remap or save
-                        }
-                        
-                        const finalIncompleteRealAccessors = finalMappingEntries.filter(([temp, real]) => 
-                            real.startsWith('temp-') || real === temp || !real || real.trim() === ''
-                        );
-                        if (finalIncompleteRealAccessors.length > 0) {
-                            console.error(`[paste_sync] ❌ Cannot proceed with remap: ${finalIncompleteRealAccessors.length} real accessors still temporary:`, finalIncompleteRealAccessors);
-                            return; 
-                        }
-                        
-                        console.log(`[paste_sync] Verified mapping keys:`, Array.from(tempAccessorToRealAccessorMap.keys()));
-                        console.log(`[paste_sync] ✅ All dynamic columns ready, proceeding with remap...`);
-                        
-                        const remapStartTime = Date.now();
-                        console.log(`[remap_debug][${operationId}] STARTING remap at t=${remapStartTime}`);
-                        
-                        // Log mapping pairs before remapping
-                        const mappingPairs = Array.from(tempAccessorToRealAccessorMap.entries());
-                        console.log(`[mapping_pairs][${operationId}] Mapping pairs (${mappingPairs.length} total):`, 
-                            mappingPairs.map(([temp, real]) => ({ temp, real }))
-                        );
-                        
-                        // Collect all rows that need remapping
-                        const allAffectedRows: T[] = [
-                            ...updatedRows.values(),
-                            ...newRowsToCreate,
-                            ...Array.from(rowsWithDynamicColumns.values()).map(({ row }) => row),
-                            ...newRowsWithDynamicColumns.map(({ row }) => row),
-                        ];
-                        
-                        console.log(`[remap_debug][${operationId}] Collected ${allAffectedRows.length} rows for remapping`);
-                        
-                        // Log first row BEFORE remapping to see temp accessors
-                        if (allAffectedRows.length > 0) {
-                            const firstRow = allAffectedRows[0];
-                            const firstRowKeys = Object.keys(firstRow);
-                            const firstRowTempKeys = firstRowKeys.filter(key => 
-                                tempAccessorToRealAccessorMap.has(key) && 
-                                tempAccessorToRealAccessorMap.get(key) !== key
-                            );
-                            console.log(`[remap_debug][${operationId}] FIRST ROW BEFORE REMAP (id=${firstRow.id}):`, {
-                                allKeys: firstRowKeys,
-                                tempKeys: firstRowTempKeys,
-                                tempKeyValues: firstRowTempKeys.map(k => ({ key: k, value: (firstRow as any)[k] }))
-                            });
-                        }
-                        
-                        // Remap temp accessors to real accessors in each row
-                        remappedRows = allAffectedRows.map((row, rowIndex) => {
-                            const remapped = { ...row };
-                            let remappedCount = 0;
-                            const remappedPairs: Array<{ temp: string; real: string; value: any }> = [];
-                            
-                            // Log row keys before remapping for this specific row
-                            const rowKeysBefore = Object.keys(remapped);
-                            const matchingTempKeys = rowKeysBefore.filter(key => tempAccessorToRealAccessorMap.has(key));
-                            if (rowIndex === 0 && matchingTempKeys.length > 0) {
-                                console.log(`[remap_debug][${operationId}] Row ${row.id} keys that match mapping:`, matchingTempKeys);
-                                matchingTempKeys.forEach(key => {
-                                    const mappedReal = tempAccessorToRealAccessorMap.get(key);
-                                    console.log(`[remap_debug][${operationId}]   "${key}" → "${mappedReal}" (value: ${(remapped as any)[key]})`);
-                                });
-                            }
-                            
-                            // Replace all temp accessors with real accessors
-                            for (const [tempAccessor, realAccessor] of tempAccessorToRealAccessorMap.entries()) {
-                                const hasProperty = (remapped as any).hasOwnProperty(tempAccessor);
-                                if (rowIndex === 0) {
-                                    console.debug(`[remap_debug][${operationId}] Checking "${tempAccessor}" → "${realAccessor}": hasProperty=${hasProperty}, value=${hasProperty ? (remapped as any)[tempAccessor] : 'N/A'}`);
-                                }
-                                
-                                if (tempAccessor !== realAccessor && hasProperty) {
-                                    // Verify real accessor is valid before remapping
-                                    if (!realAccessor || realAccessor.startsWith('temp-') || realAccessor === tempAccessor) {
-                                        console.error(`[remap_debug][${operationId}] ⚠️ Invalid real accessor for "${tempAccessor}": "${realAccessor}"`);
-                                        continue; // Skip this mapping
-                                    }
-                                    
-                                    const value = (remapped as any)[tempAccessor];
-                                    // Copy value from temp to real accessor
-                                    (remapped as any)[realAccessor] = value;
-                                    // Remove temp accessor
-                                    delete (remapped as any)[tempAccessor];
-                                    remappedCount++;
-                                    remappedPairs.push({ temp: tempAccessor, real: realAccessor, value });
-                                    
-                                    if (rowIndex === 0) {
-                                        console.log(`[remap_debug][${operationId}] ✅ Remapped "${tempAccessor}" → "${realAccessor}" with value:`, value);
-                                    }
-                                }
-                            }
-                            
-                            const remainingTempKeys = Object.keys(remapped).filter(key => 
-                                tempAccessorToRealAccessorMap.has(key) && 
-                                tempAccessorToRealAccessorMap.get(key) !== key
-                            );
-                            if (remainingTempKeys.length > 0) {
-                                console.error(`[remap_debug][${operationId}] ⚠️ Row ${row.id} still has temp accessors after remapping:`, remainingTempKeys);
-                                console.error(`[remap_debug][${operationId}] Row keys:`, Object.keys(remapped));
-                                console.error(`[remap_debug][${operationId}] Available mappings:`, Array.from(tempAccessorToRealAccessorMap.entries()));
-                            }
-                            
-                            if (remappedCount > 0) {
-                                console.debug(`[remap_debug][${operationId}] Remapped ${remappedCount} accessors in row ${row.id}:`, remappedPairs);
-                            }
-                            
-                            return remapped;
-                        });
-                        
-                        if (remappedRows.length > 0) {
-                            const firstRemappedRow = remappedRows[0];
-                            const firstRemappedKeys = Object.keys(firstRemappedRow);
-                            const firstRemappedTempKeys = firstRemappedKeys.filter(key => 
-                                tempAccessorToRealAccessorMap.has(key) && 
-                                tempAccessorToRealAccessorMap.get(key) !== key
-                            );
-                            const firstRemappedRealKeys = firstRemappedKeys.filter(key => {
-                                const mappedReal = Array.from(tempAccessorToRealAccessorMap.values());
-                                return mappedReal.includes(key);
-                            });
-                            console.log(`[remap_debug][${operationId}] FIRST ROW AFTER REMAP (id=${firstRemappedRow.id}):`, {
-                                allKeys: firstRemappedKeys,
-                                tempKeysRemaining: firstRemappedTempKeys,
-                                realKeysAdded: firstRemappedRealKeys,
-                                realKeyValues: firstRemappedRealKeys.map(k => ({ key: k, value: (firstRemappedRow as any)[k] }))
-                            });
-                        }
-                        
-                        remapEndTime = Date.now();
-                        console.log(`[remap_debug][${operationId}] ========================================`);
-                        console.log(`[remap_debug][${operationId}] REMAP COMPLETE at t=${remapEndTime} (duration=${remapEndTime - remapStartTime}ms)`);
-                        console.log(`[remap_debug][${operationId}] ✅ Mapping complete - ${remappedRows.length} rows remapped`);
-                        console.log(`[remap_debug][${operationId}] remappedRows array populated with ${remappedRows.length} rows`);
-                        
-                        if (remappedRows.length > 0) {
-                            const sampleRow = remappedRows[0];
-                            const sampleKeys = Object.keys(sampleRow);
-                            const sampleTempKeys = sampleKeys.filter(key => 
-                                tempAccessorToRealAccessorMap.has(key) && 
-                                tempAccessorToRealAccessorMap.get(key) !== key
-                            );
-                            const sampleRealKeys = sampleKeys.filter(key => {
-                                const mappedReal = Array.from(tempAccessorToRealAccessorMap.values());
-                                return mappedReal.includes(key);
-                            });
-                            console.log(`[remap_debug][${operationId}] Sample remapped row (id=${sampleRow.id}):`, {
-                                totalKeys: sampleKeys.length,
-                                tempKeysRemaining: sampleTempKeys.length,
-                                realKeysFound: sampleRealKeys.length,
-                                realKeys: sampleRealKeys
-                            });
-                            
-                            if (sampleTempKeys.length > 0) {
-                                console.error(`[remap_debug][${operationId}] ❌ CRITICAL: Sample row still has ${sampleTempKeys.length} temp keys after remap:`, sampleTempKeys);
-                            } else {
-                                console.log(`[remap_debug][${operationId}] ✅ Sample row has NO temp keys - remap successful`);
-                            }
-                        }
-                        console.log(`[remap_debug][${operationId}] ========================================`);
-                        
-                        // Update localData with remapped rows
-                        setLocalData((prevData) => {
-                            // Create a map of remapped rows by ID for quick lookup
-                            const remappedMap = new Map(remappedRows.map(r => [r.id, r]));
-                            
-                            const updated = prevData.map(row => remappedMap.get(row.id) || row);
-                            
-                            // Add any new rows that weren't in prevData
-                            remappedRows.forEach(remappedRow => {
-                                if (!updated.some(r => r.id === remappedRow.id)) {
-                                    updated.push(remappedRow);
-                                }
-                            });
-                            
-                            // Store for use in save phase
-                            updatedLocalDataRows = updated;
-                            
-                            return updated;
-                        });
-                        
-                        console.log(`[paste_sync] 🔁 Remapped temp accessors to real accessors (${remappedRows.length} rows)`);
-                        
-                        await new Promise(resolve => setTimeout(resolve, 0));
-                        
-                        const afterRemapTime = Date.now();
-                        console.log(`[remap_debug][${operationId}] ✅ Remap phase complete at t=${afterRemapTime}, ready for save phase`);
-                        
-                    } else if (!hasDynamicColumns) {
-                        console.log(`[paste_sync] No dynamic columns detected. Proceeding with immediate save.`);
-                    }
-
-                    if (hasDynamicColumns) {
-                        const expectedTempAccessors = Array.from(tempIdToTempAccessor.values());
-                        const mappingEntries = Array.from(tempAccessorToRealAccessorMap.entries());
-                        const mappedTempAccessors = mappingEntries.map(([temp]) => temp);
-                        const missingMappings = expectedTempAccessors.filter(temp => !mappedTempAccessors.includes(temp));
-                        
-                        const incompleteRealAccessors = mappingEntries.filter(([temp, real]) => 
-                            real.startsWith('temp-') || real === temp || !real || real.trim() === ''
-                        );
-                        
-                        if (tempAccessorToRealAccessorMap.size === 0) {
-                            console.error(`[paste_sync] ⚠️ Cannot save rows: Dynamic columns exist but mapping is empty`);
-                            pasteState.isPasting = false;
-                            pasteState.pasteOperationActive = false;
-                            return;
-                        }
-                        
-                        if (missingMappings.length > 0) {
-                            console.error(`[paste_sync] ⚠️ Cannot save rows: Missing mappings for ${missingMappings.length} temp accessors:`, missingMappings);
-                            pasteState.isPasting = false;
-                            pasteState.pasteOperationActive = false;
-                            return;
-                        }
-                        
-                        if (incompleteRealAccessors.length > 0) {
-                            console.error(`[paste_sync] ⚠️ Cannot save rows: ${incompleteRealAccessors.length} accessors still temporary:`, incompleteRealAccessors);
-                            pasteState.isPasting = false;
-                            pasteState.pasteOperationActive = false;
-                            return;
-                        }
-                        
-                        console.log(`[paste_sync] ✅ Mapping verified complete: ${mappingEntries.length} mappings ready`);
-                    }
-
-                    // Prepare all rows for saving
-                    console.log(`[paste_sync] Preparing rows for save...`);
-                    const allRowsToSave: Array<{ row: T; isNew: boolean; id: string }> = [];
-                    
-                    // Collect all row IDs that need to be saved
-                    const rowIdsToSave = new Set<string>();
-                    updatedRows.forEach((_, rowId) => rowIdsToSave.add(rowId));
-                    newRowsToCreate.forEach((row) => rowIdsToSave.add(row.id));
-                    rowsWithDynamicColumns.forEach((_, rowId) => rowIdsToSave.add(rowId));
-                    newRowsWithDynamicColumns.forEach(({ row }) => rowIdsToSave.add(row.id));
-                    
-                    console.log(`[paste_sync] Found ${rowIdsToSave.size} rows to save (${updatedRows.size} updated, ${newRowsToCreate.length} new standard, ${rowsWithDynamicColumns.size} updated dynamic, ${newRowsWithDynamicColumns.length} new dynamic)`);
-                    
-                    if (rowIdsToSave.size === 0) {
-                        console.log(`[paste_sync] No rows to save, completing paste operation`);
-                        pasteState.isPasting = false;
-                        pasteState.pasteOperationActive = false;
-                        return;
-                    }
-                    
-                    const saveStartTime = Date.now();
-                    console.log(`[save_debug][${operationId}] ========================================`);
-                    console.log(`[save_debug][${operationId}] STARTING save collection at t=${saveStartTime}`);
-                    console.log(`[save_debug][${operationId}] hasDynamicColumns=${hasDynamicColumns}`);
-                    console.log(`[save_debug][${operationId}] remappedRows.length=${remappedRows.length}, updatedLocalDataRows.length=${updatedLocalDataRows.length}`);
-                    console.log(`[save_debug][${operationId}] ========================================`);
-                    
-                    // Log column metadata before save
-                    console.log(`[save_debug][${operationId}] localColumnsRef.length=${localColumnsRef.current.length} before save`);
-                    console.log(`[save_debug][${operationId}] columns prop.length=${columns.length} before save`);
-                    
-                    // Use remappedRows directly if available, otherwise fall back to updatedLocalDataRows or original collections
-                    let rowsToUse: T[];
-                    if (hasDynamicColumns) {
-                        if (remappedRows.length > 0) {
-                            console.log(`[save_debug][${operationId}] ✅ Using remappedRows directly (${remappedRows.length} rows with real accessors)`);
-                            rowsToUse = remappedRows;
-                        } else if (updatedLocalDataRows.length > 0) {
-                            console.log(`[save_debug][${operationId}] Using updatedLocalDataRows (${updatedLocalDataRows.length} rows)`);
-                            rowsToUse = updatedLocalDataRows;
+                    // Update existing rows with standard columns only
+                    updatedRows.forEach((updatedRow, rowId) => {
+                        const index = updatedData.findIndex((row) => row.id === rowId);
+                        if (index !== -1) {
+                            updatedData[index] = { ...updatedRow };
                         } else {
-                            console.warn(`[save_debug][${operationId}] ⚠️ No remapped rows available, using original collections`);
-                            console.warn(`[save_debug][${operationId}] ⚠️ This may cause temp accessor errors!`);
-                            rowsToUse = [...updatedRows.values(), ...newRowsToCreate, 
-                               ...Array.from(rowsWithDynamicColumns.values()).map(({ row }) => row),
-                               ...newRowsWithDynamicColumns.map(({ row }) => row)];
-                        }
-                    } else {
-                        rowsToUse = [...updatedRows.values(), ...newRowsToCreate, 
-                           ...Array.from(rowsWithDynamicColumns.values()).map(({ row }) => row),
-                           ...newRowsWithDynamicColumns.map(({ row }) => row)];
-                    }
-                    
-                    // Log first row in rowsToUse to verify it has real accessors
-                    if (rowsToUse.length > 0 && hasDynamicColumns) {
-                        const firstRowToSave = rowsToUse[0];
-                        const firstRowKeys = Object.keys(firstRowToSave);
-                        const firstRowTempKeys = firstRowKeys.filter(key => 
-                            tempAccessorToRealAccessorMap.has(key) && 
-                            tempAccessorToRealAccessorMap.get(key) !== key
-                        );
-                        const firstRowRealKeys = firstRowKeys.filter(key => {
-                            const mappedReal = Array.from(tempAccessorToRealAccessorMap.values());
-                            return mappedReal.includes(key);
-                        });
-                        console.log(`[save_debug][${operationId}] FIRST ROW TO SAVE (id=${firstRowToSave.id}):`, {
-                            allKeys: firstRowKeys,
-                            tempKeys: firstRowTempKeys,
-                            realKeys: firstRowRealKeys,
-                            realKeyValues: firstRowRealKeys.map(k => ({ key: k, value: (firstRowToSave as any)[k] }))
-                        });
-                    }
-                    
-                    // Process all rows that need saving
-                    console.log(`[save_debug][${operationId}] Processing ${rowIdsToSave.size} row IDs for save collection...`);
-                    Array.from(rowIdsToSave).forEach((rowId, index) => {
-                        const row = rowsToUse.find((r) => r.id === rowId);
-                        if (!row) {
-                            console.warn(`[save_debug][${operationId}] Row ${rowId} not found in rows collection, skipping save`);
-                            return;
-                        }
-                        
-                        // Only check for temp accessors if we have dynamic columns
-                        if (hasDynamicColumns) {
-                            const rowKeys = Object.keys(row);
-                            const tempKeys = rowKeys.filter(key => 
-                                tempAccessorToRealAccessorMap.has(key) && 
-                                tempAccessorToRealAccessorMap.get(key) !== key
+                            console.warn(
+                                `[${operationId}] Row ${rowId} not found in localData for update`,
                             );
-                            
-                            // Log first row in detail
-                            if (index === 0) {
-                                console.log(`[save_debug][${operationId}] ========================================`);
-                                console.log(`[save_debug][${operationId}] INSPECTING ROW ${rowId} (first row) at t=${Date.now()}`);
-                                console.log(`[save_debug][${operationId}] Row source: ${remappedRows.some(r => r.id === rowId) ? 'remappedRows' : 'other collection'}`);
-                                console.log(`[save_debug][${operationId}] Total row keys: ${rowKeys.length}`);
-                                console.log(`[save_debug][${operationId}] Temp keys found: ${tempKeys.length}`);
-                                if (tempKeys.length > 0) {
-                                    console.error(`[save_debug][${operationId}] ❌ TEMP KEYS:`, tempKeys);
-                                    tempKeys.forEach(tempKey => {
-                                        const mappedReal = tempAccessorToRealAccessorMap.get(tempKey);
-                                        const hasRealKey = rowKeys.includes(mappedReal || '');
-                                        console.error(`[save_debug][${operationId}]   "${tempKey}" → "${mappedReal}" (real key exists: ${hasRealKey})`);
-                                    });
-                                } else {
-                                    console.log(`[save_debug][${operationId}] ✅ NO TEMP KEYS - row is ready for save`);
-                                }
-                                
-                                // Show real keys that should be present
-                                const expectedRealKeys = Array.from(tempAccessorToRealAccessorMap.values());
-                                const presentRealKeys = rowKeys.filter(k => expectedRealKeys.includes(k));
-                                console.log(`[save_debug][${operationId}] Expected real keys: ${expectedRealKeys.length}, Present: ${presentRealKeys.length}`);
-                                if (presentRealKeys.length > 0) {
-                                    console.log(`[save_debug][${operationId}] ✅ Real keys present:`, presentRealKeys);
-                                }
-                                console.log(`[save_debug][${operationId}] ========================================`);
+                        }
+                    });
+
+                    // Update existing rows with dynamic columns (already includes dynamic column data in row object)
+                    rowsWithDynamicColumns.forEach(({ row }, rowId) => {
+                        const index = updatedData.findIndex((r) => r.id === rowId);
+                        if (index !== -1) {
+                            const dynamicKeys = Object.keys(row).filter((key) =>
+                                newColumnsToCreate.some((col) => {
+                                    const tempAccessor = col.name
+                                        .toLowerCase()
+                                        .replace(/\s+/g, '_');
+                                    return key === tempAccessor;
+                                }),
+                            );
+                            if (dynamicKeys.length > 0) {
+                                console.debug(
+                                    `[${operationId}] Row ${rowId} has dynamic column data:`,
+                                    dynamicKeys,
+                                    dynamicKeys.map((k) => ({
+                                        key: k,
+                                        value: (row as any)[k],
+                                    })),
+                                );
                             }
-                            
-                            if (tempKeys.length > 0) {
-                                console.error(`[save_debug][${operationId}] ⚠️ Row ${rowId} still has temp accessors at save time:`, tempKeys);
-                                console.error(`[save_debug][${operationId}] Row keys:`, rowKeys);
-                                console.error(`[save_debug][${operationId}] Available mappings:`, Array.from(tempAccessorToRealAccessorMap.entries()));
-                                console.error(`[save_debug][${operationId}] Row object:`, row);
+                            updatedData[index] = { ...row };
+                        } else {
+                            console.warn(
+                                `[${operationId}] Row ${rowId} not found in localData for dynamic update`,
+                            );
+                        }
+                    });
+
+                    // Append new rows with standard columns only
+                    newRowsToCreate.forEach((newRow) => {
+                        if (!updatedData.some((row) => row.id === newRow.id)) {
+                            updatedData.push({ ...newRow });
+                        } else {
+                            console.warn(
+                                `[${operationId}] New row ${newRow.id} already exists in localData`,
+                            );
+                        }
+                    });
+
+                    // Append new rows with dynamic columns
+                    newRowsWithDynamicColumns.forEach(({ row }) => {
+                        if (!updatedData.some((r) => r.id === row.id)) {
+                            const dynamicKeys = Object.keys(row).filter((key) =>
+                                newColumnsToCreate.some((col) => {
+                                    const tempAccessor = col.name
+                                        .toLowerCase()
+                                        .replace(/\s+/g, '_');
+                                    return key === tempAccessor;
+                                }),
+                            );
+                            if (dynamicKeys.length > 0) {
+                                console.debug(
+                                    `[${operationId}] New row ${row.id} has dynamic column data:`,
+                                    dynamicKeys,
+                                    dynamicKeys.map((k) => ({
+                                        key: k,
+                                        value: (row as any)[k],
+                                    })),
+                                );
+                            }
+                            updatedData.push({ ...row });
+                        } else {
+                            console.warn(
+                                `[${operationId}] New row ${row.id} already exists in localData`,
+                            );
+                        }
+                    });
+
+                    // Sort by position
+                    const sorted = updatedData.sort((a, b) => {
+                        const posA = a.position ?? 0;
+                        const posB = b.position ?? 0;
+                        return posA - posB;
+                    });
+
+                    console.debug(`[${operationId}] localData update complete:`, {
+                        finalCount: sorted.length,
+                        columnsCount: localColumnsRef.current.length,
+                    });
+
+                    console.log(
+                        `[${operationId}] Columns:`,
+                        localColumnsRef.current.map((c) => ({
+                            id: c.id,
+                            header: c.header,
+                            accessor: c.accessor,
+                            isDynamic: c.id?.startsWith('temp-'),
+                        })),
+                    );
+
+                    console.log(
+                        `[${operationId}] Row data (first 3 rows):`,
+                        sorted.slice(0, 3).map((r) => ({
+                            id: r.id,
+                            keys: Object.keys(r),
+                            dynamicKeys: Object.keys(r).filter((k) =>
+                                localColumnsRef.current.some(
+                                    (c) => c.id?.startsWith('temp-') && c.accessor === k,
+                                ),
+                            ),
+                        })),
+                    );
+
+                    localColumnsRef.current
+                        .filter((c) => c.id?.startsWith('temp-'))
+                        .forEach((c) => {
+                            const accessor = String(c.accessor);
+                            const values = sorted.map((r) => (r as any)[accessor]);
+                            console.log(
+                                `[${operationId}] Column ${c.header} (${accessor}):`,
+                                values,
+                            );
+                        });
+
+                    return sorted;
+                });
+
+                if (Object.keys(editingUpdates).length > 0) {
+                    setEditingData((prev) => ({
+                        ...prev,
+                        ...editingUpdates,
+                    }));
+                    editingDataRef.current = {
+                        ...editingDataRef.current,
+                        ...editingUpdates,
+                    };
+                }
+
+                setLocalColumns((prev) => {
+                    const sorted = [...prev].sort(
+                        (a, b) => (a.position ?? 0) - (b.position ?? 0),
+                    );
+                    const normalized = sorted.map((col, idx) => ({
+                        ...col,
+                        position: idx,
+                    }));
+                    localColumnsRef.current =
+                        normalized as typeof localColumnsRef.current;
+                    return normalized as typeof prev;
+                });
+
+                // ensures the DataEditor re-renders with new columns and data
+                requestAnimationFrame(() => {
+                    if (gridRef.current) {
+                        // Update all cells to force grid refresh
+                        gridRef.current.updateCells([]);
+                        console.log(`[${operationId}] Grid invalidated after paste`);
+                    }
+                });
+
+                // Clearing selection too early causes first-paste collapse
+                setSelection(undefined);
+                selectionRef.current = undefined;
+                setGridSelection({
+                    rows: CompactSelection.empty(),
+                    columns: CompactSelection.empty(),
+                });
+
+                // Start immediate save sequence
+                (async () => {
+                    try {
+                        await waitForSupabaseClient();
+
+                        const BATCH_SIZE = 20;
+                        let tempAccessorToRealAccessorMap = new Map<string, string>();
+                        const hasDynamicColumns =
+                            rowsWithDynamicColumns.size > 0 ||
+                            newRowsWithDynamicColumns.length > 0;
+                        let updatedLocalDataRows: T[] = [];
+                        let remappedRows: T[] = []; // Declare at function scope so it's available for save phase
+                        let remapEndTime: number | undefined; // Track when remap completes for timing comparison
+
+                        if (hasDynamicColumns && pasteState.columnCreationPromise) {
+                            console.log(
+                                `[paste_sync] Waiting for all dynamic columns to finish before remapping...`,
+                            );
+
+                            const columnResults = await pasteState.columnCreationPromise;
+                            const successfulColumns = columnResults.filter(
+                                (r) => r.success,
+                            ).length;
+                            console.log(
+                                `[paste_sync][${operationId}] ✅ All dynamic columns created (${successfulColumns} columns)`,
+                            );
+
+                            console.log(
+                                `[paste_sync][${operationId}] Adding 300ms delay to allow state to sync...`,
+                            );
+                            await new Promise((r) => setTimeout(r, 300));
+                            console.log(
+                                `[paste_sync][${operationId}] Delay complete, columns should be ready for row data save`,
+                            );
+
+                            // Persist stable column order immediately after column creation
+                            console.log(
+                                `[paste_sync][${operationId}] Saving table metadata to persist column order...`,
+                            );
+                            try {
+                                await saveTableMetadata();
+                                console.log(
+                                    `[paste_sync][${operationId}] ✅ Table metadata saved (column order persisted)`,
+                                );
+                            } catch (error) {
+                                console.error(
+                                    `[paste_sync][${operationId}] ❌ Failed to save table metadata:`,
+                                    error,
+                                );
+                            }
+
+                            console.log(
+                                `[remap_debug][${operationId}] Validating column sync before remapping...`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] localColumnsRef.length=${localColumnsRef.current.length} before remap`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] columns prop.length=${columns.length} before remap`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] Expected new columns=${successfulColumns}`,
+                            );
+
+                            // Build mapping from temp accessor to real accessor for confirmed columns
+                            console.log(
+                                `[mapping_pairs][${operationId}] Building temp -> real accessor mapping from ${columnResults.length} column results...`,
+                            );
+
+                            columnResults.forEach((result, index) => {
+                                if (
+                                    result.success &&
+                                    result.tempId &&
+                                    'realAccessor' in result &&
+                                    result.realAccessor
+                                ) {
+                                    // Get temp accessor from stored mapping (created when placeholder was made)
+                                    const tempAccessor = tempIdToTempAccessor.get(
+                                        result.tempId,
+                                    );
+
+                                    if (tempAccessor) {
+                                        tempAccessorToRealAccessorMap.set(
+                                            tempAccessor,
+                                            result.realAccessor,
+                                        );
+                                        console.log(
+                                            `[mapping_pairs][${operationId}] Pair ${index + 1}: "${tempAccessor}" → "${result.realAccessor}" (tempId: ${result.tempId})`,
+                                        );
+                                    } else {
+                                        console.warn(
+                                            `[mapping_pairs][${operationId}] ⚠️ No temp accessor found for tempId "${result.tempId}" when mapping to real accessor "${result.realAccessor}"`,
+                                        );
+                                        const placeholderCol =
+                                            localColumnsRef.current.find(
+                                                (col) => col.id === result.tempId,
+                                            );
+                                        if (placeholderCol) {
+                                            const fallbackTempAccessor = String(
+                                                placeholderCol.accessor,
+                                            );
+                                            tempAccessorToRealAccessorMap.set(
+                                                fallbackTempAccessor,
+                                                result.realAccessor,
+                                            );
+                                            console.log(
+                                                `[mapping_pairs][${operationId}] Fallback Pair ${index + 1}: "${fallbackTempAccessor}" → "${result.realAccessor}"`,
+                                            );
+                                        }
+                                    }
+                                } else {
+                                    console.warn(
+                                        `[mapping_pairs][${operationId}] ⚠️ Column creation result ${index + 1} missing required fields:`,
+                                        {
+                                            success: result.success,
+                                            tempId: result.tempId,
+                                            hasRealAccessor: 'realAccessor' in result,
+                                            realAccessor: result.realAccessor,
+                                        },
+                                    );
+                                }
+                            });
+
+                            // Log complete mapping with clear structure
+                            const mappingEntries = Array.from(
+                                tempAccessorToRealAccessorMap.entries(),
+                            );
+                            console.log(
+                                `[mapping_pairs][${operationId}] ========================================`,
+                            );
+                            console.log(
+                                `[mapping_pairs][${operationId}] COMPLETE MAPPING (${mappingEntries.length} pairs):`,
+                            );
+                            mappingEntries.forEach(([temp, real], idx) => {
+                                console.log(
+                                    `[mapping_pairs][${operationId}]   ${idx + 1}. "${temp}" → "${real}"`,
+                                );
+                            });
+                            console.log(
+                                `[mapping_pairs][${operationId}] ========================================`,
+                            );
+
+                            const expectedTempAccessors = Array.from(
+                                tempIdToTempAccessor.values(),
+                            );
+                            const mappedTempAccessors = mappingEntries.map(
+                                ([temp]) => temp,
+                            );
+                            const missingMappings = expectedTempAccessors.filter(
+                                (temp) => !mappedTempAccessors.includes(temp),
+                            );
+
+                            const incompleteRealAccessors = mappingEntries.filter(
+                                ([temp, real]) =>
+                                    real.startsWith('temp-') || real === temp,
+                            );
+
+                            if (incompleteRealAccessors.length > 0) {
+                                console.warn(
+                                    `[paste_sync] ❌ Some accessors still temporary, delaying remap...`,
+                                    incompleteRealAccessors,
+                                );
+                                // Wait additional time for columns to fully propagate
+                                await new Promise((r) => setTimeout(r, 300));
+                                // Re-check after delay
+                                const recheckIncomplete = Array.from(
+                                    tempAccessorToRealAccessorMap.entries(),
+                                ).filter(
+                                    ([temp, real]) =>
+                                        real.startsWith('temp-') || real === temp,
+                                );
+                                if (recheckIncomplete.length > 0) {
+                                    console.error(
+                                        `[paste_sync] ❌ Still incomplete after delay:`,
+                                        recheckIncomplete,
+                                    );
+                                }
+                            }
+
+                            if (missingMappings.length > 0) {
+                                console.warn(
+                                    `[${operationId}] Missing mappings for ${missingMappings.length} temp accessors:`,
+                                    missingMappings,
+                                );
+                            } else if (expectedTempAccessors.length > 0) {
+                                console.debug(
+                                    `[${operationId}] All ${expectedTempAccessors.length} temp accessors have real accessor mappings.`,
+                                );
+                            }
+
+                            if (successfulColumns === 0) {
+                                console.warn(
+                                    `[${operationId}] No columns were created successfully. Dynamic column data may not be saved.`,
+                                );
+                            }
+
+                            const finalMappingEntries = Array.from(
+                                tempAccessorToRealAccessorMap.entries(),
+                            );
+                            const finalExpectedTempAccessors = Array.from(
+                                tempIdToTempAccessor.values(),
+                            );
+                            const finalMappedTempAccessors = finalMappingEntries.map(
+                                ([temp]) => temp,
+                            );
+                            const finalMissingMappings =
+                                finalExpectedTempAccessors.filter(
+                                    (temp) => !finalMappedTempAccessors.includes(temp),
+                                );
+
+                            if (finalMissingMappings.length > 0) {
+                                console.error(
+                                    `[paste_sync] ❌ Cannot proceed with remap: Missing ${finalMissingMappings.length} mappings:`,
+                                    finalMissingMappings,
+                                );
+                                console.error(
+                                    `[paste_sync] Expected temp accessors:`,
+                                    finalExpectedTempAccessors,
+                                );
+                                console.error(
+                                    `[paste_sync] Mapped temp accessors:`,
+                                    finalMappedTempAccessors,
+                                );
+                                return; // Exit early - don't proceed with remap or save
+                            }
+
+                            const finalIncompleteRealAccessors =
+                                finalMappingEntries.filter(
+                                    ([temp, real]) =>
+                                        real.startsWith('temp-') ||
+                                        real === temp ||
+                                        !real ||
+                                        real.trim() === '',
+                                );
+                            if (finalIncompleteRealAccessors.length > 0) {
+                                console.error(
+                                    `[paste_sync] ❌ Cannot proceed with remap: ${finalIncompleteRealAccessors.length} real accessors still temporary:`,
+                                    finalIncompleteRealAccessors,
+                                );
                                 return;
                             }
+
+                            console.log(
+                                `[paste_sync] Verified mapping keys:`,
+                                Array.from(tempAccessorToRealAccessorMap.keys()),
+                            );
+                            console.log(
+                                `[paste_sync] ✅ All dynamic columns ready, proceeding with remap...`,
+                            );
+
+                            const remapStartTime = Date.now();
+                            console.log(
+                                `[remap_debug][${operationId}] STARTING remap at t=${remapStartTime}`,
+                            );
+
+                            // Log mapping pairs before remapping
+                            const mappingPairs = Array.from(
+                                tempAccessorToRealAccessorMap.entries(),
+                            );
+                            console.log(
+                                `[mapping_pairs][${operationId}] Mapping pairs (${mappingPairs.length} total):`,
+                                mappingPairs.map(([temp, real]) => ({ temp, real })),
+                            );
+
+                            // Collect all rows that need remapping
+                            const allAffectedRows: T[] = [
+                                ...updatedRows.values(),
+                                ...newRowsToCreate,
+                                ...Array.from(rowsWithDynamicColumns.values()).map(
+                                    ({ row }) => row,
+                                ),
+                                ...newRowsWithDynamicColumns.map(({ row }) => row),
+                            ];
+
+                            console.log(
+                                `[remap_debug][${operationId}] Collected ${allAffectedRows.length} rows for remapping`,
+                            );
+
+                            // Log first row BEFORE remapping to see temp accessors
+                            if (allAffectedRows.length > 0) {
+                                const firstRow = allAffectedRows[0];
+                                const firstRowKeys = Object.keys(firstRow);
+                                const firstRowTempKeys = firstRowKeys.filter(
+                                    (key) =>
+                                        tempAccessorToRealAccessorMap.has(key) &&
+                                        tempAccessorToRealAccessorMap.get(key) !== key,
+                                );
+                                console.log(
+                                    `[remap_debug][${operationId}] FIRST ROW BEFORE REMAP (id=${firstRow.id}):`,
+                                    {
+                                        allKeys: firstRowKeys,
+                                        tempKeys: firstRowTempKeys,
+                                        tempKeyValues: firstRowTempKeys.map((k) => ({
+                                            key: k,
+                                            value: (firstRow as any)[k],
+                                        })),
+                                    },
+                                );
+                            }
+
+                            // Remap temp accessors to real accessors in each row
+                            remappedRows = allAffectedRows.map((row, rowIndex) => {
+                                const remapped = { ...row };
+                                let remappedCount = 0;
+                                const remappedPairs: Array<{
+                                    temp: string;
+                                    real: string;
+                                    value: any;
+                                }> = [];
+
+                                // Log row keys before remapping for this specific row
+                                const rowKeysBefore = Object.keys(remapped);
+                                const matchingTempKeys = rowKeysBefore.filter((key) =>
+                                    tempAccessorToRealAccessorMap.has(key),
+                                );
+                                if (rowIndex === 0 && matchingTempKeys.length > 0) {
+                                    console.log(
+                                        `[remap_debug][${operationId}] Row ${row.id} keys that match mapping:`,
+                                        matchingTempKeys,
+                                    );
+                                    matchingTempKeys.forEach((key) => {
+                                        const mappedReal =
+                                            tempAccessorToRealAccessorMap.get(key);
+                                        console.log(
+                                            `[remap_debug][${operationId}]   "${key}" → "${mappedReal}" (value: ${(remapped as any)[key]})`,
+                                        );
+                                    });
+                                }
+
+                                // Replace all temp accessors with real accessors
+                                for (const [
+                                    tempAccessor,
+                                    realAccessor,
+                                ] of tempAccessorToRealAccessorMap.entries()) {
+                                    const hasProperty = (remapped as any).hasOwnProperty(
+                                        tempAccessor,
+                                    );
+                                    if (rowIndex === 0) {
+                                        console.debug(
+                                            `[remap_debug][${operationId}] Checking "${tempAccessor}" → "${realAccessor}": hasProperty=${hasProperty}, value=${hasProperty ? (remapped as any)[tempAccessor] : 'N/A'}`,
+                                        );
+                                    }
+
+                                    if (tempAccessor !== realAccessor && hasProperty) {
+                                        // Verify real accessor is valid before remapping
+                                        if (
+                                            !realAccessor ||
+                                            realAccessor.startsWith('temp-') ||
+                                            realAccessor === tempAccessor
+                                        ) {
+                                            console.error(
+                                                `[remap_debug][${operationId}] ⚠️ Invalid real accessor for "${tempAccessor}": "${realAccessor}"`,
+                                            );
+                                            continue; // Skip this mapping
+                                        }
+
+                                        const value = (remapped as any)[tempAccessor];
+                                        // Copy value from temp to real accessor
+                                        (remapped as any)[realAccessor] = value;
+                                        // Remove temp accessor
+                                        delete (remapped as any)[tempAccessor];
+                                        remappedCount++;
+                                        remappedPairs.push({
+                                            temp: tempAccessor,
+                                            real: realAccessor,
+                                            value,
+                                        });
+
+                                        if (rowIndex === 0) {
+                                            console.log(
+                                                `[remap_debug][${operationId}] ✅ Remapped "${tempAccessor}" → "${realAccessor}" with value:`,
+                                                value,
+                                            );
+                                        }
+                                    }
+                                }
+
+                                const remainingTempKeys = Object.keys(remapped).filter(
+                                    (key) =>
+                                        tempAccessorToRealAccessorMap.has(key) &&
+                                        tempAccessorToRealAccessorMap.get(key) !== key,
+                                );
+                                if (remainingTempKeys.length > 0) {
+                                    console.error(
+                                        `[remap_debug][${operationId}] ⚠️ Row ${row.id} still has temp accessors after remapping:`,
+                                        remainingTempKeys,
+                                    );
+                                    console.error(
+                                        `[remap_debug][${operationId}] Row keys:`,
+                                        Object.keys(remapped),
+                                    );
+                                    console.error(
+                                        `[remap_debug][${operationId}] Available mappings:`,
+                                        Array.from(
+                                            tempAccessorToRealAccessorMap.entries(),
+                                        ),
+                                    );
+                                }
+
+                                if (remappedCount > 0) {
+                                    console.debug(
+                                        `[remap_debug][${operationId}] Remapped ${remappedCount} accessors in row ${row.id}:`,
+                                        remappedPairs,
+                                    );
+                                }
+
+                                return remapped;
+                            });
+
+                            if (remappedRows.length > 0) {
+                                const firstRemappedRow = remappedRows[0];
+                                const firstRemappedKeys = Object.keys(firstRemappedRow);
+                                const firstRemappedTempKeys = firstRemappedKeys.filter(
+                                    (key) =>
+                                        tempAccessorToRealAccessorMap.has(key) &&
+                                        tempAccessorToRealAccessorMap.get(key) !== key,
+                                );
+                                const firstRemappedRealKeys = firstRemappedKeys.filter(
+                                    (key) => {
+                                        const mappedReal = Array.from(
+                                            tempAccessorToRealAccessorMap.values(),
+                                        );
+                                        return mappedReal.includes(key);
+                                    },
+                                );
+                                console.log(
+                                    `[remap_debug][${operationId}] FIRST ROW AFTER REMAP (id=${firstRemappedRow.id}):`,
+                                    {
+                                        allKeys: firstRemappedKeys,
+                                        tempKeysRemaining: firstRemappedTempKeys,
+                                        realKeysAdded: firstRemappedRealKeys,
+                                        realKeyValues: firstRemappedRealKeys.map((k) => ({
+                                            key: k,
+                                            value: (firstRemappedRow as any)[k],
+                                        })),
+                                    },
+                                );
+                            }
+
+                            remapEndTime = Date.now();
+                            console.log(
+                                `[remap_debug][${operationId}] ========================================`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] REMAP COMPLETE at t=${remapEndTime} (duration=${remapEndTime - remapStartTime}ms)`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] ✅ Mapping complete - ${remappedRows.length} rows remapped`,
+                            );
+                            console.log(
+                                `[remap_debug][${operationId}] remappedRows array populated with ${remappedRows.length} rows`,
+                            );
+
+                            if (remappedRows.length > 0) {
+                                const sampleRow = remappedRows[0];
+                                const sampleKeys = Object.keys(sampleRow);
+                                const sampleTempKeys = sampleKeys.filter(
+                                    (key) =>
+                                        tempAccessorToRealAccessorMap.has(key) &&
+                                        tempAccessorToRealAccessorMap.get(key) !== key,
+                                );
+                                const sampleRealKeys = sampleKeys.filter((key) => {
+                                    const mappedReal = Array.from(
+                                        tempAccessorToRealAccessorMap.values(),
+                                    );
+                                    return mappedReal.includes(key);
+                                });
+                                console.log(
+                                    `[remap_debug][${operationId}] Sample remapped row (id=${sampleRow.id}):`,
+                                    {
+                                        totalKeys: sampleKeys.length,
+                                        tempKeysRemaining: sampleTempKeys.length,
+                                        realKeysFound: sampleRealKeys.length,
+                                        realKeys: sampleRealKeys,
+                                    },
+                                );
+
+                                if (sampleTempKeys.length > 0) {
+                                    console.error(
+                                        `[remap_debug][${operationId}] ❌ CRITICAL: Sample row still has ${sampleTempKeys.length} temp keys after remap:`,
+                                        sampleTempKeys,
+                                    );
+                                } else {
+                                    console.log(
+                                        `[remap_debug][${operationId}] ✅ Sample row has NO temp keys - remap successful`,
+                                    );
+                                }
+                            }
+                            console.log(
+                                `[remap_debug][${operationId}] ========================================`,
+                            );
+
+                            // Update localData with remapped rows
+                            setLocalData((prevData) => {
+                                // Create a map of remapped rows by ID for quick lookup
+                                const remappedMap = new Map(
+                                    remappedRows.map((r) => [r.id, r]),
+                                );
+
+                                const updated = prevData.map(
+                                    (row) => remappedMap.get(row.id) || row,
+                                );
+
+                                // Add any new rows that weren't in prevData
+                                remappedRows.forEach((remappedRow) => {
+                                    if (!updated.some((r) => r.id === remappedRow.id)) {
+                                        updated.push(remappedRow);
+                                    }
+                                });
+
+                                // Store for use in save phase
+                                updatedLocalDataRows = updated;
+
+                                return updated;
+                            });
+
+                            console.log(
+                                `[paste_sync] 🔁 Remapped temp accessors to real accessors (${remappedRows.length} rows)`,
+                            );
+
+                            await new Promise((resolve) => setTimeout(resolve, 0));
+
+                            const afterRemapTime = Date.now();
+                            console.log(
+                                `[remap_debug][${operationId}] ✅ Remap phase complete at t=${afterRemapTime}, ready for save phase`,
+                            );
+                        } else if (!hasDynamicColumns) {
+                            console.log(
+                                `[paste_sync] No dynamic columns detected. Proceeding with immediate save.`,
+                            );
                         }
-                        
-                        // Determine if this is a new row
-                        const isNew = newRowsToCreate.some(r => r.id === rowId) || 
-                                     newRowsWithDynamicColumns.some(({ row: r }) => r.id === rowId);
-                        
-                        allRowsToSave.push({ row, isNew, id: rowId });
-                    });
-                    
-                    console.log(`[save_debug][${operationId}] Collected ${allRowsToSave.length} rows ready for save (out of ${rowIdsToSave.size} requested)`);
-                    
-                    if (allRowsToSave.length === 0) {
-                        console.warn(`[paste_sync][${operationId}] No valid rows to save after processing, completing paste operation`);
+
+                        if (hasDynamicColumns) {
+                            const expectedTempAccessors = Array.from(
+                                tempIdToTempAccessor.values(),
+                            );
+                            const mappingEntries = Array.from(
+                                tempAccessorToRealAccessorMap.entries(),
+                            );
+                            const mappedTempAccessors = mappingEntries.map(
+                                ([temp]) => temp,
+                            );
+                            const missingMappings = expectedTempAccessors.filter(
+                                (temp) => !mappedTempAccessors.includes(temp),
+                            );
+
+                            const incompleteRealAccessors = mappingEntries.filter(
+                                ([temp, real]) =>
+                                    real.startsWith('temp-') ||
+                                    real === temp ||
+                                    !real ||
+                                    real.trim() === '',
+                            );
+
+                            if (tempAccessorToRealAccessorMap.size === 0) {
+                                console.error(
+                                    `[paste_sync] ⚠️ Cannot save rows: Dynamic columns exist but mapping is empty`,
+                                );
+                                pasteState.isPasting = false;
+                                pasteState.pasteOperationActive = false;
+                                return;
+                            }
+
+                            if (missingMappings.length > 0) {
+                                console.error(
+                                    `[paste_sync] ⚠️ Cannot save rows: Missing mappings for ${missingMappings.length} temp accessors:`,
+                                    missingMappings,
+                                );
+                                pasteState.isPasting = false;
+                                pasteState.pasteOperationActive = false;
+                                return;
+                            }
+
+                            if (incompleteRealAccessors.length > 0) {
+                                console.error(
+                                    `[paste_sync] ⚠️ Cannot save rows: ${incompleteRealAccessors.length} accessors still temporary:`,
+                                    incompleteRealAccessors,
+                                );
+                                pasteState.isPasting = false;
+                                pasteState.pasteOperationActive = false;
+                                return;
+                            }
+
+                            console.log(
+                                `[paste_sync] ✅ Mapping verified complete: ${mappingEntries.length} mappings ready`,
+                            );
+                        }
+
+                        // Prepare all rows for saving
+                        console.log(`[paste_sync] Preparing rows for save...`);
+                        const allRowsToSave: Array<{
+                            row: T;
+                            isNew: boolean;
+                            id: string;
+                        }> = [];
+
+                        // Collect all row IDs that need to be saved
+                        const rowIdsToSave = new Set<string>();
+                        updatedRows.forEach((_, rowId) => rowIdsToSave.add(rowId));
+                        newRowsToCreate.forEach((row) => rowIdsToSave.add(row.id));
+                        rowsWithDynamicColumns.forEach((_, rowId) =>
+                            rowIdsToSave.add(rowId),
+                        );
+                        newRowsWithDynamicColumns.forEach(({ row }) =>
+                            rowIdsToSave.add(row.id),
+                        );
+
+                        console.log(
+                            `[paste_sync] Found ${rowIdsToSave.size} rows to save (${updatedRows.size} updated, ${newRowsToCreate.length} new standard, ${rowsWithDynamicColumns.size} updated dynamic, ${newRowsWithDynamicColumns.length} new dynamic)`,
+                        );
+
+                        if (rowIdsToSave.size === 0) {
+                            console.log(
+                                `[paste_sync] No rows to save, completing paste operation`,
+                            );
+                            pasteState.isPasting = false;
+                            pasteState.pasteOperationActive = false;
+                            return;
+                        }
+
+                        const saveStartTime = Date.now();
+                        console.log(
+                            `[save_debug][${operationId}] ========================================`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] STARTING save collection at t=${saveStartTime}`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] hasDynamicColumns=${hasDynamicColumns}`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] remappedRows.length=${remappedRows.length}, updatedLocalDataRows.length=${updatedLocalDataRows.length}`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] ========================================`,
+                        );
+
+                        // Log column metadata before save
+                        console.log(
+                            `[save_debug][${operationId}] localColumnsRef.length=${localColumnsRef.current.length} before save`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] columns prop.length=${columns.length} before save`,
+                        );
+
+                        // Use remappedRows directly if available, otherwise fall back to updatedLocalDataRows or original collections
+                        let rowsToUse: T[];
+                        if (hasDynamicColumns) {
+                            if (remappedRows.length > 0) {
+                                console.log(
+                                    `[save_debug][${operationId}] ✅ Using remappedRows directly (${remappedRows.length} rows with real accessors)`,
+                                );
+                                rowsToUse = remappedRows;
+                            } else if (updatedLocalDataRows.length > 0) {
+                                console.log(
+                                    `[save_debug][${operationId}] Using updatedLocalDataRows (${updatedLocalDataRows.length} rows)`,
+                                );
+                                rowsToUse = updatedLocalDataRows;
+                            } else {
+                                console.warn(
+                                    `[save_debug][${operationId}] ⚠️ No remapped rows available, using original collections`,
+                                );
+                                console.warn(
+                                    `[save_debug][${operationId}] ⚠️ This may cause temp accessor errors!`,
+                                );
+                                rowsToUse = [
+                                    ...updatedRows.values(),
+                                    ...newRowsToCreate,
+                                    ...Array.from(rowsWithDynamicColumns.values()).map(
+                                        ({ row }) => row,
+                                    ),
+                                    ...newRowsWithDynamicColumns.map(({ row }) => row),
+                                ];
+                            }
+                        } else {
+                            rowsToUse = [
+                                ...updatedRows.values(),
+                                ...newRowsToCreate,
+                                ...Array.from(rowsWithDynamicColumns.values()).map(
+                                    ({ row }) => row,
+                                ),
+                                ...newRowsWithDynamicColumns.map(({ row }) => row),
+                            ];
+                        }
+
+                        // Log first row in rowsToUse to verify it has real accessors
+                        if (rowsToUse.length > 0 && hasDynamicColumns) {
+                            const firstRowToSave = rowsToUse[0];
+                            const firstRowKeys = Object.keys(firstRowToSave);
+                            const firstRowTempKeys = firstRowKeys.filter(
+                                (key) =>
+                                    tempAccessorToRealAccessorMap.has(key) &&
+                                    tempAccessorToRealAccessorMap.get(key) !== key,
+                            );
+                            const firstRowRealKeys = firstRowKeys.filter((key) => {
+                                const mappedReal = Array.from(
+                                    tempAccessorToRealAccessorMap.values(),
+                                );
+                                return mappedReal.includes(key);
+                            });
+                            console.log(
+                                `[save_debug][${operationId}] FIRST ROW TO SAVE (id=${firstRowToSave.id}):`,
+                                {
+                                    allKeys: firstRowKeys,
+                                    tempKeys: firstRowTempKeys,
+                                    realKeys: firstRowRealKeys,
+                                    realKeyValues: firstRowRealKeys.map((k) => ({
+                                        key: k,
+                                        value: (firstRowToSave as any)[k],
+                                    })),
+                                },
+                            );
+                        }
+
+                        // Process all rows that need saving
+                        console.log(
+                            `[save_debug][${operationId}] Processing ${rowIdsToSave.size} row IDs for save collection...`,
+                        );
+                        Array.from(rowIdsToSave).forEach((rowId, index) => {
+                            const row = rowsToUse.find((r) => r.id === rowId);
+                            if (!row) {
+                                console.warn(
+                                    `[save_debug][${operationId}] Row ${rowId} not found in rows collection, skipping save`,
+                                );
+                                return;
+                            }
+
+                            // Only check for temp accessors if we have dynamic columns
+                            if (hasDynamicColumns) {
+                                const rowKeys = Object.keys(row);
+                                const tempKeys = rowKeys.filter(
+                                    (key) =>
+                                        tempAccessorToRealAccessorMap.has(key) &&
+                                        tempAccessorToRealAccessorMap.get(key) !== key,
+                                );
+
+                                // Log first row in detail
+                                if (index === 0) {
+                                    console.log(
+                                        `[save_debug][${operationId}] ========================================`,
+                                    );
+                                    console.log(
+                                        `[save_debug][${operationId}] INSPECTING ROW ${rowId} (first row) at t=${Date.now()}`,
+                                    );
+                                    console.log(
+                                        `[save_debug][${operationId}] Row source: ${remappedRows.some((r) => r.id === rowId) ? 'remappedRows' : 'other collection'}`,
+                                    );
+                                    console.log(
+                                        `[save_debug][${operationId}] Total row keys: ${rowKeys.length}`,
+                                    );
+                                    console.log(
+                                        `[save_debug][${operationId}] Temp keys found: ${tempKeys.length}`,
+                                    );
+                                    if (tempKeys.length > 0) {
+                                        console.error(
+                                            `[save_debug][${operationId}] ❌ TEMP KEYS:`,
+                                            tempKeys,
+                                        );
+                                        tempKeys.forEach((tempKey) => {
+                                            const mappedReal =
+                                                tempAccessorToRealAccessorMap.get(
+                                                    tempKey,
+                                                );
+                                            const hasRealKey = rowKeys.includes(
+                                                mappedReal || '',
+                                            );
+                                            console.error(
+                                                `[save_debug][${operationId}]   "${tempKey}" → "${mappedReal}" (real key exists: ${hasRealKey})`,
+                                            );
+                                        });
+                                    } else {
+                                        console.log(
+                                            `[save_debug][${operationId}] ✅ NO TEMP KEYS - row is ready for save`,
+                                        );
+                                    }
+
+                                    // Show real keys that should be present
+                                    const expectedRealKeys = Array.from(
+                                        tempAccessorToRealAccessorMap.values(),
+                                    );
+                                    const presentRealKeys = rowKeys.filter((k) =>
+                                        expectedRealKeys.includes(k),
+                                    );
+                                    console.log(
+                                        `[save_debug][${operationId}] Expected real keys: ${expectedRealKeys.length}, Present: ${presentRealKeys.length}`,
+                                    );
+                                    if (presentRealKeys.length > 0) {
+                                        console.log(
+                                            `[save_debug][${operationId}] ✅ Real keys present:`,
+                                            presentRealKeys,
+                                        );
+                                    }
+                                    console.log(
+                                        `[save_debug][${operationId}] ========================================`,
+                                    );
+                                }
+
+                                if (tempKeys.length > 0) {
+                                    console.error(
+                                        `[save_debug][${operationId}] ⚠️ Row ${rowId} still has temp accessors at save time:`,
+                                        tempKeys,
+                                    );
+                                    console.error(
+                                        `[save_debug][${operationId}] Row keys:`,
+                                        rowKeys,
+                                    );
+                                    console.error(
+                                        `[save_debug][${operationId}] Available mappings:`,
+                                        Array.from(
+                                            tempAccessorToRealAccessorMap.entries(),
+                                        ),
+                                    );
+                                    console.error(
+                                        `[save_debug][${operationId}] Row object:`,
+                                        row,
+                                    );
+                                    return;
+                                }
+                            }
+
+                            // Determine if this is a new row
+                            const isNew =
+                                newRowsToCreate.some((r) => r.id === rowId) ||
+                                newRowsWithDynamicColumns.some(
+                                    ({ row: r }) => r.id === rowId,
+                                );
+
+                            allRowsToSave.push({ row, isNew, id: rowId });
+                        });
+
+                        console.log(
+                            `[save_debug][${operationId}] Collected ${allRowsToSave.length} rows ready for save (out of ${rowIdsToSave.size} requested)`,
+                        );
+
+                        if (allRowsToSave.length === 0) {
+                            console.warn(
+                                `[paste_sync][${operationId}] No valid rows to save after processing, completing paste operation`,
+                            );
+                            pasteState.isPasting = false;
+                            pasteState.pasteOperationActive = false;
+                            console.groupEnd();
+                            return;
+                        }
+
+                        console.debug(
+                            `[paste_sync][${operationId}] localData snapshot (first 10):`,
+                            localData.slice(0, 10).map((r) => ({
+                                id: r.id,
+                                position: r.position,
+                                keys: Object.keys(r).slice(0, 20),
+                            })),
+                        );
+
+                        console.debug(
+                            '[paste_sync][TIMING]',
+                            'columns available before row save:',
+                            columns.map((c) => ({
+                                id: c.id,
+                                accessor: c.accessor,
+                                header: c.header,
+                            })),
+                        );
+                        console.debug(
+                            '[paste_sync][TIMING]',
+                            'localColumnsRef:',
+                            localColumnsRef.current.map((c) => ({
+                                id: c.id,
+                                accessor: c.accessor,
+                                header: c.header,
+                            })),
+                        );
+
+                        // Save all rows immediately with await
+                        const t1 = Date.now();
+                        console.log(
+                            `[save_debug][${operationId}] ========================================`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] STARTING actual row saves at t=${t1}`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] Time since remap complete: ${remappedRows.length > 0 ? t1 - (remapEndTime || 0) + 'ms' : 'N/A (no remap)'}`,
+                        );
+                        console.log(
+                            `[paste_sync][${operationId}] Columns saved, starting row data save...`,
+                        );
+                        console.log(
+                            `[paste_sync][${operationId}] Saving ${allRowsToSave.length} rows (${updatedRows.size} updated, ${newRowsToCreate.length + newRowsWithDynamicColumns.length} new)...`,
+                        );
+                        console.log(
+                            `[save_debug][${operationId}] ========================================`,
+                        );
+
+                        for (let i = 0; i < allRowsToSave.length; i += BATCH_SIZE) {
+                            const batch = allRowsToSave.slice(i, i + BATCH_SIZE);
+                            console.log(
+                                `[paste_sync][${operationId}] Saving batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allRowsToSave.length / BATCH_SIZE)} (${batch.length} rows)...`,
+                            );
+
+                            await Promise.all(
+                                batch.map(async ({ row, isNew, id }, batchIndex) => {
+                                    try {
+                                        const saveStart = Date.now();
+                                        const payloadKeys = Object.keys(row);
+
+                                        // Final check for temp accessors right before save
+                                        if (hasDynamicColumns) {
+                                            const tempKeysInPayload = payloadKeys.filter(
+                                                (key) =>
+                                                    tempAccessorToRealAccessorMap.has(
+                                                        key,
+                                                    ) &&
+                                                    tempAccessorToRealAccessorMap.get(
+                                                        key,
+                                                    ) !== key,
+                                            );
+
+                                            if (tempKeysInPayload.length > 0) {
+                                                console.error(
+                                                    `[save_debug][${operationId}] ❌ CRITICAL: Row ${id} has temp accessors RIGHT BEFORE SAVE:`,
+                                                    tempKeysInPayload,
+                                                );
+                                                console.error(
+                                                    `[save_debug][${operationId}] Row payload keys:`,
+                                                    payloadKeys,
+                                                );
+                                                console.error(
+                                                    `[save_debug][${operationId}] Row object:`,
+                                                    row,
+                                                );
+                                                throw new Error(
+                                                    `Row ${id} still has temp accessors: ${tempKeysInPayload.join(', ')}`,
+                                                );
+                                            }
+
+                                            // Log first row in batch with full details
+                                            if (batchIndex === 0 && i === 0) {
+                                                const realKeysInPayload =
+                                                    payloadKeys.filter((k) => {
+                                                        const mappedReal = Array.from(
+                                                            tempAccessorToRealAccessorMap.values(),
+                                                        );
+                                                        return mappedReal.includes(k);
+                                                    });
+                                                console.log(
+                                                    `[save_debug][${operationId}] ========================================`,
+                                                );
+                                                console.log(
+                                                    `[save_debug][${operationId}] FINAL CHECK BEFORE SAVE - Row ${id} at t=${saveStart}`,
+                                                );
+                                                console.log(
+                                                    `[save_debug][${operationId}] ✅ NO temp keys found`,
+                                                );
+                                                console.log(
+                                                    `[save_debug][${operationId}] Real keys in payload: ${realKeysInPayload.length}`,
+                                                    realKeysInPayload,
+                                                );
+                                                console.log(
+                                                    `[save_debug][${operationId}] Total payload keys: ${payloadKeys.length}`,
+                                                );
+                                                console.log(
+                                                    `[save_debug][${operationId}] ========================================`,
+                                                );
+                                            }
+                                        }
+
+                                        console.debug(
+                                            `[paste_sync][${operationId}] saving row id=${id} isNew=${isNew} payloadKeys=${payloadKeys.join(',')}`,
+                                        );
+                                        console.debug(
+                                            `[paste_sync][${operationId}] saveRequirement payload`,
+                                            row,
+                                        );
+                                        const savePromise = saveRow(row, isNew, {
+                                            blockId,
+                                            skipRefresh: true,
+                                        });
+                                        pasteState.savePromises.set(id, savePromise);
+                                        await savePromise;
+                                        pasteState.savePromises.delete(id);
+                                        const saveDuration = Date.now() - saveStart;
+                                        console.debug(
+                                            `[paste_sync][${operationId}] saved row id=${id} duration=${saveDuration}ms`,
+                                        );
+                                    } catch (err) {
+                                        pasteState.savePromises.delete(id);
+                                        console.error(
+                                            `[paste_sync][${operationId}] ERROR saving row id=${id}`,
+                                            err,
+                                        );
+                                        throw err;
+                                    }
+                                }),
+                            );
+                        }
+                        const t2 = Date.now();
+                        console.log(
+                            `[paste_sync][${operationId}] 💾 All ${allRowsToSave.length} rows saved successfully (duration=${t2 - t1}ms)`,
+                        );
+
+                        // Wait for any remaining save promises to complete
+                        const allSavePromises = Array.from(
+                            pasteState.savePromises.values(),
+                        );
+                        if (allSavePromises.length > 0) {
+                            console.log(
+                                `[paste_sync][${operationId}] Waiting for ${allSavePromises.length} remaining save promises...`,
+                            );
+                            await Promise.allSettled(allSavePromises);
+                            console.log(
+                                `[paste_sync][${operationId}] All save promises resolved`,
+                            );
+                        }
+
+                        // After all saves:
+                        const t3 = Date.now();
+                        console.debug(
+                            `[paste_sync][${operationId}] done saving rows (duration=${t3 - t0}ms) -> calling onPostSave()`,
+                        );
+
+                        // Force save metadata before refresh to ensure column order is persisted
+                        const mdStart = Date.now();
+                        try {
+                            await saveTableMetadata();
+                            const mdDuration = Date.now() - mdStart;
+                            console.debug(
+                                `[paste_sync][${operationId}] saveTableMetadata done (duration=${mdDuration}ms)`,
+                            );
+                        } catch (error) {
+                            const mdDuration = Date.now() - mdStart;
+                            console.error(
+                                `[paste_sync][${operationId}] ❌ saveTableMetadata failed (duration=${mdDuration}ms):`,
+                                error,
+                            );
+                        }
+
+                        // Clear paste flags BEFORE refresh to allow refresh to proceed
+                        pasteState.isPasting = false;
+                        pasteState.pasteOperationActive = false;
+                        console.debug(
+                            `[paste_sync][${operationId}] Paste flags cleared, allowing refresh`,
+                        );
+
+                        // Call onPostSave() after all rows are saved and flags are cleared
+                        const postStart = Date.now();
+                        try {
+                            await refreshAfterSave(false);
+                            const postDuration = Date.now() - postStart;
+                            console.debug(
+                                `[paste_sync][${operationId}] onPostSave done (duration=${postDuration}ms)`,
+                            );
+                        } catch (error) {
+                            const postDuration = Date.now() - postStart;
+                            console.error(
+                                `[paste_sync][${operationId}] ❌ onPostSave() failed (duration=${postDuration}ms):`,
+                                error,
+                            );
+                        }
+
+                        // final cleanup
+                        const totalDuration = Date.now() - t0;
+                        console.debug(
+                            `[paste_sync][${operationId}] FINISH totalDuration=${totalDuration}ms`,
+                        );
+                        console.groupEnd();
+                    } catch (error) {
+                        console.error(
+                            `[paste_sync][${operationId}] Paste save error:`,
+                            error,
+                        );
+                        // Clear flags even on error to prevent stuck state
                         pasteState.isPasting = false;
                         pasteState.pasteOperationActive = false;
                         console.groupEnd();
-                        return;
                     }
-
-                    console.debug(`[paste_sync][${operationId}] localData snapshot (first 10):`, localData.slice(0,10).map(r => ({ id: r.id, position: r.position, keys: Object.keys(r).slice(0,20) })));
-
-                    console.debug(
-                        "[paste_sync][TIMING]",
-                        "columns available before row save:",
-                        columns.map(c => ({id:c.id, accessor:c.accessor, header:c.header}))
-                    );
-                    console.debug(
-                        "[paste_sync][TIMING]",
-                        "localColumnsRef:",
-                        localColumnsRef.current.map(c => ({id:c.id, accessor:c.accessor, header:c.header}))
-                    );
-
-                    // Save all rows immediately with await
-                    const t1 = Date.now();
-                    console.log(`[save_debug][${operationId}] ========================================`);
-                    console.log(`[save_debug][${operationId}] STARTING actual row saves at t=${t1}`);
-                    console.log(`[save_debug][${operationId}] Time since remap complete: ${remappedRows.length > 0 ? (t1 - (remapEndTime || 0)) + 'ms' : 'N/A (no remap)'}`);
-                    console.log(`[paste_sync][${operationId}] Columns saved, starting row data save...`);
-                    console.log(`[paste_sync][${operationId}] Saving ${allRowsToSave.length} rows (${updatedRows.size} updated, ${newRowsToCreate.length + newRowsWithDynamicColumns.length} new)...`);
-                    console.log(`[save_debug][${operationId}] ========================================`);
-                    
-                    for (let i = 0; i < allRowsToSave.length; i += BATCH_SIZE) {
-                        const batch = allRowsToSave.slice(i, i + BATCH_SIZE);
-                        console.log(`[paste_sync][${operationId}] Saving batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allRowsToSave.length / BATCH_SIZE)} (${batch.length} rows)...`);
-                        
-                        await Promise.all(
-                            batch.map(async ({ row, isNew, id }, batchIndex) => {
-                                try {
-                                    const saveStart = Date.now();
-                                    const payloadKeys = Object.keys(row);
-                                    
-                                    // Final check for temp accessors right before save
-                                    if (hasDynamicColumns) {
-                                        const tempKeysInPayload = payloadKeys.filter(key => 
-                                            tempAccessorToRealAccessorMap.has(key) && 
-                                            tempAccessorToRealAccessorMap.get(key) !== key
-                                        );
-                                        
-                                        if (tempKeysInPayload.length > 0) {
-                                            console.error(`[save_debug][${operationId}] ❌ CRITICAL: Row ${id} has temp accessors RIGHT BEFORE SAVE:`, tempKeysInPayload);
-                                            console.error(`[save_debug][${operationId}] Row payload keys:`, payloadKeys);
-                                            console.error(`[save_debug][${operationId}] Row object:`, row);
-                                            throw new Error(`Row ${id} still has temp accessors: ${tempKeysInPayload.join(', ')}`);
-                                        }
-                                        
-                                        // Log first row in batch with full details
-                                        if (batchIndex === 0 && i === 0) {
-                                            const realKeysInPayload = payloadKeys.filter(k => {
-                                                const mappedReal = Array.from(tempAccessorToRealAccessorMap.values());
-                                                return mappedReal.includes(k);
-                                            });
-                                            console.log(`[save_debug][${operationId}] ========================================`);
-                                            console.log(`[save_debug][${operationId}] FINAL CHECK BEFORE SAVE - Row ${id} at t=${saveStart}`);
-                                            console.log(`[save_debug][${operationId}] ✅ NO temp keys found`);
-                                            console.log(`[save_debug][${operationId}] Real keys in payload: ${realKeysInPayload.length}`, realKeysInPayload);
-                                            console.log(`[save_debug][${operationId}] Total payload keys: ${payloadKeys.length}`);
-                                            console.log(`[save_debug][${operationId}] ========================================`);
-                                        }
-                                    }
-                                    
-                                    console.debug(`[paste_sync][${operationId}] saving row id=${id} isNew=${isNew} payloadKeys=${payloadKeys.join(',')}`);
-                                    console.debug(`[paste_sync][${operationId}] saveRequirement payload`, row);
-                                    const savePromise = saveRow(row, isNew, { blockId, skipRefresh: true });
-                                    pasteState.savePromises.set(id, savePromise);
-                                    await savePromise;
-                                    pasteState.savePromises.delete(id);
-                                    const saveDuration = Date.now() - saveStart;
-                                    console.debug(`[paste_sync][${operationId}] saved row id=${id} duration=${saveDuration}ms`);
-                                } catch (err) {
-                                    pasteState.savePromises.delete(id);
-                                    console.error(`[paste_sync][${operationId}] ERROR saving row id=${id}`, err);
-                                    throw err; 
-                                }
-                            }),
-                        );
-                    }
-                    const t2 = Date.now();
-                    console.log(`[paste_sync][${operationId}] 💾 All ${allRowsToSave.length} rows saved successfully (duration=${t2-t1}ms)`);
-
-                    // Wait for any remaining save promises to complete
-                    const allSavePromises = Array.from(pasteState.savePromises.values());
-                    if (allSavePromises.length > 0) {
-                        console.log(`[paste_sync][${operationId}] Waiting for ${allSavePromises.length} remaining save promises...`);
-                        await Promise.allSettled(allSavePromises);
-                        console.log(`[paste_sync][${operationId}] All save promises resolved`);
-                    }
-
-                    // After all saves:
-                    const t3 = Date.now();
-                    console.debug(`[paste_sync][${operationId}] done saving rows (duration=${t3-t0}ms) -> calling onPostSave()`);
-                    
-                    // Force save metadata before refresh to ensure column order is persisted
-                    const mdStart = Date.now();
-                    try {
-                        await saveTableMetadata();
-                        const mdDuration = Date.now() - mdStart;
-                        console.debug(`[paste_sync][${operationId}] saveTableMetadata done (duration=${mdDuration}ms)`);
-                    } catch (error) {
-                        const mdDuration = Date.now() - mdStart;
-                        console.error(`[paste_sync][${operationId}] ❌ saveTableMetadata failed (duration=${mdDuration}ms):`, error);
-                    }
-
-                    // Clear paste flags BEFORE refresh to allow refresh to proceed
-                    pasteState.isPasting = false;
-                    pasteState.pasteOperationActive = false;
-                    console.debug(`[paste_sync][${operationId}] Paste flags cleared, allowing refresh`);
-                    
-                    // Call onPostSave() after all rows are saved and flags are cleared
-                    const postStart = Date.now();
-                    try {
-                        await refreshAfterSave(false);
-                        const postDuration = Date.now() - postStart;
-                        console.debug(`[paste_sync][${operationId}] onPostSave done (duration=${postDuration}ms)`);
-                    } catch (error) {
-                        const postDuration = Date.now() - postStart;
-                        console.error(`[paste_sync][${operationId}] ❌ onPostSave() failed (duration=${postDuration}ms):`, error);
-                    }
-
-                    // final cleanup
-                    const totalDuration = Date.now() - t0;
-                    console.debug(`[paste_sync][${operationId}] FINISH totalDuration=${totalDuration}ms`);
-                    console.groupEnd();
-                } catch (error) {
-                    console.error(`[paste_sync][${operationId}] Paste save error:`, error);
-                    // Clear flags even on error to prevent stuck state
-                    pasteState.isPasting = false;
-                    pasteState.pasteOperationActive = false;
-                    console.groupEnd();
-                }
-            })();
+                })();
             } catch (error) {
-                console.error(`[paste_sync][${operationId}] Paste operation failed for table ${tableId}:`, error);
+                console.error(
+                    `[paste_sync][${operationId}] Paste operation failed for table ${tableId}:`,
+                    error,
+                );
                 if (error instanceof Error) {
-                    console.error(`[paste_sync][${operationId}] Error stack:`, error.stack);
+                    console.error(
+                        `[paste_sync][${operationId}] Error stack:`,
+                        error.stack,
+                    );
                 }
                 // Clear flags on error
                 pasteState.isPasting = false;
@@ -3787,7 +4475,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     );
                 }, 10000);
 
-                console.debug(`[paste_sync][${operationId}] Waiting for database acknowledgment for table ${tableId}...`);
+                console.debug(
+                    `[paste_sync][${operationId}] Waiting for database acknowledgment for table ${tableId}...`,
+                );
                 return true;
             }
         },

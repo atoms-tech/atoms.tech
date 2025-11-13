@@ -282,12 +282,16 @@ export const useColumnActions = ({
         async (propertyId: string, newName: string) => {
             // Validate parameters before attempting rename
             if (!propertyId || typeof propertyId !== 'string') {
-                const error = new Error('Invalid propertyId: propertyId must be a non-empty string');
+                const error = new Error(
+                    'Invalid propertyId: propertyId must be a non-empty string',
+                );
                 console.error('[useColumnActions] Failed to rename property:', error);
                 throw error;
             }
             if (!newName || typeof newName !== 'string' || !newName.trim()) {
-                const error = new Error('Invalid newName: newName must be a non-empty string');
+                const error = new Error(
+                    'Invalid newName: newName must be a non-empty string',
+                );
                 console.error('[useColumnActions] Failed to rename property:', error);
                 throw error;
             }
@@ -338,7 +342,9 @@ export const useColumnActions = ({
                     throw error;
                 }
                 if (!data) {
-                    const error = new Error(`Property update returned no data for id ${propertyId}`);
+                    const error = new Error(
+                        `Property update returned no data for id ${propertyId}`,
+                    );
                     console.error('[useColumnActions] Failed to rename property:', error);
                     throw error;
                 }

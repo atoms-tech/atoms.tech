@@ -1,6 +1,8 @@
 import { TableDataAdapter } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 
+/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
+
 export function createRequirementsAdapter(opts: {
     saveRequirement: (
         item: DynamicRequirement,
@@ -18,7 +20,11 @@ export function createRequirementsAdapter(opts: {
         opts;
 
     return {
-        async saveRow(item, isNew, context?: { blockId?: string; skipRefresh?: boolean }) {
+        async saveRow(
+            item,
+            isNew,
+            context?: { blockId?: string; skipRefresh?: boolean },
+        ) {
             const skipRefresh = context?.skipRefresh ?? false;
             await saveRequirement(item, isNew, userId, userName, skipRefresh);
         },
