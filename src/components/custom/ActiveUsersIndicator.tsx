@@ -23,10 +23,10 @@ interface ActiveUsersIndicatorProps {
 export const ActiveUsersIndicator: React.FC<ActiveUsersIndicatorProps> = ({
     className,
 }) => {
-    const activeUsers = useDocumentStore((state) => state.activeUsers);
+    const activeUsers = useDocumentStore((state: { activeUsers: Map<string, UserPresence> }) => state.activeUsers);
 
     // Convert Map to Array for rendering
-    const users = Array.from(activeUsers.values());
+    const users: UserPresence[] = Array.from(activeUsers.values());
 
     if (users.length === 0) {
         return null;

@@ -1563,6 +1563,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     accessor: String(accessor),
                     value: numVal,
                 });
+
+                // Broadcast cell update immediately for real-time collaboration
+                if (blockId && column.id) {
+                    void broadcastCellUpdate({
+                        blockId,
+                        rowId,
+                        columnId: column.id,
+                        value: numVal,
+                    });
+                }
+
                 setLocalData((prev) =>
                     prev.map((r) =>
                         r.id === rowId ? ({ ...r, [accessor]: numVal } as T) : r,
@@ -1585,6 +1596,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         accessor: String(accessor),
                         value: displayValue,
                     });
+
+                    // Broadcast cell update immediately for real-time collaboration
+                    if (blockId && column.id) {
+                        void broadcastCellUpdate({
+                            blockId,
+                            rowId,
+                            columnId: column.id,
+                            value: displayValue,
+                        });
+                    }
+
                     setLocalData((prev) =>
                         prev.map((r) =>
                             r.id === rowId
@@ -1606,6 +1628,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         accessor: String(accessor),
                         values,
                     });
+
+                    // Broadcast cell update immediately for real-time collaboration
+                    if (blockId && column.id) {
+                        void broadcastCellUpdate({
+                            blockId,
+                            rowId,
+                            columnId: column.id,
+                            value: values,
+                        });
+                    }
+
                     setLocalData((prev) =>
                         prev.map((r) =>
                             r.id === rowId ? ({ ...r, [accessor]: values } as T) : r,
@@ -1654,6 +1687,17 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         accessor: String(accessor),
                         iso,
                     });
+
+                    // Broadcast cell update immediately for real-time collaboration
+                    if (blockId && column.id) {
+                        void broadcastCellUpdate({
+                            blockId,
+                            rowId,
+                            columnId: column.id,
+                            value: iso,
+                        });
+                    }
+
                     setLocalData((prev) =>
                         prev.map((r) =>
                             r.id === rowId ? ({ ...r, [accessor]: iso } as T) : r,

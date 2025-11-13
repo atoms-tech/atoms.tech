@@ -11,6 +11,9 @@ interface BroadcastCellUpdateOptions {
 /**
  * Hook for broadcasting real-time cell updates to other users
  * without waiting for DB save (Google Sheets-style collaboration)
+ *
+ * Note: This hook is for SENDING broadcasts only.
+ * Receiving is handled in useDocumentRealtime.ts
  */
 export const useBroadcastCellUpdate = ({
     documentId,
@@ -21,11 +24,8 @@ export const useBroadcastCellUpdate = ({
     const channelRef = useRef<ReturnType<
         ReturnType<typeof supabase>['channel']
     > | null>(null);
-    const presenceChannelRef = useRef<ReturnType<
-        ReturnType<typeof supabase>['channel']
-    > | null>(null);
 
-    // Initialize broadcast channel
+    // Initialize broadcast channel (for sending only)
     useEffect(() => {
         if (!supabase || !documentId || !enabled) return;
 
@@ -36,22 +36,6 @@ export const useBroadcastCellUpdate = ({
         return () => {
             channel.unsubscribe();
             channelRef.current = null;
-        };
-    }, [supabase, documentId, enabled]);
-
-    // Initialize presence channel for cursor tracking
-    useEffect(() => {
-        if (!supabase || !documentId || !enabled) return;
-
-        const presenceChannel = supabase
-            .channel(`document:${documentId}:presence`)
-            .subscribe();
-
-        presenceChannelRef.current = presenceChannel;
-
-        return () => {
-            presenceChannel.unsubscribe();
-            presenceChannelRef.current = null;
         };
     }, [supabase, documentId, enabled]);
 
@@ -96,13 +80,13 @@ export const useBroadcastCellUpdate = ({
      */
     const broadcastCursorMove = useCallback(
         async (params: { blockId: string; rowId?: string; columnId?: string }) => {
-            if (!presenceChannelRef.current || !userId) {
-                console.debug('[useBroadcastCellUpdate] Presence channel or userId not ready');
+            if (!channelRef.current || !userId) {
+                console.debug('[useBroadcastCellUpdate] Channel or userId not ready');
                 return;
             }
 
             try {
-                await presenceChannelRef.current.send({
+                await channelRef.current.send({
                     type: 'broadcast',
                     event: 'cursor_move',
                     payload: {

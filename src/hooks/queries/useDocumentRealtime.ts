@@ -109,13 +109,8 @@ export const useDocumentRealtime = ({
         error: authError,
     } = useAuthenticatedSupabase();
 
-    // Get document store for presence management
-    const {
-        updateUserPresence,
-        removeUser,
-        setPendingCellUpdate,
-        removePendingCellUpdate,
-    } = useDocumentStore();
+    // Get document store for presence management - use refs to avoid dependency issues
+    const documentStoreRef = useRef(useDocumentStore.getState());
 
     // Initial full fetch of blocks and their requirements
     const fetchBlocks = useCallback(
@@ -868,7 +863,7 @@ export const useDocumentRealtime = ({
                         } | null;
                     };
                     if (presence && presence.user_id !== _userProfile?.id) {
-                        updateUserPresence(presence.user_id, {
+                        documentStoreRef.current.updateUserPresence(presence.user_id, {
                             userId: presence.user_id,
                             userName: presence.user_name,
                             userEmail: presence.user_email,
@@ -886,7 +881,7 @@ export const useDocumentRealtime = ({
                     online_at: string;
                 };
                 if (presence && presence.user_id !== _userProfile?.id) {
-                    updateUserPresence(presence.user_id, {
+                    documentStoreRef.current.updateUserPresence(presence.user_id, {
                         userId: presence.user_id,
                         userName: presence.user_name,
                         userEmail: presence.user_email,
@@ -897,7 +892,7 @@ export const useDocumentRealtime = ({
             .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
                 const presence = leftPresences[0] as unknown as { user_id: string };
                 if (presence) {
-                    removeUser(presence.user_id);
+                    documentStoreRef.current.removeUser(presence.user_id);
                 }
             })
             .subscribe(async (status) => {
@@ -915,6 +910,9 @@ export const useDocumentRealtime = ({
                     });
                 }
             });
+
+        // Track pending timeouts for cleanup
+        const pendingTimeouts = new Set<NodeJS.Timeout>();
 
         // Subscribe to broadcast for real-time cell updates (before DB save)
         const broadcastChannel = client
@@ -934,11 +932,13 @@ export const useDocumentRealtime = ({
                     const { blockId, rowId, columnId, value, userId } = payload.payload;
                     // Don't update if it's from current user
                     if (userId !== _userProfile?.id) {
-                        setPendingCellUpdate(blockId, rowId, columnId, value, userId);
+                        documentStoreRef.current.setPendingCellUpdate(blockId, rowId, columnId, value, userId);
                         // Auto-remove after 3 seconds (by then DB should have it)
-                        setTimeout(() => {
-                            removePendingCellUpdate(blockId, rowId, columnId);
+                        const timeoutId = setTimeout(() => {
+                            documentStoreRef.current.removePendingCellUpdate(blockId, rowId, columnId);
+                            pendingTimeouts.delete(timeoutId);
                         }, 3000);
+                        pendingTimeouts.add(timeoutId);
                     }
                 },
             )
@@ -955,7 +955,7 @@ export const useDocumentRealtime = ({
                 }) => {
                     const { userId, blockId, rowId, columnId } = payload.payload;
                     if (userId !== _userProfile?.id) {
-                        updateUserPresence(userId, {
+                        documentStoreRef.current.updateUserPresence(userId, {
                             userId,
                             userName: 'Unknown', // This will be merged with existing data
                             editingCell: rowId && columnId ? { blockId, rowId, columnId } : null,
@@ -966,11 +966,16 @@ export const useDocumentRealtime = ({
             .subscribe();
 
         return () => {
+            // Clean up all subscriptions
             blocksSubscription.unsubscribe();
             requirementsSubscription.unsubscribe();
             columnsSubscription.unsubscribe();
             presenceChannel.unsubscribe();
             broadcastChannel.unsubscribe();
+
+            // Clean up all pending timeouts to prevent memory leaks
+            pendingTimeouts.forEach(timeoutId => clearTimeout(timeoutId));
+            pendingTimeouts.clear();
         };
     }, [
         documentId,
@@ -979,10 +984,6 @@ export const useDocumentRealtime = ({
         authLoading,
         authError,
         _userProfile,
-        updateUserPresence,
-        removeUser,
-        setPendingCellUpdate,
-        removePendingCellUpdate,
     ]);
 
     const refetchDocument = useCallback(
