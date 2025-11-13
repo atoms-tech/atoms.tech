@@ -296,7 +296,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 });
             }
         },
-        [deleteRelationshipMutation],
+        [deleteRelationshipMutation, toast],
     );
 
     const createParentChildRelationship = useCallback(async () => {
@@ -354,7 +354,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                 variant: 'destructive',
             });
         }
-    }, [selectedParent, selectedChildren, createRelationshipMutation]);
+    }, [selectedParent, selectedChildren, createRelationshipMutation, toast]);
 
     return (
         <LayoutView>
