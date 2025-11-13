@@ -1,6 +1,6 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
+/* eslint-disable prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import '@/styles/globals.css';
@@ -827,8 +827,19 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }
     }, [columns, data]);
 
+    // Create a stable reference for column IDs and positions to detect changes
+    const columnSignature = useMemo(() => {
+        return columns
+            .map((c) => `${c.id}:${c.position ?? 0}`)
+            .sort()
+            .join(',');
+    }, [columns]);
+
     useEffect(() => {
-        if (localColumns.length === 0 && columns.length > 0) {
+        // Use a ref to get the current localColumns without including it in dependencies
+        const currentLocalColumns = localColumnsRef.current;
+
+        if (currentLocalColumns.length === 0 && columns.length > 0) {
             const normalized = columns.map((col) => ({
                 ...col,
                 title: col.header,
@@ -840,7 +851,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             return;
         }
 
-        const localIds = new Set(localColumns.map((c) => c.id));
+        const localIds = new Set(currentLocalColumns.map((c) => c.id));
         const incomingIds = new Set(columns.map((c) => c.id));
 
         const hasNewColumns = [...incomingIds].some((id) => !localIds.has(id));
@@ -849,6 +860,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         if (hasNewColumns || hasRemovedColumns) {
             console.log(
                 '[GlideEditableTable] Structural change detected, syncing columns',
+                {
+                    hasNewColumns,
+                    hasRemovedColumns,
+                    localCount: currentLocalColumns.length,
+                    incomingCount: columns.length,
+                },
             );
             const normalized = columns.map((col) => ({
                 ...col,
@@ -859,7 +876,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             );
             setLocalColumns(sorted as typeof localColumns);
         }
-    }, [columns.length]);
+    }, [columnSignature, columns]);
 
     const isReorderingRef = useRef(false);
 

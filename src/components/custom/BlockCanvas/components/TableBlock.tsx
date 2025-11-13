@@ -24,6 +24,7 @@ import {
 } from '@/components/custom/BlockCanvas/utils/exportCsv';
 import { saveExcel } from '@/components/custom/BlockCanvas/utils/exportExcel';
 import { saveReqIF } from '@/components/custom/BlockCanvas/utils/exportReqIF';
+import { ensureNaturalColumns } from '@/components/custom/BlockCanvas/utils/naturalFields';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -32,6 +33,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useOrganizationProperties } from '@/hooks/queries/useProperties';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
@@ -228,6 +230,12 @@ export const TableBlock: React.FC<BlockProps> = ({
     const params = useParams();
     const { currentOrganization } = useOrganization();
 
+    // Fetch organization properties for merging virtual columns
+    const { data: orgProperties } = useOrganizationProperties(
+        currentOrganization?.id || '',
+        !!currentOrganization?.id,
+    );
+
     const {
         createPropertyAndColumn,
         createColumnFromProperty,
@@ -360,9 +368,30 @@ export const TableBlock: React.FC<BlockProps> = ({
     }, [block.columns, block.id, deletedColumnIds]); // add deletedColumnIds as dependency
 
     // Effective columns used by UI (optimistic first, then server)
+    // For requirement tables, merge virtual native columns with real columns
     const effectiveColumnsRaw = useMemo(() => {
-        return optimisticColumns ?? block.columns ?? [];
-    }, [optimisticColumns, block.columns]);
+        const baseColumns = optimisticColumns ?? block.columns ?? [];
+
+        // Check if this is a requirement table
+        const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
+        const isRequirementsTable =
+            block.type === 'table' &&
+            (tableKind === 'requirements' || tableKind === 'requirements_default');
+
+        // For requirement tables, ensure native columns are included
+        if (isRequirementsTable && block.id) {
+            return ensureNaturalColumns(baseColumns, block.id, orgProperties || null);
+        }
+
+        return baseColumns;
+    }, [
+        optimisticColumns,
+        block.columns,
+        block.type,
+        block.content,
+        block.id,
+        orgProperties,
+    ]);
 
     // Read tableKind once to decide pipeline
     const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
