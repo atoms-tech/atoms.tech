@@ -174,6 +174,64 @@ export const useRequirementActions = ({
             }
         });
 
+        // Fix dynamic value capture: Check for keys in dynamicReq that might not be in properties array yet
+        // This handles newly created columns during paste that haven't been synced to the properties array
+        const processedKeys = new Set(Object.keys(propertiesObj));
+        const dynamicReqKeys = Object.keys(dynamicReq).filter(
+            key => key !== 'id' && key !== 'ai_analysis' && !NATURAL_FIELD_KEYS.has(key.toLowerCase())
+        );
+        
+        console.debug("[fix][dynamic-values] Checking dynamicReq keys:", dynamicReqKeys);
+        console.debug("[fix][dynamic-values] Already processed keys:", Array.from(processedKeys));
+        
+        for (const key of dynamicReqKeys) {
+            // Skip if already processed or if it's a natural field
+            if (processedKeys.has(key) || NATURAL_FIELD_KEYS.has(key.toLowerCase())) {
+                continue;
+            }
+            
+            const val = dynamicReq[key];
+            // Check if it's a valid value that should be saved
+            if (
+                typeof val === "string" || 
+                typeof val === "number" || 
+                Array.isArray(val) || 
+                val === null ||
+                val === ''
+            ) {
+                // Find the column in blockColumns to get metadata
+                const column = blockColumns?.find((col) => {
+                    const propName = (col as unknown as { property?: { name?: string } })?.property?.name;
+                    return propName && propName.toLowerCase() === key.toLowerCase();
+                });
+                
+                if (column) {
+                    // Create propertiesObj entry for this dynamic column
+                    propertiesObj[key] = {
+                        key,
+                        type: "text", // Default to text for dynamic columns
+                        value: val ?? '',
+                        position: column.position ?? 0,
+                        column_id: column.id,
+                        property_id: column.property_id,
+                    };
+                    console.debug(`[fix][dynamic-values] Added new dynamic column ${key} with value:`, val);
+                } else {
+                    // Column not found in DB yet, but we still want to save the value
+                    // This can happen if column was just created and hasn't synced yet
+                    propertiesObj[key] = {
+                        key,
+                        type: "text",
+                        value: val ?? '',
+                        position: 0,
+                    };
+                    console.debug(`[fix][dynamic-values] Added dynamic column ${key} (column not in DB yet) with value:`, val);
+                }
+            }
+        }
+        
+        console.debug("[fix][dynamic-values] Final propertiesObj keys:", Object.keys(propertiesObj));
+
         return { propertiesObj, naturalFields };
     };
 
@@ -351,6 +409,7 @@ export const useRequirementActions = ({
         isNew: boolean,
         userId: string,
         userName: string,
+        skipRefresh: boolean = false,
     ) => {
         console.log('🎯 STEP 5: saveRequirement called in useRequirementActions', {
             isNew,
@@ -371,6 +430,7 @@ export const useRequirementActions = ({
                 propertiesObj,
                 naturalFields,
             });
+            console.debug("[saveRequirement][properties keys]", Object.keys(propertiesObj || {}));
 
             // Initialize with an empty history object
             let analysis_history: RequirementAiAnalysis = {

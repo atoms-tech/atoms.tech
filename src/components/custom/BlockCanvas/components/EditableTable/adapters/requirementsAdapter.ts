@@ -7,6 +7,7 @@ export function createRequirementsAdapter(opts: {
         isNew: boolean,
         userId: string,
         userName: string,
+        skipRefresh?: boolean,
     ) => Promise<unknown>;
     deleteRequirement: (item: DynamicRequirement, userId: string) => Promise<void>;
     refreshRequirements: () => Promise<void>;
@@ -17,8 +18,9 @@ export function createRequirementsAdapter(opts: {
         opts;
 
     return {
-        async saveRow(item, isNew) {
-            await saveRequirement(item, isNew, userId, userName);
+        async saveRow(item, isNew, context?: { blockId?: string; skipRefresh?: boolean }) {
+            const skipRefresh = context?.skipRefresh ?? false;
+            await saveRequirement(item, isNew, userId, userName, skipRefresh);
         },
         async deleteRow(item) {
             await deleteRequirement(item, userId);
