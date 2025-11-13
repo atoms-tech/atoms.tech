@@ -280,6 +280,22 @@ export const useColumnActions = ({
     // rename a property and update associated column
     const renameProperty = useCallback(
         async (propertyId: string, newName: string) => {
+            // Validate parameters before attempting rename
+            if (!propertyId || typeof propertyId !== 'string') {
+                const error = new Error(
+                    'Invalid propertyId: propertyId must be a non-empty string',
+                );
+                console.error('[useColumnActions] Failed to rename property:', error);
+                throw error;
+            }
+            if (!newName || typeof newName !== 'string' || !newName.trim()) {
+                const error = new Error(
+                    'Invalid newName: newName must be a non-empty string',
+                );
+                console.error('[useColumnActions] Failed to rename property:', error);
+                throw error;
+            }
+
             try {
                 const supabase = getClientOrThrow();
                 // First get the old property name
@@ -289,7 +305,19 @@ export const useColumnActions = ({
                     .eq('id', propertyId)
                     .single();
 
-                if (fetchError) throw fetchError;
+                if (fetchError) {
+                    console.error('[useColumnActions] Failed to fetch property:', {
+                        propertyId,
+                        error: fetchError,
+                        message: fetchError.message,
+                    });
+                    throw fetchError;
+                }
+                if (!oldProperty) {
+                    const error = new Error(`Property with id ${propertyId} not found`);
+                    console.error('[useColumnActions] Failed to rename property:', error);
+                    throw error;
+                }
                 const oldName = (oldProperty as { name: string }).name;
 
                 // Update the property name
@@ -303,7 +331,23 @@ export const useColumnActions = ({
                     .select()
                     .single();
 
-                if (error) throw error;
+                if (error) {
+                    console.error('[useColumnActions] Failed to update property:', {
+                        propertyId,
+                        newName,
+                        error: error,
+                        message: error.message,
+                        details: error.details,
+                    });
+                    throw error;
+                }
+                if (!data) {
+                    const error = new Error(
+                        `Property update returned no data for id ${propertyId}`,
+                    );
+                    console.error('[useColumnActions] Failed to rename property:', error);
+                    throw error;
+                }
 
                 // CRITICAL: Migrate existing data in requirements table
                 // Find all requirements that have this property

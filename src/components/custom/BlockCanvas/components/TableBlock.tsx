@@ -458,11 +458,18 @@ export const TableBlock: React.FC<BlockProps> = ({
             isNew: boolean,
             userId?: string,
             userName?: string,
+            skipRefresh?: boolean,
         ) => {
             const foundId = userId ?? userProfile?.id;
             const foundName = userName ?? userProfile?.full_name;
             if (!foundId) return;
-            await saveRequirement(dynamicReq, isNew, foundId, foundName || '');
+            await saveRequirement(
+                dynamicReq,
+                isNew,
+                foundId,
+                foundName || '',
+                skipRefresh ?? false,
+            );
         },
         [saveRequirement, userProfile?.id, userProfile?.full_name],
     );
@@ -687,24 +694,51 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const handleRenameColumn = useCallback(
         async (columnId: string, newName: string) => {
+            // Validate parameters
+            if (!columnId || typeof columnId !== 'string') {
+                console.error('[TableBlock] Invalid columnId for rename:', columnId);
+                throw new Error('Invalid columnId: must be a non-empty string');
+            }
+            if (!newName || typeof newName !== 'string' || !newName.trim()) {
+                console.error('[TableBlock] Invalid newName for rename:', newName);
+                throw new Error('Invalid newName: must be a non-empty string');
+            }
+
             try {
                 // find the column to rename
                 const columnToRename = effectiveColumnsRaw.find(
                     (col) => col.id === columnId,
                 );
                 if (!columnToRename || !columnToRename.property) {
-                    console.error('Column or property not found for rename');
-                    return;
+                    const error = new Error(
+                        `Column or property not found for rename: columnId=${columnId}`,
+                    );
+                    console.error('[TableBlock] Failed to rename column:', error);
+                    throw error;
                 }
 
                 // check if renameProperty function exists before calling
                 if (typeof renameProperty === 'function') {
                     // update the property name in the database
-                    await renameProperty(columnToRename.property.id, newName);
+                    try {
+                        await renameProperty(columnToRename.property.id, newName);
+                    } catch (renameError) {
+                        console.error('[TableBlock] renameProperty failed:', {
+                            columnId,
+                            propertyId: columnToRename.property.id,
+                            newName,
+                            error: renameError,
+                            errorMessage:
+                                renameError instanceof Error
+                                    ? renameError.message
+                                    : String(renameError),
+                        });
+                        throw renameError;
+                    }
                 } else {
-                    console.warn(
-                        '[TableBlock] renameProperty function not available, falling back to local update only',
-                    );
+                    const error = new Error('renameProperty function not available');
+                    console.warn('[TableBlock]', error.message);
+                    throw error;
                 }
 
                 // optimistically update the local state for immediate ui feedback

@@ -15,6 +15,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import TraceLinksContent from '@/components/custom/TraceLinks/TraceLinksContent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +34,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toast';
 import LayoutView from '@/components/views/LayoutView';
 import { useAuthenticatedProjectsByMembershipForOrg } from '@/hooks/queries/useAuthenticatedProjects';
 import { useProjectRequirements } from '@/hooks/queries/useRequirement';
@@ -62,6 +64,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useUser();
+    const { toast } = useToast();
 
     // Initialize from URL params
     const [selectedProject, setSelectedProject] = useState<string>(
@@ -74,6 +77,10 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
     const [selectedParent, setSelectedParent] = useState<string>('');
     const [selectedChildren, setSelectedChildren] = useState<string[]>([]);
     const [collapsedNodes, setCollapsedNodes] = useState<Set<string>>(new Set());
+    // Track requirementId locally to avoid race conditions with URL updates
+    const [currentRequirementId, setCurrentRequirementId] = useState<string>(
+        searchParams.get('requirementId') || '',
+    );
 
     // Mutations for creating and deleting relationships
     const createRelationshipMutation = useCreateRelationship();
@@ -115,17 +122,47 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         (req) => req.id !== selectedParent,
     );
 
-    // Update URL when project or tab changes
+    // Keep local requirementId in sync when URL changes
+    useEffect(() => {
+        const fromUrl = searchParams.get('requirementId') || '';
+        setCurrentRequirementId(fromUrl);
+    }, [searchParams]);
+
+    // Update URL when project or tab changes, preserving existing requirement/document params (and local requirementId)
     const updateURL = useCallback(
         (projectId: string, tab: string) => {
-            const params = new URLSearchParams();
-            if (projectId) params.set('projectId', projectId);
-            if (tab) params.set('tab', tab);
+            const params = new URLSearchParams(searchParams); // start with current params
+            if (projectId) {
+                params.set('projectId', projectId);
+            } else {
+                params.delete('projectId');
+            }
+            if (tab) {
+                params.set('tab', tab);
+            }
+            // Ensure requirementId is preserved even if not yet reflected in searchParams
+            if (currentRequirementId) {
+                params.set('requirementId', currentRequirementId);
+            }
             router.replace(`/org/${orgId}/traceability?${params.toString()}`, {
                 scroll: false,
             });
         },
-        [router, orgId],
+        [router, orgId, searchParams, currentRequirementId],
+    );
+
+    // Navigate directly to Manage tab for a chosen requirement
+    const openInManage = useCallback(
+        (requirementId: string) => {
+            const params = new URLSearchParams(searchParams);
+            if (selectedProject) params.set('projectId', selectedProject);
+            params.set('tab', 'manage');
+            params.set('requirementId', requirementId);
+            setCurrentRequirementId(requirementId);
+            router.replace(`/org/${orgId}/traceability?${params.toString()}`);
+            setActiveTab('manage');
+        },
+        [router, orgId, searchParams, selectedProject],
     );
 
     // Sync URL when state changes
@@ -229,7 +266,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             parent_id: string | null;
         }) => {
             if (!node.parent_id || !node.requirement_id) {
-                alert('Cannot delete: Invalid relationship data');
+                toast({
+                    title: 'Unable to disconnect',
+                    description: 'Invalid relationship data. Please try again.',
+                    variant: 'destructive',
+                });
                 return;
             }
 
@@ -241,12 +282,21 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             try {
                 await deleteRelationshipMutation.mutateAsync(deleteRequest);
                 // Tree will automatically refetch due to cache invalidation
+                toast({
+                    title: 'Relationship removed',
+                    description: 'The requirement was disconnected successfully.',
+                    variant: 'default',
+                });
             } catch (error) {
                 console.error('Failed to delete relationship:', error);
-                alert('Failed to delete relationship. Please try again.');
+                toast({
+                    title: 'Failed to remove relationship',
+                    description: 'Please try again.',
+                    variant: 'destructive',
+                });
             }
         },
-        [deleteRelationshipMutation],
+        [deleteRelationshipMutation, toast],
     );
 
     const createParentChildRelationship = useCallback(async () => {
@@ -267,11 +317,14 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const failedResults = results.filter((result) => result.success === false);
 
             if (failedResults.length > 0) {
-                // Show error for failed relationships
                 const errorMessages = failedResults
                     .map((result) => result.message || result.error)
                     .join('\n');
-                alert(`Some relationships failed to create:\n${errorMessages}`);
+                toast({
+                    title: 'Some relationships failed',
+                    description: errorMessages,
+                    variant: 'destructive',
+                });
             }
 
             // Show success message for successful ones
@@ -281,7 +334,11 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     (sum, result) => sum + (result.relationshipsCreated || 0),
                     0,
                 );
-                alert(`Successfully created ${totalCreated} relationship records!`);
+                toast({
+                    title: 'Relationships created',
+                    description: `Successfully created ${totalCreated} relationship record(s).`,
+                    variant: 'default',
+                });
 
                 // Clear selections after successful creation
                 setSelectedParent('');
@@ -291,11 +348,13 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             }
         } catch (error) {
             console.error('Failed to create relationships:', error);
-            alert(
-                `Failed to create relationships: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
+            toast({
+                title: 'Failed to create relationships',
+                description: error instanceof Error ? error.message : 'Unknown error',
+                variant: 'destructive',
+            });
         }
-    }, [selectedParent, selectedChildren, createRelationshipMutation]);
+    }, [selectedParent, selectedChildren, createRelationshipMutation, toast]);
 
     return (
         <LayoutView>
@@ -631,11 +690,27 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                 </p>
                                                                             )}
                                                                         </div>
-                                                                        {selectedChildren.includes(
-                                                                            requirement.id,
-                                                                        ) && (
-                                                                            <ArrowRight className="h-4 w-4 text-muted-foreground ml-4" />
-                                                                        )}
+                                                                        <div className="flex items-center gap-2 ml-4">
+                                                                            {selectedChildren.includes(
+                                                                                requirement.id,
+                                                                            ) && (
+                                                                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                                                            )}
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    e.stopPropagation();
+                                                                                    openInManage(
+                                                                                        requirement.id,
+                                                                                    );
+                                                                                }}
+                                                                            >
+                                                                                View
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             ),
@@ -696,6 +771,20 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                 }
                                                                             </Badge>
                                                                         )}
+                                                                        <div className="ml-auto">
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() =>
+                                                                                    openInManage(
+                                                                                        requirement.id,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                View in
+                                                                                Manage
+                                                                            </Button>
+                                                                        </div>
                                                                     </div>
                                                                     {requirement.description && (
                                                                         <p className="text-xs text-muted-foreground line-clamp-2">
@@ -770,10 +859,15 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                     return (
                                                         <div
                                                             key={`${node.requirement_id}-${node.parent_id || 'root'}-${index}`}
-                                                            className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border"
+                                                            className="p-4 border rounded-lg transition-colors hover:bg-muted/50 border-border cursor-pointer"
                                                             style={{
                                                                 marginLeft: `${node.depth * 24}px`,
                                                             }}
+                                                            onClick={() =>
+                                                                openInManage(
+                                                                    node.requirement_id,
+                                                                )
+                                                            }
                                                         >
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex-1">
@@ -789,11 +883,21 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                         : 'Collapse node'
                                                                                 }
                                                                                 className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted"
-                                                                                onClick={() =>
+                                                                                onMouseDown={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    // Prevent parent click handler from firing
+                                                                                    e.stopPropagation();
+                                                                                }}
+                                                                                onClick={(
+                                                                                    e,
+                                                                                ) => {
+                                                                                    // Only toggle collapse/expand; do not navigate
+                                                                                    e.stopPropagation();
                                                                                     toggleNodeCollapse(
                                                                                         node.requirement_id,
-                                                                                    )
-                                                                                }
+                                                                                    );
+                                                                                }}
                                                                             >
                                                                                 {collapsedNodes.has(
                                                                                     node.requirement_id,
@@ -888,6 +992,17 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                                                 )
                                                                             }
                                                                             className="text-xs h-8 px-3"
+                                                                            // Prevent opening Manage when clicking this button
+                                                                            onMouseDown={(
+                                                                                e,
+                                                                            ) =>
+                                                                                e.stopPropagation()
+                                                                            }
+                                                                            onClickCapture={(
+                                                                                e,
+                                                                            ) =>
+                                                                                e.stopPropagation()
+                                                                            }
                                                                         >
                                                                             <Unlink className="h-4 w-4 mr-1" />{' '}
                                                                             Disconnect
@@ -916,25 +1031,55 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                             </TabsContent>
 
                             <TabsContent value="manage" className="flex-1">
-                                <Card className="h-full">
-                                    <CardHeader>
-                                        <CardTitle>Manage Relationships</CardTitle>
-                                        <CardDescription>
-                                            Create and modify requirement dependencies
-                                            using closure table
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <Plus className="h-12 w-12 mx-auto mb-4" />
-                                            <p>Relationship management coming soon</p>
-                                            <p className="text-sm">
-                                                This will allow creating parent-child
-                                                relationships with cycle prevention
-                                            </p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                {(() => {
+                                    const requirementId =
+                                        searchParams.get('requirementId') ||
+                                        currentRequirementId;
+                                    const documentId =
+                                        searchParams.get('documentId') || '';
+
+                                    if (!requirementId) {
+                                        return (
+                                            <Card className="h-full">
+                                                <CardHeader>
+                                                    <CardTitle>
+                                                        Manage Trace Links
+                                                    </CardTitle>
+                                                    <CardDescription>
+                                                        View and manage trace links for
+                                                        individual requirements. Select a
+                                                        requirement below to get started.
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="text-center py-8 text-muted-foreground">
+                                                        <Network className="h-12 w-12 mx-auto mb-4" />
+                                                        <p>
+                                                            Select a requirement from the
+                                                            Hierarchy or Tree View tabs to
+                                                            manage its trace links
+                                                        </p>
+                                                        <p className="text-sm mt-2">
+                                                            You can create parent-child
+                                                            relationships, manage test
+                                                            cases, and view requirement
+                                                            hierarchies
+                                                        </p>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    }
+
+                                    return (
+                                        <TraceLinksContent
+                                            requirementId={requirementId}
+                                            projectId={selectedProject}
+                                            orgId={orgId}
+                                            documentId={documentId}
+                                        />
+                                    );
+                                })()}
                             </TabsContent>
                         </>
                     )}

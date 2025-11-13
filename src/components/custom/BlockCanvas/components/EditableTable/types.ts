@@ -98,6 +98,7 @@ export interface EditableTableProps<T extends BaseRow> {
 export interface SaveContext {
     blockId?: string;
     documentId?: string;
+    skipRefresh?: boolean; // Skip refreshRequirements() call after save
 }
 
 export interface TableDataAdapter<T extends BaseRow> {
