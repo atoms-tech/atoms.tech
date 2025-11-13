@@ -13,6 +13,7 @@ import {
     mergeNaturalColumnsFromPlaceholders,
 } from '@/components/custom/BlockCanvas/utils/requirementsNativeColumns';
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
+import { useDocumentStore } from '@/store/document.store';
 import { Database } from '@/types/base/database.types';
 import { Block } from '@/types/base/documents.types';
 import { Profile } from '@/types/base/profiles.types';
@@ -107,6 +108,14 @@ export const useDocumentRealtime = ({
         isLoading: authLoading,
         error: authError,
     } = useAuthenticatedSupabase();
+
+    // Get document store for presence management
+    const {
+        updateUserPresence,
+        removeUser,
+        setPendingCellUpdate,
+        removePendingCellUpdate,
+    } = useDocumentStore();
 
     // Initial full fetch of blocks and their requirements
     const fetchBlocks = useCallback(
@@ -840,12 +849,141 @@ export const useDocumentRealtime = ({
             )
             .subscribe();
 
+        // Subscribe to presence (who's online and what they're editing)
+        const presenceChannel = client
+            .channel(`document:${documentId}:presence`)
+            .on('presence', { event: 'sync' }, () => {
+                const state = presenceChannel.presenceState();
+                // Update store with all active users
+                Object.entries(state).forEach(([key, presences]) => {
+                    const presence = presences[0] as unknown as {
+                        user_id: string;
+                        user_name: string;
+                        user_email?: string;
+                        online_at: string;
+                        editing_cell?: {
+                            blockId: string;
+                            rowId: string;
+                            columnId: string;
+                        } | null;
+                    };
+                    if (presence && presence.user_id !== _userProfile?.id) {
+                        updateUserPresence(presence.user_id, {
+                            userId: presence.user_id,
+                            userName: presence.user_name,
+                            userEmail: presence.user_email,
+                            onlineAt: presence.online_at,
+                            editingCell: presence.editing_cell,
+                        });
+                    }
+                });
+            })
+            .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                const presence = newPresences[0] as unknown as {
+                    user_id: string;
+                    user_name: string;
+                    user_email?: string;
+                    online_at: string;
+                };
+                if (presence && presence.user_id !== _userProfile?.id) {
+                    updateUserPresence(presence.user_id, {
+                        userId: presence.user_id,
+                        userName: presence.user_name,
+                        userEmail: presence.user_email,
+                        onlineAt: presence.online_at,
+                    });
+                }
+            })
+            .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                const presence = leftPresences[0] as unknown as { user_id: string };
+                if (presence) {
+                    removeUser(presence.user_id);
+                }
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED' && _userProfile) {
+                    // Track current user's presence
+                    await presenceChannel.track({
+                        user_id: _userProfile.id,
+                        user_name:
+                            _userProfile.display_name ||
+                            _userProfile.email ||
+                            'Anonymous',
+                        user_email: _userProfile.email,
+                        online_at: new Date().toISOString(),
+                        editing_cell: null,
+                    });
+                }
+            });
+
+        // Subscribe to broadcast for real-time cell updates (before DB save)
+        const broadcastChannel = client
+            .channel(`document:${documentId}:broadcasts`)
+            .on(
+                'broadcast',
+                { event: 'cell_update' },
+                (payload: {
+                    payload: {
+                        blockId: string;
+                        rowId: string;
+                        columnId: string;
+                        value: unknown;
+                        userId: string;
+                    };
+                }) => {
+                    const { blockId, rowId, columnId, value, userId } = payload.payload;
+                    // Don't update if it's from current user
+                    if (userId !== _userProfile?.id) {
+                        setPendingCellUpdate(blockId, rowId, columnId, value, userId);
+                        // Auto-remove after 3 seconds (by then DB should have it)
+                        setTimeout(() => {
+                            removePendingCellUpdate(blockId, rowId, columnId);
+                        }, 3000);
+                    }
+                },
+            )
+            .on(
+                'broadcast',
+                { event: 'cursor_move' },
+                (payload: {
+                    payload: {
+                        userId: string;
+                        blockId: string;
+                        rowId?: string;
+                        columnId?: string;
+                    };
+                }) => {
+                    const { userId, blockId, rowId, columnId } = payload.payload;
+                    if (userId !== _userProfile?.id) {
+                        updateUserPresence(userId, {
+                            userId,
+                            userName: 'Unknown', // This will be merged with existing data
+                            editingCell: rowId && columnId ? { blockId, rowId, columnId } : null,
+                        });
+                    }
+                },
+            )
+            .subscribe();
+
         return () => {
             blocksSubscription.unsubscribe();
             requirementsSubscription.unsubscribe();
             columnsSubscription.unsubscribe();
+            presenceChannel.unsubscribe();
+            broadcastChannel.unsubscribe();
         };
-    }, [documentId, fetchBlocks, supabase, authLoading, authError]);
+    }, [
+        documentId,
+        fetchBlocks,
+        supabase,
+        authLoading,
+        authError,
+        _userProfile,
+        updateUserPresence,
+        removeUser,
+        setPendingCellUpdate,
+        removePendingCellUpdate,
+    ]);
 
     const refetchDocument = useCallback(
         async (options?: { silent?: boolean }) => {

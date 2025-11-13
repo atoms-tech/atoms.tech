@@ -44,7 +44,9 @@ import {
 import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import { PropertyType } from '@/components/custom/BlockCanvas/types';
 import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
+import { useBroadcastCellUpdate } from '@/hooks/useBroadcastCellUpdate';
 import { useUser } from '@/lib/providers/user.provider';
+import { useDocumentStore } from '@/store/document.store';
 
 import { DeleteConfirmDialog, TableControls, TableLoadingSkeleton } from './components';
 import { AddColumnDialog } from './components/AddColumnDialog';
@@ -335,7 +337,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }
     }, [refreshAfterSave, data, saveRow]);
 
-    const useDebouncedSave = (delay = 5000) => {
+    // Debounce saves - reduced to 500ms for real-time collaboration
+    const useDebouncedSave = (delay = 500) => {
         const debounced = useRef(
             debounce(() => {
                 void handleSaveAllRef.current?.();
@@ -385,6 +388,51 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         console.error('Project ID is missing from the URL.');
     }
 
+    // Real-time broadcast for concurrent editing
+    const { broadcastCellUpdate, broadcastCursorMove } = useBroadcastCellUpdate({
+        documentId: String(documentId),
+        userId,
+        enabled: isEditMode,
+    });
+
+    // Subscribe to pending cell updates from other users for real-time display
+    const pendingCellUpdates = useDocumentStore((state) => state.pendingCellUpdates);
+
+    // Apply pending updates to local data for immediate display
+    useEffect(() => {
+        if (!blockId || pendingCellUpdates.size === 0) return;
+
+        setLocalData((prevData) => {
+            const updatedData = [...prevData];
+            let hasChanges = false;
+
+            pendingCellUpdates.forEach((update) => {
+                // Only apply updates for this block
+                if (update.blockId !== blockId) return;
+
+                const rowIndex = updatedData.findIndex((row) => row.id === update.rowId);
+                if (rowIndex === -1) return;
+
+                // Find the column accessor
+                const column = localColumns.find((col) => col.id === update.columnId);
+                if (!column) return;
+
+                // Apply the update
+                const currentValue = updatedData[rowIndex][column.accessor];
+                if (currentValue !== update.value) {
+                    updatedData[rowIndex] = {
+                        ...updatedData[rowIndex],
+                        [column.accessor]: update.value,
+                    } as T;
+                    hasChanges = true;
+                }
+            });
+
+            return hasChanges ? updatedData : prevData;
+        });
+    }, [pendingCellUpdates, blockId, localColumns]);
+
+    // Column actions for creating columns
     const { createPropertyAndColumn, createColumnFromProperty, appendPropertyOptions } =
         useColumnActions({
             orgId: String(orgId),
@@ -1468,6 +1516,16 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     old: originalValue,
                     new: newValueStr,
                 });
+
+                // Broadcast cell update immediately for real-time collaboration
+                if (blockId && column.id) {
+                    void broadcastCellUpdate({
+                        blockId,
+                        rowId,
+                        columnId: column.id,
+                        value: newValueStr,
+                    });
+                }
 
                 // record history before making change (if not undoing)
                 if (!isUndoingRef.current) {
