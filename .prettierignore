@@ -12,3 +12,7 @@ build
 .env.production.local
 .env.test.local
 .prettierrc
+bun.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
