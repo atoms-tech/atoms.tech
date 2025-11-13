@@ -2,8 +2,8 @@ import { AuthKitProvider } from '@workos-inc/authkit-nextjs/components';
 import type { Metadata } from 'next';
 import { CookiesProvider } from 'next-client-cookies/server';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { Toaster } from 'react-hot-toast';
 
+import Toaster from '@/components/ui/toaster';
 import { QueryProvider } from '@/lib/providers/query.provider';
 import { ThemeProvider } from '@/lib/providers/theme.provider';
 
@@ -53,7 +53,7 @@ export default function RootLayout({
                             >
                                 <QueryProvider>
                                     {children}
-                                    <Toaster position="bottom-right" />
+                                    <Toaster />
                                 </QueryProvider>
                             </ThemeProvider>
                         </CookiesProvider>
