@@ -41,41 +41,45 @@ export function RequirementLinksPopover({
     const [error, setError] = useState<string | null>(null);
     const params = useParams();
 
-    // Define fetchRelationships first (before useEffect that uses it)
-    const fetchRelationships = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const searchParams = new URLSearchParams({
-                requirementId,
-                type: 'check',
-            });
-            const response = await fetch(
-                `/api/requirements/relationships?${searchParams}`,
-            );
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch relationships');
-            }
-
-            const result = await response.json();
-            setData(result);
-        } catch (err) {
-            console.error('Error fetching relationships:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load relationships');
-        } finally {
-            setLoading(false);
-        }
-    }, [requirementId]);
-
     // Fetch relationships when dialog opens or requirementId changes
-    // Note: Don't include 'loading' in deps to avoid infinite loop
     useEffect(() => {
+        // Only fetch when dialog is open and we don't have data yet
         if (open && !data && !loading) {
+            const fetchRelationships = async () => {
+                setLoading(true);
+                setError(null);
+                try {
+                    const searchParams = new URLSearchParams({
+                        requirementId,
+                        type: 'check',
+                    });
+                    const response = await fetch(
+                        `/api/requirements/relationships?${searchParams}`,
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch relationships');
+                    }
+
+                    const result = await response.json();
+                    setData(result);
+                } catch (err) {
+                    console.error('Error fetching relationships:', err);
+                    setError(
+                        err instanceof Error
+                            ? err.message
+                            : 'Failed to load relationships',
+                    );
+                } finally {
+                    setLoading(false);
+                }
+            };
+
             fetchRelationships();
         }
+        // Don't include data/loading in deps - they're checked in condition
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, data, fetchRelationships]);
+    }, [open, requirementId]);
 
     // Reset data when dialog closes
     useEffect(() => {
