@@ -323,46 +323,6 @@ function DraggableTreeNode({
     );
 }
 
-// Root Zone Component (drop to create new parent)
-function RootZone({
-    activeId,
-    overId,
-}: {
-    activeId: string | null;
-    overId: string | null;
-}) {
-    const { setNodeRef, isOver } = useDroppable({
-        id: 'root-zone',
-        data: { isRootZone: true },
-    });
-
-    const isActive = isOver && overId === 'root-zone' && activeId;
-
-    return (
-        <div
-            ref={setNodeRef}
-            className={`
-                mb-3 p-4 border-2 border-dashed rounded-lg transition-all text-center
-                ${
-                    isActive
-                        ? 'border-primary bg-primary/10 shadow-lg'
-                        : 'border-muted-foreground/30 bg-muted/20'
-                }
-            `}
-        >
-            <div className="flex flex-col items-center justify-center gap-1 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    <span className="font-medium">Root Zone</span>
-                </div>
-                <span className="text-xs">
-                    Drop tree nodes here to remove their parent relationship
-                </span>
-            </div>
-        </div>
-    );
-}
-
 // Draggable Requirement Card (for right panel)
 interface DraggableRequirementCardProps {
     requirement: RequirementWithDocuments;
@@ -819,60 +779,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             const draggedId = active.id as string;
             const targetId = over.id as string;
 
-            // Check if dropped on root zone
-            const droppedOnRootZone = targetId === 'root-zone';
-
             // Check if dragged from right panel (available requirements)
             const fromRightPanel = active.data.current?.source === 'available';
-
-            // Root zone drop: Remove parent to promote to root (tree nodes only)
-            if (droppedOnRootZone) {
-                // Orphans from right panel: Show helpful message
-                if (fromRightPanel) {
-                    alert(
-                        'To create first relationship:\n\n' +
-                            '1. Drag an orphan requirement from right panel\n' +
-                            '2. Drop it onto another orphan requirement\n' +
-                            '3. The one you drop onto becomes the PARENT (root)\n' +
-                            '4. The one you dragged becomes the CHILD',
-                    );
-                    return;
-                }
-
-                // Tree nodes: Remove parent relationship (promote to root)
-                const draggedNode = visibleTree.find(
-                    (n) => n.requirement_id === draggedId,
-                );
-
-                if (!draggedNode) {
-                    // Not in tree at all (shouldn't happen for tree nodes)
-                    alert('ℹ️ This requirement is not in the hierarchy tree yet');
-                    return;
-                }
-
-                if (!draggedNode.parent_id) {
-                    // Already a root parent (no parent to remove)
-                    alert(
-                        'ℹ️ This node is already a root parent (no parent relationship)',
-                    );
-                    return;
-                }
-
-                // Has a parent - remove the relationship
-                try {
-                    await deleteRelationshipMutation.mutateAsync({
-                        ancestorId: draggedNode.parent_id,
-                        descendantId: draggedId,
-                    });
-                    alert('✅ Node promoted to root (parent removed)!');
-                } catch (error) {
-                    console.error('Failed to promote to root:', error);
-                    alert(
-                        `❌ Failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-                    );
-                }
-                return;
-            }
 
             // Cycle detection (only for nodes already in tree)
             if (!fromRightPanel && wouldCreateCycle(draggedId, targetId)) {
@@ -1418,12 +1326,6 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                                                     Hierarchy Tree
                                                 </h3>
                                                 <div className="flex-1 overflow-y-auto pr-2">
-                                                    {/* Root Zone - Drop area for creating parentless nodes */}
-                                                    <RootZone
-                                                        activeId={activeId}
-                                                        overId={overId}
-                                                    />
-
                                                     {treeLoading ? (
                                                         <div className="flex items-center justify-center py-12 text-muted-foreground">
                                                             Loading tree structure...
