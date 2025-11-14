@@ -826,11 +826,8 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
                     descendantId: draggedId,
                 });
 
-                if (fromRightPanel) {
-                    alert('✅ Successfully added requirement to tree!');
-                } else {
-                    alert('✅ Successfully moved node!');
-                }
+                // Success - tree will automatically update via React Query
+                // No need for alert as visual feedback is provided by tree update
             } catch (error) {
                 console.error('Failed to move/add node:', error);
                 const errorMessage =
