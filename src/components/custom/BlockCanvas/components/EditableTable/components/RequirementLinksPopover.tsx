@@ -69,11 +69,13 @@ export function RequirementLinksPopover({
     }, [requirementId]);
 
     // Fetch relationships when dialog opens or requirementId changes
+    // Note: Don't include 'loading' in deps to avoid infinite loop
     useEffect(() => {
         if (open && !data && !loading) {
             fetchRelationships();
         }
-    }, [open, data, loading, fetchRelationships]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, data, fetchRelationships]);
 
     // Reset data when dialog closes
     useEffect(() => {

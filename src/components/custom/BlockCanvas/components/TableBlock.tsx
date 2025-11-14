@@ -486,9 +486,11 @@ export const TableBlock: React.FC<BlockProps> = ({
 
     const handleDeleteRequirement = useCallback(
         async (dynamicReq: DynamicRequirement) => {
+            // Prevent duplicate checks if already checking
+            if (isCheckingRelationships) return;
+
             // Check for relationships first before opening the dialog
             setIsCheckingRelationships(true);
-            setRequirementToDelete(dynamicReq);
 
             try {
                 const params = new URLSearchParams({
@@ -502,21 +504,21 @@ export const TableBlock: React.FC<BlockProps> = ({
                 }
 
                 const checkResult = await response.json();
+
+                // Only set state after successful fetch
+                setRequirementToDelete(dynamicReq);
                 setRelationshipCheck(checkResult);
+                setDeleteDialogOpen(true);
             } catch (error) {
                 console.error('Error checking relationships:', error);
-                // On error, treat as if relationships exist (safer approach)
-                setRelationshipCheck({
-                    hasRelationships: true,
-                    relationshipCount: 0,
-                    relatedRequirements: [],
-                });
+                // On error, show error message instead of opening dialog
+                // Don't set inconsistent state
+                alert('Failed to check requirement relationships. Please try again.');
             } finally {
                 setIsCheckingRelationships(false);
-                setDeleteDialogOpen(true);
             }
         },
-        [],
+        [isCheckingRelationships],
     );
 
     const handleConfirmDelete = useCallback(async () => {

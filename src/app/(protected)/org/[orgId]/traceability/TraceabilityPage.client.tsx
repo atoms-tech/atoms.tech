@@ -625,10 +625,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
         const nodes = (requirementTree as unknown as TreeNode[]) || [];
 
         // Filter to show only nodes that are part of the hierarchy:
-        // - has_children: parent nodes with children
-        // - depth > 0: child nodes at any level
-        // This includes all nodes in the tree structure
-        const filteredNodes = nodes.filter((node) => node.has_children || node.depth > 0);
+        // Include all nodes with depth > 0 OR nodes that appear in the tree
+        // This ensures we don't exclude childless root nodes
+        const filteredNodes = nodes.filter((node) => node.depth > 0 || node.has_children);
 
         // Remove duplicate nodes: keep only unique requirement_id
         // This prevents showing the same node multiple times
@@ -785,8 +784,9 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             if (draggedId === targetId) return true;
 
             // Check if target is a descendant of dragged node
+            // Use sortedTree instead of visibleTree to catch cycles in collapsed nodes
             const checkDescendants = (nodeId: string): boolean => {
-                const children = visibleTree.filter((n) => n.parent_id === nodeId);
+                const children = sortedTree.filter((n) => n.parent_id === nodeId);
                 for (const child of children) {
                     if (child.requirement_id === targetId) return true;
                     if (checkDescendants(child.requirement_id)) return true;
@@ -796,7 +796,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
 
             return checkDescendants(draggedId);
         },
-        [visibleTree],
+        [sortedTree],
     );
 
     // Drag handlers
@@ -945,6 +945,7 @@ export default function TraceabilityPageClient({ orgId }: TraceabilityPageClient
             }
         },
         [
+            requirementTree,
             visibleTree,
             requirements,
             wouldCreateCycle,
