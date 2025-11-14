@@ -9,6 +9,11 @@ export const middleware = authkitMiddleware({
     debug: false,
     // Enable eager auth to ensure session is available on all routes
     eagerAuth: true,
+    // Redirect URI for OAuth callbacks
+    redirectUri:
+        process.env.NEXT_PUBLIC_WORKOS_REDIRECT_URI ||
+        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
+    // Note: WORKOS_COOKIE_PASSWORD is read automatically from environment variables
 });
 
 export const config = {

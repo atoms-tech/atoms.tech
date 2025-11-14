@@ -1,4 +1,4 @@
-// app/polarion/page.tsx
+// Change the original home page to be hoested at atoms.tech/x
 import { Contact } from '@/components/custom/LandingPage/contact';
 import { CTA } from '@/components/custom/LandingPage/cta';
 import { FeatureDemo } from '@/components/custom/LandingPage/feature-demo';
@@ -12,7 +12,7 @@ import { ProblemSnapshot } from '@/components/custom/LandingPage/problem-snapsho
 import { TimeSavingEdge } from '@/components/custom/LandingPage/time-saving-edge';
 import { ProfilerWrapper } from '@/components/custom/ProfilerWrapper';
 
-export default async function PolarionPage() {
+export default async function XPage() {
     return (
         <ProfilerWrapper id="LandingPage">
             <div className="min-h-screen bg-[#0f0f0f] text-[#B5B5B5] relative">
