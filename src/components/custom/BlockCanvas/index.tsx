@@ -579,16 +579,25 @@ export function BlockCanvas({
             <AddTableDialog
                 isOpen={isAddTableOpen}
                 onClose={() => setIsAddTableOpen(false)}
-                onCreate={async (layout, name, imported) => {
-                    if (layout === 'import' && imported) {
-                        await createTableWithImport(imported, name);
-                    } else if (layout === 'blank' || layout === 'requirements_default') {
-                        await createTableWithLayout(
-                            layout as 'blank' | 'requirements_default',
-                            name,
-                        );
-                    }
-                }}
+                onCreate={
+                    (async (
+                        layout: 'blank' | 'requirements_default' | 'import',
+                        name: string,
+                        imported?: { headers: string[]; rows: Array<Array<unknown>> },
+                    ) => {
+                        if (layout === 'import' && imported) {
+                            await createTableWithImport(imported, name);
+                        } else if (
+                            layout === 'blank' ||
+                            layout === 'requirements_default'
+                        ) {
+                            await createTableWithLayout(
+                                layout as 'blank' | 'requirements_default',
+                                name,
+                            );
+                        }
+                    }) as (layout: unknown, name: string) => Promise<void>
+                }
             />
             <DeleteConfirmDialog
                 open={isDeleteBlockOpen}
