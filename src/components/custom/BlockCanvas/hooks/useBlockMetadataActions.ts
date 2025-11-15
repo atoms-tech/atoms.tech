@@ -9,6 +9,7 @@ export interface ColumnMetadata {
     columnId: string;
     position: number;
     width?: number;
+    name?: string;
 }
 
 export interface RequirementMetadata {
@@ -36,19 +37,14 @@ export const useBlockMetadataActions = () => {
     const queryClient = useQueryClient();
     const { getClientOrThrow } = useAuthenticatedSupabase();
 
-    // Replace block level metadata entry. Grab current version and merge passed changes.
     const updateBlockMetadata = useCallback(
-        async (
-            blockId: string,
-            partialMetadata: Partial<BlockTableMetadata>, // you can update only `columns`, or only `requirements`, or both
-        ) => {
+        async (blockId: string, partialMetadata: Partial<BlockTableMetadata>) => {
             if (!blockId) {
                 throw new Error('[updateBlockMetadata] blockId is required.');
             }
 
             try {
                 const supabase = getClientOrThrow();
-                //console.debug('[updateBlockMetadata] Updating metadata for blockId:', blockId);
 
                 // Fetch existing content to preserve other fields
                 const { data: blockData, error: fetchError } = await supabase
@@ -98,21 +94,32 @@ export const useBlockMetadataActions = () => {
                     tableKind: (safeContent as Partial<BlockTableMetadata>).tableKind,
                 };
 
+                // ensures renamed column names are not overwritten by stale data
                 const updatedContent: BlockTableMetadata = {
                     ...currentContent,
-                    ...partialMetadata,
+                    columns:
+                        partialMetadata.columns !== undefined
+                            ? partialMetadata.columns
+                            : currentContent.columns,
+                    requirements:
+                        partialMetadata.requirements !== undefined
+                            ? partialMetadata.requirements
+                            : currentContent.requirements,
+                    rows:
+                        partialMetadata.rows !== undefined
+                            ? partialMetadata.rows
+                            : currentContent.rows,
                     // Ensure tableKind is never lost even if not present in partialMetadata
                     tableKind:
                         (partialMetadata as Partial<BlockTableMetadata>).tableKind ??
                         currentContent.tableKind,
                 };
 
-                //console.debug('[updateBlockMetadata] Content to be sent:', JSON.stringify(updatedContent, null, 2));
-
-                const { error: updateError } = await supabase
+                const { data: updateResult, error: updateError } = await supabase
                     .from('blocks')
                     .update({ content: updatedContent as unknown as Json })
-                    .eq('id', blockId);
+                    .eq('id', blockId)
+                    .select('content');
 
                 if (updateError) {
                     console.error(
@@ -122,10 +129,38 @@ export const useBlockMetadataActions = () => {
                     throw updateError;
                 }
 
-                console.debug(
-                    '[updateBlockMetadata] Successfully updated block metadata for block: ',
-                    blockId,
-                );
+                const savedContent = updateResult?.[0]?.content as unknown as {
+                    columns?: { columnId?: string; name?: string }[];
+                };
+
+                const savedColumns = savedContent?.columns || [];
+
+                // Verify that if we updated columns, the saved columns match what we sent
+                if (partialMetadata.columns !== undefined) {
+                    const sentColumnNames = partialMetadata.columns.map((c) => ({
+                        columnId: c.columnId,
+                        name: c.name,
+                    }));
+                    const savedColumnNames = savedColumns.map(
+                        (c: { columnId?: string; name?: string }) => ({
+                            columnId: c.columnId,
+                            name: c.name,
+                        }),
+                    );
+                    const namesMatch =
+                        JSON.stringify(sentColumnNames) ===
+                        JSON.stringify(savedColumnNames);
+
+                    if (!namesMatch) {
+                        console.error(
+                            '[updateBlockMetadata] CRITICAL: Saved columns do not match sent columns!',
+                            {
+                                sent: sentColumnNames,
+                                saved: savedColumnNames,
+                            },
+                        );
+                    }
+                }
 
                 await queryClient.invalidateQueries({
                     queryKey: queryKeys.blocks.detail(blockId),

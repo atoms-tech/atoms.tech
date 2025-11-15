@@ -259,7 +259,6 @@ export const useDocumentRealtime = ({
                             columns: blockColumns,
                         });
 
-                        // If metadata references virtual/native placeholders, merge synthesized natural columns
                         try {
                             const contentAny = block.content as unknown as {
                                 tableKind?: string;
@@ -269,6 +268,7 @@ export const useDocumentRealtime = ({
                             const metadataColumns = getMetadataColumnsFromBlock(
                                 block as unknown as Database['public']['Tables']['blocks']['Row'],
                             );
+
                             const hasVirtualPlaceholders =
                                 hasVirtualNativePlaceholders(metadataColumns);
 
@@ -292,8 +292,11 @@ export const useDocumentRealtime = ({
                                     });
                                 }
                             }
-                        } catch {
-                            // no-op on fallback creation errors
+                        } catch (e) {
+                            console.error(
+                                `[useDocumentRealtime] Error processing metadata for blockId=${block.id}:`,
+                                e,
+                            );
                         }
 
                         return {
