@@ -1,8 +1,6 @@
 import { TableDataAdapter } from '@/components/custom/BlockCanvas/components/EditableTable/types';
 import { DynamicRequirement } from '@/components/custom/BlockCanvas/hooks/useRequirementActions';
 
-/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
-
 export function createRequirementsAdapter(opts: {
     saveRequirement: (
         item: DynamicRequirement,

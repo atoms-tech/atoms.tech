@@ -5,6 +5,10 @@ import { MoreVertical, Plus } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import {
+    ColumnMetadata,
+    useBlockMetadataActions,
+} from '@/components/custom/BlockCanvas/hooks/useBlockMetadataActions';
 import { useColumnActions } from '@/components/custom/BlockCanvas/hooks/useColumnActions';
 import {
     DynamicRequirement,
@@ -24,6 +28,7 @@ import {
 } from '@/components/custom/BlockCanvas/utils/exportCsv';
 import { saveExcel } from '@/components/custom/BlockCanvas/utils/exportExcel';
 import { saveReqIF } from '@/components/custom/BlockCanvas/utils/exportReqIF';
+import { ensureNaturalColumns } from '@/components/custom/BlockCanvas/utils/naturalFields';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -32,6 +37,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useOrganizationProperties } from '@/hooks/queries/useProperties';
 import { useOrganization } from '@/lib/providers/organization.provider';
 import { cn } from '@/lib/utils';
 import { useDocumentStore } from '@/store/document.store';
@@ -228,21 +234,27 @@ export const TableBlock: React.FC<BlockProps> = ({
     const params = useParams();
     const { currentOrganization } = useOrganization();
 
+    // Fetch organization properties for merging virtual columns
+    const { data: orgProperties } = useOrganizationProperties(
+        currentOrganization?.id || '',
+        !!currentOrganization?.id,
+    );
+
     const {
         createPropertyAndColumn,
         createColumnFromProperty,
         deleteColumn,
-        renameProperty = undefined, // provide default to handle if not implemented yet
+        renameProperty: _renameProperty = undefined,
     } = useColumnActions({
         orgId: currentOrganization?.id || '',
         projectId: params.projectId as string,
         documentId: params.documentId as string,
     });
 
+    const { updateBlockMetadata } = useBlockMetadataActions();
+
     const projectId = params?.projectId as string;
 
-    // IMPORTANT: Initialize localRequirements once from block.requirements
-    // but prevent resetting on every rerender:
     const [localRequirements, setLocalRequirements] = React.useState<Requirement[]>(
         () => block.requirements || [],
     );
@@ -290,7 +302,6 @@ export const TableBlock: React.FC<BlockProps> = ({
 
         // if this is a new table with no columns yet, don't carry over old state
         if (!block.columns || block.columns.length === 0) {
-            console.debug('[TableBlock] New table detected, clearing column state');
             setOptimisticColumns(null);
             setDeletedColumnIds(new Set());
         }
@@ -309,10 +320,6 @@ export const TableBlock: React.FC<BlockProps> = ({
             setOptimisticColumns((prev) => {
                 // if no previous state or block id changed, use server columns directly
                 if (!prev || prev.length === 0) {
-                    console.debug(
-                        '[TableBlock] Using server columns directly:',
-                        serverCols.length,
-                    );
                     // clear deleted columns tracker when starting fresh
                     setDeletedColumnIds(new Set());
                     return serverCols;
@@ -326,9 +333,6 @@ export const TableBlock: React.FC<BlockProps> = ({
 
                 if (!hasOverlap && serverCols.length > 0) {
                     // completely different set of columns - use server columns
-                    console.debug(
-                        '[TableBlock] New table columns detected, replacing old state',
-                    );
                     // clear deleted columns tracker for new table
                     setDeletedColumnIds(new Set());
                     return serverCols;
@@ -370,9 +374,30 @@ export const TableBlock: React.FC<BlockProps> = ({
     }, [block.columns, block.id, deletedColumnIds]); // add deletedColumnIds as dependency
 
     // Effective columns used by UI (optimistic first, then server)
+    // For requirement tables, merge virtual native columns with real columns
     const effectiveColumnsRaw = useMemo(() => {
-        return optimisticColumns ?? block.columns ?? [];
-    }, [optimisticColumns, block.columns]);
+        const baseColumns = optimisticColumns ?? block.columns ?? [];
+
+        // Check if this is a requirement table
+        const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
+        const isRequirementsTable =
+            block.type === 'table' &&
+            (tableKind === 'requirements' || tableKind === 'requirements_default');
+
+        // For requirement tables, ensure native columns are included
+        if (isRequirementsTable && block.id) {
+            return ensureNaturalColumns(baseColumns, block.id, orgProperties || null);
+        }
+
+        return baseColumns;
+    }, [
+        optimisticColumns,
+        block.columns,
+        block.type,
+        block.content,
+        block.id,
+        orgProperties,
+    ]);
 
     // Read tableKind once to decide pipeline
     const tableKind = (block.content as unknown as { tableKind?: string })?.tableKind;
@@ -421,10 +446,6 @@ export const TableBlock: React.FC<BlockProps> = ({
 
             if (isValid) {
                 const parsed = content as unknown as BlockTableMetadata;
-                console.debug(
-                    `[TableBlock] Parsed tableContentMetadata for ${block.id}: `,
-                    parsed,
-                );
                 return parsed;
             } else {
                 console.warn(
@@ -560,10 +581,13 @@ export const TableBlock: React.FC<BlockProps> = ({
                 // Look for matching column metadata by ID
                 const metadata = metadataColumns.find((meta) => meta.columnId === col.id);
 
+                const headerName =
+                    (metadata as unknown as ColumnMetadata)?.name || propertyKey;
+
                 const columnDef = {
                     id: col.id,
-                    header: propertyKey,
-                    accessor: propertyKey as keyof DynamicRequirement,
+                    header: headerName, // Use metadata name if available, otherwise property name
+                    accessor: propertyKey as keyof DynamicRequirement, // Accessor stays as property key
                     type: propertyTypeToColumnType(_property.property_type),
                     width: metadata?.width ?? col.width ?? 150,
                     position: metadata?.position ?? col.position ?? index,
@@ -571,13 +595,7 @@ export const TableBlock: React.FC<BlockProps> = ({
                     isSortable: true,
                     options: _property.options?.values,
                 };
-                // console.debug('[TableBlock] column mapped', {
-                //     id: col.id,
-                //     header: propertyKey,
-                //     property_type: _property.property_type,
-                //     mappedType: columnDef.type,
-                //     options: _property.options?.values,
-                // });
+
                 return columnDef;
             })
             .sort((a, b) => a.position - b.position);
@@ -774,73 +792,56 @@ export const TableBlock: React.FC<BlockProps> = ({
             }
 
             try {
-                // find the column to rename
-                const columnToRename = effectiveColumnsRaw.find(
-                    (col) => col.id === columnId,
+                // CRITICAL: Find the column in block's content.columns array by columnId
+                // This is the source of truth for column display names
+                const currentColumns = (tableContentMetadata?.columns ??
+                    []) as ColumnMetadata[];
+
+                const columnIndex = currentColumns.findIndex(
+                    (col) => col.columnId === columnId,
                 );
-                if (!columnToRename || !columnToRename.property) {
-                    const error = new Error(
-                        `Column or property not found for rename: columnId=${columnId}`,
+
+                let columnsToSave: ColumnMetadata[];
+
+                if (columnIndex === -1) {
+                    // Column not found in metadata - create it if it doesn't exist
+                    const columnFromProps = effectiveColumnsRaw.find(
+                        (col) => col.id === columnId,
                     );
-                    console.error('[TableBlock] Failed to rename column:', error);
-                    throw error;
-                }
+                    const position = columnFromProps?.position ?? currentColumns.length;
 
-                // check if renameProperty function exists before calling
-                if (typeof renameProperty === 'function') {
-                    // update the property name in the database
-                    try {
-                        await renameProperty(columnToRename.property.id, newName);
-                    } catch (renameError) {
-                        console.error('[TableBlock] renameProperty failed:', {
-                            columnId,
-                            propertyId: columnToRename.property.id,
-                            newName,
-                            error: renameError,
-                            errorMessage:
-                                renameError instanceof Error
-                                    ? renameError.message
-                                    : String(renameError),
-                        });
-                        throw renameError;
-                    }
+                    const newColumnMetadata: ColumnMetadata = {
+                        columnId,
+                        position,
+                        name: newName,
+                    };
+
+                    columnsToSave = [...currentColumns, newColumnMetadata];
                 } else {
-                    const error = new Error('renameProperty function not available');
-                    console.warn('[TableBlock]', error.message);
-                    throw error;
+                    // Column found - update only the name field
+                    const updatedColumns = [...currentColumns];
+                    updatedColumns[columnIndex] = {
+                        ...updatedColumns[columnIndex],
+                        name: newName,
+                    };
+
+                    columnsToSave = updatedColumns;
                 }
 
-                // optimistically update the local state for immediate ui feedback
-                setOptimisticColumns((prev) => {
-                    const base = prev ?? effectiveColumnsRaw;
-                    return base.map((col) => {
-                        if (col.id === columnId && col.property) {
-                            return {
-                                ...col,
-                                property: {
-                                    ...col.property,
-                                    name: newName,
-                                },
-                            };
-                        }
-                        return col;
-                    });
-                });
-
-                // refresh to get updated data from database
-                await refreshRequirements();
-
-                console.debug('[TableBlock] Column renamed successfully:', {
-                    columnId,
-                    newName,
-                    propertyId: columnToRename.property.id,
+                await updateBlockMetadata(block.id, {
+                    columns: columnsToSave,
                 });
             } catch (err) {
-                console.error('Failed to rename column:', err);
-                // show error to user if needed
+                console.error('[TableBlock] Failed to rename column:', err);
+                throw err;
             }
         },
-        [effectiveColumnsRaw, refreshRequirements, renameProperty],
+        [
+            block.id,
+            tableContentMetadata?.columns,
+            effectiveColumnsRaw,
+            updateBlockMetadata,
+        ],
     );
 
     const handleBlockDelete = useCallback(() => {

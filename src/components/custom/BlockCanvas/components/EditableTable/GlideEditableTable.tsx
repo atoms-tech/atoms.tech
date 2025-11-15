@@ -1,6 +1,5 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-unused-vars, prefer-const */
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
 import '@/styles/globals.css';
@@ -60,14 +59,7 @@ import {
     PropertyConfig,
 } from './types';
 
-const SYSTEM_COLUMNS = [
-    'external_id',
-    'name',
-    'description',
-    'status',
-    'priority',
-    'assignee',
-];
+const SYSTEM_COLUMNS = ['external_id', 'name', 'description', 'status', 'priority'];
 
 const isSystemColumn = (columnHeader: string): boolean => {
     return SYSTEM_COLUMNS.includes(columnHeader.toLowerCase());
@@ -347,7 +339,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         const debounced = useRef(
             debounce(() => {
                 void handleSaveAllRef.current?.();
-                void saveTableMetadataRef.current?.();
+                // Cell edits: do NOT include columns (only save row metadata)
+                void saveTableMetadataRef.current?.({ includeColumns: false });
             }, delay),
         );
 
@@ -706,96 +699,149 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         console.debug('[GlideEditableTable] Sorted Data:', sortedData);
     }, [sortedData]);
 
-    const saveTableMetadata = useCallback(async () => {
-        if (!blockId) return;
+    const saveTableMetadata = useCallback(
+        async (options?: { includeColumns?: boolean }) => {
+            if (!blockId) return;
 
-        const latestLocalColumns = localColumnsRef.current;
-        const latestSortedData = sortedDataRef.current;
+            const includeColumns = options?.includeColumns ?? false;
 
-        const columnMetadata = latestLocalColumns.map((col, idx) => ({
-            columnId: col.id,
-            position: col.position !== undefined ? col.position : idx,
-            name: col.header,
-            ...(col.width !== undefined ? { width: col.width } : {}),
-        }));
+            const latestLocalColumns = localColumnsRef.current;
+            const latestSortedData = sortedDataRef.current;
 
-        const rowMetadataRows = latestSortedData.map((row, idx) => ({
-            rowId: row.id,
-            position: idx,
-            ...(row.height !== undefined ? { height: row.height } : {}),
-        }));
+            const columnMetadata = includeColumns
+                ? latestLocalColumns.map((col, idx) => ({
+                      columnId: col.id,
+                      position: col.position !== undefined ? col.position : idx,
+                      name: col.header,
+                      ...(col.width !== undefined ? { width: col.width } : {}),
+                  }))
+                : undefined;
 
-        const rowMetadataRequirements = latestSortedData.map((row, idx) => ({
-            requirementId: row.id,
-            position: idx,
-            ...(row.height !== undefined ? { height: row.height } : {}),
-        }));
-
-        const originalColumnState = columns
-            .map((col) => ({
-                id: col.id,
-                position: col.position ?? 0,
-                width: col.width ?? undefined,
-                name: col.header,
-            }))
-            .sort((a, b) => a.position - b.position);
-
-        const currentColumnState = columnMetadata
-            .map(({ columnId, position, width, name }) => ({
-                id: columnId,
-                position,
-                width,
-                name,
-            }))
-            .sort((a, b) => a.position - b.position);
-
-        const isColumnMetadataChanged =
-            originalColumnState.length !== currentColumnState.length ||
-            originalColumnState.some((col) => {
-                const curr = currentColumnState.find((c) => c.id === col.id);
-                if (!curr) return true;
-                return (
-                    col.position !== curr.position ||
-                    (col.width ?? null) !== (curr.width ?? null) ||
-                    col.name !== curr.name
+            if (!includeColumns && columnMetadata !== undefined) {
+                console.error(
+                    '[saveTableMetadata] BUG: columnMetadata should be undefined when includeColumns is false!',
+                    {
+                        includeColumns,
+                        columnMetadata,
+                    },
                 );
-            });
+            }
 
-        const hasRowChanges = true;
+            const rowMetadataRows = latestSortedData.map((row, idx) => ({
+                rowId: row.id,
+                position: idx,
+                ...(row.height !== undefined ? { height: row.height } : {}),
+            }));
 
-        if (!isColumnMetadataChanged && !hasRowChanges) {
-            console.debug(
-                '[GlideEditableTable] No metadata changes detected. Skipping save.',
-            );
-            return;
-        }
+            const rowMetadataRequirements = latestSortedData.map((row, idx) => ({
+                requirementId: row.id,
+                position: idx,
+                ...(row.height !== undefined ? { height: row.height } : {}),
+            }));
 
-        try {
-            const isGeneric =
-                rowMetadataKey === 'rows' ||
-                (tableMetadata as unknown as { tableKind?: string })?.tableKind ===
-                    'genericTable';
+            // Only check for column changes if we're including columns
+            let isColumnMetadataChanged = false;
+            if (includeColumns && columnMetadata) {
+                // Compare against metadata, not props, to detect header changes correctly
+                // Props might have old headers, but metadata should have the latest
+                const originalColumnState = (tableMetadata?.columns || [])
+                    .map((col) => ({
+                        id: col.columnId,
+                        position: col.position ?? 0,
+                        width: col.width ?? undefined,
+                        name: (col as any).name, // name property exists but may not be in type yet
+                    }))
+                    .sort((a, b) => a.position - b.position);
 
-            const metadataToSave: Partial<BlockTableMetadata> = {
-                columns: columnMetadata,
-                ...(isGeneric
-                    ? { rows: rowMetadataRows }
-                    : { requirements: rowMetadataRequirements }),
-                tableKind: isGeneric ? 'genericTable' : 'requirements',
-            };
+                // If no metadata exists, fall back to props
+                if (originalColumnState.length === 0) {
+                    originalColumnState.push(
+                        ...columns
+                            .map((col) => ({
+                                id: col.id,
+                                position: col.position ?? 0,
+                                width: col.width ?? undefined,
+                                name: col.header,
+                            }))
+                            .sort((a, b) => a.position - b.position),
+                    );
+                }
 
-            await updateBlockMetadata(blockId, metadataToSave);
-            console.debug(
-                '[GlideEditableTable] Saved combined row + column metadata:',
-                metadataToSave,
-            );
-        } catch (err) {
-            console.error(
-                '[GlideEditableTable] Failed to save combined table metadata:',
-                err,
-            );
-        }
-    }, [blockId, columns, updateBlockMetadata, rowMetadataKey]);
+                const currentColumnState = columnMetadata
+                    .map(({ columnId, position, width, name }) => ({
+                        id: columnId,
+                        position,
+                        width,
+                        name,
+                    }))
+                    .sort((a, b) => a.position - b.position);
+
+                isColumnMetadataChanged =
+                    originalColumnState.length !== currentColumnState.length ||
+                    originalColumnState.some((col) => {
+                        const curr = currentColumnState.find((c) => c.id === col.id);
+                        if (!curr) return true;
+                        return (
+                            col.position !== curr.position ||
+                            (col.width ?? null) !== (curr.width ?? null) ||
+                            col.name !== curr.name
+                        );
+                    });
+            }
+
+            const hasRowChanges = true;
+
+            if (!includeColumns && !hasRowChanges) {
+                console.debug(
+                    '[GlideEditableTable] No metadata changes detected. Skipping save.',
+                );
+                return;
+            }
+
+            if (includeColumns && !isColumnMetadataChanged && !hasRowChanges) {
+                console.debug(
+                    '[GlideEditableTable] No metadata changes detected. Skipping save.',
+                );
+                return;
+            }
+
+            try {
+                const isGeneric =
+                    rowMetadataKey === 'rows' ||
+                    (tableMetadata as unknown as { tableKind?: string })?.tableKind ===
+                        'genericTable';
+
+                const metadataToSave: Partial<BlockTableMetadata> = {
+                    ...(includeColumns && columnMetadata
+                        ? { columns: columnMetadata }
+                        : {}),
+                    ...(isGeneric
+                        ? { rows: rowMetadataRows }
+                        : { requirements: rowMetadataRequirements }),
+                    tableKind: isGeneric ? 'genericTable' : 'requirements',
+                };
+
+                if (!includeColumns && 'columns' in metadataToSave) {
+                    console.error(
+                        '[saveTableMetadata] CRITICAL BUG: columns field present when includeColumns is false!',
+                        {
+                            includeColumns,
+                            metadataToSave,
+                            hasColumnsKey: 'columns' in metadataToSave,
+                            columnsValue: metadataToSave.columns,
+                        },
+                    );
+                    // Remove columns to prevent overwrite
+                    delete metadataToSave.columns;
+                }
+
+                await updateBlockMetadata(blockId, metadataToSave);
+            } catch (err) {
+                console.error('[GlideEditableTable] Failed to save table metadata:', err);
+            }
+        },
+        [blockId, columns, updateBlockMetadata, rowMetadataKey, tableMetadata],
+    );
 
     const handleSaveAllRef = useRef(handleSaveAll);
     useEffect(() => {
@@ -827,12 +873,31 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         }
     }, [columns, data]);
 
+    // Create a stable reference for column IDs and positions to detect changes
+    const columnSignature = useMemo(() => {
+        return columns
+            .map((c) => `${c.id}:${c.position ?? 0}`)
+            .sort()
+            .join(',');
+    }, [columns]);
+
     useEffect(() => {
+        // Use a ref to get the current localColumns without including it in dependencies
+        const currentLocalColumns = localColumnsRef.current;
         if (localColumns.length === 0 && columns.length > 0) {
-            const normalized = columns.map((col) => ({
-                ...col,
-                title: col.header,
-            }));
+            const normalized = columns.map((col) => {
+                // Check if metadata has a renamed header for this column
+                const metadataCol = tableMetadata?.columns?.find(
+                    (mc) => mc.columnId === col.id,
+                );
+                const headerToUse = ((metadataCol as any)?.name || col.header) as string;
+
+                return {
+                    ...col,
+                    header: headerToUse, // Use metadata header if available
+                    title: headerToUse,
+                };
+            });
             const sorted = [...normalized].sort(
                 (a, b) => (a.position ?? 0) - (b.position ?? 0),
             );
@@ -840,7 +905,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             return;
         }
 
-        const localIds = new Set(localColumns.map((c) => c.id));
+        const localIds = new Set(currentLocalColumns.map((c) => c.id));
         const incomingIds = new Set(columns.map((c) => c.id));
 
         const hasNewColumns = [...incomingIds].some((id) => !localIds.has(id));
@@ -849,17 +914,114 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         if (hasNewColumns || hasRemovedColumns) {
             console.log(
                 '[GlideEditableTable] Structural change detected, syncing columns',
+                {
+                    hasNewColumns,
+                    hasRemovedColumns,
+                    localCount: currentLocalColumns.length,
+                    incomingCount: columns.length,
+                },
             );
-            const normalized = columns.map((col) => ({
-                ...col,
-                title: col.header,
-            }));
+
+            // Map local columns by ID for comparison
+            const localColumnsMap = new Map(localColumns.map((c) => [c.id, c]));
+            const incomingColumnsMap = new Map(columns.map((c) => [c.id, c]));
+
+            // Check for renamed columns
+            const renamedColumns: Array<{
+                id: string;
+                oldHeader: string;
+                newHeader: string;
+                oldAccessor: any;
+                newAccessor: any;
+            }> = [];
+
+            localColumns.forEach((localCol) => {
+                const incomingCol = incomingColumnsMap.get(localCol.id);
+                if (incomingCol) {
+                    if (
+                        localCol.header !== incomingCol.header ||
+                        localCol.accessor !== incomingCol.accessor
+                    ) {
+                        renamedColumns.push({
+                            id: localCol.id,
+                            oldHeader: localCol.header,
+                            newHeader: incomingCol.header,
+                            oldAccessor: localCol.accessor,
+                            newAccessor: incomingCol.accessor,
+                        });
+                    }
+                }
+            });
+
+            const normalized = columns.map((col) => {
+                const localCol = localColumns.find((lc) => lc.id === col.id);
+                const metadataCol = tableMetadata?.columns?.find(
+                    (mc) => mc.columnId === col.id,
+                );
+                const metadataName = (metadataCol as any)?.name;
+
+                if (metadataName && metadataName !== col.header) {
+                    return {
+                        ...col,
+                        header: metadataName,
+                        title: metadataName,
+                    };
+                }
+
+                if (
+                    localCol &&
+                    localCol.accessor === col.accessor &&
+                    localCol.header !== col.header
+                ) {
+                    return {
+                        ...col,
+                        header: localCol.header, // Preserve renamed header
+                        title: localCol.header,
+                    };
+                }
+
+                return {
+                    ...col,
+                    title: col.header,
+                };
+            });
             const sorted = [...normalized].sort(
                 (a, b) => (a.position ?? 0) - (b.position ?? 0),
             );
+
+            // Check if any renamed column will be reset
+            renamedColumns.forEach((renamed) => {
+                const newCol = sorted.find((c) => c.id === renamed.id);
+                if (newCol) {
+                    if (newCol.accessor !== renamed.oldAccessor) {
+                        console.error(
+                            '[column_sync_debug] CRITICAL: Renamed column accessor was changed!',
+                            {
+                                columnId: renamed.id,
+                                expectedAccessor: String(renamed.oldAccessor),
+                                actualAccessor: String(newCol.accessor),
+                            },
+                        );
+                    } else if (
+                        newCol.header !== renamed.newHeader &&
+                        newCol.header === renamed.oldHeader
+                    ) {
+                        console.warn(
+                            '[column_sync_debug] Renamed header was reset to old value:',
+                            {
+                                columnId: renamed.id,
+                                expectedHeader: renamed.newHeader,
+                                actualHeader: newCol.header,
+                            },
+                        );
+                    }
+                }
+            });
+
             setLocalColumns(sorted as typeof localColumns);
         }
-    }, [columns.length]);
+        // }, [columnSignature, columns]);
+    }, [columns.length, tableMetadata]);
 
     const isReorderingRef = useRef(false);
 
@@ -1508,7 +1670,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Flush any pending edits so they are persisted before we add a new row
             // Do not await metadata save to avoid blocking UI
-            saveTableMetadataRef.current?.();
+            // Row add: do NOT include columns (only save row metadata)
+            saveTableMetadataRef.current?.({ includeColumns: false });
             // Persist buffered cell edits synchronously
             await handleSaveAllRef.current?.();
 
@@ -1539,8 +1702,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Persist the new row; avoid immediate full refresh to reduce flicker
             await saveRow(newRow, true);
-            // Opportunistically update metadata
-            saveTableMetadataRef.current?.();
+            // Opportunistically update metadata (row add: do NOT include columns)
+            saveTableMetadataRef.current?.({ includeColumns: false });
         } catch (e) {
             console.error('[GlideEditableTable] Failed to append row:', e);
         }
@@ -1579,7 +1742,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                 return reindexed;
             });
-            saveTableMetadataRef.current?.();
+            // Row reorder: do NOT include columns (only save row position metadata)
+            saveTableMetadataRef.current?.({ includeColumns: false });
             // allow some time for metadata save/realtime to propagate, then re-enable sync
             setTimeout(() => {
                 isReorderingRef.current = false;
@@ -1669,7 +1833,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             sortedDataRef.current = sortedRows;
             setLocalData(sortedRows);
             try {
-                saveTableMetadataRef.current?.();
+                // Row sort: do NOT include columns (only save row position metadata)
+                saveTableMetadataRef.current?.({ includeColumns: false });
             } catch (e) {
                 console.error('[GlideEditableTable] Failed to save sort metadata', e);
             }
@@ -1741,7 +1906,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             });
 
             // Ensure the calculated height is at least the base height
-            // maintains consistency with single-line cells
             return Math.max(maxRequiredHeight, baseHeight);
         },
         [localColumns],
@@ -1812,7 +1976,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             localColumnsRef.current = newLocalColumns;
             setLocalColumns(newLocalColumns);
 
-            await saveTableMetadata();
+            // Column delete: include columns to save updated column list
+            await saveTableMetadata({ includeColumns: true });
 
             // Force grid to refresh
             gridRef.current?.updateCells([]);
@@ -1827,11 +1992,56 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
     }, [columnToDelete, props, saveTableMetadata]);
 
     // handle column rename with optimistic updates and error recovery
+    const isRenamingRef = useRef(false);
+    const renameInProgressRef = useRef<string | null>(null); // Track which column is being renamed
     const handleColumnRename = useCallback(
         async (newName: string) => {
             if (!columnToRename || !newName.trim()) return;
 
-            const oldName = columnToRename.currentName;
+            // Enhanced double-execution prevention
+            if (isRenamingRef.current) {
+                console.warn(
+                    '[rename_debug] Rename already in progress, ignoring duplicate call',
+                    {
+                        columnId: columnToRename.id,
+                        newName: newName,
+                    },
+                );
+                return;
+            }
+
+            // Check if this exact column is already being renamed
+            if (renameInProgressRef.current === columnToRename.id) {
+                console.warn(
+                    '[rename_debug] This column is already being renamed, ignoring duplicate call',
+                    {
+                        columnId: columnToRename.id,
+                    },
+                );
+                return;
+            }
+
+            const oldHeaderName = columnToRename.currentName;
+
+            const pasteState = getPasteState();
+            const isDuringPaste = pasteState.isPasting || pasteState.pasteOperationActive;
+
+            // Find the column being renamed
+            const columnToRenameObj = localColumns.find(
+                (col) => col.id === columnToRename.id,
+            );
+            if (!columnToRenameObj) {
+                console.error(
+                    '[GlideEditableTable] Column not found:',
+                    columnToRename.id,
+                );
+                return;
+            }
+
+            const originalAccessor = columnToRenameObj.accessor;
+
+            isRenamingRef.current = true;
+            renameInProgressRef.current = columnToRename.id;
 
             try {
                 setLocalColumns((prev) => {
@@ -1841,94 +2051,60 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 ...col,
                                 header: newName,
                                 title: newName,
-                                accessor: newName as keyof T,
+                                accessor: originalAccessor,
                             };
                         }
                         return col;
                     });
+
+                    const renamedCol = updated.find((c) => c.id === columnToRename.id);
+                    if (renamedCol && renamedCol.accessor !== originalAccessor) {
+                        console.error(
+                            '[GlideEditableTable] CRITICAL ERROR: Accessor was changed!',
+                            {
+                                originalAccessor: String(originalAccessor),
+                                newAccessor: String(renamedCol.accessor),
+                            },
+                        );
+                    }
+
                     localColumnsRef.current = updated;
                     return updated;
                 });
 
-                // Migrate localData keys from old name to new name
-                setLocalData((prevData) =>
-                    prevData.map((row) => {
-                        if (oldName in row) {
-                            const newRow = { ...row };
-                            newRow[newName as keyof T] = row[oldName as keyof T];
-                            delete newRow[oldName as keyof T];
-                            return newRow;
-                        }
-                        return row;
-                    }),
-                );
-
-                // Migrate editing buffer keys from old name to new name
-                setEditingData((prevEdits) => {
-                    const newEdits: Record<string, Partial<T>> = {};
-                    Object.entries(prevEdits).forEach(([rowId, rowEdits]) => {
-                        const newRowEdits: Partial<T> = {};
-                        Object.entries(rowEdits).forEach(([key, value]) => {
-                            if (key === oldName) {
-                                (newRowEdits as any)[newName] = value;
-                            } else {
-                                (newRowEdits as any)[key] = value;
-                            }
-                        });
-                        newEdits[rowId] = newRowEdits;
-                    });
-                    return newEdits;
-                });
-
-                // Persist the column rename to backend
-                // First update the property name via the rename handler
                 if (props.onRenameColumn) {
                     try {
                         await props.onRenameColumn(columnToRename.id, newName);
                     } catch (renameError) {
                         console.error(
-                            '[GlideEditableTable] Failed to rename column property:',
+                            '[GlideEditableTable] Failed to rename column via TableBlock:',
                             renameError,
                         );
                         // Re-throw to trigger error handling below
                         throw renameError;
                     }
+                } else {
+                    console.warn(
+                        '[GlideEditableTable] No onRenameColumn prop provided - rename will not persist to DB',
+                    );
                 }
-
-                // Save metadata to blocks.content.columns with updated name
-                // This ensures the rename persists in block metadata by columnId
-                await saveTableMetadataRef.current?.();
-
-                // Verify the metadata was saved correctly by checking the update succeeded
-                // The saveTableMetadata function updates blocks.content.columns with the new name
             } catch (err) {
                 console.error('[GlideEditableTable] Failed to rename column:', err);
-                // Revert changes on error
                 setLocalColumns((prev) =>
                     prev.map((col) =>
                         col.id === columnToRename.id
                             ? {
                                   ...col,
-                                  header: oldName,
-                                  title: oldName,
-                                  accessor: oldName as keyof T,
+                                  header: oldHeaderName,
+                                  title: oldHeaderName,
+                                  accessor: originalAccessor,
                               }
                             : col,
                     ),
                 );
-
-                setLocalData((prevData) =>
-                    prevData.map((row) => {
-                        if (newName in row) {
-                            const newRow = { ...row };
-                            newRow[oldName as keyof T] = row[newName as keyof T];
-                            delete newRow[newName as keyof T];
-                            return newRow;
-                        }
-                        return row;
-                    }),
-                );
             } finally {
+                isRenamingRef.current = false;
+                renameInProgressRef.current = null;
                 setColumnToRename(null);
                 setRenameDialogOpen(false);
             }
@@ -1969,7 +2145,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
         for (const row of rowsToDelete) {
             props.onDelete?.(row);
         }
-        void saveTableMetadata();
+        // Row delete: do NOT include columns (only save row metadata)
+        void saveTableMetadata({ includeColumns: false });
 
         // Cleanup.
         setRowsToDelete([]);
@@ -2030,7 +2207,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
             selectionRef.current = undefined;
             console.debug('[GlideEditableTable] Cleared selection on edit mode exit');
 
-            void saveTableMetadata();
+            // Edit mode exit: do NOT include columns (only save row metadata if needed)
+            void saveTableMetadata({ includeColumns: false });
         }
     }, [
         isEditMode,
@@ -2307,7 +2485,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     '[GlideEditableTable] Ctrl+S detected. Saving pending changes...',
                 );
                 void handleSaveAll();
-                void saveTableMetadata();
+                // Undo/redo: do NOT include columns (only save row metadata)
+                void saveTableMetadata({ includeColumns: false });
                 return;
             }
 
@@ -2492,31 +2671,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             const operationId = `paste_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
             const t0 = Date.now();
-            console.group(`[paste_sync][${operationId}] START paste (t=${t0})`);
-            console.debug(
-                `[paste_sync][${operationId}] isEditMode=${isEditMode} isPasting=${pasteState.isPasting} pasteOpActive=${pasteState.pasteOperationActive}`,
-            );
-
-            console.debug(
-                `[paste_sync][${operationId}] currentColumns (localColumns.length) =`,
-                localColumnsRef.current.length,
-                localColumnsRef.current.map((c) => ({
-                    id: c.id,
-                    accessor: String(c.accessor),
-                    header: c.header,
-                    position: c.position,
-                })),
-            );
-            console.debug(
-                `[paste_sync][${operationId}] incoming prop columns.length =`,
-                columns.length,
-                columns.map((c) => ({
-                    id: c.id,
-                    accessor: String(c.accessor),
-                    header: c.header,
-                    position: c.position,
-                })),
-            );
 
             pasteState.isPasting = true;
             pasteState.pasteOperationActive = true;
@@ -2537,10 +2691,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
             // Ensure clipboardRows is always a valid 2D array
             if (validClipboardRows.length === 0) {
-                console.debug(
-                    `[paste_sync][${operationId}] No valid clipboard rows, aborting`,
-                );
-                console.groupEnd();
                 return false;
             }
 
@@ -2576,7 +2726,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 pasteEndRow = startRow + Math.max(0, validClipboardRows.length - 1);
 
                 const currentData = [...sortedData];
-                let currentColumns = [...localColumnsRef.current];
+                const currentColumns = [...localColumnsRef.current];
 
                 // Calculate maximum columns needed from pasted data
                 const maxPastedColumns = Math.max(
@@ -2651,9 +2801,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     realAccessor?: string;
                     error?: any;
                 }> = [];
-                let confirmedColumnIds: string[] = [];
+                const confirmedColumnIds: string[] = [];
                 // This map will be built synchronously from placeholder columns for immediate UI use
-                let tempAccessorToRealAccessor = new Map<string, string>();
+                const tempAccessorToRealAccessor = new Map<string, string>();
                 const tempIdToTempAccessor = new Map<string, string>();
 
                 if (newColumnsToCreate.length > 0 && blockId) {
@@ -2954,8 +3104,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                     string,
                     {
                         row: T;
-                        dynamicColumnData: Record<string, any>; // accessor -> value for dynamic columns
-                        tempColumnIds: string[]; // tempIds of dynamic columns in this row
+                        dynamicColumnData: Record<string, any>;
+                        tempColumnIds: string[];
                     }
                 >();
                 newRowsToCreate = [];
@@ -3417,7 +3567,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         await waitForSupabaseClient();
 
                         const BATCH_SIZE = 20;
-                        let tempAccessorToRealAccessorMap = new Map<string, string>();
+                        const tempAccessorToRealAccessorMap = new Map<string, string>();
                         const hasDynamicColumns =
                             rowsWithDynamicColumns.size > 0 ||
                             newRowsWithDynamicColumns.length > 0;
@@ -3435,7 +3585,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 (r) => r.success,
                             ).length;
                             console.log(
-                                `[paste_sync][${operationId}] ✅ All dynamic columns created (${successfulColumns} columns)`,
+                                `[paste_sync][${operationId}] All dynamic columns created (${successfulColumns} columns)`,
                             );
 
                             console.log(
@@ -3451,33 +3601,34 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 `[paste_sync][${operationId}] Saving table metadata to persist column order...`,
                             );
                             try {
-                                await saveTableMetadata();
+                                // Paste sync after column creation: include columns to save new column order
+                                await saveTableMetadata({ includeColumns: true });
                                 console.log(
-                                    `[paste_sync][${operationId}] ✅ Table metadata saved (column order persisted)`,
+                                    `[paste_sync][${operationId}] Table metadata saved (column order persisted)`,
                                 );
                             } catch (error) {
                                 console.error(
-                                    `[paste_sync][${operationId}] ❌ Failed to save table metadata:`,
+                                    `[paste_sync][${operationId}] Failed to save table metadata:`,
                                     error,
                                 );
                             }
 
-                            console.log(
-                                `[remap_debug][${operationId}] Validating column sync before remapping...`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] localColumnsRef.length=${localColumnsRef.current.length} before remap`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] columns prop.length=${columns.length} before remap`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] Expected new columns=${successfulColumns}`,
+                            // Build mapping from temp accessor to real accessor for confirmed columns
+                            // Get all current local columns to check for renamed ones
+                            const currentLocalColumns = localColumnsRef.current;
+                            const renamedColumnsInLocal = currentLocalColumns.filter(
+                                (col) => {
+                                    // Check if column header doesn't match its accessor (potential rename)
+                                    return col.header !== String(col.accessor);
+                                },
                             );
 
-                            // Build mapping from temp accessor to real accessor for confirmed columns
-                            console.log(
-                                `[mapping_pairs][${operationId}] Building temp -> real accessor mapping from ${columnResults.length} column results...`,
+                            // Check if any renamed column accessor appears in mapping pairs
+                            const renamedColumnAccessors = new Set(
+                                renamedColumnsInLocal.map((c) => String(c.accessor)),
+                            );
+                            const renamedColumnHeaders = new Set(
+                                renamedColumnsInLocal.map((c) => c.header),
                             );
 
                             columnResults.forEach((result, index) => {
@@ -3497,12 +3648,30 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             tempAccessor,
                                             result.realAccessor,
                                         );
+
+                                        const isRenamedColumn =
+                                            renamedColumnAccessors.has(
+                                                result.realAccessor,
+                                            ) ||
+                                            renamedColumnHeaders.has(result.realAccessor);
+                                        if (isRenamedColumn) {
+                                            console.warn(
+                                                `[mapping_debug][${operationId}] Renamed column detected in mapping pair ${index + 1}:`,
+                                                {
+                                                    tempAccessor,
+                                                    realAccessor: result.realAccessor,
+                                                    tempId: result.tempId,
+                                                    isRenamedColumn: true,
+                                                },
+                                            );
+                                        }
+
                                         console.log(
                                             `[mapping_pairs][${operationId}] Pair ${index + 1}: "${tempAccessor}" → "${result.realAccessor}" (tempId: ${result.tempId})`,
                                         );
                                     } else {
                                         console.warn(
-                                            `[mapping_pairs][${operationId}] ⚠️ No temp accessor found for tempId "${result.tempId}" when mapping to real accessor "${result.realAccessor}"`,
+                                            `[mapping_pairs][${operationId}] No temp accessor found for tempId "${result.tempId}" when mapping to real accessor "${result.realAccessor}"`,
                                         );
                                         const placeholderCol =
                                             localColumnsRef.current.find(
@@ -3523,7 +3692,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     }
                                 } else {
                                     console.warn(
-                                        `[mapping_pairs][${operationId}] ⚠️ Column creation result ${index + 1} missing required fields:`,
+                                        `[mapping_pairs][${operationId}] Column creation result ${index + 1} missing required fields:`,
                                         {
                                             success: result.success,
                                             tempId: result.tempId,
@@ -3544,14 +3713,55 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             console.log(
                                 `[mapping_pairs][${operationId}] COMPLETE MAPPING (${mappingEntries.length} pairs):`,
                             );
+
+                            const renamedColumnsInMapping = mappingEntries.filter(
+                                ([temp, real]) =>
+                                    renamedColumnAccessors.has(real) ||
+                                    renamedColumnHeaders.has(real),
+                            );
+
+                            if (renamedColumnsInMapping.length > 0) {
+                                console.warn(
+                                    `[mapping_debug][${operationId}] Renamed columns found in final mapping:`,
+                                    renamedColumnsInMapping.map(([temp, real]) => ({
+                                        tempAccessor: temp,
+                                        realAccessor: real,
+                                        isRenamed: true,
+                                    })),
+                                );
+                            }
+
+                            // Check if renamed column is being interpreted as new dynamic column
+                            const renamedColumnsAsNewDynamic =
+                                renamedColumnsInLocal.filter((col) => {
+                                    const colAccessor = String(col.accessor);
+                                    return mappingEntries.some(
+                                        ([temp, real]) =>
+                                            real === colAccessor &&
+                                            temp.startsWith('temp-'),
+                                    );
+                                });
+
+                            if (renamedColumnsAsNewDynamic.length > 0) {
+                                console.warn(
+                                    `[mapping_debug][${operationId}]  WARNING: Renamed columns may be interpreted as new dynamic columns:`,
+                                    renamedColumnsAsNewDynamic.map((c) => ({
+                                        id: c.id,
+                                        header: c.header,
+                                        accessor: c.accessor,
+                                    })),
+                                );
+                            }
+
                             mappingEntries.forEach(([temp, real], idx) => {
+                                const isRenamed =
+                                    renamedColumnAccessors.has(real) ||
+                                    renamedColumnHeaders.has(real);
+                                const logPrefix = isRenamed ? '[RENAMED]' : '  ';
                                 console.log(
-                                    `[mapping_pairs][${operationId}]   ${idx + 1}. "${temp}" → "${real}"`,
+                                    `[mapping_pairs][${operationId}] ${logPrefix} ${idx + 1}. "${temp}" → "${real}"`,
                                 );
                             });
-                            console.log(
-                                `[mapping_pairs][${operationId}] ========================================`,
-                            );
 
                             const expectedTempAccessors = Array.from(
                                 tempIdToTempAccessor.values(),
@@ -3570,7 +3780,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             if (incompleteRealAccessors.length > 0) {
                                 console.warn(
-                                    `[paste_sync] ❌ Some accessors still temporary, delaying remap...`,
+                                    `[paste_sync] Some accessors still temporary, delaying remap...`,
                                     incompleteRealAccessors,
                                 );
                                 // Wait additional time for columns to fully propagate
@@ -3584,7 +3794,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 );
                                 if (recheckIncomplete.length > 0) {
                                     console.error(
-                                        `[paste_sync] ❌ Still incomplete after delay:`,
+                                        `[paste_sync] Still incomplete after delay:`,
                                         recheckIncomplete,
                                     );
                                 }
@@ -3623,7 +3833,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             if (finalMissingMappings.length > 0) {
                                 console.error(
-                                    `[paste_sync] ❌ Cannot proceed with remap: Missing ${finalMissingMappings.length} mappings:`,
+                                    `[paste_sync] Cannot proceed with remap: Missing ${finalMissingMappings.length} mappings:`,
                                     finalMissingMappings,
                                 );
                                 console.error(
@@ -3634,7 +3844,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     `[paste_sync] Mapped temp accessors:`,
                                     finalMappedTempAccessors,
                                 );
-                                return; // Exit early - don't proceed with remap or save
+                                return;
                             }
 
                             const finalIncompleteRealAccessors =
@@ -3647,7 +3857,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 );
                             if (finalIncompleteRealAccessors.length > 0) {
                                 console.error(
-                                    `[paste_sync] ❌ Cannot proceed with remap: ${finalIncompleteRealAccessors.length} real accessors still temporary:`,
+                                    `[paste_sync] Cannot proceed with remap: ${finalIncompleteRealAccessors.length} real accessors still temporary:`,
                                     finalIncompleteRealAccessors,
                                 );
                                 return;
@@ -3658,7 +3868,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 Array.from(tempAccessorToRealAccessorMap.keys()),
                             );
                             console.log(
-                                `[paste_sync] ✅ All dynamic columns ready, proceeding with remap...`,
+                                `[paste_sync] All dynamic columns ready, proceeding with remap...`,
                             );
 
                             const remapStartTime = Date.now();
@@ -3689,7 +3899,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 `[remap_debug][${operationId}] Collected ${allAffectedRows.length} rows for remapping`,
                             );
 
-                            // Log first row BEFORE remapping to see temp accessors
                             if (allAffectedRows.length > 0) {
                                 const firstRow = allAffectedRows[0];
                                 const firstRowKeys = Object.keys(firstRow);
@@ -3755,16 +3964,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     }
 
                                     if (tempAccessor !== realAccessor && hasProperty) {
-                                        // Verify real accessor is valid before remapping
                                         if (
                                             !realAccessor ||
                                             realAccessor.startsWith('temp-') ||
                                             realAccessor === tempAccessor
                                         ) {
                                             console.error(
-                                                `[remap_debug][${operationId}] ⚠️ Invalid real accessor for "${tempAccessor}": "${realAccessor}"`,
+                                                `[remap_debug][${operationId}] Invalid real accessor for "${tempAccessor}": "${realAccessor}"`,
                                             );
-                                            continue; // Skip this mapping
+                                            continue;
                                         }
 
                                         const value = (remapped as any)[tempAccessor];
@@ -3781,7 +3989,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                                         if (rowIndex === 0) {
                                             console.log(
-                                                `[remap_debug][${operationId}] ✅ Remapped "${tempAccessor}" → "${realAccessor}" with value:`,
+                                                `[remap_debug][${operationId}] Remapped "${tempAccessor}" → "${realAccessor}" with value:`,
                                                 value,
                                             );
                                         }
@@ -3795,7 +4003,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 );
                                 if (remainingTempKeys.length > 0) {
                                     console.error(
-                                        `[remap_debug][${operationId}] ⚠️ Row ${row.id} still has temp accessors after remapping:`,
+                                        `[remap_debug][${operationId}] Row ${row.id} still has temp accessors after remapping:`,
                                         remainingTempKeys,
                                     );
                                     console.error(
@@ -3851,18 +4059,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             }
 
                             remapEndTime = Date.now();
-                            console.log(
-                                `[remap_debug][${operationId}] ========================================`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] REMAP COMPLETE at t=${remapEndTime} (duration=${remapEndTime - remapStartTime}ms)`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] ✅ Mapping complete - ${remappedRows.length} rows remapped`,
-                            );
-                            console.log(
-                                `[remap_debug][${operationId}] remappedRows array populated with ${remappedRows.length} rows`,
-                            );
 
                             if (remappedRows.length > 0) {
                                 const sampleRow = remappedRows[0];
@@ -3890,18 +4086,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                                 if (sampleTempKeys.length > 0) {
                                     console.error(
-                                        `[remap_debug][${operationId}] ❌ CRITICAL: Sample row still has ${sampleTempKeys.length} temp keys after remap:`,
+                                        `[remap_debug][${operationId}] CRITICAL: Sample row still has ${sampleTempKeys.length} temp keys after remap:`,
                                         sampleTempKeys,
                                     );
                                 } else {
                                     console.log(
-                                        `[remap_debug][${operationId}] ✅ Sample row has NO temp keys - remap successful`,
+                                        `[remap_debug][${operationId}] Sample row has NO temp keys - remap successful`,
                                     );
                                 }
                             }
-                            console.log(
-                                `[remap_debug][${operationId}] ========================================`,
-                            );
 
                             // Update localData with remapped rows
                             setLocalData((prevData) => {
@@ -3928,14 +4121,14 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             });
 
                             console.log(
-                                `[paste_sync] 🔁 Remapped temp accessors to real accessors (${remappedRows.length} rows)`,
+                                `[paste_sync] Remapped temp accessors to real accessors (${remappedRows.length} rows)`,
                             );
 
                             await new Promise((resolve) => setTimeout(resolve, 0));
 
                             const afterRemapTime = Date.now();
                             console.log(
-                                `[remap_debug][${operationId}] ✅ Remap phase complete at t=${afterRemapTime}, ready for save phase`,
+                                `[remap_debug][${operationId}] Remap phase complete at t=${afterRemapTime}, ready for save phase`,
                             );
                         } else if (!hasDynamicColumns) {
                             console.log(
@@ -3967,7 +4160,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             if (tempAccessorToRealAccessorMap.size === 0) {
                                 console.error(
-                                    `[paste_sync] ⚠️ Cannot save rows: Dynamic columns exist but mapping is empty`,
+                                    `[paste_sync] Cannot save rows: Dynamic columns exist but mapping is empty`,
                                 );
                                 pasteState.isPasting = false;
                                 pasteState.pasteOperationActive = false;
@@ -3976,7 +4169,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             if (missingMappings.length > 0) {
                                 console.error(
-                                    `[paste_sync] ⚠️ Cannot save rows: Missing mappings for ${missingMappings.length} temp accessors:`,
+                                    `[paste_sync] Cannot save rows: Missing mappings for ${missingMappings.length} temp accessors:`,
                                     missingMappings,
                                 );
                                 pasteState.isPasting = false;
@@ -3986,7 +4179,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                             if (incompleteRealAccessors.length > 0) {
                                 console.error(
-                                    `[paste_sync] ⚠️ Cannot save rows: ${incompleteRealAccessors.length} accessors still temporary:`,
+                                    `[paste_sync] Cannot save rows: ${incompleteRealAccessors.length} accessors still temporary:`,
                                     incompleteRealAccessors,
                                 );
                                 pasteState.isPasting = false;
@@ -3995,12 +4188,11 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             }
 
                             console.log(
-                                `[paste_sync] ✅ Mapping verified complete: ${mappingEntries.length} mappings ready`,
+                                `[paste_sync] Mapping verified complete: ${mappingEntries.length} mappings ready`,
                             );
                         }
 
                         // Prepare all rows for saving
-                        console.log(`[paste_sync] Preparing rows for save...`);
                         const allRowsToSave: Array<{
                             row: T;
                             isNew: boolean;
@@ -4032,21 +4224,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         }
 
                         const saveStartTime = Date.now();
-                        console.log(
-                            `[save_debug][${operationId}] ========================================`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] STARTING save collection at t=${saveStartTime}`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] hasDynamicColumns=${hasDynamicColumns}`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] remappedRows.length=${remappedRows.length}, updatedLocalDataRows.length=${updatedLocalDataRows.length}`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] ========================================`,
-                        );
 
                         // Log column metadata before save
                         console.log(
@@ -4061,7 +4238,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         if (hasDynamicColumns) {
                             if (remappedRows.length > 0) {
                                 console.log(
-                                    `[save_debug][${operationId}] ✅ Using remappedRows directly (${remappedRows.length} rows with real accessors)`,
+                                    `[save_debug][${operationId}] Using remappedRows directly (${remappedRows.length} rows with real accessors)`,
                                 );
                                 rowsToUse = remappedRows;
                             } else if (updatedLocalDataRows.length > 0) {
@@ -4071,10 +4248,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                 rowsToUse = updatedLocalDataRows;
                             } else {
                                 console.warn(
-                                    `[save_debug][${operationId}] ⚠️ No remapped rows available, using original collections`,
+                                    `[save_debug][${operationId}] No remapped rows available, using original collections`,
                                 );
                                 console.warn(
-                                    `[save_debug][${operationId}] ⚠️ This may cause temp accessor errors!`,
+                                    `[save_debug][${operationId}] This may cause temp accessor errors!`,
                                 );
                                 rowsToUse = [
                                     ...updatedRows.values(),
@@ -4149,24 +4326,9 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                                 // Log first row in detail
                                 if (index === 0) {
-                                    console.log(
-                                        `[save_debug][${operationId}] ========================================`,
-                                    );
-                                    console.log(
-                                        `[save_debug][${operationId}] INSPECTING ROW ${rowId} (first row) at t=${Date.now()}`,
-                                    );
-                                    console.log(
-                                        `[save_debug][${operationId}] Row source: ${remappedRows.some((r) => r.id === rowId) ? 'remappedRows' : 'other collection'}`,
-                                    );
-                                    console.log(
-                                        `[save_debug][${operationId}] Total row keys: ${rowKeys.length}`,
-                                    );
-                                    console.log(
-                                        `[save_debug][${operationId}] Temp keys found: ${tempKeys.length}`,
-                                    );
                                     if (tempKeys.length > 0) {
                                         console.error(
-                                            `[save_debug][${operationId}] ❌ TEMP KEYS:`,
+                                            `[save_debug][${operationId}] TEMP KEYS:`,
                                             tempKeys,
                                         );
                                         tempKeys.forEach((tempKey) => {
@@ -4183,7 +4345,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                         });
                                     } else {
                                         console.log(
-                                            `[save_debug][${operationId}] ✅ NO TEMP KEYS - row is ready for save`,
+                                            `[save_debug][${operationId}] NO TEMP KEYS - row is ready for save`,
                                         );
                                     }
 
@@ -4199,18 +4361,15 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                     );
                                     if (presentRealKeys.length > 0) {
                                         console.log(
-                                            `[save_debug][${operationId}] ✅ Real keys present:`,
+                                            `[save_debug][${operationId}] Real keys present:`,
                                             presentRealKeys,
                                         );
                                     }
-                                    console.log(
-                                        `[save_debug][${operationId}] ========================================`,
-                                    );
                                 }
 
                                 if (tempKeys.length > 0) {
                                     console.error(
-                                        `[save_debug][${operationId}] ⚠️ Row ${rowId} still has temp accessors at save time:`,
+                                        `[save_debug][${operationId}] Row ${rowId} still has temp accessors at save time:`,
                                         tempKeys,
                                     );
                                     console.error(
@@ -4251,7 +4410,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             );
                             pasteState.isPasting = false;
                             pasteState.pasteOperationActive = false;
-                            console.groupEnd();
                             return;
                         }
 
@@ -4285,24 +4443,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                         // Save all rows immediately with await
                         const t1 = Date.now();
-                        console.log(
-                            `[save_debug][${operationId}] ========================================`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] STARTING actual row saves at t=${t1}`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] Time since remap complete: ${remappedRows.length > 0 ? t1 - (remapEndTime || 0) + 'ms' : 'N/A (no remap)'}`,
-                        );
-                        console.log(
-                            `[paste_sync][${operationId}] Columns saved, starting row data save...`,
-                        );
-                        console.log(
-                            `[paste_sync][${operationId}] Saving ${allRowsToSave.length} rows (${updatedRows.size} updated, ${newRowsToCreate.length + newRowsWithDynamicColumns.length} new)...`,
-                        );
-                        console.log(
-                            `[save_debug][${operationId}] ========================================`,
-                        );
 
                         for (let i = 0; i < allRowsToSave.length; i += BATCH_SIZE) {
                             const batch = allRowsToSave.slice(i, i + BATCH_SIZE);
@@ -4330,7 +4470,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
 
                                             if (tempKeysInPayload.length > 0) {
                                                 console.error(
-                                                    `[save_debug][${operationId}] ❌ CRITICAL: Row ${id} has temp accessors RIGHT BEFORE SAVE:`,
+                                                    `[save_debug][${operationId}] CRITICAL: Row ${id} has temp accessors RIGHT BEFORE SAVE:`,
                                                     tempKeysInPayload,
                                                 );
                                                 console.error(
@@ -4355,25 +4495,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                                         );
                                                         return mappedReal.includes(k);
                                                     });
-                                                console.log(
-                                                    `[save_debug][${operationId}] ========================================`,
-                                                );
-                                                console.log(
-                                                    `[save_debug][${operationId}] FINAL CHECK BEFORE SAVE - Row ${id} at t=${saveStart}`,
-                                                );
-                                                console.log(
-                                                    `[save_debug][${operationId}] ✅ NO temp keys found`,
-                                                );
-                                                console.log(
-                                                    `[save_debug][${operationId}] Real keys in payload: ${realKeysInPayload.length}`,
-                                                    realKeysInPayload,
-                                                );
-                                                console.log(
-                                                    `[save_debug][${operationId}] Total payload keys: ${payloadKeys.length}`,
-                                                );
-                                                console.log(
-                                                    `[save_debug][${operationId}] ========================================`,
-                                                );
                                             }
                                         }
 
@@ -4408,7 +4529,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         }
                         const t2 = Date.now();
                         console.log(
-                            `[paste_sync][${operationId}] 💾 All ${allRowsToSave.length} rows saved successfully (duration=${t2 - t1}ms)`,
+                            `[paste_sync][${operationId}] All ${allRowsToSave.length} rows saved successfully (duration=${t2 - t1}ms)`,
                         );
 
                         // Wait for any remaining save promises to complete
@@ -4431,10 +4552,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                             `[paste_sync][${operationId}] done saving rows (duration=${t3 - t0}ms) -> calling onPostSave()`,
                         );
 
-                        // Force save metadata before refresh to ensure column order is persisted
+                        // Force save metadata before refresh to ensure row positions are persisted
                         const mdStart = Date.now();
                         try {
-                            await saveTableMetadata();
+                            // Paste sync after row saves: do NOT include columns (only save row metadata)
+                            // This prevents overwriting renamed column names with stale data
+                            await saveTableMetadata({ includeColumns: false });
                             const mdDuration = Date.now() - mdStart;
                             console.debug(
                                 `[paste_sync][${operationId}] saveTableMetadata done (duration=${mdDuration}ms)`,
@@ -4442,7 +4565,7 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         } catch (error) {
                             const mdDuration = Date.now() - mdStart;
                             console.error(
-                                `[paste_sync][${operationId}] ❌ saveTableMetadata failed (duration=${mdDuration}ms):`,
+                                `[paste_sync][${operationId}] saveTableMetadata failed (duration=${mdDuration}ms):`,
                                 error,
                             );
                         }
@@ -4465,17 +4588,12 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         } catch (error) {
                             const postDuration = Date.now() - postStart;
                             console.error(
-                                `[paste_sync][${operationId}] ❌ onPostSave() failed (duration=${postDuration}ms):`,
+                                `[paste_sync][${operationId}] onPostSave() failed (duration=${postDuration}ms):`,
                                 error,
                             );
                         }
 
                         // final cleanup
-                        const totalDuration = Date.now() - t0;
-                        console.debug(
-                            `[paste_sync][${operationId}] FINISH totalDuration=${totalDuration}ms`,
-                        );
-                        console.groupEnd();
                     } catch (error) {
                         console.error(
                             `[paste_sync][${operationId}] Paste save error:`,
@@ -4484,7 +4602,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                         // Clear flags even on error to prevent stuck state
                         pasteState.isPasting = false;
                         pasteState.pasteOperationActive = false;
-                        console.groupEnd();
                     }
                 })();
             } catch (error) {
@@ -4501,7 +4618,6 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 // Clear flags on error
                 pasteState.isPasting = false;
                 pasteState.pasteOperationActive = false;
-                console.groupEnd();
             } finally {
                 // track pasted rows for deduplication for THIS table instance
                 newRowsToCreate.forEach((row) => {
@@ -4511,14 +4627,8 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                 // clear pasted row tracking after sufficient time for db sync
                 setTimeout(() => {
                     pasteState.recentlyPastedRows.clear();
-                    console.debug(
-                        `[paste_sync][${operationId}] Cleared recently pasted rows tracking for table ${tableId}`,
-                    );
                 }, 10000);
 
-                console.debug(
-                    `[paste_sync][${operationId}] Waiting for database acknowledgment for table ${tableId}...`,
-                );
                 return true;
             }
         },
@@ -4894,7 +5004,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             return reindexed as typeof prev;
                                         });
 
-                                        await saveTableMetadataRef.current?.();
+                                        // Column add (createPropertyAndColumn): include columns to save new column list
+                                        await saveTableMetadataRef.current?.({
+                                            includeColumns: true,
+                                        });
                                         await onPostSave?.();
                                     } finally {
                                         setAddColumnDialogOpen(false);
@@ -4970,7 +5083,10 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                             return reindexed as typeof prev;
                                         });
 
-                                        await saveTableMetadataRef.current?.();
+                                        // Column add (createColumnFromProperty): include columns to save new column list
+                                        await saveTableMetadataRef.current?.({
+                                            includeColumns: true,
+                                        });
                                         await onPostSave?.();
                                     } finally {
                                         setAddColumnDialogOpen(false);
@@ -5174,9 +5290,21 @@ export function GlideEditableTable<T extends BaseRow = BaseRow>(
                                         onClick={() => {
                                             const col = localColumns[columnMenu.colIndex];
                                             if (col) {
+                                                // ========================================
+                                                // [rename_debug] COLUMN RENAME TRIGGER POINT
+                                                // ========================================
+                                                const pasteState = getPasteState();
+                                                const isDuringPaste =
+                                                    pasteState.isPasting ||
+                                                    pasteState.pasteOperationActive;
+
                                                 // check if this is a default column
                                                 // prevent renaming system columns
                                                 if (isSystemColumn(col.header)) {
+                                                    console.warn(
+                                                        '[GlideEditableTable] System column cannot be renamed:',
+                                                        col.header,
+                                                    );
                                                     alert(
                                                         `"${col.header}" is a system column and cannot be renamed.`,
                                                     );

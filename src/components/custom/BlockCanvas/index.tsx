@@ -20,6 +20,7 @@ import {
 import { Table, Type } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { AddTableDialog } from '@/components/custom/BlockCanvas/components/AddTableDialog';
 import { DeleteConfirmDialog } from '@/components/custom/BlockCanvas/components/EditableTable/components/DeleteConfirmDialog';
@@ -359,6 +360,74 @@ export function BlockCanvas({
         [originalHandleAddBlock],
     );
 
+    const createTableWithImport = useCallback(
+        async (
+            imported: { headers: string[]; rows: Array<Array<unknown>> },
+            name: string,
+        ) => {
+            // 1) Create a generic table block
+            const content: Json = {
+                tableKind: 'genericTable',
+                columns: [],
+                requirements: [],
+                rows: [],
+            } as unknown as Json;
+            const created = await originalHandleAddBlock(BlockType.table, content, name);
+            const blockId = created?.id;
+            if (!blockId) return;
+
+            // 2) Create columns sequentially to preserve order (API computes next position)
+            const headers = (imported.headers || []).map((h, i) =>
+                (h || '').trim() ? h : `Column ${i + 1}`,
+            );
+            for (const header of headers) {
+                await fetch(`/api/documents/${documentId}/columns`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'new',
+                        blockId,
+                        name: header,
+                        // Map to DB enum string directly ('text' default for import)
+                        propertyType: 'text',
+                        propertyConfig: {
+                            scope: ['document'],
+                            is_base: false,
+                            options: [],
+                        },
+                        defaultValue: '',
+                    }),
+                });
+            }
+
+            // 3) Insert rows
+            const rows = imported.rows || [];
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i] || [];
+                // Build rowData object keyed by header names
+                const rowData: Record<string, unknown> = {};
+                for (let c = 0; c < headers.length; c++) {
+                    rowData[headers[c]] = r[c] ?? '';
+                }
+                await fetch(`/api/documents/${documentId}/rows`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: uuidv4(),
+                        blockId,
+                        position: i,
+                        rowData,
+                    }),
+                });
+            }
+            // 4) Hydrate relations for the new block to reflect columns immediately
+            if (typeof refetchDocument === 'function') {
+                await refetchDocument({ silent: false });
+            }
+        },
+        [documentId, originalHandleAddBlock, refetchDocument],
+    );
+
     const renderBlock = useCallback(
         (block: BlockWithRequirements) => {
             return (
@@ -510,9 +579,25 @@ export function BlockCanvas({
             <AddTableDialog
                 isOpen={isAddTableOpen}
                 onClose={() => setIsAddTableOpen(false)}
-                onCreate={async (layout, name) => {
-                    await createTableWithLayout(layout, name);
-                }}
+                onCreate={
+                    (async (
+                        layout: 'blank' | 'requirements_default' | 'import',
+                        name: string,
+                        imported?: { headers: string[]; rows: Array<Array<unknown>> },
+                    ) => {
+                        if (layout === 'import' && imported) {
+                            await createTableWithImport(imported, name);
+                        } else if (
+                            layout === 'blank' ||
+                            layout === 'requirements_default'
+                        ) {
+                            await createTableWithLayout(
+                                layout as 'blank' | 'requirements_default',
+                                name,
+                            );
+                        }
+                    }) as (layout: unknown, name: string) => Promise<void>
+                }
             />
             <DeleteConfirmDialog
                 open={isDeleteBlockOpen}
